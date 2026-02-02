@@ -2,7 +2,7 @@
 title: ขั้นตอนการสร้างข้อมูลร้านค้า หรือ ผู้ขายในระบบ (Create Vendor)
 description: ขั้นตอนการสร้างข้อมูลร้านค้า หรือ ผู้ขายในระบบ (Create Vendor)
 published: true
-date: 2026-02-02T07:45:38.659Z
+date: 2026-02-02T07:45:51.840Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:53:04.525Z
@@ -10,7 +10,7 @@ dateCreated: 2026-02-02T06:53:04.525Z
 
 # ขั้นตอนการสร้างข้อมูลร้านค้า หรือ ผู้ขายในระบบ (Create Vendor)
 
-1. คลิกเข้าสู่ Account Payable Module 1
+1. คลิกเข้าสู่ Account Payable Module
 2. กดปุ่ม Vendor เพื่อเข้าใช้งานการสร้าง Vendor
 3. กดปุ่ม Add เพื่อสร้างเอกสาร
 ![alt text](image-119.png)
