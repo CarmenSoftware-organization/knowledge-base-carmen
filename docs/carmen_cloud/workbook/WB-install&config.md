@@ -145,9 +145,11 @@ https://xxxxx.carmen.blue/carmen.api
     <img src="./image-20.png" />
 </p>
 
-<p style="margin: 0;">Video ประกอบ</p>
-<h3 style="margin: 0;">Setup | การตั้งค่าก่อนเริ่มใช้งาน</h3>
+## Video ประกอบ
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/Y42UT8szy-M?si=8PvPXm1nOeV5OAWk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+### Setup | การตั้งค่าก่อนเริ่มใช้งาน
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/y9eoJuLLfi8?si=LykxwKbysZNzGMmF" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+- [Watch on YouTube: Setup Part 1](https://www.youtube.com/watch?v=Y42UT8szy-M)
+- [Watch on YouTube: Setup Part 2](https://www.youtube.com/watch?v=y9eoJuLLfi8)
+
+*(ถ้า embed วิดีโอไม่แสดง สามารถคลิกลิงก์ด้านบนเพื่อเปิดดูบน YouTube)*
