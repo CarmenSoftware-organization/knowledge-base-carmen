@@ -6,3 +6,6 @@ aux
 
 # Migration temp (optional: remove if you want to commit the zip)
 docscarmencloud.zip
+
+# Wiki import staging (output of scripts/wiki-import-from-carmencloud.js)
+wiki-import/
