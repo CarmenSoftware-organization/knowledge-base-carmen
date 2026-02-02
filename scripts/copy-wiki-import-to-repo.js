@@ -1,13 +1,4 @@
-#!/usr/bin/env node
-/**
- * Copy เนื้อจาก wiki-import/carmen_cloud ไปที่ root ของ repo เป็นโฟลเดอร์ carmen_cloud
- * (สำหรับให้ Wiki.js ดึงจาก Git มาเป็นหน้า)
- *
- * รันหลัง: node scripts/wiki-import-from-carmencloud.js
- * จากนั้น: git add carmen_cloud && git commit && git push แล้วไปกด Sync/Pull ใน Wiki.js
- *
- * รัน: node scripts/copy-wiki-import-to-repo.js
- */
+
 
 const fs = require('fs');
 const path = require('path');
