@@ -5,8 +5,9 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -o ./tmp/main ./cmd/server/main.go"
-  bin = "./tmp/main"
+  # สำหรับ Windows ต้อง build เป็น .exe
+  cmd = "go build -o ./tmp/main.exe ./cmd/server/main.go"
+  bin = "tmp/main.exe"
   include_ext = ["go", "tpl", "tmpl", "html"]
   exclude_dir = ["tmp", "vendor", "node_modules", ".git"]
   exclude_file = []
