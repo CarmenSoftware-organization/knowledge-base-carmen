@@ -275,3 +275,98 @@ func (s *SearchService) combineAndRankResults(
 
 	return results
 }
+
+// --- Public API (SRS format) ---
+
+// SearchPublic ค้นหาเฉพาะ public documents คืนค่าเป็น SearchPublicResponse
+func (s *SearchService) SearchPublic(query string, limit, offset int) (*domain.SearchPublicResponse, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+	docs, _, err := s.docRepo.SearchPublic(query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]domain.SearchResultPublic, 0, len(docs))
+	for i, doc := range docs {
+		latest, _ := s.docRepo.GetLatestVersion(doc.ID)
+		snippet := ""
+		if latest != nil {
+			snippet = latest.Content
+			if len(snippet) > 200 {
+				snippet = snippet[:200] + "..."
+			}
+		}
+		category := ""
+		if doc.Category != nil {
+			category = doc.Category.Name
+		}
+		score := 0.9 - float64(i)*0.05
+		if score < 0.3 {
+			score = 0.3
+		}
+		results = append(results, domain.SearchResultPublic{
+			ID:       fmt.Sprintf("%d", doc.ID),
+			Title:    doc.Title,
+			Snippet:  snippet,
+			Category: category,
+			Path:     "/articles/" + fmt.Sprintf("%d", doc.ID),
+			Score:    score,
+		})
+	}
+	return &domain.SearchPublicResponse{Results: results}, nil
+}
+
+// GetPopularSearches คืนรายการคำค้นยอดนิยม (ตอนนี้ใช้ค่าตายตัว)
+func (s *SearchService) GetPopularSearches() []string {
+	return []string{
+		"Getting Started",
+		"การติดตั้ง",
+		"API",
+		"Environment",
+	}
+}
+
+// GetSuggest คืนคำแนะนำจาก title ของเอกสาร public
+func (s *SearchService) GetSuggest(q string, limit int) ([]string, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	titles, err := s.docRepo.ListPublicTitles(limit * 3)
+	if err != nil {
+		return nil, err
+	}
+	q = strings.ToLower(strings.TrimSpace(q))
+	var out []string
+	for _, t := range titles {
+		if len(out) >= limit {
+			break
+		}
+		if q == "" || strings.Contains(strings.ToLower(t.Title), q) {
+			out = append(out, t.Title)
+		}
+	}
+	return out, nil
+}
+
+// ChatAsk สำหรับ POST /api/chat/ask - ตอบคำถามจาก Knowledge Base + คืน sources
+func (s *SearchService) ChatAsk(question string) (answer string, sources []domain.ChatSource, err error) {
+	// ดึง context จาก search (ChromaDB + keyword)
+	answer, err = s.SearchWithContext(question, 5)
+	if err != nil {
+		return "", nil, err
+	}
+	// หา documents ที่เกี่ยวข้องเป็น sources
+	docs, _, _ := s.docRepo.SearchPublic(question, 5, 0)
+	sources = make([]domain.ChatSource, 0, len(docs))
+	for _, d := range docs {
+		sources = append(sources, domain.ChatSource{
+			ArticleID: fmt.Sprintf("%d", d.ID),
+			Title:     d.Title,
+		})
+	}
+	return answer, sources, nil
+}

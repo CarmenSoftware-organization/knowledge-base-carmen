@@ -7,18 +7,21 @@ import (
 )
 
 type Document struct {
-	ID            uint64              `gorm:"primaryKey" json:"id"`
-	Title         string              `gorm:"not null" json:"title"`
-	Description   string              `gorm:"type:text" json:"description"`
-	OwnerID       uint64              `gorm:"not null" json:"owner_id"`
-	Owner         User                `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
-	Status        string              `json:"status"`
-	IsPublic      bool                `gorm:"default:false" json:"is_public"`
-	Versions      []DocumentVersion   `gorm:"foreignKey:DocumentID" json:"versions,omitempty"`
+	ID            uint64               `gorm:"primaryKey" json:"id"`
+	Title         string               `gorm:"not null" json:"title"`
+	Description   string               `gorm:"type:text" json:"description"`
+	OwnerID       uint64               `gorm:"not null" json:"owner_id"`
+	Owner         User                 `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
+	CategoryID    *uint64              `json:"category_id"`                    // optional, for Knowledge Base
+	Category      *Category            `gorm:"foreignKey:CategoryID" json:"-"` // omit in JSON
+	Status        string               `json:"status"`                         // e.g. draft, published
+	IsPublic      bool                 `gorm:"default:false" json:"is_public"`
+	Tags          string               `gorm:"type:text" json:"tags"`          // comma-separated or JSON array string
+	Versions      []DocumentVersion    `gorm:"foreignKey:DocumentID" json:"versions,omitempty"`
 	Permissions   []DocumentPermission `gorm:"foreignKey:DocumentID" json:"permissions,omitempty"`
-	CreatedAt     time.Time           `json:"created_at"`
-	UpdatedAt     time.Time           `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt      `gorm:"index" json:"-"`
+	CreatedAt     time.Time            `json:"created_at"`
+	UpdatedAt     time.Time            `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt       `gorm:"index" json:"-"`
 }
 
 type DocumentVersion struct {

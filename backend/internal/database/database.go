@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/new-carmen/backend/internal/config"
 	"gorm.io/driver/postgres"
@@ -22,14 +21,12 @@ func Connect() error {
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent), // ไม่พิมพ์ SQL ตอนรัน
 	})
 
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-
-	log.Println("Database connected successfully")
 	return nil
 }
 
@@ -45,6 +42,5 @@ func Migrate(models ...interface{}) error {
 	if err := DB.AutoMigrate(models...); err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}
-	log.Println("Database migration completed")
 	return nil
 }

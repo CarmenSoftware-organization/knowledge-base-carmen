@@ -77,7 +77,7 @@ func (r *DocumentRepository) Search(query string, limit, offset int) ([]domain.D
 	var total int64
 
 	queryBuilder := r.db.Model(&domain.Document{}).
-		Where("title ILIKE ? OR description ILIKE ?", "%"+query+"%", "%"+query+"%")
+		Where("title ILIKE ? OR description ILIKE ? OR tags ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%")
 
 	if err := queryBuilder.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -85,4 +85,84 @@ func (r *DocumentRepository) Search(query string, limit, offset int) ([]domain.D
 
 	err := queryBuilder.Limit(limit).Offset(offset).Find(&documents).Error
 	return documents, total, err
+}
+
+// SearchPublic ค้นหาเฉพาะ is_public = true, พร้อม Preload Category
+func (r *DocumentRepository) SearchPublic(query string, limit, offset int) ([]domain.Document, int64, error) {
+	var documents []domain.Document
+	var total int64
+	q := r.db.Model(&domain.Document{}).Where("is_public = ?", true).
+		Where("title ILIKE ? OR description ILIKE ? OR tags ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := q.Preload("Category").Limit(limit).Offset(offset).Find(&documents).Error
+	return documents, total, err
+}
+
+// --- Public API: เฉพาะ is_public = true ---
+
+func (r *DocumentRepository) ListPublic(limit, offset int) ([]domain.Document, int64, error) {
+	var list []domain.Document
+	var total int64
+	q := r.db.Model(&domain.Document{}).Where("is_public = ?", true)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := q.Preload("Category").Order("updated_at DESC").Limit(limit).Offset(offset).Find(&list).Error
+	return list, total, err
+}
+
+func (r *DocumentRepository) ListPublicByCategory(categoryID uint64, sort string, limit, offset int) ([]domain.Document, int64, error) {
+	var list []domain.Document
+	var total int64
+	q := r.db.Model(&domain.Document{}).Where("is_public = ? AND category_id = ?", true, categoryID)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	switch sort {
+	case "popular":
+		// TODO: order by feedback count if we have it; for now same as latest
+		q = q.Order("updated_at DESC")
+	case "az", "a-z":
+		q = q.Order("title ASC")
+	default:
+		q = q.Order("updated_at DESC") // latest
+	}
+	err := q.Preload("Category").Limit(limit).Offset(offset).Find(&list).Error
+	return list, total, err
+}
+
+func (r *DocumentRepository) GetPublicByID(id uint64) (*domain.Document, error) {
+	var doc domain.Document
+	err := r.db.Preload("Category").Where("id = ? AND is_public = ?", id, true).First(&doc).Error
+	if err != nil {
+		return nil, err
+	}
+	return &doc, nil
+}
+
+// ListPublicTitles for search suggest
+func (r *DocumentRepository) ListPublicTitles(limit int) ([]struct {
+	ID    uint64
+	Title string
+}, error) {
+	var out []struct {
+		ID    uint64
+		Title string
+	}
+	err := r.db.Model(&domain.Document{}).Select("id, title").
+		Where("is_public = ?", true).Limit(limit).Find(&out).Error
+	return out, err
+}
+
+// ListPublicRelated returns other public documents (same category first, then by updated_at)
+func (r *DocumentRepository) ListPublicRelated(documentID uint64, categoryID *uint64, limit int) ([]domain.Document, error) {
+	var list []domain.Document
+	q := r.db.Where("is_public = ? AND id != ?", true, documentID)
+	if categoryID != nil && *categoryID > 0 {
+		q = q.Where("category_id = ?", *categoryID)
+	}
+	err := q.Order("updated_at DESC").Limit(limit).Find(&list).Error
+	return list, err
 }

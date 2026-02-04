@@ -86,3 +86,43 @@ func (h *SearchHandler) SearchWithContext(c *fiber.Ctx) error {
 		"query":  query,
 	})
 }
+
+// --- Public API (SRS) ไม่ต้อง auth ---
+
+// SearchPublic POST /api/search (body: {"query": "..."})
+func (h *SearchHandler) SearchPublic(c *fiber.Ctx) error {
+	var req domain.SearchPublicRequest
+	if err := c.BodyParser(&req); err != nil {
+		req.Query = c.Query("q", "")
+	}
+	if req.Query == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "query is required"})
+	}
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	offset, _ := strconv.Atoi(c.Query("offset", "0"))
+	resp, err := h.searchService.SearchPublic(req.Query, limit, offset)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(resp)
+}
+
+// GetPopularSearches GET /api/search/popular
+func (h *SearchHandler) GetPopularSearches(c *fiber.Ctx) error {
+	list := h.searchService.GetPopularSearches()
+	return c.JSON(fiber.Map{"popular": list})
+}
+
+// GetSuggest GET /api/search/suggest?q=keyword
+func (h *SearchHandler) GetSuggest(c *fiber.Ctx) error {
+	q := c.Query("q", "")
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	suggestions, err := h.searchService.GetSuggest(q, limit)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"suggestions": suggestions})
+}

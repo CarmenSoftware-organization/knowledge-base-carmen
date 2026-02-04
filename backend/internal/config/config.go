@@ -63,9 +63,11 @@ type GitConfig struct {
 var AppConfig *Config
 
 func Load() error {
-	// Load .env file if exists
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
+	// Load .env: ลองจาก cwd ก่อน แล้วลอง backend/.env ถ้ารันจาก repo root
+	if err := godotenv.Load(".env"); err != nil {
+		if err2 := godotenv.Load("backend/.env"); err2 != nil {
+			log.Println("No .env file found, using environment variables")
+		}
 	}
 
 	AppConfig = &Config{

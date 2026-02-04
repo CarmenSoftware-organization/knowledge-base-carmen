@@ -6,7 +6,9 @@ import { ArticleTags } from "@/components/kb/article-tags";
 import { RelatedArticles } from "@/components/kb/related-articles";
 import { TableOfContents } from "@/components/kb/table-of-contents";
 import { ArticleFeedback } from "@/components/kb/article-feedback";
-import { Clock, Eye, Calendar, User, Printer, Share2 } from "lucide-react";
+// Remove the direct import from 'lucide-react' due to the missing module or typings error.
+// Instead, import icons from the local components/icons directory if available, or comment out for now.
+// import { Clock, Eye, Calendar, User, Printer, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -108,19 +110,35 @@ export default function SampleArticlePage() {
                 {/* Meta Info */}
                 <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <User className="h-4 w-4" />
+                    {/* TODO: Import User icon at top of file: import { User } from 'lucide-react'; */}
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="7" r="4" />
+                      <path d="M5.5 19a4.5 4.5 0 0 1 13 0" />
+                    </svg>
                     {articleData.author}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
+                    {/* TODO: Import Calendar icon at top of file: import { Calendar } from 'lucide-react'; */}
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <rect width="18" height="18" x="3" y="4" rx="2" />
+                      <path d="M16 2v4M8 2v4M3 10h18" />
+                    </svg>
                     {articleData.publishedAt}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
+                    {/* TODO: Import Clock icon at top of file: import { Clock } from 'lucide-react'; */}
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
                     {articleData.readTime}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Eye className="h-4 w-4" />
+                    {/* TODO: Import Eye icon at top of file: import { Eye } from 'lucide-react'; */}
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
                     {articleData.views.toLocaleString()} views
                   </span>
                 </div>
@@ -128,11 +146,23 @@ export default function SampleArticlePage() {
                 {/* Action Buttons */}
                 <div className="mt-4 flex gap-2">
                   <Button variant="outline" size="sm" className="gap-1 bg-transparent">
-                    <Printer className="h-4 w-4" />
+                    {/* TODO: Import Printer icon at top of file: import { Printer } from 'lucide-react'; */}
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <polyline points="6 9 6 2 18 2 18 9" />
+                      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                      <rect width="12" height="8" x="6" y="14" />
+                    </svg>
                     <span className="hidden sm:inline">พิมพ์</span>
                   </Button>
                   <Button variant="outline" size="sm" className="gap-1 bg-transparent">
-                    <Share2 className="h-4 w-4" />
+                    {/* TODO: Import Share2 icon at top of file: import { Share2 } from 'lucide-react'; */}
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <circle cx="18" cy="5" r="3"/>
+                      <circle cx="6" cy="12" r="3"/>
+                      <circle cx="18" cy="19" r="3"/>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
                     <span className="hidden sm:inline">แชร์</span>
                   </Button>
                 </div>

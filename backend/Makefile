@@ -1,9 +1,13 @@
-.PHONY: run build migrate-up migrate-down migrate-create test clean
+.PHONY: run dev build migrate-up migrate-down migrate-create test clean
 
 # Run the application
 run:
 	@echo "Starting server..."
 	go run cmd/server/main.go
+
+# Run with hot reload (ต้องติดตั้ง air: go install github.com/air-verse/air@latest)
+dev:
+	air
 
 # Build the application
 build:

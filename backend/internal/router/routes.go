@@ -24,7 +24,32 @@ func SetupRoutes(app *fiber.App) {
 	auth.Post("/register", authHandler.Register)
 	auth.Post("/login", authHandler.Login)
 
-	// Protected routes
+	// --- Public API (SRS Frontend) ไม่ต้อง login ---
+	searchHandler := api.NewSearchHandler()
+	app.Post("/api/search", searchHandler.SearchPublic)
+	app.Get("/api/search/popular", searchHandler.GetPopularSearches)
+	app.Get("/api/search/suggest", searchHandler.GetSuggest)
+
+	catHandler := api.NewCategoriesHandler()
+	app.Get("/api/categories", catHandler.List)
+	app.Get("/api/categories/:categoryId", catHandler.GetByID)
+	app.Get("/api/categories/:categoryId/articles", catHandler.ListArticles)
+
+	articlesHandler := api.NewArticlesPublicHandler()
+	app.Get("/api/articles/popular", articlesHandler.ListPopular)
+	app.Get("/api/articles/recommended", articlesHandler.ListRecommended)
+	app.Get("/api/articles/:articleId", articlesHandler.GetArticle)
+	app.Get("/api/articles/:articleId/toc", articlesHandler.GetTOC)
+	app.Get("/api/articles/:articleId/related", articlesHandler.GetRelated)
+	app.Post("/api/articles/:articleId/feedback", articlesHandler.PostFeedback)
+
+	chatHandler := api.NewChatHandler()
+	app.Post("/api/chat/ask", chatHandler.Ask)
+
+	sysHandler := api.NewSystemHandler()
+	app.Get("/api/system/status", sysHandler.Status)
+
+	// --- Protected routes (ต้อง login) ---
 	apiGroup := app.Group("/api", middleware.AuthMiddleware())
 
 	// Document routes
@@ -36,8 +61,7 @@ func SetupRoutes(app *fiber.App) {
 	documents.Delete("/:id", docHandler.DeleteDocument)
 	documents.Post("/:id/versions", docHandler.AddVersion)
 
-	// Search routes
-	searchHandler := api.NewSearchHandler()
+	// Search routes (protected)
 	search := apiGroup.Group("/search")
 	search.Post("/analyze", searchHandler.AnalyzeClarity)
 	search.Get("/", searchHandler.Search)

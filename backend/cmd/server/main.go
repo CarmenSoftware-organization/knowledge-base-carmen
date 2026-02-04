@@ -26,9 +26,11 @@ func main() {
 	if err := database.Migrate(
 		&domain.User{},
 		&domain.Role{},
+		&domain.Category{},
 		&domain.Document{},
 		&domain.DocumentVersion{},
 		&domain.DocumentPermission{},
+		&domain.ArticleFeedback{},
 	); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
@@ -43,7 +45,6 @@ func main() {
 
 	// Start server
 	port := config.AppConfig.Server.Port
-	log.Printf("Server starting on port %s", port)
 	if err := app.Listen(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
