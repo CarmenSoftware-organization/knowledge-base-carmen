@@ -12,11 +12,11 @@ type Document struct {
 	Description   string               `gorm:"type:text" json:"description"`
 	OwnerID       uint64               `gorm:"not null" json:"owner_id"`
 	Owner         User                 `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
-	CategoryID    *uint64              `json:"category_id"`                    // optional, for Knowledge Base
-	Category      *Category            `gorm:"foreignKey:CategoryID" json:"-"` // omit in JSON
-	Status        string               `json:"status"`                         // e.g. draft, published
+	CategoryID    *uint64              `json:"category_id"`                    
+	Category      *Category            `gorm:"foreignKey:CategoryID" json:"-"` 
+	Status        string               `json:"status"`                         
 	IsPublic      bool                 `gorm:"default:false" json:"is_public"`
-	Tags          string               `gorm:"type:text" json:"tags"`          // comma-separated or JSON array string
+	Tags          string               `gorm:"type:text" json:"tags"`         
 	Versions      []DocumentVersion    `gorm:"foreignKey:DocumentID" json:"versions,omitempty"`
 	Permissions   []DocumentPermission `gorm:"foreignKey:DocumentID" json:"permissions,omitempty"`
 	CreatedAt     time.Time            `json:"created_at"`

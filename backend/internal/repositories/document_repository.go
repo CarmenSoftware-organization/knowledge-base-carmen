@@ -127,7 +127,7 @@ func (r *DocumentRepository) ListPublicByCategory(categoryID uint64, sort string
 	case "az", "a-z":
 		q = q.Order("title ASC")
 	default:
-		q = q.Order("updated_at DESC") // latest
+		q = q.Order("updated_at DESC") 
 	}
 	err := q.Preload("Category").Limit(limit).Offset(offset).Find(&list).Error
 	return list, total, err

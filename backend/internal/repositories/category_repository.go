@@ -29,7 +29,7 @@ func (r *CategoryRepository) GetByID(id uint64) (*domain.Category, error) {
 	return &c, nil
 }
 
-// CountPublicDocumentsByCategory นับเฉพาะ document ที่ is_public = true
+
 func (r *CategoryRepository) CountPublicDocumentsByCategory(categoryID uint64) (int64, error) {
 	var n int64
 	err := database.DB.Model(&domain.Document{}).

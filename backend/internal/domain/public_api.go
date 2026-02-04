@@ -1,7 +1,4 @@
 package models
-
-// --- Public API request/response DTOs (ตาม SRS Frontend) ---
-
 // POST /api/search
 type SearchPublicRequest struct {
 	Query string `json:"query"`
@@ -9,11 +6,11 @@ type SearchPublicRequest struct {
 }
 
 type SearchResultPublic struct {
-	ID       string  `json:"id"`        // e.g. "article-001" (string version of document id)
+	ID       string  `json:"id"`  
 	Title    string  `json:"title"`
 	Snippet  string  `json:"snippet"`
 	Category string  `json:"category"`
-	Path     string  `json:"path"`     // e.g. "/articles/1"
+	Path     string  `json:"path"`   
 	Score    float64 `json:"score"`
 }
 
@@ -37,7 +34,7 @@ type CategoriesPublicResponse struct {
 type ArticlePublicResponse struct {
 	ID          string   `json:"id"`
 	Title       string   `json:"title"`
-	Content     string   `json:"content"` // HTML or markdown
+	Content     string   `json:"content"` 
 	Tags        []string `json:"tags"`
 	LastUpdated string   `json:"lastUpdated"` // "2026-01-29"
 }
@@ -46,7 +43,7 @@ type ArticlePublicResponse struct {
 type TOCEntry struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
-	Level int    `json:"level"` // 1 = h1, 2 = h2, ...
+	Level int    `json:"level"` 
 }
 
 type ArticleTOCResponse struct {
@@ -86,6 +83,6 @@ type ChatAskResponse struct {
 
 // GET /api/system/status
 type SystemStatusResponse struct {
-	Status  string `json:"status"`  // "ok", "maintenance"
+	Status  string `json:"status"`  
 	Message string `json:"message,omitempty"`
 }
