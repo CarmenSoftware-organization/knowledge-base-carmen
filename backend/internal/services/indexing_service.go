@@ -3,7 +3,10 @@ package services
 import (
 	"fmt"
 	"log"
+	"path/filepath"
+	"strings"
 
+	domain "github.com/new-carmen/backend/internal/domain"
 	"github.com/new-carmen/backend/pkg/chromadb"
 	"github.com/new-carmen/backend/pkg/github"
 )
@@ -91,6 +94,60 @@ func (s *IndexingService) IncrementalIndexing() error {
 		// In a real implementation, you'd check if already indexed
 		if err := s.IndexDocument(0, file.Content, metadata); err != nil {
 			log.Printf("Failed to index file %s: %v", file.Path, err)
+		}
+	}
+
+	return nil
+}
+
+// ProcessGitHubPush ประมวลผล GitHub push event แบบ incremental
+// - ดูเฉพาะไฟล์ .md ที่ถูก added / modified
+// - โหลด content ผ่าน GitHub API
+// - ส่งเข้า IndexDocument (ChromaDB)
+func (s *IndexingService) ProcessGitHubPush(payload *domain.GitHubPushPayload) error {
+	if payload == nil {
+		return fmt.Errorf("nil payload")
+	}
+
+	// รวม path ที่ถูกเพิ่ม/แก้ไข
+	changed := map[string]struct{}{}
+	for _, c := range payload.Commits {
+		for _, p := range c.Added {
+			changed[p] = struct{}{}
+		}
+		for _, p := range c.Modified {
+			changed[p] = struct{}{}
+		}
+	}
+
+	if len(changed) == 0 {
+		log.Println("[indexing] GitHub push: no added/modified files, nothing to index")
+		return nil
+	}
+
+	log.Printf("[indexing] GitHub push: %d changed files", len(changed))
+
+	for path := range changed {
+		// สนใจเฉพาะ Markdown
+		if ext := strings.ToLower(filepath.Ext(path)); ext != ".md" {
+			continue
+		}
+
+		file, err := s.githubClient.GetFileContent(path)
+		if err != nil {
+			log.Printf("[indexing] failed to load %s: %v", path, err)
+			continue
+		}
+
+		metadata := map[string]interface{}{
+			"path": file.Path,
+			"type": "markdown",
+		}
+
+		if err := s.IndexDocument(0, file.Content, metadata); err != nil {
+			log.Printf("[indexing] failed to index %s: %v", path, err)
+		} else {
+			log.Printf("[indexing] indexed %s", path)
 		}
 	}
 

@@ -49,10 +49,12 @@ type ChromaDBConfig struct {
 }
 
 type GitHubConfig struct {
-	Token    string
-	Owner    string
-	Repo     string
-	Branch   string
+	Token           string
+	Owner           string
+	Repo            string
+	Branch          string
+	WebhookSecret   string
+	WebhookBranch   string
 }
 
 type GitConfig struct {
@@ -97,10 +99,13 @@ func Load() error {
 			Collection: getEnv("CHROMADB_COLLECTION", "carmen_documents"),
 		},
 		GitHub: GitHubConfig{
-			Token:  getEnv("GITHUB_TOKEN", ""),
-			Owner:  getEnv("GITHUB_REPO_OWNER", ""),
-			Repo:   getEnv("GITHUB_REPO_NAME", ""),
-			Branch: getEnv("GITHUB_BRANCH", "main"),
+			Token:         getEnv("GITHUB_TOKEN", ""),
+			Owner:         getEnv("GITHUB_REPO_OWNER", ""),
+			Repo:          getEnv("GITHUB_REPO_NAME", ""),
+			Branch:        getEnv("GITHUB_BRANCH", "main"),
+			WebhookSecret: getEnv("GITHUB_WEBHOOK_SECRET", ""),
+			// ถ้าไม่ตั้ง GITHUB_WEBHOOK_BRANCH จะใช้ค่าเดียวกับ GITHUB_BRANCH
+			WebhookBranch: getEnv("GITHUB_WEBHOOK_BRANCH", getEnv("GITHUB_BRANCH", "main")),
 		},
 		Git: GitConfig{
 			RepoPath: getEnv("GIT_REPO_PATH", "./wiki-content"),

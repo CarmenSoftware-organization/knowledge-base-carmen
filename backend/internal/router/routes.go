@@ -24,6 +24,10 @@ func SetupRoutes(app *fiber.App) {
 	auth.Post("/register", authHandler.Register)
 	auth.Post("/login", authHandler.Login)
 
+	// GitHub Webhook (public) - ใช้สำหรับ push event แล้วให้ backend index เอง
+	githubWebhookHandler := api.NewGitHubWebhookHandler()
+	app.Post("/webhook/github", githubWebhookHandler.HandlePush)
+
 	// --- Public API (SRS Frontend) ไม่ต้อง login ---
 	searchHandler := api.NewSearchHandler()
 	app.Post("/api/search", searchHandler.SearchPublic)
