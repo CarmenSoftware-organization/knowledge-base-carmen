@@ -8,7 +8,7 @@
 *.out
 /bin/
 
-# Environment
+# Environment (อย่า commit — มี secret เช่น GITHUB_TOKEN, DB_PASSWORD)
 .env
 .env.local
 .env.*.local
