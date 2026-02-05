@@ -22,7 +22,7 @@ func SetupRoutes(app *fiber.App) {
 	// RegisterPublicSearch(app)
 	// RegisterPublicCategories(app)
 	// RegisterPublicArticles(app)
-	// RegisterPublicChat(app)
+	RegisterPublicChat(app) // ใช้ Chroma + Ollama, ไม่ใช้ DB
 	// apiGroup := app.Group("/api", middleware.AuthMiddleware())
 	// RegisterDocuments(apiGroup)
 	// RegisterSearchProtected(apiGroup)

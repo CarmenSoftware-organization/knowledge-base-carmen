@@ -1,37 +1,96 @@
-// POST /api/chat/ask — ยังไม่ใช้ (เปิดเมื่อมี DB)
+// POST /api/chat/ask — เวอร์ชันไม่ใช้ DB
 package api
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/models"
-	"github.com/new-carmen/backend/internal/services"
+	"github.com/new-carmen/backend/pkg/chromadb"
+	"github.com/new-carmen/backend/pkg/ollama"
 )
 
+// ChatHandler ดึง context จาก Chroma แล้วให้ Ollama สร้างคำตอบ (ไม่ใช้ DB)
 type ChatHandler struct {
-	searchService *services.SearchService
+	chroma *chromadb.Client
+	llm    *ollama.Client
 }
 
 func NewChatHandler() *ChatHandler {
-	return &ChatHandler{searchService: services.NewSearchService()}
+	return &ChatHandler{
+		chroma: chromadb.NewClient(),
+		llm:    ollama.NewClient(),
+	}
 }
 
 // Ask POST /api/chat/ask
+// body: { "question": "..." }
+// response: { "answer": "...", "sources": [ { "articleId": "...", "title": "..." } ] }
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	var req models.ChatAskRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
-	if req.Question == "" {
+	q := strings.TrimSpace(req.Question)
+	if q == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "question is required"})
 	}
-	answer, sources, err := h.searchService.ChatAsk(req.Question)
+
+	// 1) ดึง context จาก Chroma
+	queryResp, err := h.chroma.Query(q, 5)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   err.Error(),
+			"error":   "failed to query ChromaDB: " + err.Error(),
 			"answer":  "",
 			"sources": []models.ChatSource{},
 		})
 	}
+
+	// 2) รวม context เป็นข้อความยาวให้ LLM ใช้ตอบ
+	var contextBuilder strings.Builder
+	sources := make([]models.ChatSource, 0)
+	if len(queryResp.Documents) > 0 {
+		docs := queryResp.Documents[0]
+		ids := []string{}
+		if len(queryResp.IDs) > 0 {
+			ids = queryResp.IDs[0]
+		}
+
+		for i, doc := range docs {
+			contextBuilder.WriteString("\n--- Context ")
+			contextBuilder.WriteString(strconv.Itoa(i + 1))
+			contextBuilder.WriteString(" ---\n")
+			contextBuilder.WriteString(doc)
+			contextBuilder.WriteString("\n")
+
+			// สร้าง sources แบบง่าย ๆ จากบรรทัดแรกของเอกสาร
+			lines := strings.Split(doc, "\n")
+			title := strings.TrimSpace(lines[0])
+			articleID := ""
+			if i < len(ids) {
+				articleID = ids[i]
+			}
+			if title != "" {
+				sources = append(sources, models.ChatSource{
+					ArticleID: articleID,
+					Title:     title,
+				})
+			}
+		}
+	}
+	context := contextBuilder.String()
+
+	// 3) ให้ Ollama สร้างคำตอบจาก context + question
+	answer, err := h.llm.GenerateAnswer(context, q)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "failed to generate answer: " + err.Error(),
+			"answer":  "",
+			"sources": sources,
+		})
+	}
+
 	return c.JSON(models.ChatAskResponse{
 		Answer:  answer,
 		Sources: sources,
