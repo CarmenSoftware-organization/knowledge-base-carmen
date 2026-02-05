@@ -1,4 +1,4 @@
-name: Sync wiki-content into main
+name: Sync wiki-content into main (carmen_cloud only)
 
 on:
   push:
@@ -10,29 +10,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Merge wiki-content into main
+      - name: Configure Git
         run: |
           git config user.name "CI Sync Bot"
           git config user.email "ci-sync@example.com"
 
-          # Ensure we are on main and up to date
-          git checkout main
+      - name: Update main branch
+        run: |
           git fetch origin main
+          git checkout main
           git reset --hard origin/main
 
-          # Fetch latest wiki-content
+      - name: Sync carmen_cloud from wiki-content
+        run: |
           git fetch origin wiki-content
 
-          # Merge wiki-content into main
-          # ใช้ --allow-unrelated-histories รอบแรกเพราะ main กับ wiki-content เคยเป็น history คนละสายกัน
-          # หลังจาก merge ครั้งแรกแล้ว history จะเชื่อมกัน การรันครั้งต่อ ๆ ไปจะเป็น merge ปกติ
-          git merge --allow-unrelated-histories origin/wiki-content
+          # ดึงเฉพาะโฟลเดอร์ carmen_cloud จาก wiki-content
+          git checkout origin/wiki-content -- carmen_cloud
 
-          # Push updated main back to GitHub
+          git add carmen_cloud
+
+          # ถ้าไม่มีการเปลี่ยนแปลง จะไม่ commit
+          git commit -m "docs: sync carmen_cloud from wiki-content" || echo "No changes to commit"
+
+      - name: Push changes to main
+        run: |
           git push origin main
-
