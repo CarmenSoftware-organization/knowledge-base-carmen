@@ -15,7 +15,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Merge wiki-content into main (fast-forward only)
+      - name: Merge wiki-content into main
         run: |
           git config user.name "CI Sync Bot"
           git config user.email "ci-sync@example.com"
@@ -28,8 +28,10 @@ jobs:
           # Fetch latest wiki-content
           git fetch origin wiki-content
 
-          # Fast-forward main to origin/wiki-content (fails if non-FF)
-          git merge --ff-only origin/wiki-content
+          # Merge wiki-content into main
+          # ใช้ --allow-unrelated-histories รอบแรกเพราะ main กับ wiki-content เคยเป็น history คนละสายกัน
+          # หลังจาก merge ครั้งแรกแล้ว history จะเชื่อมกัน การรันครั้งต่อ ๆ ไปจะเป็น merge ปกติ
+          git merge --allow-unrelated-histories origin/wiki-content
 
           # Push updated main back to GitHub
           git push origin main
