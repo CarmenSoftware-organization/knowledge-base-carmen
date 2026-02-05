@@ -20,7 +20,7 @@ export function KBHeader() {
               <MessageCircle className="h-5 w-5 text-primary-foreground" />
             </div>
             <div className="hidden sm:block">
-              <span className="text-xl font-bold text-foreground">Jupyter</span>
+              <span className="text-xl font-bold text-foreground">Carment Software</span>
               <span className="ml-1.5 text-sm text-muted-foreground">
                 Knowledge Base
               </span>
