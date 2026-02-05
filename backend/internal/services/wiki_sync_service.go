@@ -1,0 +1,80 @@
+// Sync Job: git pull wiki-content ลง GIT_REPO_PATH — ไม่ใช้ DB
+package services
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+
+	"github.com/new-carmen/backend/internal/config"
+)
+
+// WikiSyncService รัน git pull (หรือ clone ถ้ายังไม่มี) ให้โฟลเดอร์ wiki-content อัปเดต
+type WikiSyncService struct {
+	repoPath string
+	repoURL  string
+	branch   string
+}
+
+func NewWikiSyncService() *WikiSyncService {
+	cfg := config.AppConfig
+	repoPath := filepath.Clean(cfg.Git.RepoPath)
+	if repoPath == "" || repoPath == "." {
+		repoPath = "./wiki-content"
+	}
+	repoURL := cfg.Git.RepoURL
+	if repoURL == "" && cfg.GitHub.Owner != "" && cfg.GitHub.Repo != "" {
+		repoURL = fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Owner, cfg.GitHub.Repo)
+	}
+	branch := cfg.GitHub.Branch
+	if branch == "" {
+		branch = "wiki-content"
+	}
+	return &WikiSyncService{
+		repoPath: repoPath,
+		repoURL:  repoURL,
+		branch:   branch,
+	}
+}
+
+// Sync ทำ git pull origin <branch> ใน repoPath ถ้ายังไม่มีโฟลเดอร์หรือไม่ใช่ git repo จะลอง clone ก่อน
+func (s *WikiSyncService) Sync() error {
+	// ถ้าโฟลเดอร์ไม่มีหรือไม่มี .git → clone
+	if _, err := os.Stat(filepath.Join(s.repoPath, ".git")); os.IsNotExist(err) {
+		return s.clone()
+	}
+	return s.pull()
+}
+
+func (s *WikiSyncService) clone() error {
+	if s.repoURL == "" {
+		return fmt.Errorf("GIT_REPO_URL or GitHub Owner/Repo not set")
+	}
+	if err := os.MkdirAll(s.repoPath, 0755); err != nil && !os.IsExist(err) {
+		return err
+	}
+	// clone ลงโฟลเดอร์ repoPath โดยตรง (url . = clone ใส่ current dir)
+	cmd := exec.Command("git", "clone", "--depth", "1", "-b", s.branch, s.repoURL, ".")
+	cmd.Dir = s.repoPath
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("[wiki-sync] clone failed: %s", out)
+		return fmt.Errorf("git clone: %w", err)
+	}
+	log.Printf("[wiki-sync] cloned %s (branch %s) to %s", s.repoURL, s.branch, s.repoPath)
+	return nil
+}
+
+func (s *WikiSyncService) pull() error {
+	cmd := exec.Command("git", "pull", "origin", s.branch)
+	cmd.Dir = s.repoPath
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("[wiki-sync] pull failed: %s", out)
+		return fmt.Errorf("git pull: %w", err)
+	}
+	log.Printf("[wiki-sync] pulled %s", string(out))
+	return nil
+}
