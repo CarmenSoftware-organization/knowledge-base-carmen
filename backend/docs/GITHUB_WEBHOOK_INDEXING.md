@@ -27,7 +27,7 @@ Wiki.js ──(Git Sync)──▶ GitHub Repo ──(push)──▶ GitHub Webho
 
 - Handler: `internal/api/github_webhook_handler.go` → `GitHubWebhookHandler.HandlePush`
 - Service: `internal/services/indexing_service.go` → `IndexingService.ProcessGitHubPush`
-- Payload struct: `internal/domain/github_webhook.go`
+- Payload struct: `internal/models/github_webhook.go`
 
 พฤติกรรม:
 

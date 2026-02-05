@@ -1,3 +1,4 @@
+// POST /webhook/github — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package api
 
 import (
@@ -10,7 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/config"
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
 )
 
@@ -48,7 +49,7 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 		}
 	}
 
-	var payload domain.GitHubPushPayload
+	var payload models.GitHubPushPayload
 	if err := c.BodyParser(&payload); err != nil {
 		// fallback ถ้า BodyParser ใช้ rawBody อยู่แล้วก็ถือว่า error จริง
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

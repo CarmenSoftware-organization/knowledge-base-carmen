@@ -1,10 +1,11 @@
+// Search public + protected (analyze, get, context) — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package api
 
 import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
 )
 
@@ -19,7 +20,7 @@ func NewSearchHandler() *SearchHandler {
 }
 
 func (h *SearchHandler) AnalyzeClarity(c *fiber.Ctx) error {
-	var req domain.ClarificationRequest
+	var req models.ClarificationRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -91,7 +92,7 @@ func (h *SearchHandler) SearchWithContext(c *fiber.Ctx) error {
 
 // SearchPublic POST /api/search (body: {"query": "..."})
 func (h *SearchHandler) SearchPublic(c *fiber.Ctx) error {
-	var req domain.SearchPublicRequest
+	var req models.SearchPublicRequest
 	if err := c.BodyParser(&req); err != nil {
 		req.Query = c.Query("q", "")
 	}

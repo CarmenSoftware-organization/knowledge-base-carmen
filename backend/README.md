@@ -13,7 +13,7 @@ backend/
 │   ├── config/              # Configuration management
 │   ├── database/            # Database connection & migrations
 │   ├── models/              # Data models
-│   ├── repositories/        # Data access layer
+│   ├── storage/             # Data access layer
 │   ├── services/            # Business logic layer
 │   │   ├── auth/           # Authentication service
 │   │   ├── document/       # Document management

@@ -1,3 +1,4 @@
+// Auth + Role middleware (JWT) — ยังไม่ใช้ (เปิดเมื่อมี DB + ลง route ที่ต้อง login)
 package middleware
 
 import (

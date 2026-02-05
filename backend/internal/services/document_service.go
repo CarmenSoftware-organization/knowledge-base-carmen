@@ -1,19 +1,20 @@
+// CRUD เอกสาร ใช้ storage — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package services
 
 import (
 	"errors"
 
-	domain "github.com/new-carmen/backend/internal/domain"
-	"github.com/new-carmen/backend/internal/repositories"
+	"github.com/new-carmen/backend/internal/models"
+	"github.com/new-carmen/backend/internal/storage"
 )
 
 type DocumentService struct {
-	docRepo *repositories.DocumentRepository
+	docRepo *storage.DocumentRepository
 }
 
 func NewDocumentService() *DocumentService {
 	return &DocumentService{
-		docRepo: repositories.NewDocumentRepository(),
+		docRepo: storage.NewDocumentRepository(),
 	}
 }
 
@@ -39,8 +40,8 @@ type CreateVersionRequest struct {
 	CreatedBy   uint64 `json:"created_by"`
 }
 
-func (s *DocumentService) CreateDocument(req CreateDocumentRequest) (*domain.Document, error) {
-	document := &domain.Document{
+func (s *DocumentService) CreateDocument(req CreateDocumentRequest) (*models.Document, error) {
+	document := &models.Document{
 		Title:       req.Title,
 		Description: req.Description,
 		OwnerID:     req.OwnerID,
@@ -55,11 +56,11 @@ func (s *DocumentService) CreateDocument(req CreateDocumentRequest) (*domain.Doc
 	return document, nil
 }
 
-func (s *DocumentService) GetDocument(id uint64) (*domain.Document, error) {
+func (s *DocumentService) GetDocument(id uint64) (*models.Document, error) {
 	return s.docRepo.GetByID(id)
 }
 
-func (s *DocumentService) UpdateDocument(id uint64, req UpdateDocumentRequest) (*domain.Document, error) {
+func (s *DocumentService) UpdateDocument(id uint64, req UpdateDocumentRequest) (*models.Document, error) {
 	document, err := s.docRepo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -81,7 +82,7 @@ func (s *DocumentService) DeleteDocument(id uint64) error {
 	return s.docRepo.Delete(id)
 }
 
-func (s *DocumentService) AddVersion(req CreateVersionRequest) (*domain.DocumentVersion, error) {
+func (s *DocumentService) AddVersion(req CreateVersionRequest) (*models.DocumentVersion, error) {
 	// Get latest version
 	latest, err := s.docRepo.GetLatestVersion(req.DocumentID)
 	versionNum := 1
@@ -89,7 +90,7 @@ func (s *DocumentService) AddVersion(req CreateVersionRequest) (*domain.Document
 		versionNum = latest.Version + 1
 	}
 
-	version := &domain.DocumentVersion{
+	version := &models.DocumentVersion{
 		DocumentID:  req.DocumentID,
 		Version:     versionNum,
 		Content:     req.Content,
@@ -106,7 +107,7 @@ func (s *DocumentService) AddVersion(req CreateVersionRequest) (*domain.Document
 }
 
 func (s *DocumentService) SetPermission(documentID, userID uint64, permission string) error {
-	perm := &domain.DocumentPermission{
+	perm := &models.DocumentPermission{
 		DocumentID: documentID,
 		UserID:     userID,
 		Permission: permission,

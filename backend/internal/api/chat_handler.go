@@ -1,8 +1,9 @@
+// POST /api/chat/ask — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package api
 
 import (
 	"github.com/gofiber/fiber/v2"
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
 )
 
@@ -16,7 +17,7 @@ func NewChatHandler() *ChatHandler {
 
 // Ask POST /api/chat/ask
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {
-	var req domain.ChatAskRequest
+	var req models.ChatAskRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
@@ -28,10 +29,10 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   err.Error(),
 			"answer":  "",
-			"sources": []domain.ChatSource{},
+			"sources": []models.ChatSource{},
 		})
 	}
-	return c.JSON(domain.ChatAskResponse{
+	return c.JSON(models.ChatAskResponse{
 		Answer:  answer,
 		Sources: sources,
 	})

@@ -1,3 +1,4 @@
+// Hash/ตรวจ password ใช้โดย auth — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package utils
 
 import (

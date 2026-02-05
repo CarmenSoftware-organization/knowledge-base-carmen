@@ -1,8 +1,9 @@
+// GET /api/system/status — ใช้อยู่
 package api
 
 import (
 	"github.com/gofiber/fiber/v2"
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 )
 
 type SystemHandler struct{}
@@ -13,7 +14,7 @@ func NewSystemHandler() *SystemHandler {
 
 // Status GET /api/system/status
 func (h *SystemHandler) Status(c *fiber.Ctx) error {
-	return c.JSON(domain.SystemStatusResponse{
+	return c.JSON(models.SystemStatusResponse{
 		Status:  "ok",
 		Message: "",
 	})

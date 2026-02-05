@@ -1,8 +1,9 @@
-package repositories
+// Article feedback repository ใช้ database.DB — ยังไม่ใช้ (เปิดเมื่อมี DB)
+package storage
 
 import (
 	"github.com/new-carmen/backend/internal/database"
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -14,6 +15,6 @@ func NewArticleFeedbackRepository() *ArticleFeedbackRepository {
 	return &ArticleFeedbackRepository{db: database.DB}
 }
 
-func (r *ArticleFeedbackRepository) Create(f *domain.ArticleFeedback) error {
+func (r *ArticleFeedbackRepository) Create(f *models.ArticleFeedback) error {
 	return r.db.Create(f).Error
 }

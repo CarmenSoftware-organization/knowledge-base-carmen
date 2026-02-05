@@ -1,3 +1,4 @@
+// DTO ค้นหา / clarification — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package models
 
 type SearchQuery struct {

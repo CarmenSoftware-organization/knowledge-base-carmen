@@ -6,17 +6,17 @@ Backend ได้เพิ่ม API ตาม SRS Carment-Cloud สำหรั
 
 ## สรุปสิ่งที่ทำ
 
-### 1. Domain & DB
-- **`internal/domain/category.go`** – โมเดล Category (id, name, icon, sort_order)
-- **`internal/domain/article_feedback.go`** – โมเดล ArticleFeedback (document_id, helpful)
-- **`internal/domain/public_api.go`** – DTO สำหรับ request/response ตาม SRS
-- **`internal/domain/document.go`** – เพิ่ม `CategoryID`, `Tags` ใน Document
+### 1. Models & DB
+- **`internal/models/category.go`** – โมเดล Category (id, name, icon, sort_order)
+- **`internal/models/article_feedback.go`** – โมเดล ArticleFeedback (document_id, helpful)
+- **`internal/models/public_api.go`** – DTO สำหรับ request/response ตาม SRS
+- **`internal/models/document.go`** – เพิ่ม `CategoryID`, `Tags` ใน Document
 - **Migration** – ใน `cmd/server/main.go` เพิ่ม migrate สำหรับ Category, ArticleFeedback
 
-### 2. Repositories
-- **`internal/repositories/category_repository.go`** – ListAll, GetByID, CountPublicDocumentsByCategory
-- **`internal/repositories/article_feedback_repository.go`** – Create feedback
-- **`internal/repositories/document_repository.go`** – เพิ่ม SearchPublic, ListPublic, ListPublicByCategory, GetPublicByID, ListPublicTitles, ListPublicRelated
+### 2. Storage
+- **`internal/storage/category_repository.go`** – ListAll, GetByID, CountPublicDocumentsByCategory
+- **`internal/storage/article_feedback_repository.go`** – Create feedback
+- **`internal/storage/document_repository.go`** – เพิ่ม SearchPublic, ListPublic, ListPublicByCategory, GetPublicByID, ListPublicTitles, ListPublicRelated
 
 ### 3. Services
 - **`internal/services/category_service.go`** – ListCategories, GetCategoryByID, ListArticlesByCategory

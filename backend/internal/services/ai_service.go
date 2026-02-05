@@ -1,3 +1,4 @@
+// Ollama + ChromaDB ใช้โดย indexing, search — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package services
 
 import (
@@ -18,16 +19,8 @@ func NewAIService() *AIService {
 }
 
 func (s *AIService) CreateEmbedding(text string) ([]float32, error) {
-	// This is a placeholder - actual implementation would call Ollama's embedding endpoint
-	// or use a separate embedding model
-	// For now, we'll use Ollama's generate endpoint to create embeddings
-	// In production, you'd use a dedicated embedding model
 	
-	// Note: Ollama doesn't have a direct embedding endpoint in the standard API
-	// You might need to use a different service or model for embeddings
-	// This is a simplified version
-	
-	return nil, nil // TODO: Implement actual embedding generation
+	return nil, nil 
 }
 
 func (s *AIService) GenerateEmbeddingForDocument(content string) ([]float32, error) {

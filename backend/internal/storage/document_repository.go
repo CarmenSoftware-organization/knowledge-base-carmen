@@ -1,8 +1,9 @@
-package repositories
+// Document repository ใช้ database.DB — ยังไม่ใช้ (เปิดเมื่อมี DB)
+package storage
 
 import (
 	"github.com/new-carmen/backend/internal/database"
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -16,12 +17,12 @@ func NewDocumentRepository() *DocumentRepository {
 	}
 }
 
-func (r *DocumentRepository) Create(document *domain.Document) error {
+func (r *DocumentRepository) Create(document *models.Document) error {
 	return r.db.Create(document).Error
 }
 
-func (r *DocumentRepository) GetByID(id uint64) (*domain.Document, error) {
-	var document domain.Document
+func (r *DocumentRepository) GetByID(id uint64) (*models.Document, error) {
+	var document models.Document
 	err := r.db.Preload("Owner").Preload("Versions").Preload("Permissions").
 		First(&document, id).Error
 	if err != nil {
@@ -30,26 +31,26 @@ func (r *DocumentRepository) GetByID(id uint64) (*domain.Document, error) {
 	return &document, nil
 }
 
-func (r *DocumentRepository) GetByOwnerID(ownerID uint64) ([]domain.Document, error) {
-	var documents []domain.Document
+func (r *DocumentRepository) GetByOwnerID(ownerID uint64) ([]models.Document, error) {
+	var documents []models.Document
 	err := r.db.Where("owner_id = ?", ownerID).Find(&documents).Error
 	return documents, err
 }
 
-func (r *DocumentRepository) Update(document *domain.Document) error {
+func (r *DocumentRepository) Update(document *models.Document) error {
 	return r.db.Save(document).Error
 }
 
 func (r *DocumentRepository) Delete(id uint64) error {
-	return r.db.Delete(&domain.Document{}, id).Error
+	return r.db.Delete(&models.Document{}, id).Error
 }
 
-func (r *DocumentRepository) AddVersion(version *domain.DocumentVersion) error {
+func (r *DocumentRepository) AddVersion(version *models.DocumentVersion) error {
 	return r.db.Create(version).Error
 }
 
-func (r *DocumentRepository) GetLatestVersion(documentID uint64) (*domain.DocumentVersion, error) {
-	var version domain.DocumentVersion
+func (r *DocumentRepository) GetLatestVersion(documentID uint64) (*models.DocumentVersion, error) {
+	var version models.DocumentVersion
 	err := r.db.Where("document_id = ?", documentID).
 		Order("version DESC").First(&version).Error
 	if err != nil {
@@ -58,12 +59,12 @@ func (r *DocumentRepository) GetLatestVersion(documentID uint64) (*domain.Docume
 	return &version, nil
 }
 
-func (r *DocumentRepository) SetPermission(permission *domain.DocumentPermission) error {
+func (r *DocumentRepository) SetPermission(permission *models.DocumentPermission) error {
 	return r.db.Save(permission).Error
 }
 
-func (r *DocumentRepository) GetPermission(documentID, userID uint64) (*domain.DocumentPermission, error) {
-	var permission domain.DocumentPermission
+func (r *DocumentRepository) GetPermission(documentID, userID uint64) (*models.DocumentPermission, error) {
+	var permission models.DocumentPermission
 	err := r.db.Where("document_id = ? AND user_id = ?", documentID, userID).
 		First(&permission).Error
 	if err != nil {
@@ -72,11 +73,11 @@ func (r *DocumentRepository) GetPermission(documentID, userID uint64) (*domain.D
 	return &permission, nil
 }
 
-func (r *DocumentRepository) Search(query string, limit, offset int) ([]domain.Document, int64, error) {
-	var documents []domain.Document
+func (r *DocumentRepository) Search(query string, limit, offset int) ([]models.Document, int64, error) {
+	var documents []models.Document
 	var total int64
 
-	queryBuilder := r.db.Model(&domain.Document{}).
+	queryBuilder := r.db.Model(&models.Document{}).
 		Where("title ILIKE ? OR description ILIKE ? OR tags ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%")
 
 	if err := queryBuilder.Count(&total).Error; err != nil {
@@ -88,10 +89,10 @@ func (r *DocumentRepository) Search(query string, limit, offset int) ([]domain.D
 }
 
 // SearchPublic ค้นหาเฉพาะ is_public = true, พร้อม Preload Category
-func (r *DocumentRepository) SearchPublic(query string, limit, offset int) ([]domain.Document, int64, error) {
-	var documents []domain.Document
+func (r *DocumentRepository) SearchPublic(query string, limit, offset int) ([]models.Document, int64, error) {
+	var documents []models.Document
 	var total int64
-	q := r.db.Model(&domain.Document{}).Where("is_public = ?", true).
+	q := r.db.Model(&models.Document{}).Where("is_public = ?", true).
 		Where("title ILIKE ? OR description ILIKE ? OR tags ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%")
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -102,10 +103,10 @@ func (r *DocumentRepository) SearchPublic(query string, limit, offset int) ([]do
 
 // --- Public API: เฉพาะ is_public = true ---
 
-func (r *DocumentRepository) ListPublic(limit, offset int) ([]domain.Document, int64, error) {
-	var list []domain.Document
+func (r *DocumentRepository) ListPublic(limit, offset int) ([]models.Document, int64, error) {
+	var list []models.Document
 	var total int64
-	q := r.db.Model(&domain.Document{}).Where("is_public = ?", true)
+	q := r.db.Model(&models.Document{}).Where("is_public = ?", true)
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -113,10 +114,10 @@ func (r *DocumentRepository) ListPublic(limit, offset int) ([]domain.Document, i
 	return list, total, err
 }
 
-func (r *DocumentRepository) ListPublicByCategory(categoryID uint64, sort string, limit, offset int) ([]domain.Document, int64, error) {
-	var list []domain.Document
+func (r *DocumentRepository) ListPublicByCategory(categoryID uint64, sort string, limit, offset int) ([]models.Document, int64, error) {
+	var list []models.Document
 	var total int64
-	q := r.db.Model(&domain.Document{}).Where("is_public = ? AND category_id = ?", true, categoryID)
+	q := r.db.Model(&models.Document{}).Where("is_public = ? AND category_id = ?", true, categoryID)
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -133,8 +134,8 @@ func (r *DocumentRepository) ListPublicByCategory(categoryID uint64, sort string
 	return list, total, err
 }
 
-func (r *DocumentRepository) GetPublicByID(id uint64) (*domain.Document, error) {
-	var doc domain.Document
+func (r *DocumentRepository) GetPublicByID(id uint64) (*models.Document, error) {
+	var doc models.Document
 	err := r.db.Preload("Category").Where("id = ? AND is_public = ?", id, true).First(&doc).Error
 	if err != nil {
 		return nil, err
@@ -151,14 +152,14 @@ func (r *DocumentRepository) ListPublicTitles(limit int) ([]struct {
 		ID    uint64
 		Title string
 	}
-	err := r.db.Model(&domain.Document{}).Select("id, title").
+	err := r.db.Model(&models.Document{}).Select("id, title").
 		Where("is_public = ?", true).Limit(limit).Find(&out).Error
 	return out, err
 }
 
 // ListPublicRelated returns other public documents (same category first, then by updated_at)
-func (r *DocumentRepository) ListPublicRelated(documentID uint64, categoryID *uint64, limit int) ([]domain.Document, error) {
-	var list []domain.Document
+func (r *DocumentRepository) ListPublicRelated(documentID uint64, categoryID *uint64, limit int) ([]models.Document, error) {
+	var list []models.Document
 	q := r.db.Where("is_public = ? AND id != ?", true, documentID)
 	if categoryID != nil && *categoryID > 0 {
 		q = q.Where("category_id = ?", *categoryID)

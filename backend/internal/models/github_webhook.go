@@ -1,3 +1,4 @@
+// Payload ของ GitHub webhook — ยังไม่ใช้ (เปิดเมื่อมี DB + ลง route webhook)
 package models
 
 // GitHubPushPayload แทน payload หลักของ GitHub push event
@@ -24,4 +25,3 @@ type GitHubPushCommit struct {
 	Removed   []string `json:"removed"`
 	Modified  []string `json:"modified"`
 }
-

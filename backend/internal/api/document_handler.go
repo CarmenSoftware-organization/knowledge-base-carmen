@@ -1,3 +1,4 @@
+// CRUD เอกสาร + versions ต้อง login — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package api
 
 import (

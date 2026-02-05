@@ -1,20 +1,21 @@
+// Register, Login ใช้ storage — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package services
 
 import (
 	"errors"
 
-	domain "github.com/new-carmen/backend/internal/domain"
-	"github.com/new-carmen/backend/internal/repositories"
+	"github.com/new-carmen/backend/internal/models"
+	"github.com/new-carmen/backend/internal/storage"
 	"github.com/new-carmen/backend/internal/utils"
 )
 
 type AuthService struct {
-	userRepo *repositories.UserRepository
+	userRepo *storage.UserRepository
 }
 
 func NewAuthService() *AuthService {
 	return &AuthService{
-		userRepo: repositories.NewUserRepository(),
+		userRepo: storage.NewUserRepository(),
 	}
 }
 
@@ -31,7 +32,7 @@ type LoginRequest struct {
 
 type AuthResponse struct {
 	Token string       `json:"token"`
-	User  *domain.User `json:"user"`
+	User  *models.User `json:"user"`
 }
 
 func (s *AuthService) Register(req RegisterRequest) (*AuthResponse, error) {
@@ -48,7 +49,7 @@ func (s *AuthService) Register(req RegisterRequest) (*AuthResponse, error) {
 	}
 
 	// Create user
-	user := &domain.User{
+	user := &models.User{
 		Email:        req.Email,
 		PasswordHash: hashedPassword,
 		Name:         req.Name,

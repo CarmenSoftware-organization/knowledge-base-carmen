@@ -1,10 +1,11 @@
+// บทความ public (popular, recommended, :id, toc, related, feedback) — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package api
 
 import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
 )
 
@@ -53,7 +54,7 @@ func (h *ArticlesPublicHandler) GetRelated(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(domain.RelatedArticlesResponse{Articles: articles})
+	return c.JSON(models.RelatedArticlesResponse{Articles: articles})
 }
 
 // PostFeedback POST /api/articles/:articleId/feedback
@@ -62,7 +63,7 @@ func (h *ArticlesPublicHandler) PostFeedback(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid article ID"})
 	}
-	var req domain.ArticleFeedbackRequest
+	var req models.ArticleFeedbackRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}

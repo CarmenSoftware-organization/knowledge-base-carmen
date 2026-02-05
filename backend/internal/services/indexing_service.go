@@ -1,3 +1,4 @@
+// Index จาก GitHub ใช้ DocumentService/DB — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package services
 
 import (
@@ -6,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/pkg/chromadb"
 	"github.com/new-carmen/backend/pkg/github"
 )
@@ -104,7 +105,7 @@ func (s *IndexingService) IncrementalIndexing() error {
 // - ดูเฉพาะไฟล์ .md ที่ถูก added / modified
 // - โหลด content ผ่าน GitHub API
 // - ส่งเข้า IndexDocument (ChromaDB)
-func (s *IndexingService) ProcessGitHubPush(payload *domain.GitHubPushPayload) error {
+func (s *IndexingService) ProcessGitHubPush(payload *models.GitHubPushPayload) error {
 	if payload == nil {
 		return fmt.Errorf("nil payload")
 	}

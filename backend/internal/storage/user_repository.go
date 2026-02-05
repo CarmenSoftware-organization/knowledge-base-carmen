@@ -1,8 +1,9 @@
-package repositories
+// User repository ใช้ database.DB — ยังไม่ใช้ (เปิดเมื่อมี DB)
+package storage
 
 import (
 	"github.com/new-carmen/backend/internal/database"
-	domain "github.com/new-carmen/backend/internal/domain"
+	"github.com/new-carmen/backend/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -16,12 +17,12 @@ func NewUserRepository() *UserRepository {
 	}
 }
 
-func (r *UserRepository) Create(user *domain.User) error {
+func (r *UserRepository) Create(user *models.User) error {
 	return r.db.Create(user).Error
 }
 
-func (r *UserRepository) GetByID(id uint64) (*domain.User, error) {
-	var user domain.User
+func (r *UserRepository) GetByID(id uint64) (*models.User, error) {
+	var user models.User
 	err := r.db.Preload("Roles").First(&user, id).Error
 	if err != nil {
 		return nil, err
@@ -29,8 +30,8 @@ func (r *UserRepository) GetByID(id uint64) (*domain.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) GetByEmail(email string) (*domain.User, error) {
-	var user domain.User
+func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
+	var user models.User
 	err := r.db.Preload("Roles").Where("email = ?", email).First(&user).Error
 	if err != nil {
 		return nil, err
@@ -38,12 +39,12 @@ func (r *UserRepository) GetByEmail(email string) (*domain.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) Update(user *domain.User) error {
+func (r *UserRepository) Update(user *models.User) error {
 	return r.db.Save(user).Error
 }
 
 func (r *UserRepository) Delete(id uint64) error {
-	return r.db.Delete(&domain.User{}, id).Error
+	return r.db.Delete(&models.User{}, id).Error
 }
 
 func (r *UserRepository) AssignRole(userID uint64, roleID uint) error {

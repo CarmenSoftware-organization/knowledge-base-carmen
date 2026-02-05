@@ -1,3 +1,4 @@
+// CORS — ใช้อยู่
 package middleware
 
 import (

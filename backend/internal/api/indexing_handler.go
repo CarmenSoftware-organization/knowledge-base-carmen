@@ -1,3 +1,4 @@
+// load-github, index-all (admin) — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package api
 
 import (

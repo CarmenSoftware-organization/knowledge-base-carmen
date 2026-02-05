@@ -1,30 +1,31 @@
+// ค้นหา + chat ใช้ storage — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package services
 
 import (
 	"fmt"
 	"strings"
 
-	domain "github.com/new-carmen/backend/internal/domain"
-	"github.com/new-carmen/backend/internal/repositories"
+	"github.com/new-carmen/backend/internal/models"
+	"github.com/new-carmen/backend/internal/storage"
 	"github.com/new-carmen/backend/pkg/chromadb"
 	"github.com/new-carmen/backend/pkg/ollama"
 )
 
 type SearchService struct {
-	docRepo  *repositories.DocumentRepository
+	docRepo  *storage.DocumentRepository
 	ollama   *ollama.Client
 	chromadb *chromadb.Client
 }
 
 func NewSearchService() *SearchService {
 	return &SearchService{
-		docRepo:  repositories.NewDocumentRepository(),
+		docRepo:  storage.NewDocumentRepository(),
 		ollama:   ollama.NewClient(),
 		chromadb: chromadb.NewClient(),
 	}
 }
 
-func (s *SearchService) AnalyzeQuestionClarity(question string) (*domain.ClarificationResponse, error) {
+func (s *SearchService) AnalyzeQuestionClarity(question string) (*models.ClarificationResponse, error) {
 	// Analyze question using Ollama
 	analysis, err := s.ollama.AnalyzeQuestionClarity(question)
 	if err != nil {
@@ -32,7 +33,7 @@ func (s *SearchService) AnalyzeQuestionClarity(question string) (*domain.Clarifi
 	}
 
 	if !analysis.IsAmbiguous {
-		return &domain.ClarificationResponse{
+		return &models.ClarificationResponse{
 			NeedsClarification: false,
 		}, nil
 	}
@@ -48,7 +49,7 @@ func (s *SearchService) AnalyzeQuestionClarity(question string) (*domain.Clarifi
 
 		clarifyingQuestion, _ := s.ollama.GenerateClarifyingQuestion(question, candidates)
 
-		return &domain.ClarificationResponse{
+		return &models.ClarificationResponse{
 			NeedsClarification: true,
 			ClarifyingQuestion: clarifyingQuestion,
 			Options:            candidates,
@@ -86,14 +87,14 @@ func (s *SearchService) AnalyzeQuestionClarity(question string) (*domain.Clarifi
 		clarifyingQuestion = "Could you please clarify what you're looking for?"
 	}
 
-	return &domain.ClarificationResponse{
+	return &models.ClarificationResponse{
 		NeedsClarification: true,
 		ClarifyingQuestion: clarifyingQuestion,
 		Options:            candidates,
 	}, nil
 }
 
-func (s *SearchService) Search(query string, limit, offset int) (*domain.SearchResponse, error) {
+func (s *SearchService) Search(query string, limit, offset int) (*models.SearchResponse, error) {
 	// Hybrid search: Keyword + Semantic
 	// 1. Keyword search in PostgreSQL
 	keywordResults, total, err := s.docRepo.Search(query, limit, offset)
@@ -106,7 +107,7 @@ func (s *SearchService) Search(query string, limit, offset int) (*domain.SearchR
 	if err != nil {
 		// If ChromaDB fails, return keyword results only
 		results := s.formatSearchResults(keywordResults, total, query)
-		return &domain.SearchResponse{
+		return &models.SearchResponse{
 			Results: results,
 			Total:   int(total),
 			Query:   query,
@@ -116,7 +117,7 @@ func (s *SearchService) Search(query string, limit, offset int) (*domain.SearchR
 	// 3. Combine and rank results
 	results := s.combineAndRankResults(keywordResults, chromaResults, query)
 
-	return &domain.SearchResponse{
+	return &models.SearchResponse{
 		Results: results,
 		Total:   int(total),
 		Query:   query,
@@ -153,8 +154,8 @@ func (s *SearchService) SearchWithContext(query string, limit int) (string, erro
 	return answer, nil
 }
 
-func (s *SearchService) formatSearchResults(documents []domain.Document, total int64, query string) []domain.SearchResult {
-	results := make([]domain.SearchResult, 0, len(documents))
+func (s *SearchService) formatSearchResults(documents []models.Document, total int64, query string) []models.SearchResult {
+	results := make([]models.SearchResult, 0, len(documents))
 
 	for _, doc := range documents {
 		// Get latest version for snippet
@@ -175,7 +176,7 @@ func (s *SearchService) formatSearchResults(documents []domain.Document, total i
 			version = latestVersion.Version
 		}
 
-		results = append(results, domain.SearchResult{
+		results = append(results, models.SearchResult{
 			DocumentID: doc.ID,
 			Title:      doc.Title,
 			Snippet:    snippet,
@@ -189,17 +190,17 @@ func (s *SearchService) formatSearchResults(documents []domain.Document, total i
 }
 
 func (s *SearchService) combineAndRankResults(
-	keywordResults []domain.Document,
+	keywordResults []models.Document,
 	chromaResults *chromadb.QueryResponse,
 	query string,
-) []domain.SearchResult {
+) []models.SearchResult {
 	// Create a map of document IDs from keyword results
-	keywordMap := make(map[uint64]domain.Document)
+	keywordMap := make(map[uint64]models.Document)
 	for _, doc := range keywordResults {
 		keywordMap[doc.ID] = doc
 	}
 
-	results := make([]domain.SearchResult, 0)
+	results := make([]models.SearchResult, 0)
 
 	// Process ChromaDB results (higher relevance)
 	if len(chromaResults.Documents) > 0 && len(chromaResults.Distances) > 0 {
@@ -225,7 +226,7 @@ func (s *SearchService) combineAndRankResults(
 				snippet = snippet[:200] + "..."
 			}
 
-			results = append(results, domain.SearchResult{
+			results = append(results, models.SearchResult{
 				DocumentID: 0, // Will be matched later if possible
 				Title:      title,
 				Snippet:    snippet,
@@ -262,7 +263,7 @@ func (s *SearchService) combineAndRankResults(
 				version = latestVersion.Version
 			}
 
-			results = append(results, domain.SearchResult{
+			results = append(results, models.SearchResult{
 				DocumentID: doc.ID,
 				Title:      doc.Title,
 				Snippet:    snippet,
@@ -279,7 +280,7 @@ func (s *SearchService) combineAndRankResults(
 // --- Public API (SRS format) ---
 
 // SearchPublic ค้นหาเฉพาะ public documents คืนค่าเป็น SearchPublicResponse
-func (s *SearchService) SearchPublic(query string, limit, offset int) (*domain.SearchPublicResponse, error) {
+func (s *SearchService) SearchPublic(query string, limit, offset int) (*models.SearchPublicResponse, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -290,7 +291,7 @@ func (s *SearchService) SearchPublic(query string, limit, offset int) (*domain.S
 	if err != nil {
 		return nil, err
 	}
-	results := make([]domain.SearchResultPublic, 0, len(docs))
+	results := make([]models.SearchResultPublic, 0, len(docs))
 	for i, doc := range docs {
 		latest, _ := s.docRepo.GetLatestVersion(doc.ID)
 		snippet := ""
@@ -308,7 +309,7 @@ func (s *SearchService) SearchPublic(query string, limit, offset int) (*domain.S
 		if score < 0.3 {
 			score = 0.3
 		}
-		results = append(results, domain.SearchResultPublic{
+		results = append(results, models.SearchResultPublic{
 			ID:       fmt.Sprintf("%d", doc.ID),
 			Title:    doc.Title,
 			Snippet:  snippet,
@@ -317,7 +318,7 @@ func (s *SearchService) SearchPublic(query string, limit, offset int) (*domain.S
 			Score:    score,
 		})
 	}
-	return &domain.SearchPublicResponse{Results: results}, nil
+	return &models.SearchPublicResponse{Results: results}, nil
 }
 
 // GetPopularSearches คืนรายการคำค้นยอดนิยม (ตอนนี้ใช้ค่าตายตัว)
@@ -353,7 +354,7 @@ func (s *SearchService) GetSuggest(q string, limit int) ([]string, error) {
 }
 
 // ChatAsk สำหรับ POST /api/chat/ask - ตอบคำถามจาก Knowledge Base + คืน sources
-func (s *SearchService) ChatAsk(question string) (answer string, sources []domain.ChatSource, err error) {
+func (s *SearchService) ChatAsk(question string) (answer string, sources []models.ChatSource, err error) {
 	// ดึง context จาก search (ChromaDB + keyword)
 	answer, err = s.SearchWithContext(question, 5)
 	if err != nil {
@@ -361,9 +362,9 @@ func (s *SearchService) ChatAsk(question string) (answer string, sources []domai
 	}
 	// หา documents ที่เกี่ยวข้องเป็น sources
 	docs, _, _ := s.docRepo.SearchPublic(question, 5, 0)
-	sources = make([]domain.ChatSource, 0, len(docs))
+	sources = make([]models.ChatSource, 0, len(docs))
 	for _, d := range docs {
-		sources = append(sources, domain.ChatSource{
+		sources = append(sources, models.ChatSource{
 			ArticleID: fmt.Sprintf("%d", d.ID),
 			Title:     d.Title,
 		})

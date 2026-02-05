@@ -1,3 +1,4 @@
+// โมเดล User / Role — ยังไม่ใช้ (เปิดเมื่อมี DB)
 package models
 
 import (

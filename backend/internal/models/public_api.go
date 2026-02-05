@@ -1,3 +1,4 @@
+// DTO request/response ของ Public API — ใช้อยู่ (SystemStatusResponse ใช้โดย GET /api/system/status)
 package models
 // POST /api/search
 type SearchPublicRequest struct {

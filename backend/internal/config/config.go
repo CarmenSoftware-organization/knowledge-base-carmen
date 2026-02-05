@@ -1,3 +1,4 @@
+// โหลด config จาก .env — ใช้อยู่
 package config
 
 import (
@@ -78,6 +79,7 @@ func Load() error {
 			Host:        getEnv("SERVER_HOST", "localhost"),
 			Environment: getEnv("ENVIRONMENT", "development"),
 		},
+		// ไม่ใช้เมื่อปิด DB ใน main.go (เปิดเมื่อพร้อมใช้ DB/role)
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
