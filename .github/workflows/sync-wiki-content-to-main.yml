@@ -1,5 +1,8 @@
 name: Sync wiki-content into main (carmen_cloud only)
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -29,14 +32,9 @@ jobs:
       - name: Sync carmen_cloud from wiki-content
         run: |
           git fetch origin wiki-content
-
-          # ดึงเฉพาะโฟลเดอร์ carmen_cloud จาก wiki-content
           git checkout origin/wiki-content -- carmen_cloud
-
           git add carmen_cloud
-
-          # ถ้าไม่มีการเปลี่ยนแปลง จะไม่ commit
-          git commit -m "docs: sync carmen_cloud from wiki-content" || echo "No changes to commit"
+          git commit -m "docs: sync carmen_cloud from wiki-content" || echo "No changes"
 
       - name: Push changes to main
         run: |
