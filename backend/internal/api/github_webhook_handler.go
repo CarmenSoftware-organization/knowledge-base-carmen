@@ -17,11 +17,13 @@ import (
 
 type GitHubWebhookHandler struct {
 	indexingService *services.IndexingService
+	syncService     *services.WikiSyncService
 }
 
 func NewGitHubWebhookHandler() *GitHubWebhookHandler {
 	return &GitHubWebhookHandler{
 		indexingService: services.NewIndexingService(),
+		syncService:     services.NewWikiSyncService(),
 	}
 }
 
@@ -66,15 +68,23 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.indexingService.ProcessGitHubPush(&payload); err != nil {
-		log.Printf("[webhook] indexing error: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	// 1) git pull อัปเดตโฟลเดอร์ wiki-content → frontend เรียก API ได้ข้อมูลใหม่
+	if err := h.syncService.Sync(); err != nil {
+		log.Printf("[webhook] wiki sync (git pull) error: %v", err)
+		// ยังทำ index ต่อได้
 	}
 
+	// 2) (ถ้าต้องการให้ backend index เข้า Chroma เอง ให้เปิดส่วนนี้)
+	// ตอนนี้ปิดไว้ เพราะใช้ Chroma Cloud GitHub sync อยู่แล้ว ไม่อยาก index ซ้ำซ้อน
+	// if err := h.indexingService.ProcessGitHubPush(&payload); err != nil {
+	// 	log.Printf("[webhook] indexing error: %v", err)
+	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+	// 		"error": err.Error(),
+	// 	})
+	// }
+
 	return c.JSON(fiber.Map{
-		"message": "webhook processed",
+		"message": "webhook processed (wiki-content pulled; Chroma Cloud sync handles vectors)",
 	})
 }
 

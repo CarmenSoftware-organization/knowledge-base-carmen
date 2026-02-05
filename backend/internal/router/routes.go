@@ -14,11 +14,11 @@ func SetupRoutes(app *fiber.App) {
 	// Public (ไม่ใช้ DB)
 	RegisterHealth(app)
 	RegisterPublicSystem(app)
-	RegisterWiki(app) // อ่านจาก repo wiki-content (local หรือ GitHub)
+	RegisterWiki(app)   // อ่านจาก repo wiki-content (local หรือ GitHub)
+	RegisterWebhook(app) // เมื่อมี push ที่ wiki-content → git pull + index Chroma อัตโนมัติ
 
 	// --- ปิดไว้เมื่อยังไม่มี DB/role (เปิดเมื่อ config DB แล้ว — ต้องเปิดใน cmd/server/main.go ด้วย) ---
 	// RegisterAuth(app)
-	// RegisterWebhook(app)
 	// RegisterPublicSearch(app)
 	// RegisterPublicCategories(app)
 	// RegisterPublicArticles(app)

@@ -13,6 +13,9 @@ import (
 type Client struct {
 	BaseURL    string
 	Collection string
+	apiKey     string
+	tenant     string
+	database   string
 	client     *http.Client
 }
 
@@ -40,6 +43,9 @@ func NewClient() *Client {
 	return &Client{
 		BaseURL:    cfg.URL,
 		Collection: cfg.Collection,
+		apiKey:     cfg.APIKey,
+		tenant:     cfg.Tenant,
+		database:   cfg.Database,
 		client:     &http.Client{},
 	}
 }
@@ -57,7 +63,22 @@ func (c *Client) Add(ids []string, documents []string, metadatas []map[string]in
 	}
 
 	url := fmt.Sprintf("%s/api/v1/collections/%s/add", c.BaseURL, c.Collection)
-	resp, err := c.client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.apiKey != "" {
+		req.Header.Set("X-Chroma-Api-Key", c.apiKey)
+	}
+	if c.tenant != "" {
+		req.Header.Set("X-Chroma-Tenant", c.tenant)
+	}
+	if c.database != "" {
+		req.Header.Set("X-Chroma-Database", c.database)
+	}
+
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
@@ -84,7 +105,22 @@ func (c *Client) Query(queryText string, nResults int) (*QueryResponse, error) {
 	}
 
 	url := fmt.Sprintf("%s/api/v1/collections/%s/query", c.BaseURL, c.Collection)
-	resp, err := c.client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.apiKey != "" {
+		req.Header.Set("X-Chroma-Api-Key", c.apiKey)
+	}
+	if c.tenant != "" {
+		req.Header.Set("X-Chroma-Tenant", c.tenant)
+	}
+	if c.database != "" {
+		req.Header.Set("X-Chroma-Database", c.database)
+	}
+
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}

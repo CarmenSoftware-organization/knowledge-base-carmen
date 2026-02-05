@@ -1,0 +1,36 @@
+name: Sync wiki-content into main
+
+on:
+  push:
+    branches:
+      - wiki-content
+
+jobs:
+  sync-to-main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge wiki-content into main (fast-forward only)
+        run: |
+          git config user.name "CI Sync Bot"
+          git config user.email "ci-sync@example.com"
+
+          # Ensure we are on main and up to date
+          git checkout main
+          git fetch origin main
+          git reset --hard origin/main
+
+          # Fetch latest wiki-content
+          git fetch origin wiki-content
+
+          # Fast-forward main to origin/wiki-content (fails if non-FF)
+          git merge --ff-only origin/wiki-content
+
+          # Push updated main back to GitHub
+          git push origin main
+

@@ -47,6 +47,9 @@ type OllamaConfig struct {
 type ChromaDBConfig struct {
 	URL        string
 	Collection string
+	APIKey     string
+	Tenant     string
+	Database   string
 }
 
 type GitHubConfig struct {
@@ -99,6 +102,9 @@ func Load() error {
 		ChromaDB: ChromaDBConfig{
 			URL:        getEnv("CHROMADB_URL", "http://localhost:8000"),
 			Collection: getEnv("CHROMADB_COLLECTION", "carmen_documents"),
+			APIKey:     getEnv("CHROMADB_API_KEY", ""),
+			Tenant:     getEnv("CHROMADB_TENANT", ""),
+			Database:   getEnv("CHROMADB_DATABASE", ""),
 		},
 		GitHub: GitHubConfig{
 			Token:         getEnv("GITHUB_TOKEN", ""),
