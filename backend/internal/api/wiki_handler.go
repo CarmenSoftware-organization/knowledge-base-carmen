@@ -57,12 +57,16 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	return c.JSON(content)
 }
 
-// Sync POST /api/wiki/sync — รัน git pull (หรือ clone) อัปเดตโฟลเดอร์ wiki-content
-func (h *WikiHandler) Sync(c *fiber.Ctx) error {
-	if err := h.syncService.Sync(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-	return c.JSON(fiber.Map{"ok": true, "message": "synced"})
-}
+
+//อันนี้สหรับเทสดึงแบบเเมนนวลนะเช่นจะทำปุ่มไว้ดึงหน้าเว็บ 
+
+// // Sync POST /api/wiki/sync — รัน git pull (หรือ clone) อัปเดตโฟลเดอร์ wiki-content
+// func (h *WikiHandler) Sync(c *fiber.Ctx) error {
+// 	if err := h.syncService.Sync(); err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"error": err.Error(),
+// 		})
+// 	}
+// 	return c.JSON(fiber.Map{"ok": true, "message": "synced"})
+// }
+
