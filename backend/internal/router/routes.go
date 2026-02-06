@@ -1,4 +1,4 @@
-// ลงทะเบียน route ทั้งหมด — ใช้อยู่ (ลงแค่ Health + System status เมื่อปิด DB)
+// ลงทะเบียน route ทั้งหมด — ใช้อยู่ 
 package router
 
 import (
@@ -7,7 +7,6 @@ import (
 )
 
 func SetupRoutes(app *fiber.App) {
-	// Global middleware
 	app.Use(middleware.Logger())
 	app.Use(middleware.CORS())
 

@@ -1,4 +1,4 @@
-// GET /api/system/status — ใช้อยู่
+// GET /api/system/status 
 package router
 
 import (

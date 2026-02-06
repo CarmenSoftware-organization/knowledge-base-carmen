@@ -1,4 +1,4 @@
-// API อ่านจาก repo wiki-content (ไม่ใช้ DB) — ให้ frontend ดึงข้อมูล carmen-cloud
+// API ฝั่ง content docs ที่ frontend จะใช้
 package api
 
 import (

@@ -1,4 +1,4 @@
-// Entry point — ตอนปิด DB จะรันแค่ GET /health + GET /api/system/status
+
 package main
 
 import (

@@ -1,4 +1,4 @@
-// POST /webhook/github — ยังไม่ใช้ (เปิดเมื่อมี DB)
+// รับ GitHub Webhook (event push), เช็ค branch, แล้วสั่งให้ไป git pull repo wiki-content ผ่าน WikiSyncService
 package api
 
 import (
@@ -18,7 +18,7 @@ type GitHubWebhookHandler struct {
 	syncService *services.WikiSyncService
 }
 
-// gitHubPushPayload ใช้เท่าที่ต้องการ (ref) เพื่อตรวจ branch
+// gitHubPushPayload ใช้เพื่อตรวจ branch
 type gitHubPushPayload struct {
 	Ref string `json:"ref"`
 }
@@ -55,7 +55,6 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 
 	var payload gitHubPushPayload
 	if err := c.BodyParser(&payload); err != nil {
-		// fallback ถ้า BodyParser ใช้ rawBody อยู่แล้วก็ถือว่า error จริง
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid payload",
 		})
@@ -70,20 +69,10 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 		})
 	}
 
-	// 1) git pull อัปเดตโฟลเดอร์ wiki-content → frontend เรียก API ได้ข้อมูลใหม่
+	//git pull อัปเดตโฟลเดอร์ wiki-content → frontend เรียก API ได้ข้อมูลใหม่
 	if err := h.syncService.Sync(); err != nil {
 		log.Printf("[webhook] wiki sync (git pull) error: %v", err)
-		// ยังทำ index ต่อได้
 	}
-
-	// 2) (ถ้าต้องการให้ backend index เข้า Chroma เอง ให้เปิดส่วนนี้)
-	// ตอนนี้ปิดไว้ เพราะใช้ Chroma Cloud GitHub sync อยู่แล้ว ไม่อยาก index ซ้ำซ้อน
-	// if err := h.indexingService.ProcessGitHubPush(&payload); err != nil {
-	// 	log.Printf("[webhook] indexing error: %v", err)
-	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-	// 		"error": err.Error(),
-	// 	})
-	// }
 
 	return c.JSON(fiber.Map{
 		"message": "webhook processed (wiki-content pulled; Chroma Cloud sync handles vectors)",

@@ -1,4 +1,4 @@
-// GET /health — ใช้อยู่
+// GET /health 
 package router
 
 import (

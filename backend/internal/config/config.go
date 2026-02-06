@@ -1,4 +1,6 @@
-// โหลด config จาก .env — ใช้อยู่
+// โครงสร้าง config ทั้งระบบ (อ่านจาก .env) เช่น port, path wiki, GitHub, Chroma, Ollama ฯลฯ
+// ใช้ผ่าน config.AppConfig
+
 package config
 
 import (

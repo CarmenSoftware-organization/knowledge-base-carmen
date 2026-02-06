@@ -1,4 +1,9 @@
-// Sync Job: git pull wiki-content ลง GIT_REPO_PATH — ไม่ใช้ DB
+// logic ที่คุยกับ Git (ผ่านคำสั่ง git) ถ้ายังไม่มี repo → clone
+// ถ้ามีแล้ว → git pull
+// ใช้โดย:
+// wiki_handler (POST /api/wiki/sync)
+// github_webhook_handler (ตอนโดน webhook
+
 package services
 
 import (
@@ -41,7 +46,6 @@ func NewWikiSyncService() *WikiSyncService {
 
 // Sync ทำ git pull origin <branch> ใน repoPath ถ้ายังไม่มีโฟลเดอร์หรือไม่ใช่ git repo จะลอง clone ก่อน
 func (s *WikiSyncService) Sync() error {
-	// ถ้าโฟลเดอร์ไม่มีหรือไม่มี .git → clone
 	if _, err := os.Stat(filepath.Join(s.repoPath, ".git")); os.IsNotExist(err) {
 		return s.clone()
 	}

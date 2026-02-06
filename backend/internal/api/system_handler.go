@@ -1,4 +1,4 @@
-// GET /api/system/status — ใช้อยู่
+// เอาไว้เช็คว่า backend ยัง OK ไหม (status: "ok")
 package api
 
 import (

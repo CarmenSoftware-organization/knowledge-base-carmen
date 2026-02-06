@@ -1,4 +1,4 @@
-// POST /api/chat/ask — เวอร์ชันไม่ใช้ DB
+// ใช้ดึง context จาก Chroma + ส่งให้ Ollama ตอบ → ใช้ทำ chatbot
 package api
 
 import (
@@ -11,7 +11,6 @@ import (
 	"github.com/new-carmen/backend/pkg/ollama"
 )
 
-// ChatHandler ดึง context จาก Chroma แล้วให้ Ollama สร้างคำตอบ (ไม่ใช้ DB)
 type ChatHandler struct {
 	chroma *chromadb.Client
 	llm    *ollama.Client
@@ -24,9 +23,6 @@ func NewChatHandler() *ChatHandler {
 	}
 }
 
-// Ask POST /api/chat/ask
-// body: { "question": "..." }
-// response: { "answer": "...", "sources": [ { "articleId": "...", "title": "..." } ] }
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	var req models.ChatAskRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -64,7 +60,6 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 			contextBuilder.WriteString(doc)
 			contextBuilder.WriteString("\n")
 
-			// สร้าง sources แบบง่าย ๆ จากบรรทัดแรกของเอกสาร
 			lines := strings.Split(doc, "\n")
 			title := strings.TrimSpace(lines[0])
 			articleID := ""

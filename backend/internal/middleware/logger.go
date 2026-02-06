@@ -1,4 +1,4 @@
-// Logger — ใช้อยู่
+// Logger middleware (log request: method, path, status code บลาๆๆ)
 package middleware
 
 import (

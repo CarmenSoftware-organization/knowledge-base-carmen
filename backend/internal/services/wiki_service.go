@@ -1,4 +1,9 @@
-// อ่านจาก repo wiki-content (local หรือ GitHub) — ไม่ใช้ DB
+// logic อ่านไฟล์ markdown จากโฟลเดอร์ backend/wiki-conten
+// มีฟังก์ชัน:
+// list รายการไฟล์
+// อ่านเนื้อหาไฟล์ตาม path
+// แปลงข้อมูลให้อยู่ในรูปที่ API ส่งให้ frontend
+
 package services
 
 import (
@@ -12,8 +17,8 @@ import (
 
 // WikiEntry รายการไฟล์สำหรับ frontend
 type WikiEntry struct {
-	Path  string `json:"path"`  // path สัมพันธ์ เช่น "docs/hello.md"
-	Title string `json:"title"` // จากชื่อไฟล์หรือ heading แรก
+	Path  string `json:"path"` 
+	Title string `json:"title"` 
 }
 
 // WikiContent เนื้อหาไฟล์

@@ -1,4 +1,4 @@
-// การเชื่อมต่อ DB (PostgreSQL ผ่าน GORM) — ยังไม่ใช้ (เปิดเมื่อมี DB ใน main.go)
+// การเชื่อมต่อ DB (PostgreSQL ผ่าน GORM) (เปิดเมื่อมี DB ใน main.go)
 package database
 
 import (
@@ -22,7 +22,7 @@ func Connect() error {
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent), // ไม่พิมพ์ SQL ตอนรัน
+		Logger: logger.Default.LogMode(logger.Silent), 
 	})
 
 	if err != nil {
