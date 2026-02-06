@@ -11,19 +11,21 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
 )
 
 type GitHubWebhookHandler struct {
-	indexingService *services.IndexingService
-	syncService     *services.WikiSyncService
+	syncService *services.WikiSyncService
+}
+
+// gitHubPushPayload ใช้เท่าที่ต้องการ (ref) เพื่อตรวจ branch
+type gitHubPushPayload struct {
+	Ref string `json:"ref"`
 }
 
 func NewGitHubWebhookHandler() *GitHubWebhookHandler {
 	return &GitHubWebhookHandler{
-		indexingService: services.NewIndexingService(),
-		syncService:     services.NewWikiSyncService(),
+		syncService: services.NewWikiSyncService(),
 	}
 }
 
@@ -51,7 +53,7 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 		}
 	}
 
-	var payload models.GitHubPushPayload
+	var payload gitHubPushPayload
 	if err := c.BodyParser(&payload); err != nil {
 		// fallback ถ้า BodyParser ใช้ rawBody อยู่แล้วก็ถือว่า error จริง
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
