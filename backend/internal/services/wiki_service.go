@@ -18,8 +18,10 @@ import (
 
 // WikiEntry รายการไฟล์สำหรับ frontend
 type WikiEntry struct {
-	Path  string `json:"path"`
-	Title string `json:"title"`
+	Path        string   `json:"path"`
+	Title       string   `json:"title"`
+	Tags        []string `json:"tags,omitempty"`
+	PublishedAt string   `json:"publishedAt,omitempty"`
 }
 
 // CategoryEntry หมวดสำหรับ GET /api/wiki/categories (frontend ใช้ slug map กับชื่อ/icon/สีเอง)
@@ -29,16 +31,20 @@ type CategoryEntry struct {
 
 // CategoryItem บทความในหมวด สำหรับ GET /api/wiki/category/:slug
 type CategoryItem struct {
-	Slug  string `json:"slug"`
-	Title string `json:"title"`
-	Path  string `json:"path"`
+	Slug        string   `json:"slug"`
+	Title       string   `json:"title"`
+	Path        string   `json:"path"`
+	Tags        []string `json:"tags,omitempty"`
+	PublishedAt string   `json:"publishedAt,omitempty"`
 }
 
 // WikiContent เนื้อหาไฟล์
 type WikiContent struct {
-	Path    string `json:"path"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	Path        string   `json:"path"`
+	Title       string   `json:"title"`
+	Content     string   `json:"content"`
+	Tags        []string `json:"tags,omitempty"`
+	PublishedAt string   `json:"publishedAt,omitempty"`
 }
 
 type WikiService struct {
