@@ -9,6 +9,7 @@ import (
 func RegisterWiki(app *fiber.App) {
 	wikiHandler := api.NewWikiHandler()
 	app.Get("/api/wiki/list", wikiHandler.List)
+	app.Get("/api/wiki/categories", wikiHandler.ListCategories)
+	app.Get("/api/wiki/category/:slug", wikiHandler.GetCategory)
 	app.Get("/api/wiki/content/*", wikiHandler.GetContent)
-	// app.Post("/api/wiki/sync", wikiHandler.Sync)
 }
