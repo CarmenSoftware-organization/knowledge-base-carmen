@@ -1,4 +1,4 @@
-// ใช้ดึง context จาก Chroma + ส่งให้ Ollama ตอบ → ใช้ทำ chatbot
+// ใช้ดึง context จาก pgvector + ส่งให้ Ollama ตอบ → ใช้ทำ chatbot
 package api
 
 import (

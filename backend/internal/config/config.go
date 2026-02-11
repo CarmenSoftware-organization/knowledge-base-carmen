@@ -1,4 +1,4 @@
-// โครงสร้าง config ทั้งระบบ (อ่านจาก .env) เช่น port, path wiki, GitHub, Chroma, Ollama ฯลฯ
+// โครงสร้าง config ทั้งระบบ (อ่านจาก .env) เช่น port, path wiki, GitHub, Ollama ฯลฯ
 // ใช้ผ่าน config.AppConfig
 
 package config
@@ -15,9 +15,8 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	JWT      JWTConfig
-	Ollama   OllamaConfig
-	ChromaDB ChromaDBConfig
-	GitHub   GitHubConfig
+	Ollama OllamaConfig
+	GitHub GitHubConfig
 	Git      GitConfig
 }
 
@@ -104,13 +103,6 @@ func Load() error {
 			ChatModel:          getEnv("OLLAMA_CHAT_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
 			EmbedModel:         getEnv("OLLAMA_EMBED_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
 			InsecureSkipVerify: getEnvAsBool("OLLAMA_INSECURE_SKIP_VERIFY", false),
-		},
-		ChromaDB: ChromaDBConfig{
-			URL:        getEnv("CHROMADB_URL", "http://localhost:8000"),
-			Collection: getEnv("CHROMADB_COLLECTION", "carmen_documents"),
-			APIKey:     getEnv("CHROMADB_API_KEY", ""),
-			Tenant:     getEnv("CHROMADB_TENANT", ""),
-			Database:   getEnv("CHROMADB_DATABASE", ""),
 		},
 		GitHub: GitHubConfig{
 			Token:         getEnv("GITHUB_TOKEN", ""),
