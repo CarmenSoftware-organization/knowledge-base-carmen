@@ -2,10 +2,12 @@ package ollama
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/new-carmen/backend/internal/config"
 )
@@ -16,20 +18,32 @@ type Client struct {
 	client  *http.Client
 }
 
-type GenerateRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
-	Stream bool   `json:"stream"`
+/* =========================
+   Chat (ใช้แทน Generate)
+   ========================= */
+
+type ChatRequest struct {
+	Model    string        `json:"model"`
+	Messages []ChatMessage `json:"messages"`
+	Stream   bool          `json:"stream"`
 }
 
-type GenerateResponse struct {
-	Response string `json:"response"`
-	Done     bool   `json:"done"`
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
-type AnalyzeRequest struct {
-	Question string `json:"question"`
+type ChatResponse struct {
+	Message struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"message"`
+	Done bool `json:"done"`
 }
+
+/* =========================
+   Analyze (logic เดิม)
+   ========================= */
 
 type AnalyzeResponse struct {
 	IsAmbiguous bool     `json:"is_ambiguous"`
@@ -37,65 +51,122 @@ type AnalyzeResponse struct {
 	Candidates  []string `json:"candidates,omitempty"`
 }
 
+/* =========================
+   Embeddings
+   ========================= */
+
+type EmbeddingsRequest struct {
+	Model  string `json:"model"`
+	Prompt string `json:"prompt"`
+}
+
+type EmbeddingsResponse struct {
+	Embedding []float32 `json:"embedding"`
+}
+
+/* =========================
+   Constructor
+   ========================= */
+
+func httpClientForOllama() *http.Client {
+	cfg := config.AppConfig.Ollama
+	if !cfg.InsecureSkipVerify {
+		return &http.Client{}
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+}
+
 func NewClient() *Client {
 	cfg := config.AppConfig.Ollama
 	return &Client{
 		BaseURL: cfg.URL,
-		Model:   cfg.Model,
-		client:  &http.Client{},
+		Model:   cfg.ChatModel,
+		client:  httpClientForOllama(),
 	}
 }
 
-func (c *Client) Generate(prompt string) (string, error) {
-	reqBody := GenerateRequest{
+func NewEmbedClient() *Client {
+	cfg := config.AppConfig.Ollama
+	return &Client{
+		BaseURL: cfg.URL,
+		Model:   cfg.EmbedModel,
+		client:  httpClientForOllama(),
+	}
+}
+
+/* =========================
+   Core Chat Method (ตัวหลัก)
+   ========================= */
+
+func (c *Client) chat(prompt string) (string, error) {
+	reqBody := ChatRequest{
 		Model:  c.Model,
-		Prompt: prompt,
 		Stream: false,
+		Messages: []ChatMessage{
+			{Role: "user", Content: prompt},
+		},
 	}
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
+		return "", fmt.Errorf("failed to marshal chat request: %w", err)
 	}
 
 	resp, err := c.client.Post(
-		fmt.Sprintf("%s/api/generate", c.BaseURL),
+		fmt.Sprintf("%s/api/chat", c.BaseURL),
 		"application/json",
 		bytes.NewBuffer(jsonData),
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
+		return "", fmt.Errorf("failed to send chat request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("ollama chat error %d: %s", resp.StatusCode, string(body))
 	}
 
-	var generateResp GenerateResponse
-	if err := json.Unmarshal(body, &generateResp); err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %w", err)
+	var result ChatResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode chat response: %w", err)
 	}
 
-	return generateResp.Response, nil
+	return result.Message.Content, nil
+}
+
+/* =========================
+   Public API (ใช้เหมือนเดิม)
+   ========================= */
+
+func (c *Client) GenerateAnswer(context string, question string) (string, error) {
+	prompt := fmt.Sprintf(
+		"Based on the following context, answer the question.\n\nContext:\n%s\n\nQuestion:\n%s\n\nAnswer:",
+		context, question,
+	)
+	return c.chat(prompt)
 }
 
 func (c *Client) AnalyzeQuestionClarity(question string) (*AnalyzeResponse, error) {
 	prompt := fmt.Sprintf(
 		"Analyze if this question is ambiguous or unclear: '%s'. "+
-			"Respond with JSON: {\"is_ambiguous\": true/false, \"reason\": \"...\", \"candidates\": [...]}",
+			"Respond with JSON only in this format: "+
+			"{\"is_ambiguous\": true/false, \"reason\": \"...\", \"candidates\": [...]}",
 		question,
 	)
 
-	response, err := c.Generate(prompt)
+	response, err := c.chat(prompt)
 	if err != nil {
 		return nil, err
 	}
 
 	var analyzeResp AnalyzeResponse
 	if err := json.Unmarshal([]byte(response), &analyzeResp); err != nil {
-		// If JSON parsing fails, assume not ambiguous
+		// fallback: ถือว่าไม่ ambiguous
 		return &AnalyzeResponse{IsAmbiguous: false}, nil
 	}
 
@@ -103,30 +174,77 @@ func (c *Client) AnalyzeQuestionClarity(question string) (*AnalyzeResponse, erro
 }
 
 func (c *Client) GenerateClarifyingQuestion(question string, candidates []string) (string, error) {
-	candidatesStr := ""
+	list := ""
 	for i, c := range candidates {
 		if i > 0 {
-			candidatesStr += ", "
+			list += ", "
 		}
-		candidatesStr += fmt.Sprintf("%d. %s", i+1, c)
+		list += fmt.Sprintf("%d. %s", i+1, c)
 	}
 
 	prompt := fmt.Sprintf(
 		"Generate a clarifying question for this ambiguous question: '%s'. "+
-			"Possible meanings: %s. "+
-			"Create a clear, concise question that helps the user specify what they mean.",
-		question, candidatesStr,
+			"Possible meanings: %s.",
+		question, list,
 	)
 
-	return c.Generate(prompt)
+	return c.chat(prompt)
 }
 
-func (c *Client) GenerateAnswer(context string, question string) (string, error) {
-	prompt := fmt.Sprintf(
-		"Based on the following context, answer the question. "+
-			"Context: %s\n\nQuestion: %s\n\nAnswer:",
-		context, question,
-	)
+/* =========================
+   Embedding (ไม่แตะ)
+   ========================= */
 
-	return c.Generate(prompt)
+func (c *Client) Embedding(text string) ([]float32, error) {
+	reqBody := EmbeddingsRequest{
+		Model:  c.Model,
+		Prompt: text,
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal embeddings request: %w", err)
+	}
+
+	resp, err := c.client.Post(
+		fmt.Sprintf("%s/api/embeddings", c.BaseURL),
+		"application/json",
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send embeddings request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read embeddings response: %w", err)
+	}
+
+	if resp.StatusCode >= 300 {
+		snippet := string(body)
+		if len(snippet) > 300 {
+			snippet = snippet[:300] + "..."
+		}
+		return nil, fmt.Errorf("ollama embeddings API error %d: %s", resp.StatusCode, snippet)
+	}
+
+	var embResp EmbeddingsResponse
+	if err := json.Unmarshal(body, &embResp); err != nil {
+		snippet := string(body)
+		if len(snippet) > 300 {
+			snippet = snippet[:300] + "..."
+		}
+		return nil, fmt.Errorf("failed to unmarshal embeddings response: %w (body: %s)", err, snippet)
+	}
+
+	if len(embResp.Embedding) == 0 {
+		snippet := strings.TrimSpace(string(body))
+		if len(snippet) > 400 {
+			snippet = snippet[:400] + "..."
+		}
+		return nil, fmt.Errorf("ollama returned empty embedding (model=%s, response: %s)", c.Model, snippet)
+	}
+
+	return embResp.Embedding, nil
 }

@@ -42,8 +42,10 @@ type JWTConfig struct {
 }
 
 type OllamaConfig struct {
-	URL   string
-	Model string
+	URL                  string
+	ChatModel            string
+	EmbedModel           string
+	InsecureSkipVerify   bool // true = ยอมรับ TLS certificate ไม่ตรง (ใช้กับ VM ที่ใช้ self-signed)
 }
 
 type ChromaDBConfig struct {
@@ -98,8 +100,10 @@ func Load() error {
 			Expiry: getEnv("JWT_EXPIRY", "24h"),
 		},
 		Ollama: OllamaConfig{
-			URL:   getEnv("OLLAMA_URL", "http://localhost:11434"),
-			Model: getEnv("OLLAMA_MODEL", "llama2"),
+			URL:                getEnv("OLLAMA_URL", "http://localhost:11434"),
+			ChatModel:          getEnv("OLLAMA_CHAT_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
+			EmbedModel:         getEnv("OLLAMA_EMBED_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
+			InsecureSkipVerify: getEnvAsBool("OLLAMA_INSECURE_SKIP_VERIFY", false),
 		},
 		ChromaDB: ChromaDBConfig{
 			URL:        getEnv("CHROMADB_URL", "http://localhost:8000"),

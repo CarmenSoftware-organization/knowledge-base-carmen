@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/config"
+	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/router"
 )
 
@@ -13,6 +14,11 @@ func main() {
 	// Load configuration
 	if err := config.Load(); err != nil {
 		log.Fatal("Failed to load config:", err)
+	}
+
+	// Connect database (Neon / Postgres + pgvector)
+	if err := database.Connect(); err != nil {
+		log.Fatal("Failed to connect database:", err)
 	}
 
 	// Create Fiber app

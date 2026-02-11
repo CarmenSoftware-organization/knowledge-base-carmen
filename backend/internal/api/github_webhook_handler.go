@@ -2,12 +2,14 @@
 package api
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/config"
@@ -15,7 +17,8 @@ import (
 )
 
 type GitHubWebhookHandler struct {
-	syncService *services.WikiSyncService
+	syncService     *services.WikiSyncService
+	indexingService *services.IndexingService
 }
 
 // gitHubPushPayload ใช้เพื่อตรวจ branch
@@ -25,7 +28,8 @@ type gitHubPushPayload struct {
 
 func NewGitHubWebhookHandler() *GitHubWebhookHandler {
 	return &GitHubWebhookHandler{
-		syncService: services.NewWikiSyncService(),
+		syncService:     services.NewWikiSyncService(),
+		indexingService: services.NewIndexingService(),
 	}
 }
 
@@ -69,13 +73,22 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 		})
 	}
 
-	//git pull อัปเดตโฟลเดอร์ wiki-content → frontend เรียก API ได้ข้อมูลใหม่
+	// 1) git pull อัปเดตโฟลเดอร์ wiki-content → frontend เรียก API ได้ข้อมูลใหม่
 	if err := h.syncService.Sync(); err != nil {
 		log.Printf("[webhook] wiki sync (git pull) error: %v", err)
 	}
 
+	// 2) เรียก indexingService ให้เขียนข้อมูลเข้า Postgres/pgvector
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		if err := h.indexingService.IndexAll(ctx); err != nil {
+			log.Printf("[webhook] indexing error: %v", err)
+		}
+	}()
+
 	return c.JSON(fiber.Map{
-		"message": "webhook processed (wiki-content pulled; Chroma Cloud sync handles vectors)",
+		"message": "webhook processed (wiki-content pulled and reindex triggered)",
 	})
 }
 
