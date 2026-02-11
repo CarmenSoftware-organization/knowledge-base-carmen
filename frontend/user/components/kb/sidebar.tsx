@@ -1,101 +1,63 @@
 "use client";
 
-import React from "react"
-
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ChevronDown,
-  ChevronRight,
-  BookOpen,
-  Settings,
-  Users,
-  HelpCircle,
-  Zap,
-  Shield,
-} from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { getCategories, getCategory } from "@/lib/wiki-api";
+
+interface Article {
+  title: string;
+  slug: string;
+}
 
 interface Category {
   name: string;
   slug: string;
-  icon: React.ReactNode;
-  articles: { title: string; slug: string }[];
+  articles: Article[];
 }
-
-const categories: Category[] = [
-  {
-    name: "เริ่มต้นใช้งาน",
-    slug: "getting-started",
-    icon: <BookOpen className="h-4 w-4" />,
-    articles: [
-      { title: "แนะนำ Jupyter Chatbot", slug: "introduction" },
-      { title: "การติดตั้งและตั้งค่าเบื้องต้น", slug: "installation" },
-      { title: "คู่มือการใช้งานครั้งแรก", slug: "first-use" },
-    ],
-  },
-  {
-    name: "การจัดการระบบ",
-    slug: "admin-guide",
-    icon: <Settings className="h-4 w-4" />,
-    articles: [
-      { title: "การตั้งค่าผู้ดูแลระบบ", slug: "admin-setup" },
-      { title: "การจัดการผู้ใช้งาน", slug: "user-management" },
-      { title: "การปรับแต่งคำตอบ", slug: "customize-responses" },
-    ],
-  },
-  {
-    name: "การจัดการผู้ใช้",
-    slug: "user-management",
-    icon: <Users className="h-4 w-4" />,
-    articles: [
-      { title: "การเพิ่มผู้ใช้ใหม่", slug: "add-user" },
-      { title: "การกำหนดสิทธิ์", slug: "permissions" },
-      { title: "การลบผู้ใช้", slug: "remove-user" },
-    ],
-  },
-  {
-    name: "คำถามที่พบบ่อย",
-    slug: "faq",
-    icon: <HelpCircle className="h-4 w-4" />,
-    articles: [
-      { title: "ปัญหาการเข้าสู่ระบบ", slug: "login-issues" },
-      { title: "Bot ไม่ตอบคำถาม", slug: "bot-not-responding" },
-      { title: "การรีเซ็ตรหัสผ่าน", slug: "reset-password" },
-    ],
-  },
-  {
-    name: "ฟีเจอร์ขั้นสูง",
-    slug: "advanced",
-    icon: <Zap className="h-4 w-4" />,
-    articles: [
-      { title: "การเชื่อมต่อ API", slug: "api-integration" },
-      { title: "Webhooks", slug: "webhooks" },
-      { title: "การวิเคราะห์ข้อมูล", slug: "analytics" },
-    ],
-  },
-  {
-    name: "ความปลอดภัย",
-    slug: "security",
-    icon: <Shield className="h-4 w-4" />,
-    articles: [
-      { title: "นโยบายความปลอดภัย", slug: "security-policy" },
-      { title: "การเข้ารหัสข้อมูล", slug: "encryption" },
-      { title: "การสำรองข้อมูล", slug: "backup" },
-    ],
-  },
-];
 
 export function KBSidebar() {
   const pathname = usePathname();
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([
-    "getting-started",
-  ]);
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function loadSidebar() {
+      try {
+        const res = await getCategories();
+
+        const loaded: Category[] = [];
+
+        for (const cat of res.items) {
+          const catRes = await getCategory(cat.slug);
+
+          loaded.push({
+            name: cat.slug.toUpperCase(),
+            slug: cat.slug,
+            articles: catRes.items.map((item: any) => ({
+              title: item.title,
+              slug: item.slug,
+            })),
+          });
+        }
+
+        setCategories(loaded);
+      } catch (err) {
+        console.error("Sidebar error:", err);
+      }
+    }
+
+    loadSidebar();
+  }, []);
 
   const toggleCategory = (slug: string) => {
     setExpandedCategories((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+      prev.includes(slug)
+        ? prev.filter((s) => s !== slug)
+        : [...prev, slug]
     );
   };
 
@@ -117,10 +79,8 @@ export function KBSidebar() {
                     : "text-foreground hover:bg-secondary"
                 )}
               >
-                <span className="flex items-center gap-2">
-                  {category.icon}
-                  {category.name}
-                </span>
+                <span>{category.name}</span>
+
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 ) : (
@@ -158,5 +118,3 @@ export function KBSidebar() {
     </aside>
   );
 }
-
-export { categories };

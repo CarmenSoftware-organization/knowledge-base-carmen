@@ -12,7 +12,7 @@ export function KBFooter() {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
                 <MessageCircle className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Jupyter</span>
+              <span className="text-xl font-bold text-foreground">Carmen</span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-md">
               ศูนย์รวมความรู้และคู่มือการใช้งานสำหรับ Jupyter Chatbot
