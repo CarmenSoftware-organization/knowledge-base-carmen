@@ -10,16 +10,10 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Carmen Knowledge Base',
   description: 'ศูนย์รวมความรู้และคู่มือการใช้งานสำหรับ Carmen Chatbot',
-  generator: 'v0.app',
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
+        url: '/carmen-logo.jpeg',
       },
       {
         url: '/icon.svg',

@@ -52,9 +52,6 @@ export function KBHeader() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/categories">หมวดหมู่</Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/articles/sample">บทความตัวอย่าง</Link>
-            </Button>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -101,14 +98,6 @@ export function KBHeader() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Link href="/categories">หมวดหมู่</Link>
-              </Button>
-              <Button
-                variant="ghost"
-                className="justify-start"
-                asChild
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Link href="/articles/sample">บทความตัวอย่าง</Link>
               </Button>
             </nav>
           </div>
