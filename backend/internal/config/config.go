@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -127,17 +128,48 @@ func Load() error {
 
 // GetWikiContentPath คืน path ที่ใช้อ่าน markdown + serve /wiki-assets
 // ถ้า WIKI_CONTENT_PATH ตั้งไว้ใช้ค่านั้น ไม่ว่างใช้ RepoPath/carmen_cloud ถ้ามีโฟลเดอร์อยู่ ไม่ใช่ใช้ RepoPath
+// Normalize path ให้เป็น absolute หรือ relative ที่ชัดเจน (มี ./ นำหน้าถ้าเป็น relative)
 func GetWikiContentPath() string {
 	c := AppConfig.Git
+	var basePath string
+	
 	if c.ContentPath != "" {
-		return filepath.Clean(c.ContentPath)
+		basePath = c.ContentPath
+	} else {
+		basePath = c.RepoPath
+		// ถ้า RepoPath ไม่ว่าง ให้เช็คว่ามี carmen_cloud subdirectory ไหม
+		if basePath != "" {
+			repo := normalizePath(basePath)
+			sub := filepath.Join(repo, "carmen_cloud")
+			if st, err := os.Stat(sub); err == nil && st.IsDir() {
+				return normalizePath(sub)
+			}
+		}
 	}
-	repo := filepath.Clean(c.RepoPath)
-	sub := filepath.Join(repo, "carmen_cloud")
-	if st, err := os.Stat(sub); err == nil && st.IsDir() {
-		return sub
+	
+	return normalizePath(basePath)
+}
+
+// normalizePath ทำให้ path เป็น absolute หรือ relative ที่ชัดเจน
+// ถ้า path ไม่มี / หรือ \ นำหน้า และไม่ใช่ absolute path ให้เพิ่ม ./ นำหน้า
+func normalizePath(path string) string {
+	if path == "" {
+		return "./wiki-content"
 	}
-	return repo
+	
+	// ถ้าเป็น absolute path (เริ่มด้วย / หรือ drive letter) คืนเลย
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+	
+	// ถ้าเป็น relative path แต่ไม่มี ./ หรือ ../ นำหน้า ให้เพิ่ม ./
+	clean := filepath.Clean(path)
+	if !strings.HasPrefix(clean, ".") && !strings.HasPrefix(clean, "/") {
+		// ถ้าไม่มี . หรือ / นำหน้า ให้เพิ่ม ./
+		return "./" + clean
+	}
+	
+	return clean
 }
 
 func getEnv(key, defaultValue string) string {
@@ -147,13 +179,6 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-func getEnvAsInt(key string, defaultValue int) int {
-	valueStr := getEnv(key, "")
-	if value, err := strconv.Atoi(valueStr); err == nil {
-		return value
-	}
-	return defaultValue
-}
 
 func getEnvAsBool(key string, defaultValue bool) bool {
 	valueStr := getEnv(key, "")

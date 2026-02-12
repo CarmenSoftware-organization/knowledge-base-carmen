@@ -110,38 +110,6 @@ func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
 
 
 // ListByCategory คืนบทความในหมวด slug (path ขึ้นต้นด้วย slug/ หรือ path == slug)
-// func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error) {
-// 	entries, err := s.ListMarkdown()
-// 	if err != nil {
-// 		return "", nil, err
-// 	}
-
-// 	const root = "carmen_cloud"
-
-// 	prefix := root + "/" + slug + "/"
-// 	var list []CategoryItem
-
-// 	for _, e := range entries {
-// 		if strings.HasPrefix(e.Path, prefix) {
-// 			itemSlug := strings.TrimSuffix(
-// 				filepath.Base(e.Path),
-// 				filepath.Ext(e.Path),
-// 			)
-
-// 			list = append(list, CategoryItem{
-// 				Slug:  itemSlug,
-// 				Title: e.Title,
-// 				Path:  e.Path,
-// 			})
-// 		}
-// 	}
-
-// 	sort.Slice(list, func(i, j int) bool {
-// 		return list[i].Path < list[j].Path
-// 	})
-
-// 	return slug, list, nil
-// }
 func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error) {
 	entries, err := s.ListMarkdown()
 	if err != nil {
@@ -173,14 +141,7 @@ func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error
 
 
 
-func firstPathSegment(path string) string {
-	path = filepath.ToSlash(path)
-	i := strings.Index(path, "/")
-	if i < 0 {
-		return strings.TrimSuffix(path, filepath.Ext(path))
-	}
-	return path[:i]
-}
+
 
 func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 	root := filepath.Clean(s.repoPath)
@@ -219,22 +180,6 @@ func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 	return entries, nil
 }
 
-func (s *WikiService) listFromGitHub() ([]WikiEntry, error) {
-	paths, err := s.githubClient.ListMarkdownFiles()
-	if err != nil {
-		return nil, err
-	}
-	entries := make([]WikiEntry, 0, len(paths))
-	for _, p := range paths {
-		base := filepath.Base(p)
-		title := strings.TrimSuffix(base, filepath.Ext(base))
-		title = strings.ReplaceAll(title, "-", " ")
-		title = strings.ReplaceAll(title, "_", " ")
-		entries = append(entries, WikiEntry{Path: p, Title: title})
-	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Path < entries[j].Path })
-	return entries, nil
-}
 
 // GetContent อ่านเนื้อหาตาม path (สัมพันธ์) จาก local ก่อน ไม่ได้ค่อยลอง GitHub
 func (s *WikiService) GetContent(relPath string) (*WikiContent, error) {
