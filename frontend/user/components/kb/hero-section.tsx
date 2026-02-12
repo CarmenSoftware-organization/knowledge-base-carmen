@@ -4,6 +4,8 @@ import { Search, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { findBestArticleForQuery } from "@/lib/wiki-api";
 
 const popularSearches = [
   "วิธีเริ่มต้นใช้งาน",
@@ -14,6 +16,27 @@ const popularSearches = [
 
 export function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  async function handleSearch(e?: React.FormEvent) {
+    e?.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+
+    setLoading(true);
+    try {
+      const { route } = await findBestArticleForQuery(q);
+      if (route) {
+        router.push(route);
+      } else {
+        // ถ้าไม่เจอบทความที่ตรงเลย ให้พาไปหน้าหมวดหมู่รวมก่อน
+        router.push("/categories");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background py-16 sm:py-24">
@@ -43,22 +66,26 @@ export function HeroSection() {
 
         {/* Search Box */}
         <div className="mt-10 max-w-xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="ค้นหาบทความ, คู่มือ, หรือคำถาม..."
-              className="h-14 pl-12 pr-32 text-base bg-card border-border shadow-lg rounded-2xl"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Button
-              size="lg"
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl"
-            >
-              ค้นหา
-            </Button>
-          </div>
+          <form onSubmit={handleSearch}>
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="ค้นหาบทความ, คู่มือ, หรือคำถาม..."
+                className="h-14 pl-12 pr-32 text-base bg-card border-border shadow-lg rounded-2xl"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Button
+                type="submit"
+                size="lg"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl"
+                disabled={loading}
+              >
+                {loading ? "กำลังค้นหา..." : "ค้นหา"}
+              </Button>
+            </div>
+          </form>
 
           {/* Popular Searches */}
           <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -66,7 +93,11 @@ export function HeroSection() {
             {popularSearches.map((term) => (
               <button
                 key={term}
-                onClick={() => setSearchQuery(term)}
+                onClick={() => {
+                  setSearchQuery(term);
+                  // กดคำยอดนิยมแล้วค้นหาเลย
+                  void handleSearch();
+                }}
                 className="text-sm text-primary hover:underline"
               >
                 {term}

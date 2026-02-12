@@ -2,6 +2,17 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /* =========================
+   Types
+========================= */
+
+export type WikiListItem = {
+  path: string;
+  title: string;
+  tags?: string[];
+  publishedAt?: string;
+};
+
+/* =========================
    Categories
 ========================= */
 
@@ -41,6 +52,76 @@ export async function getCategory(slug: string): Promise<{
   }
 
   return res.json();
+}
+
+/* =========================
+   List + Search (สำหรับ hero search)
+========================= */
+
+let cachedList: WikiListItem[] | null = null;
+
+// GET /api/wiki/list — ใช้ดึงรายการบทความทั้งหมดครั้งเดียวแล้ว cache ไว้ใน memory ฝั่ง browser
+export async function getAllArticles(): Promise<WikiListItem[]> {
+  if (cachedList) return cachedList;
+
+  const res = await fetch(`${BASE_URL}/api/wiki/list`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch wiki list");
+  }
+
+  const data = (await res.json()) as { items?: WikiListItem[] };
+  cachedList = data.items ?? [];
+  return cachedList;
+}
+
+// แปลง path จาก wiki (เช่น configuration/CF-company_profile.md) → route ของหน้า content
+export function wikiPathToRoute(path: string): string {
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length === 0) return "/";
+
+  const category = parts[0];
+  const file = parts[parts.length - 1];
+  const slug = file.replace(/\.md$/i, "");
+
+  return `/categories/${category}/${slug}`;
+}
+
+// หาบทความที่ตรงกับคำค้นมากที่สุดจาก title + path แล้วคืนทั้ง item และ route
+export async function findBestArticleForQuery(query: string): Promise<{
+  item: WikiListItem | null;
+  route: string | null;
+}> {
+  const q = query.trim().toLowerCase();
+  if (!q) return { item: null, route: null };
+
+  const items = await getAllArticles();
+  if (items.length === 0) return { item: null, route: null };
+
+  // ให้คะแนนแบบง่าย ๆ จาก title + path
+  const scored = items
+    .map((item) => {
+      const haystack = `${item.title} ${item.path}`.toLowerCase();
+      let score = 0;
+
+      if (haystack.includes(q)) score += 2;
+      if (item.title.toLowerCase().startsWith(q)) score += 5;
+      if (item.path.toLowerCase().startsWith(q)) score += 3;
+
+      return { item, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const best = scored[0]?.item ?? null;
+  if (!best) return { item: null, route: null };
+
+  return {
+    item: best,
+    route: wikiPathToRoute(best.path),
+  };
 }
 
 /* =========================
