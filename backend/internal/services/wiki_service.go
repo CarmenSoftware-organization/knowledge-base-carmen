@@ -7,6 +7,7 @@
 package services
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -54,20 +55,32 @@ type WikiService struct {
 
 func NewWikiService() *WikiService {
 	cfg := config.AppConfig
+
+	fmt.Println("🔥 RepoPath from config =", cfg.Git.RepoPath)
+
 	return &WikiService{
 		repoPath:     cfg.Git.RepoPath,
 		githubClient: github.NewClient(),
 	}
 }
 
+
 // ListMarkdown คืนรายการ .md จาก local ก่อน ถ้าไม่มีหรือ error จะลองจาก GitHub
 func (s *WikiService) ListMarkdown() ([]WikiEntry, error) {
 	entries, err := s.listFromLocal()
-	if err == nil && len(entries) > 0 {
+	if err != nil {
+		fmt.Println("❌ listFromLocal error:", err)
+		return []WikiEntry{}, nil // 🔥 อย่าส่ง error
+	}
+
+	if len(entries) > 0 {
 		return entries, nil
 	}
-	return s.listFromGitHub()
+
+	// 🔥 ถ้าไม่มีไฟล์เลย ไม่ต้องเรียก GitHub
+	return []WikiEntry{}, nil
 }
+
 
 // ListCategories คืนรายการ slug หมวด (segment แรกของ path) เรียง A–Z
 func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
@@ -75,38 +88,93 @@ func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	seen := make(map[string]struct{})
+
 	for _, e := range entries {
-		slug := firstPathSegment(e.Path)
-		if slug != "" {
-			seen[slug] = struct{}{}
+		parts := strings.Split(e.Path, "/")
+		if len(parts) >= 2 {
+			seen[parts[0]] = struct{}{}
 		}
 	}
-	out := make([]CategoryEntry, 0, len(seen))
+
+	var out []CategoryEntry
 	for slug := range seen {
 		out = append(out, CategoryEntry{Slug: slug})
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Slug < out[j].Slug })
+
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Slug < out[j].Slug
+	})
+
 	return out, nil
 }
 
+
+
 // ListByCategory คืนบทความในหมวด slug (path ขึ้นต้นด้วย slug/ หรือ path == slug)
-func (s *WikiService) ListByCategory(slug string) (category string, items []CategoryItem, err error) {
+// func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error) {
+// 	entries, err := s.ListMarkdown()
+// 	if err != nil {
+// 		return "", nil, err
+// 	}
+
+// 	const root = "carmen_cloud"
+
+// 	prefix := root + "/" + slug + "/"
+// 	var list []CategoryItem
+
+// 	for _, e := range entries {
+// 		if strings.HasPrefix(e.Path, prefix) {
+// 			itemSlug := strings.TrimSuffix(
+// 				filepath.Base(e.Path),
+// 				filepath.Ext(e.Path),
+// 			)
+
+// 			list = append(list, CategoryItem{
+// 				Slug:  itemSlug,
+// 				Title: e.Title,
+// 				Path:  e.Path,
+// 			})
+// 		}
+// 	}
+
+// 	sort.Slice(list, func(i, j int) bool {
+// 		return list[i].Path < list[j].Path
+// 	})
+
+// 	return slug, list, nil
+// }
+func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error) {
 	entries, err := s.ListMarkdown()
 	if err != nil {
 		return "", nil, err
 	}
-	prefix := slug + "/"
+
 	var list []CategoryItem
+
 	for _, e := range entries {
-		if e.Path == slug || strings.HasPrefix(e.Path, prefix) {
-			itemSlug := strings.TrimSuffix(filepath.Base(e.Path), filepath.Ext(e.Path))
-			list = append(list, CategoryItem{Slug: itemSlug, Title: e.Title, Path: e.Path})
+		parts := strings.Split(e.Path, "/")
+
+		if len(parts) >= 2 && parts[0] == slug {
+
+			itemSlug := strings.TrimSuffix(
+				filepath.Base(e.Path),
+				filepath.Ext(e.Path),
+			)
+
+			list = append(list, CategoryItem{
+				Slug:  itemSlug,
+				Title: e.Title,
+				Path:  e.Path,
+			})
 		}
 	}
-	sort.Slice(list, func(i, j int) bool { return list[i].Path < list[j].Path })
+
 	return slug, list, nil
 }
+
+
 
 func firstPathSegment(path string) string {
 	path = filepath.ToSlash(path)

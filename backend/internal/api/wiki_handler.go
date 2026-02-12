@@ -50,21 +50,47 @@ func (h *WikiHandler) ListCategories(c *fiber.Ctx) error {
 }
 
 // GetCategory GET /api/wiki/category/:slug — บทความในหมวด (slug, title, path)
+// func (h *WikiHandler) GetCategory(c *fiber.Ctx) error {
+// 	slug := c.Params("slug")
+// 	if slug == "" {
+// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "slug is required"})
+// 	}
+// 	category, items, err := h.wikiService.ListByCategory(slug)
+// 	if err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+// 	}
+// 	if items == nil {
+// 		items = []services.CategoryItem{}
+// 	}
+// 	return c.JSON(fiber.Map{
+// 		"category": category,
+// 		"items":   items,
+// 	})
+// }
+
 func (h *WikiHandler) GetCategory(c *fiber.Ctx) error {
 	slug := c.Params("slug")
+
 	if slug == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "slug is required"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "slug is required",
+		})
 	}
+
 	category, items, err := h.wikiService.ListByCategory(slug)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
+
 	if items == nil {
 		items = []services.CategoryItem{}
 	}
+
 	return c.JSON(fiber.Map{
 		"category": category,
-		"items":   items,
+		"items":    items,
 	})
 }
 

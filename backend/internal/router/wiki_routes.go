@@ -12,4 +12,5 @@ func RegisterWiki(app *fiber.App) {
 	app.Get("/api/wiki/categories", wikiHandler.ListCategories)
 	app.Get("/api/wiki/category/:slug", wikiHandler.GetCategory)
 	app.Get("/api/wiki/content/*", wikiHandler.GetContent)
+	app.Static("/wiki-assets", "../carmen_cloud")
 }

@@ -26,19 +26,19 @@ export function HeroSection() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary mb-6">
           <Sparkles className="h-4 w-4" />
-          <span>Carment Cloud</span>
+          <span>Carmen Cloud</span>
         </div>
 
         {/* Heading */}
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground text-balance">
           ศูนย์รวมความรู้
-          <span className="block text-primary mt-2">สำหรับ Carment Cloud</span>
+          <span className="block text-primary mt-3">สำหรับ Carmen Cloud</span>
         </h1>
 
         {/* Description */}
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
           ค้นหาคู่มือ บทความ และคำตอบสำหรับทุกคำถามเกี่ยวกับการใช้งาน
-          Carment Cloud ระบบช่วยตอบคำถามอัจฉริยะขององค์กร
+          Carmen Cloud ระบบช่วยตอบคำถามอัจฉริยะขององค์กร
         </p>
 
         {/* Search Box */}
