@@ -21,6 +21,16 @@ type Props = {
   }>;
 };
 
+function extractYoutubeId(url?: string) {
+  if (!url) return null;
+
+  const match = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+
+  return match ? match[1] : null;
+}
+
 export default async function ArticlePage({ params }: Props) {
   const { category, article } = await params;
 
@@ -162,7 +172,6 @@ export default async function ArticlePage({ params }: Props) {
                     </h1>
                   ),
 
-
                   h2: ({ children, ...props }) => (
                     <h2
                       {...props}
@@ -181,90 +190,61 @@ export default async function ArticlePage({ params }: Props) {
                     </h3>
                   ),
 
-                  /* ---------------- LIST FIX (รองรับ nested) ---------------- */
+                  /* ---------------- PARAGRAPH FIX (YOUTUBE SAFE) ---------------- */
 
-                  ol: ({ children, ...props }) => (
-                    <ol
-                      {...props}
-                      className="list-decimal ml-6 space-y-2"
-                    >
-                      {children}
-                    </ol>
-                  ),
+                  p: ({ children }) => {
+                    // ถ้า paragraph มี link ตัวเดียว → ตรวจ YouTube
+                    if (
+                      Array.isArray(children) &&
+                      children.length === 1 &&
+                      typeof children[0] === "object" &&
+                      "props" in children[0]
+                    ) {
+                      const child: any = children[0];
+                      const href = child?.props?.href;
 
-                  ul: ({ children, ...props }) => (
-                    <ul
-                      {...props}
-                      className="list-disc ml-6 space-y-2"
-                    >
-                      {children}
-                    </ul>
-                  ),
+                      const youtubeMatch =
+                        href?.match(
+                          /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+                        );
 
-                  li: ({ children, ...props }) => (
-                    <li
-                      {...props}
-                      className="
-            pl-1
-            marker:font-medium
-            marker:text-gray-600
-          "
-                    >
-                      {children}
-                    </li>
-                  ),
+                      if (youtubeMatch) {
+                        const videoId = youtubeMatch[1];
 
-                  /* ---------------- IMAGE FIX (แยก inline/block) ---------------- */
+                        return (
+                          <div className="my-6 aspect-video w-full">
+                            <iframe
+                              className="w-full h-full rounded-xl shadow-md"
+                              src={`https://www.youtube.com/embed/${videoId}`}
+                              title="YouTube video"
+                              allowFullScreen
+                            />
+                          </div>
+                        );
+                      }
+                    }
 
-                  img: ({ src, alt = "", ...props }) => {
-                    if (!src || typeof src !== "string") return null;
-
-                    const cleanSrc = src.replace("./", "");
-
-                    const isInline = props?.style?.display === "inline-block";
-
-                    return (
-                      <img
-                        {...props}
-                        src={`http://localhost:8080/wiki-assets/${category}/${cleanSrc}`}
-                        alt={alt}
-                        className={
-                          isInline
-                            ? "inline-block align-middle mx-1"
-                            : "block rounded-xl my-6 shadow-md max-w-full"
-                        }
-                      />
-                    );
+                    return <p className="leading-7 my-3">{children}</p>;
                   },
 
-
-                  /* ---------------- LINK AUTO RENDER ---------------- */
+                  /* ---------------- LINK ---------------- */
 
                   a: ({ href = "", children, ...props }) => {
-                    if (!href) return <a {...props}>{children}</a>;
+                    const videoId = extractYoutubeId(href);
 
-                    // 🎥 YouTube Preview
-                    const youtubeMatch =
-                      href.match(
-                        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-                      );
-
-                    if (youtubeMatch) {
-                      const videoId = youtubeMatch[1];
-
+                    if (videoId) {
                       return (
-                        <div className="my-6 aspect-video">
+                        <span className="block my-6 w-full aspect-video">
                           <iframe
-                            className="w-full h-full rounded-xl shadow-md"
                             src={`https://www.youtube.com/embed/${videoId}`}
                             title="YouTube video"
+                            className="w-full h-full rounded-xl shadow-md"
                             allowFullScreen
                           />
-                        </div>
+                        </span>
                       );
                     }
 
-                    // 🌐 Normal external link
                     return (
                       <a
                         {...props}
@@ -278,6 +258,52 @@ export default async function ArticlePage({ params }: Props) {
                     );
                   },
 
+
+
+                  /* ---------------- LIST ---------------- */
+
+                  ol: ({ children, ...props }) => (
+                    <ol
+                      {...props}
+                      className="list-decimal ml-6 space-y-2"
+                    >
+                      {children}
+                    </ol>
+                  ),
+
+                  ul: ({ children, }) => (
+                    <ul
+                      className="list-disc ml-6 space-y-2"
+                    >
+                      {children}
+                    </ul>
+                  ),
+
+                  li: ({ children, ...props }) => (
+                    <li
+                      {...props}
+                      className="pl-1 marker:font-medium marker:text-gray-600"
+                    >
+                      {children}
+                    </li>
+                  ),
+
+                  /* ---------------- IMAGE ---------------- */
+
+                  img: ({ src, alt = "", ...props }) => {
+                    if (!src || typeof src !== "string") return null;
+
+                    const cleanSrc = src.replace("./", "");
+
+                    return (
+                      <img
+                        {...props}
+                        src={`http://localhost:8080/wiki-assets/${category}/${cleanSrc}`}
+                        alt={alt}
+                        className="block rounded-xl my-6 shadow-md max-w-full"
+                      />
+                    );
+                  },
 
                   /* ---------------- TABLE ---------------- */
 
@@ -304,6 +330,7 @@ export default async function ArticlePage({ params }: Props) {
               >
                 {fixedContent}
               </ReactMarkdown>
+
             </article>
 
 
