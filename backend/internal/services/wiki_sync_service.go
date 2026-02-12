@@ -56,12 +56,9 @@ func (s *WikiSyncService) clone() error {
 	if s.repoURL == "" {
 		return fmt.Errorf("GIT_REPO_URL or GitHub Owner/Repo not set")
 	}
-	if err := os.MkdirAll(s.repoPath, 0755); err != nil && !os.IsExist(err) {
-		return err
-	}
-	// clone ลงโฟลเดอร์ repoPath โดยตรง (url . = clone ใส่ current dir)
-	cmd := exec.Command("git", "clone", "--depth", "1", "-b", s.branch, s.repoURL, ".")
-	cmd.Dir = s.repoPath
+	// clone ลงโฟลเดอร์ repoPath (git จะสร้างโฟลเดอร์ให้) — อย่าใช้ cd repoPath แล้ว clone "."
+	// ถ้า repoPath มีอยู่แล้วและไม่ว่าง git จะ error; ควรใช้ path ว่าง เช่น ./wiki-content
+	cmd := exec.Command("git", "clone", "--depth", "1", "-b", s.branch, s.repoURL, s.repoPath)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("[wiki-sync] clone failed: %s", out)

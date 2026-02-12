@@ -6,6 +6,7 @@ package config
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -65,8 +66,9 @@ type GitHubConfig struct {
 }
 
 type GitConfig struct {
-	RepoPath string
-	RepoURL  string
+	RepoPath    string // โฟลเดอร์สำหรับ git clone/pull (ควรเป็นโฟลเดอร์ว่าง เช่น ./wiki-content)
+	RepoURL     string
+	ContentPath string // โฟลเดอร์ที่ใช้อ่าน .md + serve /wiki-assets (ถ้าว่างใช้ RepoPath หรือ RepoPath/carmen_cloud ถ้ามี)
 }
 
 var AppConfig *Config
@@ -114,12 +116,28 @@ func Load() error {
 			WebhookBranch: getEnv("GITHUB_WEBHOOK_BRANCH", getEnv("GITHUB_BRANCH", "main")),
 		},
 		Git: GitConfig{
-			RepoPath: getEnv("GIT_REPO_PATH", "./wiki-content"),
-			RepoURL:  getEnv("GIT_REPO_URL", ""),
+			RepoPath:    getEnv("GIT_REPO_PATH", "./wiki-content"),
+			RepoURL:     getEnv("GIT_REPO_URL", ""),
+			ContentPath: getEnv("WIKI_CONTENT_PATH", ""), // ว่าง = จะ resolve ใน GetWikiContentPath()
 		},
 	}
 
 	return nil
+}
+
+// GetWikiContentPath คืน path ที่ใช้อ่าน markdown + serve /wiki-assets
+// ถ้า WIKI_CONTENT_PATH ตั้งไว้ใช้ค่านั้น ไม่ว่างใช้ RepoPath/carmen_cloud ถ้ามีโฟลเดอร์อยู่ ไม่ใช่ใช้ RepoPath
+func GetWikiContentPath() string {
+	c := AppConfig.Git
+	if c.ContentPath != "" {
+		return filepath.Clean(c.ContentPath)
+	}
+	repo := filepath.Clean(c.RepoPath)
+	sub := filepath.Join(repo, "carmen_cloud")
+	if st, err := os.Stat(sub); err == nil && st.IsDir() {
+		return sub
+	}
+	return repo
 }
 
 func getEnv(key, defaultValue string) string {

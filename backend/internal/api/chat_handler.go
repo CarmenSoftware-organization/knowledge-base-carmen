@@ -46,22 +46,23 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 
 	embStr := utils.Float32SliceToPgVector(emb)
 
-	// 2) ดึง context จาก Postgres/pgvector
+	// 2) ดึง context จาก Postgres/pgvector — กรอง path ตาม topic ที่ infer จากคำถาม (data-driven ไม่ hardcode case)
 	type chunkRow struct {
 		Path    string
 		Title   string
 		Content string
 	}
-	var rows []chunkRow
-	if err := database.DB.
-		Raw(`
+	pathFilter := buildPathFilterFromQuestion(q)
+	query := `
 SELECT d.path, d.title, dc.content
 FROM document_chunks dc
 JOIN documents d ON dc.document_id = d.id
+` + pathFilter + `
 ORDER BY dc.embedding <-> ?::vector
-LIMIT 5
-`, embStr).
-		Scan(&rows).Error; err != nil {
+LIMIT 10
+`
+	var rows []chunkRow
+	if err := database.DB.Raw(query, embStr).Scan(&rows).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "failed to query vector index: " + err.Error(),
 			"answer":  "",
@@ -115,4 +116,35 @@ LIMIT 5
 		Answer:  answer,
 		Sources: sources,
 	})
+}
+
+// topicPathRule กำหนดว่าเมื่อคำถามมีคำใน keywords ใดคำหนึ่ง ให้กรอง path ตาม patterns (ILIKE)
+type topicPathRule struct {
+	Keywords []string // มีคำใดคำหนึ่งในคำถาม (lowercase สำหรับอังกฤษ)
+	Patterns []string // d.path ILIKE pattern อย่างน้อยหนึ่งอัน (ใช้ OR)
+}
+
+var topicPathRules = []topicPathRule{
+	{Keywords: []string{"vendor", "ap-vendor", "ผู้ขาย", "ร้านค้า"}, Patterns: []string{"%vendor%", "%ผู้ขาย%", "%ร้านค้า%"}},
+	{Keywords: []string{"configuration", "company profile", "chart of account", "department", "currency", "payment type", "permission", "cf-", "ตั้งค่า", "ผู้ใช้", "user"}, Patterns: []string{"%configuration%", "%CF-%"}},
+	{Keywords: []string{" ar ", "ar-", "ar invoice", "ar receipt", "ลูกค้า", "receipt", "contract", "folio", "ใบเสร็จ"}, Patterns: []string{"%AR-%", "%/ar/%"}},
+	{Keywords: []string{" ap ", "ap-", "ap invoice", "ap payment", "เจ้าหนี้", "cheque", "wht", "หัก ณ ที่จ่าย", "input tax", "ภาษีซื้อ"}, Patterns: []string{"%AP-%", "%/ap/%"}},
+	{Keywords: []string{"asset", "สินทรัพย์", "as-", "ทะเบียนสินทรัพย์", "asset register", "asset disposal"}, Patterns: []string{"%AS-%", "%asset%"}},
+	{Keywords: []string{" gl ", "gl ", "general ledger", "journal voucher", "voucher", "บัญชีแยกประเภท", "ผังบัญชี", "allocation", "amortization", "budget", "recurring"}, Patterns: []string{"%gl%", "%c-%"}},
+}
+
+func buildPathFilterFromQuestion(question string) string {
+	qLower := strings.ToLower(question)
+	for _, rule := range topicPathRules {
+		for _, kw := range rule.Keywords {
+			if strings.Contains(qLower, strings.ToLower(kw)) || strings.Contains(question, kw) {
+				parts := make([]string, len(rule.Patterns))
+				for i, p := range rule.Patterns {
+					parts[i] = "d.path ILIKE '" + strings.ReplaceAll(p, "'", "''") + "'"
+				}
+				return "WHERE (" + strings.Join(parts, " OR ") + ")"
+			}
+		}
+	}
+	return ""
 }

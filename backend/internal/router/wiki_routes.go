@@ -4,6 +4,7 @@ package router
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/api"
+	"github.com/new-carmen/backend/internal/config"
 )
 
 func RegisterWiki(app *fiber.App) {
@@ -12,5 +13,6 @@ func RegisterWiki(app *fiber.App) {
 	app.Get("/api/wiki/categories", wikiHandler.ListCategories)
 	app.Get("/api/wiki/category/:slug", wikiHandler.GetCategory)
 	app.Get("/api/wiki/content/*", wikiHandler.GetContent)
-	app.Static("/wiki-assets", "../carmen_cloud")
+	// ใช้ path เดียวกับที่อ่าน markdown (จาก config) เพื่อให้ frontend โหลดรูปได้
+	app.Static("/wiki-assets", config.GetWikiContentPath())
 }

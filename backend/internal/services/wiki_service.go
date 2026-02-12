@@ -54,12 +54,9 @@ type WikiService struct {
 }
 
 func NewWikiService() *WikiService {
-	cfg := config.AppConfig
-
-	fmt.Println("🔥 RepoPath from config =", cfg.Git.RepoPath)
-
+	contentPath := config.GetWikiContentPath()
 	return &WikiService{
-		repoPath:     cfg.Git.RepoPath,
+		repoPath:     contentPath,
 		githubClient: github.NewClient(),
 	}
 }

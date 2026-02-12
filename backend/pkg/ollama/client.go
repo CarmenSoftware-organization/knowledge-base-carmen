@@ -145,7 +145,17 @@ func (c *Client) chat(prompt string) (string, error) {
 
 func (c *Client) GenerateAnswer(context string, question string) (string, error) {
 	prompt := fmt.Sprintf(
-		"Based on the following context, answer the question.\n\nContext:\n%s\n\nQuestion:\n%s\n\nAnswer:",
+		`คุณเป็นผู้ช่วยตอบคำถามจากคู่มือ Carmen Cloud
+- ตอบจาก Context ด้านล่างเท่านั้น ถ้าไม่มีข้อมูลที่ตรงกัน ให้ตอบสั้นๆ ว่าไม่พบข้อมูลที่เกี่ยวข้องในคู่มือ
+- ตอบแบบสรุปกระชับ (เป็นหัวข้อหรือขั้นตอนสั้นๆ) ไม่ต้องยาว ไม่ต้องซ้ำคำถาม
+- ห้ามคัดลอกหรือใส่ข้อความเช่น "--- Context ---" หรือ "Context 1/2/3" ลงในคำตอบ ให้มีแต่เนื้อหาสรุปเท่านั้น
+
+Context:
+%s
+
+Question: %s
+
+Answer (สรุปเท่านั้น ไม่มีคำว่า Context):`,
 		context, question,
 	)
 	return c.chat(prompt)

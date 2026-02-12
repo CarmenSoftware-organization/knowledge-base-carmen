@@ -66,3 +66,30 @@ export async function getContent(path: string): Promise<{
 
   return res.json();
 }
+
+/* =========================
+   Chat (RAG) — ใช้แทนการเทสใน Postman
+========================= */
+
+export type ChatSource = { articleId?: string; title?: string };
+
+export type ChatAskResponse = {
+  answer: string;
+  sources: ChatSource[];
+  error?: string;
+};
+
+// POST /api/chat/ask — ถามคำถามจากคู่มือ (vector + Ollama)
+export async function askChat(question: string): Promise<ChatAskResponse> {
+  const res = await fetch(`${BASE_URL}/api/chat/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question: question.trim() }),
+  });
+
+  const data = (await res.json()) as ChatAskResponse;
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to get answer");
+  }
+  return data;
+}
