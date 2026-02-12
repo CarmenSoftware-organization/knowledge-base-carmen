@@ -9,5 +9,7 @@ import (
 func RegisterPublicChat(app *fiber.App) {
 	chatHandler := api.NewChatHandler()
 	app.Post("/api/chat/ask", chatHandler.Ask)
+	// debug/utility endpoint สำหรับทดสอบ OpenClaw question routing โดยไม่ยุ่งกับ DB/LLM
+	app.Post("/api/chat/route-test", chatHandler.RouteOnly)
 }
 

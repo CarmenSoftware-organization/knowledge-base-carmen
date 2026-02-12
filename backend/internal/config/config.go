@@ -17,9 +17,10 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	JWT      JWTConfig
-	Ollama OllamaConfig
-	GitHub GitHubConfig
+	Ollama   OllamaConfig
+	GitHub   GitHubConfig
 	Git      GitConfig
+	OpenClaw OpenClawConfig
 }
 
 type ServerConfig struct {
@@ -47,6 +48,15 @@ type OllamaConfig struct {
 	ChatModel            string
 	EmbedModel           string
 	InsecureSkipVerify   bool // true = ยอมรับ TLS certificate ไม่ตรง (ใช้กับ VM ที่ใช้ self-signed)
+}
+
+// OpenClawConfig ใช้สำหรับเชื่อมกับ OpenClaw Gateway (OpenAI-compatible HTTP)
+type OpenClawConfig struct {
+	URL   string // HTTP base URL เช่น http://127.0.0.1:18789
+	Token string // Gateway token
+	Model string // ชื่อ model ที่ Gateway map ไว้สำหรับ routing (เช่น openrouter/gpt-4o-mini)
+	// Enabled ไว้เผื่ออนาคตอยากปิดใช้ OpenClaw ชั่วคราว
+	Enabled bool
 }
 
 type ChromaDBConfig struct {
@@ -106,6 +116,12 @@ func Load() error {
 			ChatModel:          getEnv("OLLAMA_CHAT_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
 			EmbedModel:         getEnv("OLLAMA_EMBED_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
 			InsecureSkipVerify: getEnvAsBool("OLLAMA_INSECURE_SKIP_VERIFY", false),
+		},
+		OpenClaw: OpenClawConfig{
+			URL:     getEnv("OPENCLAW_GATEWAY_URL", ""),
+			Token:   getEnv("OPENCLAW_GATEWAY_TOKEN", ""),
+			Model:   getEnv("OPENCLAW_MODEL", "default"), // ให้หัวหน้าแมปชื่อ model เองใน Gateway
+			Enabled: getEnvAsBool("OPENCLAW_ENABLED", true),
 		},
 		GitHub: GitHubConfig{
 			Token:         getEnv("GITHUB_TOKEN", ""),

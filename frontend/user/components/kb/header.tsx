@@ -52,7 +52,6 @@ export function KBHeader() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/categories">หมวดหมู่</Link>
             </Button>
-            
             <Button variant="ghost" size="sm" asChild>
               <Link href="/chat">ถามบอท</Link>
             </Button>
@@ -103,7 +102,6 @@ export function KBHeader() {
               >
                 <Link href="/categories">หมวดหมู่</Link>
               </Button>
-              
               <Button
                 variant="ghost"
                 className="justify-start"

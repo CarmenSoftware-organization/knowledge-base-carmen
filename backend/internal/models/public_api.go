@@ -4,7 +4,9 @@ package models
 // --- Chat API ---
 // POST /api/chat/ask
 type ChatAskRequest struct {
-	Question string `json:"question"`
+	Question      string `json:"question"`
+	// PreferredPath ใช้ในรอบที่ 2 เมื่อผู้ใช้เลือกหมวด/เอกสารที่ต้องการเองแล้ว
+	PreferredPath string `json:"preferredPath,omitempty"`
 }
 
 type ChatSource struct {
@@ -12,9 +14,21 @@ type ChatSource struct {
 	Title     string `json:"title"`
 }
 
+// DisambiguationOption ใช้ส่งตัวเลือกกลับไปให้ frontend เวลาคำถามกำกวม
+type DisambiguationOption struct {
+	Path   string  `json:"path"`
+	Title  string  `json:"title,omitempty"`
+	Reason string  `json:"reason,omitempty"`
+	Score  float32 `json:"score,omitempty"`
+}
+
 type ChatAskResponse struct {
 	Answer  string       `json:"answer"`
 	Sources []ChatSource `json:"sources"`
+
+	// ถ้าคำถามกำกวมให้ตั้งค่านี้เป็น true และใส่ Options
+	NeedDisambiguation bool                   `json:"needDisambiguation,omitempty"`
+	Options            []DisambiguationOption `json:"options,omitempty"`
 }
 
 // --- System API ---

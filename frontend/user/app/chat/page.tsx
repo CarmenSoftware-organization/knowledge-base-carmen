@@ -13,6 +13,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ChatAskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastQuestion, setLastQuestion] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +22,9 @@ export default function ChatPage() {
     setError(null);
     setResult(null);
     try {
-      const data = await askChat(question);
+      const q = question.trim();
+      setLastQuestion(q);
+      const data = await askChat(q);
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
@@ -67,7 +70,54 @@ export default function ChatPage() {
               <CardTitle>คำตอบ</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="whitespace-pre-wrap text-sm">{result.answer}</div>
+              {/* กรณีคำถามกำกวม ให้ผู้ใช้เลือกตัวเลือกก่อน */}
+              {result.needDisambiguation && result.options && result.options.length > 0 && (
+                <div className="space-y-2 border-b pb-4">
+                  <p className="text-sm font-medium">
+                    คำถามนี้อาจหมายถึงหลายหัวข้อ เลือกหัวข้อที่ต้องการ:
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {result.options.map((opt, idx) => (
+                      <Button
+                        key={idx}
+                        variant="outline"
+                        className="justify-start text-left"
+                        disabled={loading}
+                        onClick={async () => {
+                          if (!lastQuestion) return;
+                          setLoading(true);
+                          setError(null);
+                          try {
+                            const data = await askChat(lastQuestion, opt.path);
+                            setResult(data);
+                          } catch (err) {
+                            setError(
+                              err instanceof Error ? err.message : "เกิดข้อผิดพลาด"
+                            );
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                      >
+                        <span className="font-medium">
+                          {opt.title || opt.path}
+                        </span>
+                        {opt.reason && (
+                          <span className="block text-xs text-muted-foreground">
+                            {opt.reason}
+                          </span>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {result.answer && (
+                <div className="whitespace-pre-wrap text-sm">
+                  {result.answer}
+                </div>
+              )}
               {result.sources && result.sources.length > 0 && (
                 <div className="pt-2 border-t">
                   <p className="text-xs text-muted-foreground mb-1">อ้างอิงจาก:</p>

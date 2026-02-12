@@ -154,18 +154,33 @@ export async function getContent(path: string): Promise<{
 
 export type ChatSource = { articleId?: string; title?: string };
 
+export type DisambiguationOption = {
+  path: string;
+  title?: string;
+  reason?: string;
+  score?: number;
+};
+
 export type ChatAskResponse = {
   answer: string;
   sources: ChatSource[];
   error?: string;
+  needDisambiguation?: boolean;
+  options?: DisambiguationOption[];
 };
 
-// POST /api/chat/ask — ถามคำถามจากคู่มือ (vector + Ollama)
-export async function askChat(question: string): Promise<ChatAskResponse> {
+// POST /api/chat/ask — ถามคำถามจากคู่มือ (vector + Ollama + OpenClaw routing)
+export async function askChat(
+  question: string,
+  preferredPath?: string
+): Promise<ChatAskResponse> {
   const res = await fetch(`${BASE_URL}/api/chat/ask`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question: question.trim() }),
+    body: JSON.stringify({
+      question: question.trim(),
+      preferredPath,
+    }),
   });
 
   const data = (await res.json()) as ChatAskResponse;
