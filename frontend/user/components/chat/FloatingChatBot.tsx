@@ -3,6 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send } from "lucide-react";
+import {
+  askChat,
+  type ChatAskResponse,
+  type DisambiguationOption,
+} from "@/lib/wiki-api";
 
 type ChatRole = "user" | "bot";
 
@@ -23,6 +28,9 @@ export default function FloatingChatBot() {
   ]);
 
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [lastQuestion, setLastQuestion] = useState("");
+  const [pendingOptions, setPendingOptions] = useState<DisambiguationOption[] | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   /* Tooltip Auto Hide */
@@ -37,23 +45,70 @@ export default function FloatingChatBot() {
   /* Auto Scroll */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, pendingOptions]);
+
+  async function sendToBot(preferredPath?: string) {
+    const q = (preferredPath ? lastQuestion : input.trim()) || "";
+    if (!q) return;
+
+    // เพิ่มข้อความฝั่ง user เมื่อเป็นคำถามใหม่
+    if (!preferredPath) {
+      setMessages((prev) => [...prev, { role: "user", content: q }]);
+      setInput("");
+    }
+
+    setLoading(true);
+    setPendingOptions(null);
+    try {
+      const res: ChatAskResponse = await askChat(q, preferredPath);
+      setLastQuestion(q);
+
+      if (res.needDisambiguation && res.options && res.options.length > 0) {
+        // เก็บ options ไว้ และให้ user เลือกโดยกดปุ่มด้านล่าง
+        setPendingOptions(res.options);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "bot",
+            content: "คำถามนี้อาจหมายถึงหลายหัวข้อ เลือกหัวข้อด้านล่างเพื่อให้ฉันตอบได้ตรงขึ้นนะคะ 💡",
+          },
+        ]);
+        return;
+      }
+
+      // กรณีมีคำตอบแล้ว
+      if (res.answer) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "bot",
+            content: res.answer,
+          },
+        ]);
+      }
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "bot",
+          content:
+            err instanceof Error
+              ? `เกิดข้อผิดพลาด: ${err.message}`
+              : "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function handleSend() {
     if (!input.trim()) return;
+    void sendToBot();
+  }
 
-    const userMessage: ChatMessage = {
-      role: "user",
-      content: input,
-    };
-
-    const botMessage: ChatMessage = {
-      role: "bot",
-      content: "กำลังพัฒนา AI จริงเร็ว ๆ นี้ 🚀",
-    };
-
-    setMessages((prev) => [...prev, userMessage, botMessage]);
-    setInput("");
+  function handleSelectOption(opt: DisambiguationOption) {
+    void sendToBot(opt.path);
   }
 
   return (
@@ -135,9 +190,7 @@ export default function FloatingChatBot() {
                 <div
                   key={i}
                   className={`flex ${
-                    msg.role === "user"
-                      ? "justify-end"
-                      : "justify-start"
+                    msg.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
                   <div
@@ -151,6 +204,44 @@ export default function FloatingChatBot() {
                   </div>
                 </div>
               ))}
+
+              {/* Typing indicator */}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="px-3 py-2 rounded-xl text-xs max-w-[70%] bg-background border border-border text-muted-foreground flex items-center gap-2">
+                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    <span>กำลังประมวลผล...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Disambiguation options (ถ้ามี) */}
+              {pendingOptions && pendingOptions.length > 0 && (
+                <div className="mt-1 space-y-1">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    เลือกหัวข้อที่ตรงกับคำถามมากที่สุด:
+                  </p>
+                  {pendingOptions.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleSelectOption(opt)}
+                      className="w-full text-left text-xs px-3 py-1.5 mb-1 rounded-lg border border-border bg-background hover:bg-muted transition"
+                    >
+                      <span className="font-medium block">
+                        {opt.title || opt.path}
+                      </span>
+                      {opt.reason && (
+                        <span className="block text-[11px] text-muted-foreground">
+                          {opt.reason}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -161,14 +252,13 @@ export default function FloatingChatBot() {
                 placeholder="พิมพ์คำถาม..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === "Enter" && handleSend()
-                }
+                onKeyDown={(e) => e.key === "Enter" && !loading && handleSend()}
                 className="flex-1 rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <button
                 onClick={handleSend}
-                className="bg-primary text-primary-foreground p-2 rounded-lg hover:opacity-90 transition"
+                disabled={loading}
+                className="bg-primary text-primary-foreground p-2 rounded-lg hover:opacity-90 transition disabled:opacity-60"
               >
                 <Send size={16} />
               </button>

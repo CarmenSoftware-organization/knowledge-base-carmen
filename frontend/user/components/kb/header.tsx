@@ -278,19 +278,30 @@ export function KBHeader() {
               )}
 
               <nav className="flex flex-col gap-1">
-                <Link href="/">หน้าหลัก</Link>
-                <Link href="/categories">หมวดหมู่</Link>
-<<<<<<< HEAD
-              </Button>
-              <Button
-                variant="ghost"
-                className="justify-start"
-                asChild
-                onClick={() => setMobileMenuOpen(false)}
-              >
-=======
->>>>>>> 2cafdac7458f5d6b245fd11701aee516793f2662
-                <Link href="/chat">ถามบอท</Link>
+                <Button
+                  variant="ghost"
+                  className="justify-start"
+                  asChild
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Link href="/">หน้าหลัก</Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="justify-start"
+                  asChild
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Link href="/categories">หมวดหมู่</Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="justify-start"
+                  asChild
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Link href="/chat">ถามบอท</Link>
+                </Button>
               </nav>
             </motion.div>
           )}
