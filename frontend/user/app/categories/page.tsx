@@ -13,7 +13,6 @@ export default async function CategoriesPage() {
   try {
     data = await getCategories(); // { items: [{ slug }] }
   } catch (error) {
-    // ถ้า backend ไม่ได้รันหรือเชื่อมต่อไม่ได้ แสดงข้อความแจ้งเตือน
     return (
       <div className="min-h-screen flex flex-col">
         <KBHeader />

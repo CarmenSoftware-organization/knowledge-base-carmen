@@ -30,6 +30,8 @@ export default async function CategoryPage({
           <KBSidebar />
 
           <div className="flex-1">
+
+            {/* Breadcrumb */}
             <Breadcrumb
               items={[
                 { label: "หมวดหมู่", href: "/categories" },
@@ -37,25 +39,61 @@ export default async function CategoryPage({
               ]}
             />
 
-            <h1 className="text-3xl font-bold mt-6 mb-6">
-              {formatCategoryName(data.category)}
-            </h1>
+            {/* Title Section */}
+            <div className="mt-6 mb-10">
+              <h1 className="text-4xl font-bold text-foreground">
+                {formatCategoryName(data.category)}
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                รวมบทความทั้งหมดในหมวดนี้
+              </p>
+            </div>
 
-            <div className="space-y-4">
+            {/* Cards Grid */}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
               {data.items.map((item: any) => (
                 <Link
                   key={item.path}
                   href={`/categories/${category}/${item.slug}`}
+                  className="group"
                 >
-                  <Card>
-                    <CardContent className="p-4">
-                      <h2 className="font-medium">{item.title}</h2>
+                  <Card
+                    className="
+            h-full
+            border border-primary/10
+            bg-card
+            transition-all
+            duration-300
+            hover:shadow-lg
+            hover:border-primary/30
+            hover:-translate-y-1
+          "
+                  >
+                    <CardContent className="p-6 flex items-center justify-between">
+                      <div>
+                        <h2 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+                          {item.title}
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          ดูรายละเอียดเพิ่มเติม
+                        </p>
+                      </div>
+
+                      {/* Arrow */}
+                      <div className="
+              text-primary/60
+              group-hover:text-primary
+              transition-colors
+            ">
+                        →
+                      </div>
                     </CardContent>
                   </Card>
                 </Link>
               ))}
             </div>
           </div>
+
         </div>
       </main>
 

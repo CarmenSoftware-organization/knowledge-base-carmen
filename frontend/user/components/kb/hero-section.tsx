@@ -3,22 +3,101 @@
 import { Search, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { findBestArticleForQuery } from "@/lib/wiki-api";
+import { motion, Variants } from "framer-motion";
 
+import {
+  findBestArticleForQuery,
+  getAllArticles,
+  wikiPathToRoute,
+} from "@/lib/wiki-api";
+
+/* =============================
+   Popular Searches (ERP Context)
+============================= */
 const popularSearches = [
-  "วิธีเริ่มต้นใช้งาน",
-  "การตั้งค่าผู้ดูแล",
-  "Bot ไม่ตอบ",
-  "API Integration",
+  "AP Invoice",
+  "Input VAT Reconciliation",
+  "AR Receipt",
+  "Close Period",
+  "Chart of Account",
+  "User Permissions",
 ];
+
+/* =============================
+   Animation Variants
+============================= */
+
+const staggerContainer: Variants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+};
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
 
 export function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [articles, setArticles] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
   const router = useRouter();
 
+  /* =============================
+     Load Articles Once
+  ============================== */
+  useEffect(() => {
+    async function loadArticles() {
+      try {
+        const list = await getAllArticles();
+        setArticles(list);
+      } catch (err) {
+        console.error("Failed to load articles:", err);
+      }
+    }
+    loadArticles();
+  }, []);
+
+  /* =============================
+     Auto Suggest
+  ============================== */
+  useEffect(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    if (!q) {
+      setSuggestions([]);
+      setActiveIndex(-1);
+      return;
+    }
+
+    const filtered = articles
+      .filter((a) => a.title.toLowerCase().includes(q))
+      .slice(0, 5);
+
+    setSuggestions(filtered);
+    setActiveIndex(-1);
+  }, [searchQuery, articles]);
+
+  /* =============================
+     Submit Search
+  ============================== */
   async function handleSearch(e?: React.FormEvent) {
     e?.preventDefault();
     const q = searchQuery.trim();
@@ -30,7 +109,6 @@ export function HeroSection() {
       if (route) {
         router.push(route);
       } else {
-        // ถ้าไม่เจอบทความที่ตรงเลย ให้พาไปหน้าหมวดหมู่รวมก่อน
         router.push("/categories");
       }
     } finally {
@@ -38,44 +116,104 @@ export function HeroSection() {
     }
   }
 
+  /* =============================
+     Select Suggestion
+  ============================== */
+  function handleSelect(item: any) {
+    router.push(wikiPathToRoute(item.path));
+    setSuggestions([]);
+    setSearchQuery("");
+  }
+
+  /* =============================
+     Keyboard Navigation
+  ============================== */
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!suggestions.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) =>
+        prev < suggestions.length - 1 ? prev + 1 : prev
+      );
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev > 0 ? prev - 1 : 0));
+    }
+
+    if (e.key === "Enter" && activeIndex >= 0) {
+      e.preventDefault();
+      handleSelect(suggestions[activeIndex]);
+    }
+  }
+
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background py-16 sm:py-24">
+    <motion.section
+      className="relative bg-gradient-to-b from-primary/5 via-background to-background py-16 sm:py-24"
+      variants={staggerContainer}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true }}
+    >
       {/* Background Pattern */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,theme(colors.border)_1px,transparent_1px),linear-gradient(to_bottom,theme(colors.border)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+        <motion.div
+          animate={{ opacity: [0.4, 0.6, 0.4] }}
+          transition={{ duration: 6, repeat: Infinity }}
+          className="absolute inset-0 bg-[linear-gradient(to_right,theme(colors.border)_1px,transparent_1px),linear-gradient(to_bottom,theme(colors.border)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]"
+        />
       </div>
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary mb-6">
+        <motion.div
+          variants={fadeUp}
+          className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary mb-6"
+        >
           <Sparkles className="h-4 w-4" />
           <span>Carmen Cloud</span>
-        </div>
+        </motion.div>
 
         {/* Heading */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground text-balance">
+        <motion.h1
+          variants={fadeUp}
+          className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground text-balance"
+        >
           ศูนย์รวมความรู้
-          <span className="block text-primary mt-3">สำหรับ Carmen Cloud</span>
-        </h1>
+          <span className="block text-primary mt-3">
+            สำหรับ Carmen Cloud
+          </span>
+        </motion.h1>
 
         {/* Description */}
-        <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+        <motion.p
+          variants={fadeUp}
+          className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+        >
           ค้นหาคู่มือ บทความ และคำตอบสำหรับทุกคำถามเกี่ยวกับการใช้งาน
-          Carmen Cloud ระบบช่วยตอบคำถามอัจฉริยะขององค์กร
-        </p>
+          Carmen Cloud ระบบบริหารจัดการทางบัญชีขององค์กร
+        </motion.p>
 
         {/* Search Box */}
-        <div className="mt-10 max-w-xl mx-auto">
+        <motion.div
+          variants={fadeUp}
+          className="mt-10 max-w-xl mx-auto"
+        >
           <form onSubmit={handleSearch}>
             <div className="relative">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+
               <Input
                 type="search"
-                placeholder="ค้นหาบทความ, คู่มือ, หรือคำถาม..."
+                placeholder="ค้นหา AP, AR, Configuration..."
                 className="h-14 pl-12 pr-32 text-base bg-card border-border shadow-lg rounded-2xl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
+
               <Button
                 type="submit"
                 size="lg"
@@ -84,44 +222,52 @@ export function HeroSection() {
               >
                 {loading ? "กำลังค้นหา..." : "ค้นหา"}
               </Button>
+
+              {/* Suggestions */}
+              {suggestions.length > 0 && (
+                <div className="absolute z-50 mt-2 w-full bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+                  {suggestions.map((item, index) => (
+                    <button
+                      key={item.path}
+                      type="button"
+                      onClick={() => handleSelect(item)}
+                      className={`
+                        w-full text-left px-4 py-3 text-sm
+                        transition-colors
+                        ${index === activeIndex
+                          ? "bg-primary/10 text-primary"
+                          : "hover:bg-muted"
+                        }
+                      `}
+                    >
+                      {item.title}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </form>
 
           {/* Popular Searches */}
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <span className="text-sm text-muted-foreground">ยอดนิยม:</span>
+          <motion.div
+            variants={fadeUp}
+            className="mt-4 flex flex-wrap justify-center gap-2"
+          >
+            <span className="text-sm text-muted-foreground">
+              ยอดนิยม:
+            </span>
             {popularSearches.map((term) => (
               <button
                 key={term}
-                onClick={() => {
-                  setSearchQuery(term);
-                  // กดคำยอดนิยมแล้วค้นหาเลย
-                  void handleSearch();
-                }}
+                onClick={() => setSearchQuery(term)}
                 className="text-sm text-primary hover:underline"
               >
                 {term}
               </button>
             ))}
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
-          <div>
-            <div className="text-3xl font-bold text-foreground">50+</div>
-            <div className="text-sm text-muted-foreground">บทความ</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold text-foreground">6</div>
-            <div className="text-sm text-muted-foreground">หมวดหมู่</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold text-foreground">24/7</div>
-            <div className="text-sm text-muted-foreground">พร้อมช่วยเหลือ</div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 }
