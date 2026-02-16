@@ -9,6 +9,11 @@ import type { Variants } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { getCategories, getCategory } from "@/lib/wiki-api";
+import { articleDisplayMap, categoryDisplayMap, cleanTitle } from "@/configs/sidebar-map";
+
+interface KBSidebarProps {
+  isMobile?: boolean;
+}
 
 interface Article {
   title: string;
@@ -21,122 +26,89 @@ interface Category {
   articles: Article[];
 }
 
-/* =============================
-   Accordion Animation
-============================= */
-
 const accordionVariants: Variants = {
-  hidden: {
-    height: 0,
-    opacity: 0,
-  },
+  hidden: { height: 0, opacity: 0 },
   show: {
     height: "auto",
     opacity: 1,
-    transition: {
-      duration: 0.25,
-      ease: [0.22, 1, 0.36, 1],
-    },
+    transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
   },
-  exit: {
-    height: 0,
-    opacity: 0,
-    transition: {
-      duration: 0.2,
-    },
-  },
+  exit: { height: 0, opacity: 0, transition: { duration: 0.2 } },
 };
 
-export function KBSidebar() {
+export function KBSidebar({ isMobile = false }: KBSidebarProps) {
   const pathname = usePathname();
-
   const [categories, setCategories] = useState<Category[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
-  /* =============================
-     Load Categories
-  ============================== */
   useEffect(() => {
     async function loadSidebar() {
       try {
         const res = await getCategories();
-
         const loaded: Category[] = [];
 
         for (const cat of res.items) {
           const catRes = await getCategory(cat.slug);
 
           loaded.push({
-            name: cat.slug.toUpperCase(),
+            name: categoryDisplayMap[cat.slug] || cat.slug.toUpperCase(),
             slug: cat.slug,
             articles: catRes.items.map((item: any) => ({
-              title: item.title,
+              title: articleDisplayMap[item.slug] || cleanTitle(item.title),
               slug: item.slug,
             })),
           });
         }
-
         setCategories(loaded);
       } catch (err) {
         console.error("Sidebar error:", err);
       }
     }
-
     loadSidebar();
   }, []);
 
-  /* =============================
-     Auto Expand Based on Route
-  ============================== */
   useEffect(() => {
     const match = pathname.match(/\/categories\/([^/]+)/);
     if (match) {
       const activeSlug = match[1];
-      setExpandedCategories([activeSlug]);
+      setExpandedCategories((prev) => 
+        prev.includes(activeSlug) ? prev : [activeSlug]
+      );
     }
   }, [pathname]);
 
-  /* =============================
-     Toggle (Single Expand Mode)
-  ============================== */
   const toggleCategory = (slug: string) => {
-    setExpandedCategories((prev) =>
-      prev.includes(slug) ? [] : [slug]
-    );
+    setExpandedCategories((prev) => (prev.includes(slug) ? (prev.length > 1 ? prev.filter(s => s !== slug) : []) : [...prev, slug]));
   };
 
   return (
-    <aside className="w-64 shrink-0 hidden lg:block">
-      <nav className="sticky top-20 space-y-1 pr-4 max-h-[calc(100vh-6rem)] overflow-y-auto">
+    <aside className={cn(
+      "shrink-0 sticky top-28 h-fit hidden lg:block w-64",
+      isMobile ? "w-full" : "w-64 hidden lg:block"
+    )}>
+      <nav className={cn(
+        "space-y-1 pr-4 max-h-[calc(100vh-8rem)] overflow-y-auto",
+        !isMobile && "sticky top-24"
+      )}>
         {categories.map((category) => {
           const isExpanded = expandedCategories.includes(category.slug);
-          const isActiveCategory =
-            pathname.includes(`/categories/${category.slug}`);
+          const isActiveCategory = pathname.includes(`/categories/${category.slug}`);
 
           return (
-            <div key={category.slug}>
-              {/* Category Button */}
+            <div key={category.slug} className="mb-1">
               <button
                 onClick={() => toggleCategory(category.slug)}
                 className={cn(
-                  "w-full flex items-center justify-between gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-                  isActiveCategory
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-secondary"
+                  "w-full flex items-center justify-between gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition-all",
+                  isActiveCategory ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary"
                 )}
               >
-                <span>{category.name}</span>
-
-                {/* Smooth Rotate Chevron */}
-                <motion.div
-                  animate={{ rotate: isExpanded ? 90 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
+                <span className="truncate">{category.name}</span>
+                <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </motion.div>
               </button>
 
-              {/* Articles Accordion */}
               <AnimatePresence initial={false}>
                 {isExpanded && (
                   <motion.div
@@ -144,9 +116,11 @@ export function KBSidebar() {
                     initial="hidden"
                     animate="show"
                     exit="exit"
-                    className="ml-4 mt-1 space-y-1 border-l border-border pl-4 overflow-hidden"
+                    className="ml-4 mt-1 space-y-0.5 border-l-2 border-primary/10 pl-2 overflow-hidden"
                   >
                     {category.articles.map((article) => {
+                      if (article.slug === 'index') return null;
+
                       const articlePath = `/categories/${category.slug}/${article.slug}`;
                       const isArticleActive = pathname === articlePath;
 
@@ -155,9 +129,9 @@ export function KBSidebar() {
                           key={article.slug}
                           href={articlePath}
                           className={cn(
-                            "block px-3 py-1.5 text-sm rounded-md transition-colors",
+                            "block px-3 py-1.5 text-[13px] rounded-md transition-all duration-200",
                             isArticleActive
-                              ? "bg-primary/10 text-primary font-medium"
+                              ? "text-primary font-bold bg-primary/5"
                               : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                           )}
                         >

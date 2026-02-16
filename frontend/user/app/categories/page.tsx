@@ -5,8 +5,12 @@ import { Breadcrumb } from "@/components/kb/breadcrumb";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { Folder, AlertCircle } from "lucide-react";
-import { formatCategoryName, getCategoryColor } from "@/lib/wiki-utils";
+import { getCategoryColor } from "@/lib/wiki-utils";
 import { getCategories } from "@/lib/wiki-api";
+
+// --- เพิ่มการ Import สิ่งที่เราสร้างไว้ ---
+import { categoryDisplayMap } from "@/configs/sidebar-map";
+import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 
 export default async function CategoriesPage() {
   let data;
@@ -16,6 +20,7 @@ export default async function CategoriesPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <KBHeader />
+        <MobileSidebar />
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-6 py-8 flex gap-8">
             <KBSidebar />
@@ -64,22 +69,26 @@ export default async function CategoriesPage() {
           <div className="flex-1">
             <Breadcrumb items={[{ label: "หมวดหมู่ทั้งหมด" }]} />
 
-            <h1 className="text-3xl font-bold mt-6 mb-8">
+            <h1 className="text-3xl font-bold mt-6 mb-8 text-foreground">
               หมวดหมู่เอกสาร
             </h1>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {data.items.map((c: { slug: string }) => {
                 const color = getCategoryColor(c.slug);
+
+                // --- แก้ไขจุดนี้: ดึงชื่อจาก Map แทนการใช้ฟังก์ชัน format เดิม ---
+                const displayName = categoryDisplayMap[c.slug] || c.slug.toUpperCase();
+
                 return (
                   <Link key={c.slug} href={`/categories/${c.slug}`}>
-                    <Card className={`border-l-4 ${color.split(" ")[2]}`}>
+                    <Card className={`border-l-4 ${color.split(" ")[2]} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group`}>
                       <CardHeader className="flex flex-row items-center gap-3">
-                        <div className={`p-3 rounded-xl ${color}`}>
+                        <div className={`p-3 rounded-xl ${color} group-hover:scale-110 transition-transform`}>
                           <Folder className="h-5 w-5" />
                         </div>
-                        <CardTitle>
-                          {formatCategoryName(c.slug)}
+                        <CardTitle className="group-hover:text-primary transition-colors">
+                          {displayName}
                         </CardTitle>
                       </CardHeader>
                     </Card>

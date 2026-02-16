@@ -53,6 +53,11 @@ type WikiService struct {
 	githubClient *github.Client
 }
 
+type SearchResult struct {
+    WikiEntry
+    Snippet string `json:"snippet"`
+}
+
 func NewWikiService() *WikiService {
 	contentPath := config.GetWikiContentPath()
 	return &WikiService{
@@ -235,4 +240,47 @@ func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error)
 		Title:   title,
 		Content: fc.Content,
 	}, nil
+}
+
+
+func (s *WikiService) SearchInContent(query string) ([]SearchResult, error) {
+    query = strings.ToLower(query)
+    entries, err := s.listFromLocal()
+    if err != nil {
+        return nil, err
+    }
+
+    var results []SearchResult
+    root := filepath.Clean(s.repoPath)
+
+    for _, entry := range entries {
+        fullPath := filepath.Join(root, filepath.FromSlash(entry.Path))
+        data, err := os.ReadFile(fullPath)
+        if err != nil {
+            continue
+        }
+
+        content := string(data)
+        contentLower := strings.ToLower(content)
+
+        if strings.Contains(contentLower, query) {
+            // สร้าง Snippet สั้นๆ รอบๆ คำที่เจอ
+            idx := strings.Index(contentLower, query)
+            start := idx - 40
+            if start < 0 { start = 0 }
+            end := idx + len(query) + 60
+            if end > len(content) { end = len(content) }
+            
+            snippet := content[start:end]
+            
+            results = append(results, SearchResult{
+                WikiEntry: entry,
+                Snippet:   "..." + strings.ReplaceAll(snippet, "\n", " ") + "...",
+            })
+        }
+        
+        if len(results) >= 20 { break } 
+    }
+
+    return results, nil
 }

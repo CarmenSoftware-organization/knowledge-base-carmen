@@ -189,3 +189,25 @@ export async function askChat(
   }
   return data;
 }
+
+export type SearchResultItem = WikiListItem & {
+  snippet: string;
+};
+
+export async function searchWiki(query: string): Promise<SearchResultItem[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/wiki/search?q=${encodeURIComponent(q)}`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.items ?? [];
+  } catch (error) {
+    console.error("Search Wiki Error:", error);
+    return [];
+  }
+}

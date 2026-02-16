@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
+import { categoryDisplayMap } from "@/configs/sidebar-map";
 
 type Props = {
   categories: {
@@ -26,62 +27,68 @@ export function CategoryCards({ categories }: Props) {
 
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((category) => (
-            <Link
-              key={category.slug}
-              href={`/categories/${category.slug}`}
-              className="group focus:outline-none"
-            >
-              <Card
-                className="
-                  h-full
-                  border
-                  transition-all duration-200
-                  hover:shadow-lg
-                  hover:border-primary/40
-                  hover:-translate-y-1
+          {categories.map((category) => {
+            // ใช้ชื่อจาก Map ถ้าไม่มีให้แปลง slug (เช่น ap-system -> Ap System)
+            const displayName = categoryDisplayMap[category.slug] || category.slug.replace(/-/g, " ");
 
-                  group-focus-visible:ring-2
-                  group-focus-visible:ring-primary
-                  group-focus-visible:ring-offset-2
-                "
+            return (
+              <Link
+                key={category.slug}
+                href={`/categories/${category.slug}`}
+                className="group focus:outline-none"
               >
-                <CardContent className="p-6">
+                <Card
+                  className="
+                    h-full
+                    border
+                    transition-all duration-200
+                    hover:shadow-lg
+                    hover:border-primary/40
+                    hover:-translate-y-1
 
-                  {/* Category Title */}
-                  <h3
-                    className="
-                      font-semibold
-                      text-foreground
-                      capitalize
-                      transition-colors
-                      group-hover:text-primary
-                    "
-                  >
-                    {category.slug.replace(/-/g, " ")}
-                  </h3>
+                    group-focus-visible:ring-2
+                    group-focus-visible:ring-primary
+                    group-focus-visible:ring-offset-2
+                  "
+                >
+                  <CardContent className="p-6">
 
-                  {/* Meta */}
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {category.articleCount} บทความ
-                    </span>
-
-                    <ArrowRight
+                    {/* Category Title */}
+                    <h3
                       className="
-                        h-4 w-4
-                        text-muted-foreground
-                        transition-all
+                        font-semibold
+                        text-foreground
+                        capitalize
+                        transition-colors
                         group-hover:text-primary
-                        group-hover:translate-x-1
+                        text-lg
                       "
-                    />
-                  </div>
+                    >
+                      {displayName}
+                    </h3>
 
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                    {/* Meta */}
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {category.articleCount} บทความ
+                      </span>
+
+                      <ArrowRight
+                        className="
+                          h-4 w-4
+                          text-muted-foreground
+                          transition-all
+                          group-hover:text-primary
+                          group-hover:translate-x-1
+                        "
+                      />
+                    </div>
+
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
 
       </div>

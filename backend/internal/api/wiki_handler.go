@@ -114,6 +114,18 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	return c.JSON(content)
 }
 
+func (h *WikiHandler) Search(c *fiber.Ctx) error {
+    query := c.Query("q")
+    if query == "" {
+        return c.JSON(fiber.Map{"items": []interface{}{}})
+    }
+    results, err := h.wikiService.SearchInContent(query)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+    return c.JSON(fiber.Map{"items": results})
+}
+
 
 //อันนี้สหรับเทสดึงแบบเเมนนวลนะเช่นจะทำปุ่มไว้ดึงหน้าเว็บ 
 
