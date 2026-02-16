@@ -8,8 +8,6 @@ import { getCategory, getContent } from "@/lib/wiki-api";
 import { notFound } from "next/navigation";
 import { articleDisplayMap, categoryDisplayMap, cleanTitle } from "@/configs/sidebar-map";
 import { MobileSidebar } from "@/components/kb/mobile-sidebar";
-
-// สำหรับ Render เนื้อหา index.md
 import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import matter from "gray-matter";
@@ -17,33 +15,27 @@ import matter from "gray-matter";
 export default async function CategoryPage({
   params,
 }: {
-  params: Promise<{ category: string }>; // ✅ ต้องเป็น Promise
+  params: Promise<{ category: string }>; 
 }) {
-  // 1. Await params เสมอสำหรับ Next.js 15
   const resolvedParams = await params;
   const category = resolvedParams.category;
 
-  if (!category) {
-    notFound();
-  }
+  if (!category) notFound();
 
-  // 2. ดึงข้อมูล Category และลองดึง index.md
   let data;
   let indexContent = null;
 
   try {
     data = await getCategory(category);
     
-    // ลองหาไฟล์ index.md เพื่อมาโชว์เป็น Intro
     try {
       const rawIndex = await getContent(`${category}/index.md`);
       if (rawIndex) {
         indexContent = matter(rawIndex.content);
       }
-    } catch {
-      // ไม่มี index.md ไม่เป็นไร โชว์แค่ Cards ต่อไป
+    } catch (e) {
     }
-  } catch {
+  } catch (err) {
     notFound();
   }
 
@@ -54,14 +46,11 @@ export default async function CategoryPage({
       <KBHeader />
       <MobileSidebar />
       <main className="flex-1">
-        {/* ✅ หัวใจสำคัญของ Sidebar Sticky คือ items-start */}
-        <div className="max-w-7xl mx-auto px-6 py-8 flex gap-10 items-start">
+        <div className="max-w-7xl mx-auto px-6 py-10 flex gap-10 items-start relative">
           
-          {/* ฝั่งซ้าย: Sidebar (ต้องมี sticky top-28 ในตัว component) */}
           <KBSidebar />
 
           <div className="flex-1 min-w-0">
-            {/* Breadcrumb */}
             <Breadcrumb
               items={[
                 { label: "หมวดหมู่", href: "/categories" },
@@ -69,7 +58,6 @@ export default async function CategoryPage({
               ]}
             />
 
-            {/* --- ส่วนที่ 1: เนื้อหาจาก index.md (ถ้ามี) --- */}
             {indexContent && (
               <div className="mt-6 mb-12">
                 <ArticleHeaderInfo 
@@ -83,70 +71,41 @@ export default async function CategoryPage({
                    category={category} 
                 />
                 
-                {/* ตัวแบ่งส่วน */}
                 <div className="relative py-12">
-                  <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200"></div>
                   </div>
                   <div className="relative flex justify-center">
                     <span className="bg-gray-50 px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
-                      รายการบทความใน {categoryName}
+                      รายการบทความในหมวดนี้
                     </span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* --- ส่วนที่ 2: หัวข้อบทความ (โชว์เมื่อไม่มี index.md) --- */}
             {!indexContent && (
               <div className="mt-6 mb-10">
-                <h1 className="text-4xl font-bold text-foreground">
-                  {categoryName}
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                  รวมบทความทั้งหมดในหมวดนี้
-                </p>
+                <h1 className="text-4xl font-bold text-foreground">{categoryName}</h1>
+                <p className="text-muted-foreground mt-2">รวมบทความทั้งหมดในหมวดนี้</p>
               </div>
             )}
 
-            {/* --- ส่วนที่ 3: Cards Grid --- */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 mb-10">
               {data.items.map((item: any) => {
-                // ไม่โชว์ index ในรูปแบบ Card เพราะดึงเนื้อหามาโชว์แล้ว
-                if (item.slug === 'index') return null;
-
+                if (item.slug === 'index') return null; 
                 const displayTitle = articleDisplayMap[item.slug] || cleanTitle(item.title);
-
                 return (
-                  <Link
-                    key={item.path}
-                    href={`/categories/${category}/${item.slug}`}
-                    className="group"
-                  >
-                    <Card
-                      className="
-                        h-full
-                        border border-primary/10
-                        bg-card
-                        transition-all
-                        duration-300
-                        hover:shadow-lg
-                        hover:border-primary/30
-                        hover:-translate-y-1
-                      "
-                    >
+                  <Link key={item.path} href={`/categories/${category}/${item.slug}`} className="group">
+                    <Card className="h-full border border-primary/10 bg-white transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1">
                       <CardContent className="p-6 flex items-center justify-between">
                         <div className="flex-1 pr-4">
                           <h2 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors leading-snug">
                             {displayTitle}
                           </h2>
-                          <p className="text-xs text-muted-foreground mt-2 uppercase tracking-wider">
-                            คลิกเพื่ออ่านเนื้อหา
-                          </p>
+                          <p className="text-xs text-muted-foreground mt-2 uppercase tracking-wider">คลิกเพื่ออ่าน</p>
                         </div>
-                        <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary/60 group-hover:text-primary group-hover:bg-primary/10 transition-all">
-                          →
-                        </div>
+                        <div className="text-primary opacity-40 group-hover:opacity-100 transition-opacity">→</div>
                       </CardContent>
                     </Card>
                   </Link>
