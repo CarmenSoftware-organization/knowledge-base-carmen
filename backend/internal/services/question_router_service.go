@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/new-carmen/backend/internal/config"
+	makeclient "github.com/new-carmen/backend/pkg/make"
 	"github.com/new-carmen/backend/pkg/openclaw"
 )
 
@@ -21,26 +22,23 @@ type QuestionRouterCandidate struct {
 	Score  float32 `json:"score,omitempty"`
 }
 
-// QuestionRouterService ใช้ OpenClaw เพื่อเดาว่าควรโฟกัส path ไหนใน carmen_cloud
+// QuestionRouterService ใช้ OpenClaw หรือ Make (ตาม config) เพื่อเดาว่าควรโฟกัส path ไหนใน carmen_cloud
 type QuestionRouterService struct {
-	client *openclaw.Client
-	wiki   *WikiService
+	openClaw *openclaw.Client
+	make     *makeclient.Client
+	wiki     *WikiService
 }
 
 func NewQuestionRouterService() *QuestionRouterService {
 	return &QuestionRouterService{
-		client: openclaw.NewClient(),
-		wiki:   NewWikiService(),
+		openClaw: openclaw.NewClient(),
+		make:     makeclient.NewClient(),
+		wiki:     NewWikiService(),
 	}
 }
 
-// RouteQuestion ใช้ question + รายการไฟล์ทั้งหมด สร้าง prompt ให้ OpenClaw เลือก path ที่เกี่ยวข้อง
+// RouteQuestion ใช้ question + รายการไฟล์ทั้งหมด: เรียก Make หรือ OpenClaw (ตาม config) เลือก path ที่เกี่ยวข้อง
 func (s *QuestionRouterService) RouteQuestion(question string) (*QuestionRouterResult, error) {
-	cfg := config.AppConfig.OpenClaw
-	if !cfg.Enabled || cfg.URL == "" || cfg.Token == "" {
-		return nil, fmt.Errorf("openclaw not enabled")
-	}
-
 	entries, err := s.wiki.ListMarkdown()
 	if err != nil {
 		return nil, fmt.Errorf("list markdown failed: %w", err)
@@ -49,7 +47,38 @@ func (s *QuestionRouterService) RouteQuestion(question string) (*QuestionRouterR
 		return nil, fmt.Errorf("no wiki entries to route")
 	}
 
-	// เตรียมรายการเอกสารแบบสั้น ๆ ให้ LLM อ่าน
+	makeCfg := config.AppConfig.Make
+	if makeCfg.UseForQuestionRouter && makeCfg.WebhookURL != "" {
+		return s.routeViaMake(question, entries)
+	}
+
+	return s.routeViaOpenClaw(question, entries)
+}
+
+// routeViaMake ส่ง question + documents ไป Make webhook
+func (s *QuestionRouterService) routeViaMake(question string, entries []WikiEntry) (*QuestionRouterResult, error) {
+	docs := make([]makeclient.RouteDocEntry, 0, len(entries))
+	for _, e := range entries {
+		docs = append(docs, makeclient.RouteDocEntry{Path: e.Path, Title: e.Title})
+	}
+	raw, err := s.make.RouteQuestion(strings.TrimSpace(question), docs)
+	if err != nil {
+		return nil, err
+	}
+	var result QuestionRouterResult
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse Make JSON: %w (raw=%s)", err, raw)
+	}
+	return &result, nil
+}
+
+// routeViaOpenClaw ใช้ OpenClaw แบบเดิม (prompt เป็น text + รายการเอกสาร)
+func (s *QuestionRouterService) routeViaOpenClaw(question string, entries []WikiEntry) (*QuestionRouterResult, error) {
+	cfg := config.AppConfig.OpenClaw
+	if !cfg.Enabled || cfg.URL == "" || cfg.Token == "" {
+		return nil, fmt.Errorf("openclaw not enabled")
+	}
+
 	var b strings.Builder
 	b.WriteString("Question: ")
 	b.WriteString(strings.TrimSpace(question))
@@ -66,11 +95,10 @@ func (s *QuestionRouterService) RouteQuestion(question string) (*QuestionRouterR
 		b.WriteString("\n")
 	}
 
-	raw, err := s.client.RouteQuestion(b.String())
+	raw, err := s.openClaw.RouteQuestion(b.String())
 	if err != nil {
 		return nil, err
 	}
-
 	var result QuestionRouterResult
 	if err := json.Unmarshal([]byte(raw), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse OpenClaw JSON: %w (raw=%s)", err, raw)

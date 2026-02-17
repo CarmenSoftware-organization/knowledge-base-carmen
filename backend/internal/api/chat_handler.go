@@ -73,8 +73,9 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 
 	embStr := utils.Float32SliceToPgVector(emb)
 
-	// 2.a กรณีมี OpenClaw ให้ลองใช้ routing + wiki โดยตรงก่อน (ไม่พึ่ง DB)
-	if cfg := config.AppConfig.OpenClaw; cfg.Enabled {
+	// 2.a กรณีมี OpenClaw หรือ Make (แยกประเภทคำถาม) ให้ลองใช้ routing + wiki โดยตรงก่อน (ไม่พึ่ง DB)
+	useRouter := config.AppConfig.OpenClaw.Enabled || (config.AppConfig.Make.UseForQuestionRouter && config.AppConfig.Make.WebhookURL != "")
+	if useRouter {
 		if res, err := h.router.RouteQuestion(q); err == nil && len(res.Candidates) > 0 {
 			// ถ้าผู้ใช้เลือก path มาแล้ว (preferredPath) ให้ใช้ path นั้นตรง ๆ เลย
 			if strings.TrimSpace(req.PreferredPath) != "" {
@@ -178,8 +179,8 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	}
 	pathFilter := buildPathFilterFromQuestion(q)
 
-	// ถ้าเปิดใช้ OpenClaw ให้ลอง route question → ได้ path ที่โฟกัสมากขึ้น
-	if cfg := config.AppConfig.OpenClaw; cfg.Enabled {
+	// ถ้าเปิดใช้ routing (OpenClaw หรือ Make) ให้ลอง route question → ได้ path ที่โฟกัสมากขึ้น
+	if useRouter {
 		if res, err := h.router.RouteQuestion(q); err == nil && len(res.Candidates) > 0 {
 			var conds []string
 			for _, cnd := range res.Candidates {

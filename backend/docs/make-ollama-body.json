@@ -1,0 +1,10 @@
+{
+  "model": "gemma3:1b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "จากคำถามและรายการเอกสารด้านล่าง ให้เลือก path ที่เกี่ยวข้อง ตอบเฉพาะ JSON เท่านั้น ไม่มีข้อความอื่น รูปแบบ:\n{\"is_ambiguous\": true หรือ false, \"candidates\": [{\"path\": \"path/ไฟล์.md\", \"reason\": \"เหตุผลสั้นๆ\", \"score\": 0.9}]}\n\nกฎการตั้ง is_ambiguous และจำนวน candidates:\n- ถ้าคำถามชัดว่าหมายถึงเรื่องเดียว / เอกสารเดียว → is_ambiguous: false และ candidates มีแค่ 1 ตัว (path ที่ตรงที่สุด)\n- ถ้าคำถามกำกวม หรือถามหลายหัวข้อ (เช่น \"อยากรู้เรื่อง A และ B\") → is_ambiguous: true และ candidates มี 2–3 ตัว (ให้ user เลือกในระบบได้)\n\nคำถาม: {{2.question}}\n\nรายการเอกสาร (path - title):\n{{2.documents}}"
+    }
+  ],
+  "stream": false
+}

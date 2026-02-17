@@ -21,6 +21,7 @@ type Config struct {
 	GitHub   GitHubConfig
 	Git      GitConfig
 	OpenClaw OpenClawConfig
+	Make     MakeConfig
 }
 
 type ServerConfig struct {
@@ -57,6 +58,13 @@ type OpenClawConfig struct {
 	Model string // ชื่อ model ที่ Gateway map ไว้สำหรับ routing (เช่น openrouter/gpt-4o-mini)
 	// Enabled ไว้เผื่ออนาคตอยากปิดใช้ OpenClaw ชั่วคราว
 	Enabled bool
+}
+
+// MakeConfig ใช้เมื่อต้องการให้ขั้นตอน "แยกประเภทคำถาม" ไปรันบน Make (webhook)
+type MakeConfig struct {
+	WebhookURL           string // URL ของ Make Custom Webhook (ต้องเป็นแบบ Request–Response ถ้าต้องการรอผล)
+	WebhookAPIKey        string // ถ้าตั้งใน Make ให้ส่งใน header x-make-apikey
+	UseForQuestionRouter bool   // true = ใช้ Make แทน OpenClaw สำหรับ RouteQuestion
 }
 
 type ChromaDBConfig struct {
@@ -122,6 +130,11 @@ func Load() error {
 			Token:   getEnv("OPENCLAW_GATEWAY_TOKEN", ""),
 			Model:   getEnv("OPENCLAW_MODEL", "default"), // ให้หัวหน้าแมปชื่อ model เองใน Gateway
 			Enabled: getEnvAsBool("OPENCLAW_ENABLED", true),
+		},
+		Make: MakeConfig{
+			WebhookURL:           getEnv("MAKE_WEBHOOK_URL", ""),
+			WebhookAPIKey:        getEnv("MAKE_WEBHOOK_API_KEY", ""),
+			UseForQuestionRouter: getEnvAsBool("USE_MAKE_FOR_ROUTER", false),
 		},
 		GitHub: GitHubConfig{
 			Token:         getEnv("GITHUB_TOKEN", ""),
