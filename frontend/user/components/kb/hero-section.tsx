@@ -1,12 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { GlobalSearch } from "@/components/search/global-search";
 
 const popularSearches = [
   "AP Invoice", "Input VAT Reconciliation", "AR Receipt",
-  "Close Period", "Chart of Account", "User Permissions",
+  "Close Period", "Chart of Account", "Permissions",
 ];
 
 const staggerContainer: Variants = {
@@ -24,6 +25,13 @@ const fadeUp: Variants = {
 };
 
 export function HeroSection() {
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handlePopularClick = (term: string) => {
+    setSearchQuery(term);
+  };
+
   return (
     <motion.section
       className="relative bg-gradient-to-b from-primary/5 via-background to-background py-16 sm:py-24"
@@ -66,14 +74,15 @@ export function HeroSection() {
 
         <motion.div variants={fadeUp} className="mt-10 max-w-xl mx-auto relative">
          
-          <GlobalSearch variant="hero" />
+          <GlobalSearch variant="hero" defaultValue={searchQuery} />
 
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <div className="mt-6 flex flex-wrap justify-center gap-x-3 gap-y-2">
             <span className="text-sm text-muted-foreground">ยอดนิยม:</span>
             {popularSearches.map((term) => (
               <button
                 key={term}
-                className="text-sm px-2 py-0.5 text-primary/70 hover:text-primary transition-all hover:underline"
+                onClick={() => handlePopularClick(term)}
+                className="text-sm px-2 py-0.5 text-primary/70 hover:text-primary transition-all hover:underline cursor-pointer active:scale-95 flex items-center"
               >
                 {term}
               </button>

@@ -55,10 +55,11 @@ interface GlobalSearchProps {
   variant?: "hero" | "header";
   placeholder?: string;
   className?: string;
+  defaultValue?: string; 
 }
 
-export function GlobalSearch({ variant = "hero", placeholder, className }: GlobalSearchProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+export function GlobalSearch({ variant = "hero", placeholder, className, defaultValue = "" }: GlobalSearchProps) {
+  const [searchQuery, setSearchQuery] = useState(defaultValue);
   const [isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchResultItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -67,6 +68,12 @@ export function GlobalSearch({ variant = "hero", placeholder, className }: Globa
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isHeader = variant === "header";
+
+  useEffect(() => {
+    if (defaultValue) {
+      setSearchQuery(defaultValue);
+    }
+  }, [defaultValue]);
 
   useEffect(() => {
     const q = searchQuery.trim();
