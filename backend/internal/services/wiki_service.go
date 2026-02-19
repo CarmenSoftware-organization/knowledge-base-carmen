@@ -7,6 +7,8 @@
 package services
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,12 +19,17 @@ import (
 	"github.com/new-carmen/backend/pkg/github"
 )
 
-// WikiEntry รายการไฟล์สำหรับ frontend
+// WikiEntry รายการไฟล์สำหรับ frontend (รองรับ frontmatter จาก .md)
 type WikiEntry struct {
-	Path        string   `json:"path"`
-	Title       string   `json:"title"`
-	Tags        []string `json:"tags,omitempty"`
-	PublishedAt string   `json:"publishedAt,omitempty"`
+	Path          string   `json:"path"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description,omitempty"`
+	Published     bool     `json:"published,omitempty"`
+	Date          string   `json:"date,omitempty"`
+	Tags          []string `json:"tags,omitempty"`
+	Editor        string   `json:"editor,omitempty"`
+	DateCreated   string   `json:"dateCreated,omitempty"`
+	PublishedAt   string   `json:"publishedAt,omitempty"`
 }
 
 // CategoryEntry หมวดสำหรับ GET /api/wiki/categories (frontend ใช้ slug map กับชื่อ/icon/สีเอง)
@@ -32,20 +39,30 @@ type CategoryEntry struct {
 
 // CategoryItem บทความในหมวด สำหรับ GET /api/wiki/category/:slug
 type CategoryItem struct {
-	Slug        string   `json:"slug"`
-	Title       string   `json:"title"`
-	Path        string   `json:"path"`
-	Tags        []string `json:"tags,omitempty"`
-	PublishedAt string   `json:"publishedAt,omitempty"`
+	Slug          string   `json:"slug"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description,omitempty"`
+	Published     bool     `json:"published,omitempty"`
+	Date          string   `json:"date,omitempty"`
+	Path          string   `json:"path"`
+	Tags          []string `json:"tags,omitempty"`
+	Editor        string   `json:"editor,omitempty"`
+	DateCreated   string   `json:"dateCreated,omitempty"`
+	PublishedAt   string   `json:"publishedAt,omitempty"`
 }
 
-// WikiContent เนื้อหาไฟล์
+// WikiContent เนื้อหาไฟล์ (รองรับ frontmatter)
 type WikiContent struct {
-	Path        string   `json:"path"`
-	Title       string   `json:"title"`
-	Content     string   `json:"content"`
-	Tags        []string `json:"tags,omitempty"`
-	PublishedAt string   `json:"publishedAt,omitempty"`
+	Path          string   `json:"path"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description,omitempty"`
+	Published     bool     `json:"published,omitempty"`
+	Date          string   `json:"date,omitempty"`
+	Content       string   `json:"content"`
+	Tags          []string `json:"tags,omitempty"`
+	Editor        string   `json:"editor,omitempty"`
+	DateCreated   string   `json:"dateCreated,omitempty"`
+	PublishedAt   string   `json:"publishedAt,omitempty"`
 }
 
 type WikiService struct {
@@ -64,6 +81,58 @@ func NewWikiService() *WikiService {
 		repoPath:     contentPath,
 		githubClient: github.NewClient(),
 	}
+}
+
+// parseFrontmatter แยก YAML frontmatter (ระหว่าง --- กับ ---) ออกจาก body คืน meta map และเนื้อหา markdown ล้วน
+func parseFrontmatter(data []byte) (meta map[string]string, body []byte) {
+	meta = make(map[string]string)
+	raw := bytes.TrimSpace(data)
+	if !bytes.HasPrefix(raw, []byte("---")) {
+		return meta, data
+	}
+	raw = raw[3:]
+	idx := bytes.Index(raw, []byte("\n---"))
+	if idx < 0 {
+		return meta, data
+	}
+	front := raw[:idx]
+	body = bytes.TrimSpace(raw[idx+4:])
+	sc := bufio.NewScanner(bytes.NewReader(front))
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+		colon := strings.Index(line, ":")
+		if colon <= 0 {
+			continue
+		}
+		key := strings.TrimSpace(line[:colon])
+		val := strings.TrimSpace(line[colon+1:])
+		val = strings.Trim(val, `"'`)
+		meta[key] = val
+	}
+	return meta, body
+}
+
+func metaToTags(meta map[string]string) []string {
+	s, ok := meta["tags"]
+	if !ok || s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	var out []string
+	for _, p := range parts {
+		if t := strings.TrimSpace(p); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+func metaBool(meta map[string]string, key string) bool {
+	v := strings.TrimSpace(strings.ToLower(meta[key]))
+	return v == "true" || v == "1"
 }
 
 
@@ -134,9 +203,16 @@ func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error
 			)
 
 			list = append(list, CategoryItem{
-				Slug:  itemSlug,
-				Title: e.Title,
-				Path:  e.Path,
+				Slug:          itemSlug,
+				Title:         e.Title,
+				Description:   e.Description,
+				Published:     e.Published,
+				Date:          e.Date,
+				Path:          e.Path,
+				Tags:          e.Tags,
+				Editor:        e.Editor,
+				DateCreated:   e.DateCreated,
+				PublishedAt:   e.PublishedAt,
 			})
 		}
 	}
@@ -147,6 +223,8 @@ func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error
 
 
 
+
+const maxFrontmatterRead = 16384
 
 func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 	root := filepath.Clean(s.repoPath)
@@ -175,7 +253,30 @@ func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 		title := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 		title = strings.ReplaceAll(title, "-", " ")
 		title = strings.ReplaceAll(title, "_", " ")
-		entries = append(entries, WikiEntry{Path: rel, Title: title})
+
+		entry := WikiEntry{Path: rel, Title: title}
+		data, err := os.ReadFile(path)
+		if err == nil && len(data) > 0 {
+			if len(data) > maxFrontmatterRead {
+				data = data[:maxFrontmatterRead]
+			}
+			meta, _ := parseFrontmatter(data)
+			if t := meta["title"]; t != "" {
+				entry.Title = t
+			}
+			entry.Description = meta["description"]
+			entry.Published = metaBool(meta, "published")
+			entry.Date = meta["date"]
+			entry.DateCreated = meta["dateCreated"]
+			entry.Editor = meta["editor"]
+			entry.Tags = metaToTags(meta)
+			if entry.Date != "" {
+				entry.PublishedAt = entry.Date
+			} else if entry.DateCreated != "" {
+				entry.PublishedAt = entry.DateCreated
+			}
+		}
+		entries = append(entries, entry)
 		return nil
 	})
 	if err != nil {
@@ -219,11 +320,27 @@ func (s *WikiService) getContentFromLocal(relPath string) (*WikiContent, error) 
 	title := strings.TrimSuffix(base, filepath.Ext(base))
 	title = strings.ReplaceAll(title, "-", " ")
 	title = strings.ReplaceAll(title, "_", " ")
-	return &WikiContent{
-		Path:    relPath,
-		Title:   title,
-		Content: string(data),
-	}, nil
+
+	out := &WikiContent{Path: relPath, Title: title, Content: string(data)}
+	meta, body := parseFrontmatter(data)
+	if len(meta) > 0 {
+		if t := meta["title"]; t != "" {
+			out.Title = t
+		}
+		out.Description = meta["description"]
+		out.Published = metaBool(meta, "published")
+		out.Date = meta["date"]
+		out.DateCreated = meta["dateCreated"]
+		out.Editor = meta["editor"]
+		out.Tags = metaToTags(meta)
+		if out.Date != "" {
+			out.PublishedAt = out.Date
+		} else if out.DateCreated != "" {
+			out.PublishedAt = out.DateCreated
+		}
+		out.Content = string(bytes.TrimSpace(body))
+	}
+	return out, nil
 }
 
 func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error) {
@@ -235,11 +352,27 @@ func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error)
 	title := strings.TrimSuffix(base, filepath.Ext(base))
 	title = strings.ReplaceAll(title, "-", " ")
 	title = strings.ReplaceAll(title, "_", " ")
-	return &WikiContent{
-		Path:    fc.Path,
-		Title:   title,
-		Content: fc.Content,
-	}, nil
+	data := []byte(fc.Content)
+	out := &WikiContent{Path: fc.Path, Title: title, Content: fc.Content}
+	meta, body := parseFrontmatter(data)
+	if len(meta) > 0 {
+		if t := meta["title"]; t != "" {
+			out.Title = t
+		}
+		out.Description = meta["description"]
+		out.Published = metaBool(meta, "published")
+		out.Date = meta["date"]
+		out.DateCreated = meta["dateCreated"]
+		out.Editor = meta["editor"]
+		out.Tags = metaToTags(meta)
+		if out.Date != "" {
+			out.PublishedAt = out.Date
+		} else if out.DateCreated != "" {
+			out.PublishedAt = out.DateCreated
+		}
+		out.Content = string(bytes.TrimSpace(body))
+	}
+	return out, nil
 }
 
 

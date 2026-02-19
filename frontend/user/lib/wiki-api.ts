@@ -8,7 +8,12 @@ const BASE_URL =
 export type WikiListItem = {
   path: string;
   title: string;
+  description?: string;
+  published?: boolean;
+  date?: string;
   tags?: string[];
+  editor?: string;
+  dateCreated?: string;
   publishedAt?: string;
 };
 
@@ -37,8 +42,13 @@ export async function getCategory(slug: string): Promise<{
   items: {
     slug: string;
     title: string;
+    description?: string;
+    published?: boolean;
+    date?: string;
     path: string;
     tags?: string[];
+    editor?: string;
+    dateCreated?: string;
     publishedAt?: string;
   }[];
 }> {
@@ -132,8 +142,13 @@ export async function findBestArticleForQuery(query: string): Promise<{
 export async function getContent(path: string): Promise<{
   path: string;
   title: string;
+  description?: string;
+  published?: boolean;
+  date?: string;
   content: string;
   tags?: string[];
+  editor?: string;
+  dateCreated?: string;
   publishedAt?: string;
 }> {
   const res = await fetch(
