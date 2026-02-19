@@ -44,17 +44,27 @@ export default async function ArticlePage({ params }: Props) {
       ? frontmatter.title
       : raw.title;
 
+  const description =
+    typeof frontmatter.description === "string"
+      ? frontmatter.description
+      : raw.description;
+
+  const editor =
+    typeof frontmatter.editor === "string"
+      ? frontmatter.editor
+      : raw.editor;
+
   const tags =
     typeof frontmatter.tags === "string"
       ? frontmatter.tags.split(",").map((t: string) => t.trim())
       : Array.isArray(frontmatter.tags)
         ? frontmatter.tags
-        : [];
+        : (raw.tags || []);
 
   const publishedAt =
     typeof frontmatter.date === "string"
       ? frontmatter.date
-      : null;
+      : raw.publishedAt;
 
   const formattedDate = publishedAt
     ? new Date(publishedAt).toLocaleDateString("th-TH", {
@@ -96,8 +106,10 @@ export default async function ArticlePage({ params }: Props) {
             {/* Title Content */}
             <ArticleHeaderInfo
               title={title}
+              description={description}
               formattedDate={formattedDate}
               tags={tags}
+              editor={editor}
             />
 
             <div className="border-b mb-8"></div>

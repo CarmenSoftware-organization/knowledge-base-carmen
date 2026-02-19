@@ -65,7 +65,7 @@ export function HeroSection() {
         </motion.p>
 
         <motion.div variants={fadeUp} className="mt-10 max-w-xl mx-auto relative">
-          {/* เรียกใช้ Component กลางในโหมด Hero */}
+         
           <GlobalSearch variant="hero" />
 
           <div className="mt-6 flex flex-wrap justify-center gap-2">

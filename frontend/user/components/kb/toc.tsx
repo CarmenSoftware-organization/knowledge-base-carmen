@@ -57,7 +57,6 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
                     : "text-muted-foreground hover:text-primary hover:border-gray-300 border-transparent"
                 )}
               >
-                {/* ไฮไลท์พื้นหลังแบบเข้มขึ้นและสมูทด้วย Framer Motion */}
                 {isActive && (
                   <motion.div
                     layoutId="active-pill"

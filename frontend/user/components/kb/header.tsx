@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { MessageCircle, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { GlobalSearch } from "@/components/search/global-search";
+import Image from "next/image";
 
 const headerVariants: Variants = {
   hidden: { y: -60, opacity: 0 },
@@ -44,15 +45,10 @@ export function KBHeader() {
           
           {/* 1. Logo */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <MessageCircle className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold hidden sm:inline-block">
-              Carmen Software
-            </span>
+           <Image src="/carmen02-logo.png" alt="Carmen Logo" width={170} height={170} className="rounded" />
           </Link>
 
-          {/* 2. Search Section (Desktop) - แสดงกว้างขึ้นเพื่อให้เห็นเนื้อหา Snippet ชัดเจน */}
+          {/* 2. Search Section (Desktop) - Display Content Snippet */}
           {!isHome && (
             <div className="hidden md:flex flex-1 max-w-2xl mx-4">
               <GlobalSearch variant="header" />
@@ -64,7 +60,6 @@ export function KBHeader() {
             <nav className="hidden md:flex items-center gap-1 mr-2">
               <Button variant="ghost" size="sm" asChild><Link href="/">หน้าหลัก</Link></Button>
               <Button variant="ghost" size="sm" asChild><Link href="/categories">หมวดหมู่</Link></Button>
-              <Button variant="ghost" size="sm" asChild><Link href="/chat">ถามบอท</Link></Button>
             </nav>
 
             {/* Mobile Menu Toggle */}
@@ -96,9 +91,6 @@ export function KBHeader() {
                 </Button>
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/categories">หมวดหมู่</Link>
-                </Button>
-                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
-                  <Link href="/chat">ถามบอท</Link>
                 </Button>
               </nav>
             </motion.div>
