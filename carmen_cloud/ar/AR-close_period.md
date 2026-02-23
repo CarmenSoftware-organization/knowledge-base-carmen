@@ -1,14 +1,18 @@
 ---
-title: Close Period For Account Receivable Module
+title: Close Period AR
 description: Close Period For Account Receivable Module
 published: true
-date: "2026-02-02T06:14:10.522Z"
+date: 2026-02-23T05:01:49.532Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.522Z"
+dateCreated: 2026-02-02T06:53:25.025Z
 ---
 
-# Close Period For Account Receivable Module
+---
+title: "Close Period"
+weight: 15
+---
+
 
 ## การปิดรอบบัญชี
 
@@ -20,7 +24,7 @@ dateCreated: "2026-02-02T06:14:10.522Z"
 
 3. กดปุ่ม Close Period
 
-![alt text](image-65.png)
+<img src="./image-65.png"  />
 
 4. ระบบจะแสดงหน้าต่างให้ยืนยันการปิด Period
 
@@ -37,10 +41,12 @@ dateCreated: "2026-02-02T06:14:10.522Z"
     <img src="./image-6.png"  />
 </p>
 
-**หมายเหตุ**
+> **หมายเหตุ**
+> 
+> 1.การปิดรอบบัญชีในแต่ละ Module จะทำให้ไม่สามารถ เพิ่มเติม หรือแก้ไขข้อมูลในเดือนที่ปิดไปแล้วได้อีก ดังนั้นทุกครั้งก่อนการ Close Period โปรดตรวจสอบห้แน่ใจว่า ข้อมูลถูกต้องและครบถ้วนเรียบร้อยแล้ว
+> 
+> 2.การปิดบัญชีนี้เป็นการปิดรอบบัญชีในส่วนของ Account Receivable Module เท่านั้น ในส่วนของ General Ledger ยังสามารถดึงข้อมูลจากระบบ AR เพื่อบันทึก JV ได้ปกติ (ใน General Ledger ยังไม่ถูก Close Period)
+> 
+> 3.หากต้องการเปิด Period ให้ FC, Account Manger หรือผู้มีอำนาจส่ง E-Mail ถึง Support เพื่อทำการขอเปิด Period
+{.is-warning}
 
-1. การปิดรอบบัญชีในแต่ละ Module จะทำให้ไม่สามารถ เพิ่มเติม หรือแก้ไขข้อมูลในเดือนที่ปิดไปแล้วได้อีก ดังนั้นทุกครั้งก่อนการ Close Period โปรดตรวจสอบห้แน่ใจว่า ข้อมูลถูกต้องและครบถ้วนเรียบร้อยแล้ว
-
-2. การปิดบัญชีนี้เป็นการปิดรอบบัญชีในส่วนของ Account Receivable Module เท่านั้น ในส่วนของ General Ledger ยังสามารถดึงข้อมูลจากระบบ AR เพื่อบันทึก JV ได้ปกติ (ใน General Ledger ยังไม่ถูก Close Period)
-
-3. หากต้องการเปิด Period ให้ FC, Account Manger หรือผู้มีอำนาจส่ง E-Mail ถึง Support เพื่อทำการขอเปิด Period
