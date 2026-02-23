@@ -1,4 +1,3 @@
-// ลงทะเบียน route ทั้งหมด — ใช้อยู่ 
 package router
 
 import (
@@ -6,16 +5,16 @@ import (
 	"github.com/new-carmen/backend/internal/middleware"
 )
 
+// SetupRoutes registers all application middleware and route groups.
 func SetupRoutes(app *fiber.App) {
 	app.Use(middleware.Logger())
 	app.Use(middleware.CORS())
 
-	
 	RegisterHealth(app)
 	RegisterPublicSystem(app)
-	RegisterWiki(app)    // อ่านจาก repo wiki-content (local หรือ GitHub)
-	RegisterWebhook(app)   // เมื่อมี push ที่ wiki-content → git pull + index อัตโนมัติ
-	RegisterIndexing(app)   // POST /api/index/rebuild — กด reindex เองได้
-	RegisterDocuments(app)   // GET /api/documents — รายการเอกสารใน index (โชว์หน้าบ้าน)
-	RegisterPublicChat(app) // POST /api/chat/ask
+	RegisterWiki(app)
+	RegisterWebhook(app)
+	RegisterIndexing(app)
+	RegisterDocuments(app)
+	RegisterPublicChat(app)
 }

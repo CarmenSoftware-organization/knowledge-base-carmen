@@ -1,9 +1,3 @@
-// logic ที่คุยกับ Git (ผ่านคำสั่ง git) ถ้ายังไม่มี repo → clone
-// ถ้ามีแล้ว → git pull
-// ใช้โดย:
-// wiki_handler (POST /api/wiki/sync)
-// github_webhook_handler (ตอนโดน webhook
-
 package services
 
 import (
@@ -16,7 +10,7 @@ import (
 	"github.com/new-carmen/backend/internal/config"
 )
 
-// WikiSyncService รัน git pull (หรือ clone ถ้ายังไม่มี) ให้โฟลเดอร์ wiki-content อัปเดต
+// WikiSyncService manages git clone/pull for the local wiki-content repository.
 type WikiSyncService struct {
 	repoPath string
 	repoURL  string
@@ -37,14 +31,10 @@ func NewWikiSyncService() *WikiSyncService {
 	if branch == "" {
 		branch = "wiki-content"
 	}
-	return &WikiSyncService{
-		repoPath: repoPath,
-		repoURL:  repoURL,
-		branch:   branch,
-	}
+	return &WikiSyncService{repoPath: repoPath, repoURL: repoURL, branch: branch}
 }
 
-// Sync ทำ git pull origin <branch> ใน repoPath ถ้ายังไม่มีโฟลเดอร์หรือไม่ใช่ git repo จะลอง clone ก่อน
+// Sync runs git pull if the repo exists, or git clone if it does not.
 func (s *WikiSyncService) Sync() error {
 	if _, err := os.Stat(filepath.Join(s.repoPath, ".git")); os.IsNotExist(err) {
 		return s.clone()
@@ -54,17 +44,15 @@ func (s *WikiSyncService) Sync() error {
 
 func (s *WikiSyncService) clone() error {
 	if s.repoURL == "" {
-		return fmt.Errorf("GIT_REPO_URL or GitHub Owner/Repo not set")
+		return fmt.Errorf("GIT_REPO_URL or GitHub Owner/Repo not configured")
 	}
-	// clone ลงโฟลเดอร์ repoPath (git จะสร้างโฟลเดอร์ให้) — อย่าใช้ cd repoPath แล้ว clone "."
-	// ถ้า repoPath มีอยู่แล้วและไม่ว่าง git จะ error; ควรใช้ path ว่าง เช่น ./wiki-content
 	cmd := exec.Command("git", "clone", "--depth", "1", "-b", s.branch, s.repoURL, s.repoPath)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("[wiki-sync] clone failed: %s", out)
 		return fmt.Errorf("git clone: %w", err)
 	}
-	log.Printf("[wiki-sync] cloned %s (branch %s) to %s", s.repoURL, s.branch, s.repoPath)
+	log.Printf("[wiki-sync] cloned %s (branch: %s) → %s", s.repoURL, s.branch, s.repoPath)
 	return nil
 }
 
@@ -76,6 +64,6 @@ func (s *WikiSyncService) pull() error {
 		log.Printf("[wiki-sync] pull failed: %s", out)
 		return fmt.Errorf("git pull: %w", err)
 	}
-	log.Printf("[wiki-sync] pulled %s", string(out))
+	log.Printf("[wiki-sync] pulled: %s", out)
 	return nil
 }

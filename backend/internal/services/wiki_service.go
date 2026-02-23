@@ -1,9 +1,3 @@
-// logic อ่านไฟล์ markdown จากโฟลเดอร์ backend/wiki-conten
-// มีฟังก์ชัน:
-// list รายการไฟล์
-// อ่านเนื้อหาไฟล์ตาม path
-// แปลงข้อมูลให้อยู่ในรูปที่ API ส่งให้ frontend
-
 package services
 
 import (
@@ -20,7 +14,8 @@ import (
 	"github.com/new-carmen/backend/pkg/github"
 )
 
-// WikiEntry รายการไฟล์สำหรับ frontend (รองรับ frontmatter จาก .md)
+// ─── Domain Types ────────────────────────────────────────────────────────────
+
 type WikiEntry struct {
 	Path        string   `json:"path"`
 	Title       string   `json:"title"`
@@ -34,14 +29,12 @@ type WikiEntry struct {
 	Weight      int      `json:"weight,omitempty"`
 }
 
-// CategoryEntry หมวดสำหรับ GET /api/wiki/categories (frontend ใช้ slug map กับชื่อ/icon/สีเอง)
 type CategoryEntry struct {
 	Slug   string `json:"slug"`
 	Title  string `json:"title"`
 	Weight int    `json:"weight,omitempty"`
 }
 
-// CategoryItem บทความในหมวด สำหรับ GET /api/wiki/category/:slug
 type CategoryItem struct {
 	Slug        string   `json:"slug"`
 	Title       string   `json:"title"`
@@ -56,7 +49,6 @@ type CategoryItem struct {
 	Weight      int      `json:"weight,omitempty"`
 }
 
-// WikiContent เนื้อหาไฟล์ (รองรับ frontmatter)
 type WikiContent struct {
 	Path        string   `json:"path"`
 	Title       string   `json:"title"`
@@ -70,25 +62,28 @@ type WikiContent struct {
 	PublishedAt string   `json:"publishedAt,omitempty"`
 }
 
-type WikiService struct {
-	repoPath     string
-	githubClient *github.Client
-}
-
 type SearchResult struct {
 	WikiEntry
 	Snippet string `json:"snippet"`
 }
 
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+type WikiService struct {
+	repoPath     string
+	githubClient *github.Client
+}
+
 func NewWikiService() *WikiService {
-	contentPath := config.GetWikiContentPath()
 	return &WikiService{
-		repoPath:     contentPath,
+		repoPath:     config.GetWikiContentPath(),
 		githubClient: github.NewClient(),
 	}
 }
 
-// parseFrontmatter แยก YAML frontmatter (ระหว่าง --- กับ ---) ออกจาก body คืน meta map และเนื้อหา markdown ล้วน
+// ─── Frontmatter Helpers ─────────────────────────────────────────────────────
+
+// parseFrontmatter splits YAML frontmatter (between --- delimiters) from the body.
 func parseFrontmatter(data []byte) (meta map[string]string, body []byte) {
 	meta = make(map[string]string)
 	raw := bytes.TrimSpace(data)
@@ -113,21 +108,63 @@ func parseFrontmatter(data []byte) (meta map[string]string, body []byte) {
 			continue
 		}
 		key := strings.TrimSpace(line[:colon])
-		val := strings.TrimSpace(line[colon+1:])
-		val = strings.Trim(val, `"'`)
+		val := strings.Trim(strings.TrimSpace(line[colon+1:]), `"'`)
 		meta[key] = val
 	}
 	return meta, body
 }
 
+// parseWeight reads "weight" from meta first, then falls back to scanning the
+// raw file bytes for a bare "weight: N" line outside the frontmatter block.
+// Returns 999 if no valid weight is found (sorts last by default).
+func parseWeight(meta map[string]string, data []byte) int {
+	if wStr := meta["weight"]; wStr != "" {
+		if w, err := strconv.Atoi(wStr); err == nil {
+			return w
+		}
+	}
+	sc := bufio.NewScanner(bytes.NewReader(data))
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if strings.HasPrefix(line, "weight:") {
+			val := strings.TrimSpace(strings.TrimPrefix(line, "weight:"))
+			if w, err := strconv.Atoi(val); err == nil {
+				return w
+			}
+		}
+	}
+	return 999
+}
+
+// stripWeightLines removes bare "weight: N" lines from body content so they
+// are not rendered on the frontend.
+func stripWeightLines(body []byte) string {
+	var lines []string
+	sc := bufio.NewScanner(bytes.NewReader(body))
+	for sc.Scan() {
+		line := sc.Text()
+		if !strings.HasPrefix(strings.TrimSpace(line), "weight:") {
+			lines = append(lines, line)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// slugToTitle converts a filename slug into a human-readable title.
+func slugToTitle(name string) string {
+	title := strings.TrimSuffix(name, filepath.Ext(name))
+	title = strings.ReplaceAll(title, "-", " ")
+	return strings.ReplaceAll(title, "_", " ")
+}
+
+// metaToTags parses a comma-separated "tags" field from frontmatter.
 func metaToTags(meta map[string]string) []string {
-	s, ok := meta["tags"]
-	if !ok || s == "" {
+	s := meta["tags"]
+	if s == "" {
 		return nil
 	}
-	parts := strings.Split(s, ",")
 	var out []string
-	for _, p := range parts {
+	for _, p := range strings.Split(s, ",") {
 		if t := strings.TrimSpace(p); t != "" {
 			out = append(out, t)
 		}
@@ -136,27 +173,42 @@ func metaToTags(meta map[string]string) []string {
 }
 
 func metaBool(meta map[string]string, key string) bool {
-	v := strings.TrimSpace(strings.ToLower(meta[key]))
+	v := strings.ToLower(strings.TrimSpace(meta[key]))
 	return v == "true" || v == "1"
 }
 
-// ListMarkdown คืนรายการ .md จาก local ก่อน ถ้าไม่มีหรือ error จะลองจาก GitHub
+// applyMeta populates a WikiContent from parsed frontmatter and cleaned body.
+func applyMeta(out *WikiContent, meta map[string]string, body []byte) {
+	if t := meta["title"]; t != "" {
+		out.Title = t
+	}
+	out.Description = meta["description"]
+	out.Published = metaBool(meta, "published")
+	out.Date = meta["date"]
+	out.DateCreated = meta["dateCreated"]
+	out.Editor = meta["editor"]
+	out.Tags = metaToTags(meta)
+	if out.Date != "" {
+		out.PublishedAt = out.Date
+	} else if out.DateCreated != "" {
+		out.PublishedAt = out.DateCreated
+	}
+	out.Content = stripWeightLines(body)
+}
+
+// ─── Public API ──────────────────────────────────────────────────────────────
+
+// ListMarkdown returns all markdown entries, reading from the local repo.
 func (s *WikiService) ListMarkdown() ([]WikiEntry, error) {
 	entries, err := s.listFromLocal()
 	if err != nil {
-		fmt.Println("❌ listFromLocal error:", err)
-		return []WikiEntry{}, nil // 🔥 อย่าส่ง error
+		fmt.Println("listFromLocal error:", err)
+		return []WikiEntry{}, nil
 	}
-
-	if len(entries) > 0 {
-		return entries, nil
-	}
-
-	// 🔥 ถ้าไม่มีไฟล์เลย ไม่ต้องเรียก GitHub
-	return []WikiEntry{}, nil
+	return entries, nil
 }
 
-// ListCategories คืนรายการ slug หมวด (segment แรกของ path) เรียง A–Z
+// ListCategories returns top-level category slugs sorted by weight then title.
 func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
 	entries, err := s.ListMarkdown()
 	if err != nil {
@@ -171,44 +223,36 @@ func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
 
 	for _, e := range entries {
 		parts := strings.Split(e.Path, "/")
-		if len(parts) >= 2 {
-			slug := parts[0]
-			info, exists := seen[slug]
-			if !exists {
-				info = &catInfo{weight: e.Weight, title: slug}
-				seen[slug] = info
-			}
-
-			// ถ้าเจอไฟล์ index.md หรือไฟล์ที่มี weight น้อยกว่า ให้ใช้เป็นข้อมูลหลักของหมวด
-			isIndex := strings.HasSuffix(e.Path, "/index.md")
-			if isIndex || e.Weight < info.weight {
-				info.weight = e.Weight
-				info.title = e.Title
-			}
+		if len(parts) < 2 {
+			continue
+		}
+		slug := parts[0]
+		info, exists := seen[slug]
+		if !exists {
+			info = &catInfo{weight: e.Weight, title: slug}
+			seen[slug] = info
+		}
+		isIndex := strings.HasSuffix(e.Path, "/index.md")
+		if isIndex || e.Weight < info.weight {
+			info.weight = e.Weight
+			info.title = e.Title
 		}
 	}
 
-	var out []CategoryEntry
+	out := make([]CategoryEntry, 0, len(seen))
 	for slug, info := range seen {
-		out = append(out, CategoryEntry{
-			Slug:   slug,
-			Title:  info.title,
-			Weight: info.weight,
-		})
+		out = append(out, CategoryEntry{Slug: slug, Title: info.title, Weight: info.weight})
 	}
-
-	// เรียงหมวดหมู่ตาม Weight ที่แอดมินตั้งไว้
 	sort.Slice(out, func(i, j int) bool {
-		if out[i].Weight == out[j].Weight {
-			return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title)
+		if out[i].Weight != out[j].Weight {
+			return out[i].Weight < out[j].Weight
 		}
-		return out[i].Weight < out[j].Weight
+		return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title)
 	})
-
 	return out, nil
 }
 
-// ListByCategory คืนบทความในหมวด slug (path ขึ้นต้นด้วย slug/ หรือ path == slug)
+// ListByCategory returns articles within a category, sorted by weight then path.
 func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error) {
 	entries, err := s.ListMarkdown()
 	if err != nil {
@@ -216,54 +260,87 @@ func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error
 	}
 
 	var list []CategoryItem
-
 	for _, e := range entries {
 		parts := strings.Split(e.Path, "/")
-
-		if len(parts) >= 2 && parts[0] == slug {
-			itemSlug := strings.TrimSuffix(
-				filepath.Base(e.Path),
-				filepath.Ext(e.Path),
-			)
-
-			list = append(list, CategoryItem{
-				Slug:        itemSlug,
-				Title:       e.Title,
-				Description: e.Description,
-				Published:   e.Published,
-				Date:        e.Date,
-				Path:        e.Path,
-				Tags:        []string{}, // Initialize empty to avoid null in JSON
-				Editor:      e.Editor,
-				DateCreated: e.DateCreated,
-				PublishedAt: e.PublishedAt,
-				Weight:      e.Weight,
-			})
-			if e.Tags != nil {
-				list[len(list)-1].Tags = e.Tags
-			}
+		if len(parts) < 2 || parts[0] != slug {
+			continue
 		}
+		tags := e.Tags
+		if tags == nil {
+			tags = []string{}
+		}
+		list = append(list, CategoryItem{
+			Slug:        strings.TrimSuffix(filepath.Base(e.Path), filepath.Ext(e.Path)),
+			Title:       e.Title,
+			Description: e.Description,
+			Published:   e.Published,
+			Date:        e.Date,
+			Path:        e.Path,
+			Tags:        tags,
+			Editor:      e.Editor,
+			DateCreated: e.DateCreated,
+			PublishedAt: e.PublishedAt,
+			Weight:      e.Weight,
+		})
 	}
-
-	// เรียงไฟล์ภายในหมวดหมู่ตาม Weight
 	sort.Slice(list, func(i, j int) bool {
-		if list[i].Weight == list[j].Weight {
-			return list[i].Path < list[j].Path
+		if list[i].Weight != list[j].Weight {
+			return list[i].Weight < list[j].Weight
 		}
-		return list[i].Weight < list[j].Weight
+		return list[i].Path < list[j].Path
 	})
-
 	return slug, list, nil
 }
+
+// GetContent reads article content from local first, falling back to GitHub.
+func (s *WikiService) GetContent(relPath string) (*WikiContent, error) {
+	if content, err := s.getContentFromLocal(relPath); err == nil {
+		return content, nil
+	}
+	return s.getContentFromGitHub(relPath)
+}
+
+// SearchInContent performs a simple case-insensitive full-text search.
+func (s *WikiService) SearchInContent(query string) ([]SearchResult, error) {
+	query = strings.ToLower(query)
+	entries, err := s.listFromLocal()
+	if err != nil {
+		return nil, err
+	}
+
+	root := filepath.Clean(s.repoPath)
+	var results []SearchResult
+
+	for _, entry := range entries {
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(entry.Path)))
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		contentLower := strings.ToLower(content)
+		idx := strings.Index(contentLower, query)
+		if idx < 0 {
+			continue
+		}
+		start := max(0, idx-40)
+		end := min(len(content), idx+len(query)+60)
+		snippet := "..." + strings.ReplaceAll(content[start:end], "\n", " ") + "..."
+		results = append(results, SearchResult{WikiEntry: entry, Snippet: snippet})
+		if len(results) >= 20 {
+			break
+		}
+	}
+	return results, nil
+}
+
+// ─── Private Helpers ─────────────────────────────────────────────────────────
 
 const maxFrontmatterRead = 16384
 
 func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 	root := filepath.Clean(s.repoPath)
-	if root == "" || root == "." {
-		root = "./wiki-content"
-	}
 	var entries []WikiEntry
+
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -271,10 +348,7 @@ func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 			}
 			return err
 		}
-		if info.IsDir() {
-			return nil
-		}
-		if strings.ToLower(filepath.Ext(info.Name())) != ".md" {
+		if info.IsDir() || strings.ToLower(filepath.Ext(info.Name())) != ".md" {
 			return nil
 		}
 		rel, err := filepath.Rel(root, path)
@@ -282,11 +356,9 @@ func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 			return nil
 		}
 		rel = filepath.ToSlash(rel)
-		title := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
-		title = strings.ReplaceAll(title, "-", " ")
-		title = strings.ReplaceAll(title, "_", " ")
 
-		entry := WikiEntry{Path: rel, Title: title}
+		entry := WikiEntry{Path: rel, Title: slugToTitle(info.Name()), Weight: 999}
+
 		data, err := os.ReadFile(path)
 		if err == nil && len(data) > 0 {
 			if len(data) > maxFrontmatterRead {
@@ -302,29 +374,7 @@ func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 			entry.DateCreated = meta["dateCreated"]
 			entry.Editor = meta["editor"]
 			entry.Tags = metaToTags(meta)
-
-			// อ่านค่า Weight: ลองอ่านจาก meta ก่อน ถ้าไม่มีให้ลองหาในไฟล์ทั้งหมด (รองรับกรณีอยู่นอก ---)
-			weight := 999
-			if wStr := meta["weight"]; wStr != "" {
-				if w, err := strconv.Atoi(wStr); err == nil {
-					weight = w
-				}
-			} else {
-				// ถ้าใน meta ไม่มี ให้ลองสแกนหาบรรทัดที่เริ่มด้วย weight: ในไฟล์
-				scanner := bufio.NewScanner(bytes.NewReader(data))
-				for scanner.Scan() {
-					line := strings.TrimSpace(scanner.Text())
-					if strings.HasPrefix(line, "weight:") {
-						val := strings.TrimSpace(strings.TrimPrefix(line, "weight:"))
-						if w, err := strconv.Atoi(val); err == nil {
-							weight = w
-							break
-						}
-					}
-				}
-			}
-			entry.Weight = weight
-
+			entry.Weight = parseWeight(meta, data)
 			if entry.Date != "" {
 				entry.PublishedAt = entry.Date
 			} else if entry.DateCreated != "" {
@@ -338,23 +388,13 @@ func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 		return nil, err
 	}
 
-	// เรียงลำดับตาม Weight เป็นหลัก ถ้าเท่ากันเรียงตาม Path
 	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].Weight == entries[j].Weight {
-			return entries[i].Path < entries[j].Path
+		if entries[i].Weight != entries[j].Weight {
+			return entries[i].Weight < entries[j].Weight
 		}
-		return entries[i].Weight < entries[j].Weight
+		return entries[i].Path < entries[j].Path
 	})
 	return entries, nil
-}
-
-// GetContent อ่านเนื้อหาตาม path (สัมพันธ์) จาก local ก่อน ไม่ได้ค่อยลอง GitHub
-func (s *WikiService) GetContent(relPath string) (*WikiContent, error) {
-	content, err := s.getContentFromLocal(relPath)
-	if err == nil {
-		return content, nil
-	}
-	return s.getContentFromGitHub(relPath)
 }
 
 func (s *WikiService) getContentFromLocal(relPath string) (*WikiContent, error) {
@@ -363,52 +403,19 @@ func (s *WikiService) getContentFromLocal(relPath string) (*WikiContent, error) 
 		return nil, os.ErrNotExist
 	}
 	root := filepath.Clean(s.repoPath)
-	if root == "" {
-		root = "./wiki-content"
-	}
-	full := filepath.Join(root, filepath.FromSlash(relPath))
-	cleanFull := filepath.Clean(full)
-	cleanRoot := filepath.Clean(root)
-	relCheck, errRel := filepath.Rel(cleanRoot, cleanFull)
-	if errRel != nil || strings.HasPrefix(relCheck, "..") {
+	full := filepath.Clean(filepath.Join(root, filepath.FromSlash(relPath)))
+	relCheck, err := filepath.Rel(root, full)
+	if err != nil || strings.HasPrefix(relCheck, "..") {
 		return nil, os.ErrNotExist
 	}
-	data, err := os.ReadFile(cleanFull)
+	data, err := os.ReadFile(full)
 	if err != nil {
 		return nil, err
 	}
-	base := filepath.Base(relPath)
-	title := strings.TrimSuffix(base, filepath.Ext(base))
-	title = strings.ReplaceAll(title, "-", " ")
-	title = strings.ReplaceAll(title, "_", " ")
-
-	out := &WikiContent{Path: relPath, Title: title, Content: string(data)}
+	out := &WikiContent{Path: relPath, Title: slugToTitle(filepath.Base(relPath))}
 	meta, body := parseFrontmatter(data)
 	if len(meta) > 0 {
-		if t := meta["title"]; t != "" {
-			out.Title = t
-		}
-		out.Description = meta["description"]
-		out.Published = metaBool(meta, "published")
-		out.Date = meta["date"]
-		out.DateCreated = meta["dateCreated"]
-		out.Editor = meta["editor"]
-		out.Tags = metaToTags(meta)
-		if out.Date != "" {
-			out.PublishedAt = out.Date
-		} else if out.DateCreated != "" {
-			out.PublishedAt = out.DateCreated
-		}
-		// ลบบรรทัด weight: ออกจาก body เพื่อไม่ให้โชว์บนหน้าเว็บ
-		var cleanLines []string
-		scanner := bufio.NewScanner(bytes.NewReader(body))
-		for scanner.Scan() {
-			line := scanner.Text()
-			if !strings.HasPrefix(strings.TrimSpace(line), "weight:") {
-				cleanLines = append(cleanLines, line)
-			}
-		}
-		out.Content = strings.Join(cleanLines, "\n")
+		applyMeta(out, meta, body)
 	}
 	return out, nil
 }
@@ -418,86 +425,12 @@ func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error)
 	if err != nil {
 		return nil, err
 	}
-	base := filepath.Base(relPath)
-	title := strings.TrimSuffix(base, filepath.Ext(base))
-	title = strings.ReplaceAll(title, "-", " ")
-	title = strings.ReplaceAll(title, "_", " ")
+	out := &WikiContent{Path: fc.Path, Title: slugToTitle(filepath.Base(relPath))}
 	data := []byte(fc.Content)
-	out := &WikiContent{Path: fc.Path, Title: title, Content: fc.Content}
 	meta, body := parseFrontmatter(data)
 	if len(meta) > 0 {
-		if t := meta["title"]; t != "" {
-			out.Title = t
-		}
-		out.Description = meta["description"]
-		out.Published = metaBool(meta, "published")
-		out.Date = meta["date"]
-		out.DateCreated = meta["dateCreated"]
-		out.Editor = meta["editor"]
-		out.Tags = metaToTags(meta)
-		if out.Date != "" {
-			out.PublishedAt = out.Date
-		} else if out.DateCreated != "" {
-			out.PublishedAt = out.DateCreated
-		}
-		// ลบบรรทัด weight: ออกจาก body เพื่อไม่ให้โชว์บนหน้าเว็บ
-		var cleanLines []string
-		scanner := bufio.NewScanner(bytes.NewReader(body))
-		for scanner.Scan() {
-			line := scanner.Text()
-			if !strings.HasPrefix(strings.TrimSpace(line), "weight:") {
-				cleanLines = append(cleanLines, line)
-			}
-		}
-		out.Content = strings.Join(cleanLines, "\n")
+		applyMeta(out, meta, body)
 	}
 	return out, nil
 }
 
-func (s *WikiService) SearchInContent(query string) ([]SearchResult, error) {
-	query = strings.ToLower(query)
-	entries, err := s.listFromLocal()
-	if err != nil {
-		return nil, err
-	}
-
-	var results []SearchResult
-	root := filepath.Clean(s.repoPath)
-
-	for _, entry := range entries {
-		fullPath := filepath.Join(root, filepath.FromSlash(entry.Path))
-		data, err := os.ReadFile(fullPath)
-		if err != nil {
-			continue
-		}
-
-		content := string(data)
-		contentLower := strings.ToLower(content)
-
-		if strings.Contains(contentLower, query) {
-			// สร้าง Snippet สั้นๆ รอบๆ คำที่เจอ
-			idx := strings.Index(contentLower, query)
-			start := idx - 40
-			if start < 0 {
-				start = 0
-			}
-			end := idx + len(query) + 60
-			if end > len(content) {
-				end = len(content)
-			}
-
-			snippet := content[start:end]
-
-			results = append(results, SearchResult{
-				WikiEntry: entry,
-				Snippet:   "..." + strings.ReplaceAll(snippet, "\n", " ") + "...",
-			})
-		}
-
-		if len(results) >= 20 {
-			break
-		}
-	}
-
-	return results, nil
-}

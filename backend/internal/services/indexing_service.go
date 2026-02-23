@@ -11,10 +11,10 @@ import (
 	"github.com/new-carmen/backend/pkg/ollama"
 )
 
-// maxChunkChars — nomic-embed-text จำกัด context (~8192 tokens) แบ่งทีละชิ้นไม่เกินค่านี้
+// maxChunkChars limits each chunk to stay within nomic-embed-text's context window (~8192 tokens).
 const maxChunkChars = 4000
 
-// IndexingService ดึง markdown จาก wiki-service แล้วเขียนเข้า Postgres (documents + document_chunks)
+// IndexingService reads markdown from WikiService and writes it into Postgres (documents + document_chunks).
 type IndexingService struct {
 	wiki *WikiService
 	llm  *ollama.Client
@@ -23,16 +23,15 @@ type IndexingService struct {
 func NewIndexingService() *IndexingService {
 	return &IndexingService{
 		wiki: NewWikiService(),
-		// ใช้ client สำหรับ embeddings โดยเฉพาะ
 		llm:  ollama.NewEmbedClient(),
 	}
 }
 
-// IndexAll รีbuild index ทั้งหมดจากไฟล์ใน wiki-content (แบ่ง chunk ไม่เกิน maxChunkChars ต่อชิ้น)
+// IndexAll rebuilds the full vector index from all wiki markdown files.
 func (s *IndexingService) IndexAll(ctx context.Context) error {
 	entries, err := s.wiki.ListMarkdown()
 	if err != nil {
-		return fmt.Errorf("list markdown failed: %w", err)
+		return fmt.Errorf("list markdown: %w", err)
 	}
 	for _, e := range entries {
 		select {
@@ -40,70 +39,59 @@ func (s *IndexingService) IndexAll(ctx context.Context) error {
 			return ctx.Err()
 		default:
 		}
-
 		if err := s.indexSingle(e.Path); err != nil {
-			log.Printf("[indexing] index %s error: %v", e.Path, err)
+			log.Printf("[indexing] %s: %v", e.Path, err)
 		}
 	}
 	return nil
 }
 
-// indexSingle index เอกสารหนึ่งไฟล์
 func (s *IndexingService) indexSingle(path string) error {
 	content, err := s.wiki.GetContent(path)
 	if err != nil {
-		return fmt.Errorf("get content failed: %w", err)
+		return fmt.Errorf("get content: %w", err)
 	}
 
-	// 1) upsert documents row
 	var docID int64
-	err = database.DB.
-		Raw(`
+	err = database.DB.Raw(`
 INSERT INTO documents (path, title, source, created_at, updated_at)
 VALUES (?, ?, 'wiki', now(), now())
 ON CONFLICT (path) DO UPDATE
-SET title = EXCLUDED.title,
-    updated_at = now()
+SET title = EXCLUDED.title, updated_at = now()
 RETURNING id
-`, content.Path, content.Title).
-		Scan(&docID).Error
+`, content.Path, content.Title).Scan(&docID).Error
 	if err != nil {
-		return fmt.Errorf("upsert document failed: %w", err)
+		return fmt.Errorf("upsert document: %w", err)
 	}
 
-	// 2) แบ่งเป็น chunk ไม่เกิน maxChunkChars เพื่อไม่ให้เกิน context length ของ embed model
-	chunks := chunkContent(content.Content)
-
-	// 3) ลบ chunk เดิมของ doc นี้ทิ้ง
 	if err := database.DB.Exec("DELETE FROM document_chunks WHERE document_id = ?", docID).Error; err != nil {
-		return fmt.Errorf("delete old chunks failed: %w", err)
+		return fmt.Errorf("delete old chunks: %w", err)
 	}
 
-	for i, chunkText := range chunks {
+	for i, chunkText := range chunkContent(content.Content) {
 		if strings.TrimSpace(chunkText) == "" {
 			continue
 		}
 		emb, err := s.llm.Embedding(chunkText)
 		if err != nil {
-			return fmt.Errorf("embedding failed: %w", err)
+			return fmt.Errorf("embedding chunk %d: %w", i, err)
 		}
 		if len(emb) == 0 {
 			log.Printf("[indexing] skip %s chunk %d: empty embedding", path, i)
 			continue
 		}
-		embStr := utils.Float32SliceToPgVector(emb)
 		if err := database.DB.Exec(`
 INSERT INTO document_chunks (document_id, chunk_index, content, embedding, created_at)
 VALUES (?, ?, ?, ?::vector, now())
-`, docID, i, chunkText, embStr).Error; err != nil {
-			return fmt.Errorf("insert chunk failed: %w", err)
+`, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
+			return fmt.Errorf("insert chunk %d: %w", i, err)
 		}
 	}
-
 	return nil
 }
 
-// chunkContent แบ่งข้อความเป็นชิ้นไม่เกิน maxChunkChars พยายามตัดที่ newline
+// chunkContent splits text into chunks of at most maxChunkChars runes,
+// preferring to break at newline boundaries.
 func chunkContent(text string) []string {
 	text = strings.TrimSpace(text)
 	if text == "" {
@@ -112,22 +100,14 @@ func chunkContent(text string) []string {
 	var out []string
 	runes := []rune(text)
 	for len(runes) > 0 {
-		n := maxChunkChars
-		if n > len(runes) {
-			n = len(runes)
-		}
+		n := min(maxChunkChars, len(runes))
 		chunk := runes[:n]
-		// พยายามตัดที่ newline
 		if n < len(runes) {
-			lastNewline := -1
 			for i := len(chunk) - 1; i >= 0; i-- {
 				if chunk[i] == '\n' {
-					lastNewline = i
+					chunk = chunk[:i+1]
 					break
 				}
-			}
-			if lastNewline >= 0 {
-				chunk = chunk[:lastNewline+1]
 			}
 		}
 		out = append(out, string(chunk))
@@ -135,4 +115,3 @@ func chunkContent(text string) []string {
 	}
 	return out
 }
-

@@ -1,4 +1,3 @@
-// รับ GitHub Webhook (event push), เช็ค branch, แล้วสั่งให้ไป git pull repo wiki-content ผ่าน WikiSyncService
 package api
 
 import (
@@ -16,12 +15,12 @@ import (
 	"github.com/new-carmen/backend/internal/services"
 )
 
+// GitHubWebhookHandler handles incoming GitHub push webhook events.
 type GitHubWebhookHandler struct {
 	syncService     *services.WikiSyncService
 	indexingService *services.IndexingService
 }
 
-// gitHubPushPayload ใช้เพื่อตรวจ branch
 type gitHubPushPayload struct {
 	Ref string `json:"ref"`
 }
@@ -33,52 +32,37 @@ func NewGitHubWebhookHandler() *GitHubWebhookHandler {
 	}
 }
 
-// HandlePush รับ GitHub push webhook และ trigger indexing
+// HandlePush processes a GitHub push event: verifies the signature, checks the
+// branch, triggers a git pull, and queues a background re-index.
 func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
-	event := c.Get("X-GitHub-Event")
-	if event != "push" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "unsupported event",
-		})
+	if c.Get("X-GitHub-Event") != "push" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unsupported event"})
 	}
 
 	cfg := config.AppConfig.GitHub
-
-	// อ่าน raw body สำหรับตรวจ HMAC และ parse ทีเดียว
 	rawBody := c.Body()
 
-	// ถ้าตั้ง GITHUB_WEBHOOK_SECRET ไว้ ให้ตรวจ HMAC
 	if cfg.WebhookSecret != "" {
-		signature := c.Get("X-Hub-Signature-256")
-		if !verifyGitHubSignature(cfg.WebhookSecret, rawBody, signature) {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "invalid signature",
-			})
+		if !verifyGitHubSignature(cfg.WebhookSecret, rawBody, c.Get("X-Hub-Signature-256")) {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid signature"})
 		}
 	}
 
 	var payload gitHubPushPayload
 	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid payload",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
 	}
 
-	// ตรวจ branch ให้ตรงกับที่ config กำหนด
 	expectedRef := "refs/heads/" + cfg.WebhookBranch
 	if payload.Ref != expectedRef {
-		log.Printf("[webhook] ignore push on ref %s (expected %s)", payload.Ref, expectedRef)
-		return c.JSON(fiber.Map{
-			"message": "ignored (branch mismatch)",
-		})
+		log.Printf("[webhook] ignoring push on %s (expected %s)", payload.Ref, expectedRef)
+		return c.JSON(fiber.Map{"message": "ignored (branch mismatch)"})
 	}
 
-	// 1) git pull อัปเดตโฟลเดอร์ wiki-content → frontend เรียก API ได้ข้อมูลใหม่
 	if err := h.syncService.Sync(); err != nil {
-		log.Printf("[webhook] wiki sync (git pull) error: %v", err)
+		log.Printf("[webhook] sync error: %v", err)
 	}
 
-	// 2) เรียก indexingService ให้เขียนข้อมูลเข้า Postgres/pgvector
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
@@ -87,32 +71,22 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 		}
 	}()
 
-	return c.JSON(fiber.Map{
-		"message": "webhook processed (wiki-content pulled and reindex triggered)",
-	})
+	return c.JSON(fiber.Map{"message": "webhook processed"})
 }
 
-func verifyGitHubSignature(secret string, body []byte, signatureHeader string) bool {
-	if signatureHeader == "" {
-		return false
-	}
-
+// verifyGitHubSignature validates the HMAC-SHA256 signature from GitHub.
+func verifyGitHubSignature(secret string, body []byte, header string) bool {
 	const prefix = "sha256="
-	if !strings.HasPrefix(signatureHeader, prefix) {
+	if !strings.HasPrefix(header, prefix) {
 		return false
 	}
-
-	signatureHex := signatureHeader[len(prefix):]
-	msgMAC, err := hex.DecodeString(signatureHex)
+	msgMAC, err := hex.DecodeString(header[len(prefix):])
 	if err != nil {
 		return false
 	}
-
 	mac := hmac.New(sha256.New, []byte(secret))
 	if _, err := io.Copy(mac, strings.NewReader(string(body))); err != nil {
 		return false
 	}
-	expectedMAC := mac.Sum(nil)
-	return hmac.Equal(msgMAC, expectedMAC)
+	return hmac.Equal(msgMAC, mac.Sum(nil))
 }
-

@@ -1,4 +1,3 @@
-// POST /api/index/rebuild — สั่ง reindex ทั้งหมดเข้า Postgres/pgvector (ไม่ต้องรอ webhook)
 package api
 
 import (
@@ -10,6 +9,7 @@ import (
 	"github.com/new-carmen/backend/internal/services"
 )
 
+// IndexingHandler exposes manual re-indexing endpoints.
 type IndexingHandler struct {
 	indexingService *services.IndexingService
 }
@@ -20,7 +20,7 @@ func NewIndexingHandler() *IndexingHandler {
 	}
 }
 
-// Rebuild เริ่ม reindex ทั้งหมดในพื้นหลัง แล้วตอบกลับทันที
+// Rebuild triggers a full re-index in the background. POST /api/index/rebuild
 func (h *IndexingHandler) Rebuild(c *fiber.Ctx) error {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -31,8 +31,5 @@ func (h *IndexingHandler) Rebuild(c *fiber.Ctx) error {
 			log.Printf("[index/rebuild] completed")
 		}
 	}()
-
-	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-		"message": "reindex started (running in background)",
-	})
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"message": "reindex started (running in background)"})
 }
