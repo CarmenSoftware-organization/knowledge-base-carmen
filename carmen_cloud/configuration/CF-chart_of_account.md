@@ -1,27 +1,33 @@
 ---
-title: การสร้างรหัสบัญชี Chart Of Accounts
-description: การสร้างรหัสบัญชี Chart Of Accounts
+title: Chart Of Accounts
+description: Chart Of Accounts
 published: true
-date: "2026-02-02T06:14:10.579Z"
+date: 2026-02-23T04:53:24.510Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.579Z"
+dateCreated: 2026-02-02T06:54:28.498Z
 ---
 
-# การสร้างรหัสบัญชี Chart Of Accounts
+---
+title: "Chart of Account"
+weight: 13
+---
+
 
 ## การสร้างรหัสบัญชี (Account Code) ในระบบ
 
-1.1 กดปุ่ม Configuration > Chart of Account
+1. กดปุ่ม Configuration > Chart of Account
 
-1.2 กดปุ่ม <img src="/public/add_icon.png" style="display: inline-block;" /> ระบบจะแสดงหน้าต่าง Chart of Account ให้กำหนดค่าดังต่อไปนี้
+2. กดปุ่ม <img src="/public/add_icon.png" style="display: inline-block;" /> ระบบจะแสดงหน้าต่าง Chart of Account ให้กำหนดค่าดังต่อไปนี้
 
-![alt text](image-36.png)
+<img src="./image-36.png"  />
 
-1.3 ขั้นตอนการบันทึกข้อมูลผังบัญชี โดยมีรายละเอียดดังนี้
+3. ขั้นตอนการบันทึกข้อมูลผังบัญชี โดยมีรายละเอียดดังนี้
 
-**หมายเหตุ** เครื่องหมาย <span class="asterisk">\*</span>
-(สัญลักษณ์ \* ช่องที่จำเป็นต้องระบุ)
+> **หมายเหตุ** เครื่องหมาย <span class="asterisk">\*</span>
+> (สัญลักษณ์ \* ช่องที่จำเป็นต้องระบุ)
+{.is-warning}
+
 
 - <span class="asterisk">\*</span> กำหนดรหัสบัญชี
 - Status > กำหนด สถานะของ Account Code
@@ -48,13 +54,13 @@ dateCreated: "2026-02-02T06:14:10.579Z"
   - General Ledger
   - Asset Management
 
-    1.4 กด **<span class="btn">SAVE</span>** เพื่อบันทึกข้อมูล หรือกด Cancel เพื่อยกเลิก
+4. กด **<span class="btn">SAVE</span>** เพื่อบันทึกข้อมูล หรือกด Cancel เพื่อยกเลิก
 
 <p align="center">
     <img src="./image-37.png"  />
 </p>
 
-1.5 กด **<span class="btn">OK</span>** เพื่อเสร็จสิ้นการบันทึกข้อมูล
+5. กด **<span class="btn">OK</span>** เพื่อเสร็จสิ้นการบันทึกข้อมูล
 
 <p align="center">
     <img src="./image-18.png"  />
@@ -62,26 +68,26 @@ dateCreated: "2026-02-02T06:14:10.579Z"
 
 ## การแก้ไขรหัสบัญชี Account Code
 
-1.6 กดปุ่ม Chart of Account
+1. กดปุ่ม Chart of Account
 
-1.7 Click ที่ปุ่ม <img src="./visibility.png" style="display: inline-block;" /> Account Code ที่ต้องการแก้ไข
+2. Click ที่ปุ่ม <img src="./visibility.png" style="display: inline-block;" /> Account Code ที่ต้องการแก้ไข
 
-![alt text](image-38.png)
+<img src="./image-38.png"  />
 
-1.8 กดปุ่ม จะสามารถแก้ไขได้ 2 ส่วน ได้แก่
+3. กดปุ่ม จะสามารถแก้ไขได้ 2 ส่วน ได้แก่
 
 - Description, Description (Local)
 - Available In Module
 
 ---
 
-1.9 กด **<span class="btn">SAVE</span>** เพื่อบันทึกข้อมูล
+4. กด **<span class="btn">SAVE</span>** เพื่อบันทึกข้อมูล
 
 <p align="center">
     <img src="./image-39.png"  />
 </p>
 
-1.10 กด **<span class="btn">OK</span>** เพื่อเสร็จสิ้นการบันทึกข้อมูล
+5. กด **<span class="btn">OK</span>** เพื่อเสร็จสิ้นการบันทึกข้อมูล
 
 <p align="center">
     <img src="./image-18.png"  />
@@ -89,13 +95,13 @@ dateCreated: "2026-02-02T06:14:10.579Z"
 
 ## การลบรหัสบัญชี Account Code
 
-1.11 กดปุ่ม Chart of Account
+1. กดปุ่ม Chart of Account
 
-1.12 Click ที่ปุ่ม <img src="./visibility.png" style="display: inline-block;" /> Account Code ที่ต้องการลบ
+2. Click ที่ปุ่ม <img src="./visibility.png" style="display: inline-block;" /> Account Code ที่ต้องการลบ
 
-1.13 กดปุ่ม <img src="/public/del_icon.png" style="display: inline-block;" />
+3. กดปุ่ม <img src="/public/del_icon.png" style="display: inline-block;" />
 
-1.14 ระบบจะขึ้นหน้าต่างให้ยืนยันการลบ
+4. ระบบจะขึ้นหน้าต่างให้ยืนยันการลบ
 
 - กด YES เพื่อ ยืนยัน
 - หรือ No เพื่อยกเลิก
@@ -104,18 +110,19 @@ dateCreated: "2026-02-02T06:14:10.579Z"
     <img src="./image-23.png"  />
 </p>
 
-1.15 เมื่อเรียบร้อยแล้วจะมีหน้าต่างแสดงข้อความ Success
+6. เมื่อเรียบร้อยแล้วจะมีหน้าต่างแสดงข้อความ Success
 
 <p align="center">
     <img src="./image-18.png"  />
 </p>
 
-**หมายเหตุ** : Account Code ที่มีการใช้งานแล้ว จะไม่สามารถลบได้ แนะนำให้แก้ไข Status เป็น In-Active แทน
+> **หมายเหตุ** : Account Code ที่มีการใช้งานแล้ว จะไม่สามารถลบได้ แนะนำให้แก้ไข Status เป็น In-Active แทน
+{.is-warning}
+
 
 ## การใช้งานปุ่มอื่น ๆ บนหน้าจอ
 
-1.16 กดปุ่ม <img src="/public/search_icon.svg" style="display: inline-block;" /> เพื่อค้นหา Currency
+1. กดปุ่ม <img src="/public/search_icon.svg" style="display: inline-block;" /> เพื่อค้นหา Currency
+2. กดปุ่ม <img src="/public/cloud_download_icon.svg" style="display: inline-block;" /> เพื่อ Export ข้อมูลอัตราแลกเปลี่ยนออกจากระบบเป็น .csv
 
-1.17 กดปุ่ม <img src="/public/cloud_download_icon.svg" style="display: inline-block;" /> เพื่อ Export ข้อมูลอัตราแลกเปลี่ยนออกจากระบบเป็น .csv
-
-1.18 กดปุ่ม <img src="/public/print_icon.svg" style="display: inline-block;" /> เพื่อพิมพ์ข้อมูลอัตราแลกเปลี่ยน
+3. กดปุ่ม <img src="/public/print_icon.svg" style="display: inline-block;" /> เพื่อพิมพ์ข้อมูลอัตราแลกเปลี่ยน
