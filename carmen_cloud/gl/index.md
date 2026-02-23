@@ -2,11 +2,17 @@
 title: Carmen Cloud
 description: Carmen Cloud
 published: true
-date: "2026-02-02T06:14:10.633Z"
+date: 2026-02-23T05:05:31.583Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.633Z"
+dateCreated: 2026-02-02T06:55:55.117Z
 ---
+
+---
+title: "General Ledger"
+weight: 6
+---
+
 
 # Carmen Cloud
 

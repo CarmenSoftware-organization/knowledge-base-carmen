@@ -2,11 +2,18 @@
 title: Journal Voucher
 description: Journal Voucher
 published: true
-date: "2026-02-02T06:14:10.620Z"
+date: 2026-02-23T05:05:54.967Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.620Z"
+dateCreated: 2026-02-02T06:55:31.022Z
 ---
+
+---
+title: "Journal Voucher"
+weight: 10
+---
+
+
 
 # Journal Voucher
 
