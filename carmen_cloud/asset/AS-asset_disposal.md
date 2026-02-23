@@ -2,11 +2,17 @@
 title: Asset Disposal
 description: Asset Disposal
 published: true
-date: "2026-02-02T06:14:10.551Z"
+date: 2026-02-23T05:09:42.360Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.551Z"
+dateCreated: 2026-02-02T06:53:58.506Z
 ---
+
+---
+title: "Asset Disposal"
+weight: 12
+---
+
 
 # Asset Disposal
 
