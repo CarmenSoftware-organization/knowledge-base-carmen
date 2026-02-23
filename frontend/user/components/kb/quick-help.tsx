@@ -75,7 +75,7 @@ export function QuickHelp() {
                         onClick={scrollToFooter}
                         size="lg"
                         variant="outline"
-                        className="gap-2 border-slate-200 rounded-xl px-8 h-12 hover:bg-slate-50 transition-all font-bold"
+                        className="gap-2 border-slate-200 rounded-xl px-8 h-12 hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-all font-bold"
                       >
                         <Mail className="h-4 w-4" />
                         ส่งอีเมล
@@ -116,7 +116,7 @@ export function QuickHelp() {
                       <Mail className="h-6 w-6 text-primary group-hover:text-white transition-colors" />
                     </motion.div>
                     <h3 className="font-bold text-foreground text-lg">อีเมล</h3>
-                    <p className="mt-1 text-sm text-slate-700 font-black break-all">support@carmensoftware.com</p>
+                    <p className="mt-1 text-xs text-slate-700 font-black">support@carmensoftware.com</p>
                     <p className="text-[10px] text-muted-foreground uppercase mt-1 font-bold tracking-wider">ตอบกลับภายใน 24 ชม.</p>
                   </motion.div>
                 </div>
