@@ -2,14 +2,14 @@
 title: Bobby test
 description: 
 published: true
-date: 2026-02-23T07:26:40.175Z
+date: 2026-02-23T07:30:14.047Z
 tags: 
 editor: markdown
 dateCreated: 2026-02-23T07:23:07.818Z
 ---
 
 ---
-title: "โฟลเดอร์ทดสอบ"
+title: "Bobby test"
 published: true
 ---
 weight: 2
