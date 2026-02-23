@@ -2,33 +2,37 @@
 title: Excel Security setting for Carmen Add-in
 description: Excel Security setting for Carmen Add-in
 published: true
-date: "2026-02-02T06:14:10.637Z"
+date: 2026-02-23T04:56:38.399Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.637Z"
+dateCreated: 2026-02-02T06:56:01.659Z
 ---
 
-# Excel Security setting for Carmen Add-in
-การตั้งค่าเพิ่มเติมบน Excel เกี่ยวกับ Security เพื่อให้ Carmen Add-In สามารถใช้งานได้สมบูรณ์
+---
+title: "Excel Security"
+weight: 12
+---
+
+
+## การตั้งค่าเพิ่มเติมบน Excel เกี่ยวกับ Security 
+เพื่อให้ Carmen Add-In สามารถใช้งานได้สมบูรณ์
 <p align="center">
     <img src="./image-33.png"  />
 </p>
-1.ไปที่ File แล้ว Excel จะแสดงแถบด้านข้าง
+1. ไปที่ File แล้ว Excel จะแสดงแถบด้านข้าง
 
-2.เลือก Options 
+2. เลือก Options 
 
-3.เลือก Trust Center
+3. เลือก Trust Center
 
-4.เลือก Trust Center Settings
+4. เลือก Trust Center Settings
 <p align="center">
     <img src="./image-34.png"  />
 </p>
-5.ดำเนินการตั้งค่าใน Trus Center ตามหัวข้อดังต่อไปนี้
-
+5. ดำเนินการตั้งค่าใน Trus Center ตามหัวข้อดังต่อไปนี้
 5.1.Trusted Location ใช้ในการกำหนดสถานที่ที่จะเก็บ file Workbook หรืองบการเงิน เพื่อให้ excel ไม่ block macro Carmen Add In หากเก็บ file เอาไว้ที่ location ที่ได้ตั้งค่า อาจจะทำให้ Macro ทำงานได้ไม่สมบูรณ์
 
 5.1.1.กดปุ่ม Add new locations เพื่อระบุสถานที่ หรือ folder บน Computuer
-
 5.1.2.จากตัวอย่างจะ save file เอาไว้ที่ drive D
 <p align="center">
     <img src="./image-35.png"  />
@@ -58,7 +62,7 @@ dateCreated: "2026-02-02T06:14:10.637Z"
 
 5.6.กด OK เพื่อเสร็จสิ้นการตั้งค่า Trust Center
 
-6.กด OK อีกครั้งเพื่อเสร็จสิ้นการตั้งค่า Excel Options
+6. กด OK อีกครั้งเพื่อเสร็จสิ้นการตั้งค่า Excel Options
 
 7. ActiveX Settings ให้เลือกPrompt brfore enabling all controls with minimal restrictions
 
@@ -67,5 +71,5 @@ dateCreated: "2026-02-02T06:14:10.637Z"
     <img src="./image.png"  />
 </p>
 
-8.กดOK
+8. กด **OK**
 
