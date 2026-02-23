@@ -9,7 +9,7 @@ import (
 	"github.com/new-carmen/backend/internal/services"
 )
 
-// IndexingHandler exposes manual re-indexing endpoints.
+
 type IndexingHandler struct {
 	indexingService *services.IndexingService
 }
@@ -20,7 +20,7 @@ func NewIndexingHandler() *IndexingHandler {
 	}
 }
 
-// Rebuild triggers a full re-index in the background. POST /api/index/rebuild
+
 func (h *IndexingHandler) Rebuild(c *fiber.Ctx) error {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

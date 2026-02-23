@@ -8,7 +8,7 @@ import (
 	"github.com/new-carmen/backend/internal/services"
 )
 
-// WikiHandler handles all wiki-related HTTP requests.
+
 type WikiHandler struct {
 	wikiService *services.WikiService
 	syncService *services.WikiSyncService

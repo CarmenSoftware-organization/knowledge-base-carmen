@@ -1,4 +1,3 @@
-// GET /health 
 package router
 
 import (

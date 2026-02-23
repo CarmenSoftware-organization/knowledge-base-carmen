@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Float32SliceToPgVector แปลง []float32 เป็นสตริงรูปแบบ [1,2,3] สำหรับใช้กับ pgvector (::vector)
+
 func Float32SliceToPgVector(vec []float32) string {
 	if len(vec) == 0 {
 		return "[]"

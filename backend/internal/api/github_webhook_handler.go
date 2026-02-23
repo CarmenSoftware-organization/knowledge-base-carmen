@@ -32,8 +32,7 @@ func NewGitHubWebhookHandler() *GitHubWebhookHandler {
 	}
 }
 
-// HandlePush processes a GitHub push event: verifies the signature, checks the
-// branch, triggers a git pull, and queues a background re-index.
+
 func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 	if c.Get("X-GitHub-Event") != "push" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unsupported event"})

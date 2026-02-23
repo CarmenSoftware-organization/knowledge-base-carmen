@@ -6,7 +6,7 @@ import (
 	"github.com/new-carmen/backend/internal/config"
 )
 
-// RegisterWiki registers all wiki-related API routes and static asset serving.
+
 func RegisterWiki(app *fiber.App) {
 	h := api.NewWikiHandler()
 	app.Get("/api/wiki/list", h.List)

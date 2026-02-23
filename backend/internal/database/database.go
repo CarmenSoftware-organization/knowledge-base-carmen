@@ -1,4 +1,4 @@
-// การเชื่อมต่อ DB (PostgreSQL ผ่าน GORM) (เปิดเมื่อมี DB ใน main.go)
+
 package database
 
 import (

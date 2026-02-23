@@ -14,7 +14,6 @@ import (
 // maxChunkChars limits each chunk to stay within nomic-embed-text's context window (~8192 tokens).
 const maxChunkChars = 4000
 
-// IndexingService reads markdown from WikiService and writes it into Postgres (documents + document_chunks).
 type IndexingService struct {
 	wiki *WikiService
 	llm  *ollama.Client
@@ -27,7 +26,7 @@ func NewIndexingService() *IndexingService {
 	}
 }
 
-// IndexAll rebuilds the full vector index from all wiki markdown files.
+
 func (s *IndexingService) IndexAll(ctx context.Context) error {
 	entries, err := s.wiki.ListMarkdown()
 	if err != nil {
@@ -90,8 +89,7 @@ VALUES (?, ?, ?, ?::vector, now())
 	return nil
 }
 
-// chunkContent splits text into chunks of at most maxChunkChars runes,
-// preferring to break at newline boundaries.
+
 func chunkContent(text string) []string {
 	text = strings.TrimSpace(text)
 	if text == "" {

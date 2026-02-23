@@ -1,4 +1,3 @@
-// POST /api/index/rebuild — สั่ง reindex ทั้งก้อนเข้า documents + document_chunks
 package router
 
 import (

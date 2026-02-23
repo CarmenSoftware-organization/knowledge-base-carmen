@@ -1,4 +1,3 @@
-// POST /webhook/github — ยังไม่ใช้ (เปิดเมื่อมี DB ใน routes.go)
 package router
 
 import (

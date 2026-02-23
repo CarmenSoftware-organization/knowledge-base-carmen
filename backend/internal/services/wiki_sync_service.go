@@ -10,7 +10,7 @@ import (
 	"github.com/new-carmen/backend/internal/config"
 )
 
-// WikiSyncService manages git clone/pull for the local wiki-content repository.
+
 type WikiSyncService struct {
 	repoPath string
 	repoURL  string

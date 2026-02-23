@@ -11,25 +11,16 @@ import (
 )
 
 func main() {
-	// Load configuration
 	if err := config.Load(); err != nil {
 		log.Fatal("Failed to load config:", err)
 	}
-
-	// Connect database (Neon / Postgres + pgvector)
 	if err := database.Connect(); err != nil {
 		log.Fatal("Failed to connect database:", err)
 	}
-
-	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "New Carmen Backend",
 	})
-
-	// Setup routes
 	router.SetupRoutes(app)
-
-	// Start server
 	port := config.AppConfig.Server.Port
 	if err := app.Listen(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
