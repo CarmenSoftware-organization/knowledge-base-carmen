@@ -2,11 +2,17 @@
 title: Account Payable
 description: Account Payable
 published: true
-date: "2026-02-02T06:14:10.518Z"
+date: 2026-02-23T05:02:18.883Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.518Z"
+dateCreated: 2026-02-02T06:53:15.567Z
 ---
+
+---
+title: "Accounts Payable"
+weight: 5
+---
+
 
 # Account Payable
 
