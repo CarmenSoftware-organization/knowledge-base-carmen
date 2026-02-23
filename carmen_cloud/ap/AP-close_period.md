@@ -2,13 +2,17 @@
 title: Close Period for Account Payable Module
 description: Close Period for Account Payable Module
 published: true
-date: "2026-02-02T06:14:10.500Z"
+date: 2026-02-23T05:04:59.238Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.500Z"
+dateCreated: 2026-02-02T06:52:42.002Z
 ---
 
-# Close Period for Account Payable Module
+---
+title: "Close Period"
+weight: 13
+---
+
 
 ขั้นตอนการปิดรอบบัญชีของ Account Payable
 
@@ -20,27 +24,26 @@ dateCreated: "2026-02-02T06:14:10.500Z"
 
 3. กดปุ่ม Close Period
 
-![alt text](image-69.png)
+<img src="./image-69.png"  />
+
 
 4. ระบบจะแสดงหน้าต่างให้ยืนยันการปิด Period
 
 - กด “Yes” เพื่อยืนยัน
 - กด “No” เพื่อยกเลิก
 
-<p align="center">
-    <img src="./image-70.png"  />
-</p>
+<img src="./image-70.png"  />
 
 5. กด OK เพื่อเสร็จสิ้นขั้นตอน
 
-<p align="center">
-    <img src="./image-71.png"  />
-</p>
+<img src="./image-71.png"  />
 
-**หมายเหตุ :**
+> **หมายเหตุ :**
+> 
+> 1.การปิดรอบบัญชีในแต่ละ Module จะทำให้ไม่สามารถ เพิ่มเติมรายการ หรือ แก้ไขข้อมูลในเดือนที่ปิดไปแล้วได้อีก ดังนั้นก่อนการ Close Period ในระบบโปรดตรวจสอบให้แน่ใจว่า ข้อมูล ครบถ้วนและถูกต้อง
+> 
+> 2.การปิดบัญชีนี้ เป็นการปิดรอบบัญชีในส่วนของ Account Payable Module เท่านั้น แต่ยังคงสามารถโอนข้อมูลไปบันทึกบัญชีที่ General Ledger ได้อยู่ (หาก Period ใน General Ledger Module ยังไม่ถูกปิด)
+> 
+> 3.หากต้องการเปิด Period ให้ FC, Account Manger หรือผู้มีอำนาจส่ง E-Mail ถึง Support เพื่อทำการขอเปิด Period
+{.is-warning}
 
-1.) การปิดรอบบัญชีในแต่ละ Module จะทำให้ไม่สามารถ เพิ่มเติมรายการ หรือ แก้ไขข้อมูลในเดือนที่ปิดไปแล้วได้อีก ดังนั้นก่อนการ Close Period ในระบบโปรดตรวจสอบให้แน่ใจว่า ข้อมูล ครบถ้วนและถูกต้อง
-
-2.) การปิดบัญชีนี้ เป็นการปิดรอบบัญชีในส่วนของ Account Payable Module เท่านั้น แต่ยังคงสามารถโอนข้อมูลไปบันทึกบัญชีที่ General Ledger ได้อยู่ (หาก Period ใน General Ledger Module ยังไม่ถูกปิด)
-
-3.) หากต้องการเปิด Period ให้ FC, Account Manger หรือผู้มีอำนาจส่ง E-Mail ถึง Support เพื่อทำการขอเปิด Period

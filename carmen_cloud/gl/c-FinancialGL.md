@@ -2,11 +2,17 @@
 title: Financial Report
 description: Financial Report
 published: true
-date: "2026-02-02T06:14:10.619Z"
+date: 2026-02-23T05:06:28.328Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.619Z"
+dateCreated: 2026-02-02T06:55:14.697Z
 ---
+
+---
+title: "Financial GL"
+weight: 11
+---
+
 
 # Financial Report
 

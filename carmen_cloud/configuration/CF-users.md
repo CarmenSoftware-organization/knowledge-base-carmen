@@ -2,17 +2,19 @@
 title: Users
 description: Users
 published: true
-date: "2026-02-02T06:14:10.599Z"
+date: 2026-02-23T04:52:31.309Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.599Z"
+dateCreated: 2026-02-02T06:55:04.580Z
 ---
 
-# Users
+---
+title: "Users"
+weight: 11
+---
 
-ขั้นตอนการสร้าง User & Password
-Function นี้ใช้สร้าง user name และ Password เข้าใช้งานระบบ
-ขั้นตอนการสร้าง User และ Password
+
+ขั้นตอนการสร้าง User & Password Function นี้ใช้สร้าง user name และ Password เข้าใช้งานระบบ ขั้นตอนการสร้าง User และ Password
 
 1. Click เมนู Configuration
 
@@ -20,7 +22,7 @@ Function นี้ใช้สร้าง user name และ Password เข�
 
 3. กดปุ่ม Add <img src="/public/add_icon.png" style="display: inline-block;" /> ด้านบน ขวามือ
 
-![alt text](image-4.png)
+<img src="./image-4.png"  />
 
 4. ให้กำหนดข้อมูล ดังต่อไปนี้
 
@@ -38,4 +40,4 @@ Function นี้ใช้สร้าง user name และ Password เข�
 - Business unit > กำหนด Business Unit ที่ให้ User มีสิทธิเข้าใช้งาน
 - เรียบร้อยแล้วกดปุ่ม **<span class="btn">SAVE</span>** เพื่อบันทึกข้อมูล
 
-![alt text](image-5.png)
+<img src="./image-5.png"  />

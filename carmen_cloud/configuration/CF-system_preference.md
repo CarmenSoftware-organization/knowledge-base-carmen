@@ -2,19 +2,19 @@
 title: System Preference
 description: System Preference
 published: true
-date: "2026-02-02T06:14:10.594Z"
+date: 2026-02-23T04:54:20.230Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.594Z"
+dateCreated: 2026-02-02T06:54:58.029Z
 ---
 
-# System Preference
+---
+title: "System Preference"
+weight: 15
+---
 
-การตั้งค่าพื้นฐานของระบบ System Preference
 
-1.	System Preference 
-
-การตั้งค่าระบบมูลค่าตัวเลข สกุลเงิน และวันที่
+## การตั้งค่าระบบมูลค่าตัวเลข สกุลเงิน และวันที่
 
 -	Decimal Separator >	ใช้ทศนิยมคั่นระหว่างตัวเลขจำนวนเต็มและเศษสตางค์
 -	Thousand Separator >	ใช้เครื่องหมาย (,) คั่นระหว่างมูลค่าจำนวนหลักหลักพันและหลักร้อย
@@ -25,5 +25,5 @@ dateCreated: "2026-02-02T06:14:10.594Z"
 -	Base Currency >		ใช้สกุลเงินเป็นเงินบาทไทย
 -	Date Format >		ระบบใช้รูปแบบวันที่คือ วันที่/เดือน/ปี คศ.
 
-![alt text](image-3.png)
+<img src="./image-3.png"  />
  

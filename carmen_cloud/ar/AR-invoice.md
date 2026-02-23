@@ -2,11 +2,17 @@
 title: Invoice
 description: Invoice
 published: true
-date: "2026-02-02T06:14:10.529Z"
+date: 2026-02-23T04:59:42.800Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.529Z"
+dateCreated: 2026-02-02T06:53:34.845Z
 ---
+
+---
+title: "Invoice"
+weight: 12
+---
+
 
 # Invoice
 

@@ -2,11 +2,17 @@
 title: Carmen Add-in
 description: Carmen Add-in
 published: true
-date: "2026-02-02T06:14:10.639Z"
+date: 2026-02-23T04:55:28.908Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.639Z"
+dateCreated: 2026-02-02T06:56:08.260Z
 ---
+
+---
+title: "Install Config"
+weight: 10
+---
+
 
 # Carmen Add-in
 

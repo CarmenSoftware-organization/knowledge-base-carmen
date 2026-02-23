@@ -1,12 +1,19 @@
 ---
-title: Untitled
-description: Untitled
+title: Troubleshoot Guide
+description: Troubleshoot Guide
 published: true
-date: "2026-02-02T06:14:10.640Z"
+date: 2026-02-23T04:57:10.063Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.640Z"
+dateCreated: 2026-02-02T06:56:11.722Z
 ---
+
+---
+title: "Troubleshoot Guide"
+weight: 13
+---
+
+
 
 ## Require web api version
 Require Web API version >=3.146
@@ -22,20 +29,22 @@ Antivirus ไป Block Add In Version ใหม่ที่ติดตั้ง
 ปิดAntivirus ในส่วนที่ Block File Add In ออก
 
 ## ปุ่มกดไม่ได้
-![alt text](image-41.png)
-วิธีแก้ไข
+<img src="./image-41.png"  />
+
+### วิธีแก้ไข
+
 เปิด ที่อยู่ของFile Woorbook และทำการคลิกขวาเลือกProperties
-![alt text](image-42.png)
+<img src="./image-42.png"  />
 
 1. ทำการติ๊กช่อง Unblock
-2. กดApply
-3. กด OK
-![alt text](image-43.png)
+2. กด **Apply**
+3. กด **OK**
+<img src="./image-43.png"  />
 ## ถอดการติดตั้งAddin 
 เปิดExcel แล้วไปที่ File>Excel Options>Add-ins 
 1. กดไปที่หัวข้อ Add-ins
 2. หัวข้อManage กด GO
-![alt text](image-44.png)
-3. เลือกAdd in ที่ลูกค้าจะใช้งานนำ Carmen Add in ออก
-![alt text](image-45.png)
-4. กด OK
+<img src="./image-44.png"  />
+3. เลือก Add in ที่ลูกค้าจะใช้งานนำ Carmen Add in ออก
+<img src="./image-45.png"  />
+4. กด **OK**
