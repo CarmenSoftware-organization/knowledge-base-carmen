@@ -1,15 +1,20 @@
 ---
-title: Close Period for Asset Module
-description: Close Period for Asset Module
+title: Close Period Asset
+description: Close Period Asset
 published: true
-date: "2026-02-02T06:14:10.559Z"
+date: 2026-02-23T05:10:10.086Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.559Z"
+dateCreated: 2026-02-02T06:54:05.185Z
 ---
 
-# Close Period for Asset Module
+---
+title: "Close Period"
+weight: 13
+---
 
+
+## Close Period for Asset Module
 ขั้นตอนการปิดรอบบัญชี (Close Period Asset Management Module)
 
 เมื่อเสร็จสิ้นการทำงานในแต่ละรอบบัญชี ผู้ใช้งานได้มีการตรวจสอบข้อมูลเรียบร้อยแล้วเพื่อป้องกันการแก้ไขข้อมูลในระบบ ให้ดำเนินการปิดรอบบัญชี (Close Period) โดยมีขั้นตอนดำเนินการในระบบ ดังต่อไปนี้
@@ -18,9 +23,9 @@ dateCreated: "2026-02-02T06:14:10.559Z"
 
 2. Click ที่ฟังก์ชัน Procedure เลือกคำสั่ง Close Period
 
-![alt text](image-54.png)
+<img src="./image-54.png"  />
 
-3. จากนั้นระบบจะแสดงหน้าต่าง ถามว่า Do you want to close ../../..(เดือนที่จะปิดรอบบัญชี) ?? กด “Yes” เพื่อยืนยัน (หรือ กด No เพื่อยกเลิก)
+3. จากนั้นระบบจะแสดงหน้าต่าง ถามว่า Do you want to close dd/mm/yy (เดือนที่จะปิดรอบบัญชี) ?? กด “Yes” เพื่อยืนยัน (หรือ กด No เพื่อยกเลิก)
 
 <p align="center">
     <img src="./image-55.png"  />
@@ -32,10 +37,11 @@ dateCreated: "2026-02-02T06:14:10.559Z"
     <img src="./image-3.png"  />
 </p>
 
-**หมายเหตุ**
+> **หมายเหตุ**
+> 
+> การปิดรอบบัญชีในแต่ละ Module จะทำให้ไม่สามารถ เพิ่มเติม หรือ แก้ไขข้อมูลในเดือนที่ปิดไปแล้วได้อีก ดังนั้นก่อนการ Close Period ในระบบโปรดตรวจสอบให้แน่ใจว่า ข้อมูล ครบถ้วนและถูกต้อง
+> 
+> การปิดบัญชีนี้ เป็นการปิดรอบบัญชีในส่วนของ Asset Management Module เท่านั้น แต่ยังคงสามารถโอนข้อมูลไปบันทึกบัญชีที่ General Ledger ได้อยู่ (หาก Period ใน General Ledger Module ยังไม่ถูกปิด)
+> 
+> หากต้องการเปิด Period ให้ FC, Account Manger หรือผู้มีอำนาจส่ง E-Mail ถึง Support เพื่อทำการขอเปิด Period{.is-warning}
 
-- การปิดรอบบัญชีในแต่ละ Module จะทำให้ไม่สามารถ เพิ่มเติม หรือ แก้ไขข้อมูลในเดือนที่ปิดไปแล้วได้อีก ดังนั้นก่อนการ Close Period ในระบบโปรดตรวจสอบให้แน่ใจว่า ข้อมูล ครบถ้วนและถูกต้อง
-
-- การปิดบัญชีนี้ เป็นการปิดรอบบัญชีในส่วนของ Asset Management Module เท่านั้น แต่ยังคงสามารถโอนข้อมูลไปบันทึกบัญชีที่ General Ledger ได้อยู่ (หาก Period ใน General Ledger Module ยังไม่ถูกปิด)
-
-- หากต้องการเปิด Period ให้ FC, Account Manger หรือผู้มีอำนาจส่ง E-Mail ถึง Support เพื่อทำการขอเปิด Period
