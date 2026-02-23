@@ -23,7 +23,7 @@ export type WikiListItem = {
 
 // GET /api/wiki/categories
 export async function getCategories(): Promise<{
-  items: { slug: string }[];
+  items: { slug: string; title: string }[];
 }> {
   const res = await fetch(`${BASE_URL}/api/wiki/categories`, {
     cache: "no-store",

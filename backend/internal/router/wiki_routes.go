@@ -16,4 +16,5 @@ func RegisterWiki(app *fiber.App) {
 	// ใช้ path เดียวกับที่อ่าน markdown (จาก config) เพื่อให้ frontend โหลดรูปได้
 	app.Static("/wiki-assets", config.GetWikiContentPath())
 	app.Get("/api/wiki/search", wikiHandler.Search)
+	app.Post("/api/wiki/sync", wikiHandler.Sync)
 }

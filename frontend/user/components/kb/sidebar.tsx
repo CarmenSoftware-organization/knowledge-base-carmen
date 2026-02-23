@@ -22,10 +22,10 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
         for (const cat of res.items) {
           const catRes = await getCategory(cat.slug);
           loaded.push({
-            name: categoryDisplayMap[cat.slug] || cat.slug.toUpperCase(),
+            name: cat.title || categoryDisplayMap[cat.slug] || cat.slug.toUpperCase(),
             slug: cat.slug,
             articles: catRes.items.map((item: any) => ({
-              title: articleDisplayMap[item.slug] || cleanTitle(item.title),
+              title: item.title || articleDisplayMap[item.slug] || cleanTitle(item.title),
               slug: item.slug,
             })),
           });
