@@ -2,7 +2,6 @@ import { KBHeader } from "@/components/kb/header";
 import { KBFooter } from "@/components/kb/footer";
 import { HeroSection } from "@/components/kb/hero-section";
 import { CategoryCards } from "@/components/kb/category-cards";
-import { PopularArticles } from "@/components/kb/popular-articles";
 import { QuickHelp } from "@/components/kb/quick-help";
 import { getCategories, getCategory } from "@/lib/wiki-api";
 
