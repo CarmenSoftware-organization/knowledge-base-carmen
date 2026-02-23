@@ -2,16 +2,17 @@
 title: Dashboard
 description: Dashboard
 published: true
-date: 2026-02-23T06:29:28.501Z
+date: 2026-02-23T06:35:39.063Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:55:11.416Z
 ---
 
 ---
-title: "Dashboard"
-weight: 1
+title: Dashboard
+...
 ---
+weight: 1
 
 
 
