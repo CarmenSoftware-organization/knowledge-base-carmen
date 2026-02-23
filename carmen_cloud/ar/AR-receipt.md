@@ -2,11 +2,17 @@
 title: Receipt
 description: Receipt
 published: true
-date: "2026-02-02T06:14:10.539Z"
+date: 2026-02-23T05:00:22.545Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.539Z"
+dateCreated: 2026-02-02T06:53:44.781Z
 ---
+
+---
+title: "Receipt"
+weight: 13
+---
+
 
 # Receipt
 
