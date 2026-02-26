@@ -8,7 +8,9 @@ import (
 
 func CORS() fiber.Handler {
 	return cors.New(cors.Config{
-		AllowOrigins:     "*",
+		AllowOriginsFunc: func(origin string) bool {
+			return true // Development: allow all origins
+		},
 		AllowMethods:     "GET,POST,PUT,DELETE,PATCH,OPTIONS",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
 		AllowCredentials: true,

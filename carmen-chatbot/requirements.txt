@@ -1,0 +1,19 @@
+# Core
+fastapi
+uvicorn
+pydantic
+python-dotenv
+
+# LLM & AI
+langchain
+langchain-core
+langchain-community
+langchain-openai
+langchain-ollama
+
+# Embeddings & Vector Search (via pgvector)
+sqlalchemy
+psycopg2-binary
+
+# HTTP
+requests

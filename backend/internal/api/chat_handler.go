@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/models"
@@ -15,18 +16,18 @@ import (
 )
 
 type ChatHandler struct {
-	llm        *ollama.Client
-	embedLLM   *ollama.Client
-	router     *services.QuestionRouterService
-	wiki       *services.WikiService
+	llm      *ollama.Client
+	embedLLM *ollama.Client
+	router   *services.QuestionRouterService
+	wiki     *services.WikiService
 }
 
 func NewChatHandler() *ChatHandler {
 	return &ChatHandler{
-		llm:        ollama.NewClient(),        // ใช้ ChatModel
-		embedLLM:   ollama.NewEmbedClient(),  // ใช้ EmbedModel
-		router:     services.NewQuestionRouterService(),
-		wiki:       services.NewWikiService(),
+		llm:      ollama.NewClient(),      // ใช้ ChatModel
+		embedLLM: ollama.NewEmbedClient(), // ใช้ EmbedModel
+		router:   services.NewQuestionRouterService(),
+		wiki:     services.NewWikiService(),
 	}
 }
 
@@ -49,6 +50,29 @@ func (h *ChatHandler) RouteOnly(c *fiber.Ctx) error {
 		})
 	}
 	return c.JSON(res)
+}
+
+// Proxy ส่งต่อ request ไปยัง Python Chatbot
+func (h *ChatHandler) Proxy(c *fiber.Ctx) error {
+	chatbotURL := config.AppConfig.Server.ChatbotURL
+
+	// สร้าง target URL โดยใช้ OriginalURL เพื่อรวม query parameters ด้วย
+	target := chatbotURL + c.OriginalURL()
+
+	// proxy.Do จะเขียนทับ response headers ทั้งหมดด้วย headers จาก upstream
+	// ดังนั้นต้องตั้งค่า CORS headers หลังจาก proxy.Do เสร็จ
+	if err := proxy.Do(c, target); err != nil {
+		return err
+	}
+
+	// ตั้งค่า CORS headers หลัง proxy เพื่อไม่ให้ถูกเขียนทับ
+	origin := c.Get("Origin")
+	if origin != "" {
+		c.Set("Access-Control-Allow-Origin", origin)
+		c.Set("Access-Control-Allow-Credentials", "true")
+	}
+
+	return nil
 }
 
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {

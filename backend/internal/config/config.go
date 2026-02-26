@@ -27,6 +27,7 @@ type Config struct {
 type ServerConfig struct {
 	Port        string
 	Host        string
+	ChatbotURL  string
 	Environment string
 }
 
@@ -45,10 +46,10 @@ type JWTConfig struct {
 }
 
 type OllamaConfig struct {
-	URL                  string
-	ChatModel            string
-	EmbedModel           string
-	InsecureSkipVerify   bool // true = ยอมรับ TLS certificate ไม่ตรง (ใช้กับ VM ที่ใช้ self-signed)
+	URL                string
+	ChatModel          string
+	EmbedModel         string
+	InsecureSkipVerify bool // true = ยอมรับ TLS certificate ไม่ตรง (ใช้กับ VM ที่ใช้ self-signed)
 }
 
 // OpenClawConfig ใช้สำหรับเชื่อมกับ OpenClaw Gateway (OpenAI-compatible HTTP)
@@ -76,12 +77,12 @@ type ChromaDBConfig struct {
 }
 
 type GitHubConfig struct {
-	Token           string
-	Owner           string
-	Repo            string
-	Branch          string
-	WebhookSecret   string
-	WebhookBranch   string
+	Token         string
+	Owner         string
+	Repo          string
+	Branch        string
+	WebhookSecret string
+	WebhookBranch string
 }
 
 type GitConfig struct {
@@ -93,9 +94,9 @@ type GitConfig struct {
 var AppConfig *Config
 
 func Load() error {
-	// Load .env: ลองจาก cwd ก่อน แล้วลอง backend/.env ถ้ารันจาก repo root
+	// Load .env: ลองจาก cwd ก่อน แล้วลอง ../.env ถ้ารันจาก backend/
 	if err := godotenv.Load(".env"); err != nil {
-		if err2 := godotenv.Load("backend/.env"); err2 != nil {
+		if err2 := godotenv.Load("../.env"); err2 != nil {
 			log.Println("No .env file found, using environment variables")
 		}
 	}
@@ -104,6 +105,7 @@ func Load() error {
 		Server: ServerConfig{
 			Port:        getEnv("SERVER_PORT", "8080"),
 			Host:        getEnv("SERVER_HOST", "localhost"),
+			ChatbotURL:  getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
 			Environment: getEnv("ENVIRONMENT", "development"),
 		},
 		// ไม่ใช้เมื่อปิด DB ใน main.go (เปิดเมื่อพร้อมใช้ DB/role)
@@ -161,7 +163,7 @@ func Load() error {
 func GetWikiContentPath() string {
 	c := AppConfig.Git
 	var basePath string
-	
+
 	if c.ContentPath != "" {
 		basePath = c.ContentPath
 	} else {
@@ -175,7 +177,7 @@ func GetWikiContentPath() string {
 			}
 		}
 	}
-	
+
 	return normalizePath(basePath)
 }
 
@@ -185,19 +187,19 @@ func normalizePath(path string) string {
 	if path == "" {
 		return "./wiki-content"
 	}
-	
+
 	// ถ้าเป็น absolute path (เริ่มด้วย / หรือ drive letter) คืนเลย
 	if filepath.IsAbs(path) {
 		return filepath.Clean(path)
 	}
-	
+
 	// ถ้าเป็น relative path แต่ไม่มี ./ หรือ ../ นำหน้า ให้เพิ่ม ./
 	clean := filepath.Clean(path)
 	if !strings.HasPrefix(clean, ".") && !strings.HasPrefix(clean, "/") {
 		// ถ้าไม่มี . หรือ / นำหน้า ให้เพิ่ม ./
 		return "./" + clean
 	}
-	
+
 	return clean
 }
 
@@ -207,7 +209,6 @@ func getEnv(key, defaultValue string) string {
 	}
 	return defaultValue
 }
-
 
 func getEnvAsBool(key string, defaultValue bool) bool {
 	valueStr := getEnv(key, "")
