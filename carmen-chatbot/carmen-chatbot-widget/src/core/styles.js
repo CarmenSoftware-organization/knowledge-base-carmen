@@ -164,104 +164,110 @@ export function getCssStyles(themeColor = '#34558b') {
         pointer-events: none !important;
     }
 
-    /* Floating Glass Card Menu */
-    .chat-sidebar {
-        position: absolute !important;
-        left: 10px !important;
-        top: 70px !important; 
-        bottom: auto !important;
-        height: auto !important;
-        max-height: calc(100% - 90px) !important;
-        width: 200px !important; 
-        
-        display: flex !important; 
-        flex-direction: column !important;
-        
-        /* Glass Effect */
-        background: rgba(30, 41, 59, 0.95) !important; 
-        backdrop-filter: blur(16px) saturate(180%) !important;
-        -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-        
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 20px !important;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4), 
-                    0 0 0 1px rgba(255,255,255,0.05) inset !important;
-        
-        overflow: hidden !important; 
-        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-        
-        transform: translateX(-20px) scale(0.9) !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        
-        z-index: 150 !important;
+    /* Floating Dropdown Menu (Replaced Sidebar) */
+    .room-dropdown-container {
+        position: relative !important;
+        display: none !important; /* Hidden by default */
     }
     
-    .chat-box.expanded .chat-sidebar.sidebar-visible { 
-        transform: translateX(0) scale(1) !important;
-        opacity: 1 !important;
-        visibility: visible !important;
+    /* Show dropdown button ONLY when chat box is expanded */
+    .chat-box.expanded .room-dropdown-container {
+        display: block !important;
     }
 
-    /* Extra safety: Never show sidebar in Small Mode */
-    .chat-box:not(.expanded) .chat-sidebar {
-        transform: translateX(-20px) scale(0.9) !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
+    .room-dropdown-menu {
+        position: absolute !important;
+        top: 100% !important;
+        right: 0 !important;
+        width: 250px !important;
+        margin-top: 12px !important;
+        background: rgba(30, 41, 59, 0.98) !important;
+        backdrop-filter: blur(16px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05) inset !important;
+        overflow: hidden !important;
+        display: none !important;
+        flex-direction: column !important;
+        max-height: 400px !important;
+        z-index: 200 !important;
+        animation: dropdownIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        transform-origin: top right !important;
+    }
+
+    .room-dropdown-menu.show {
+        display: flex !important;
     }
     
-    .sidebar-header { 
-        padding: 28px 20px 20px 20px !important;
+    @keyframes dropdownIn {
+        from { opacity: 0; transform: scale(0.9) translateY(-10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .dropdown-header {
+        padding: 16px !important;
         border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-        margin-bottom: 8px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
     }
+
     .new-chat-btn {
-        width: 100% !important; padding: 14px !important;
-        background: var(--primary-gradient) !important; 
+        width: 28px !important;
+        height: 28px !important;
+        background: var(--primary-gradient) !important;
         border: none !important;
-        color: white !important; border-radius: 14px !important;
-        cursor: pointer !important; font-size: 14px !important; font-weight: 700 !important;
-        display: flex !important; align-items: center !important; justify-content: center !important;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        box-shadow: 0 8px 20px rgba(52, 85, 139, 0.3) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 18px !important;
+        transition: all 0.2s !important;
     }
-    .new-chat-btn:hover { transform: translateY(-2px) !important; box-shadow: 0 12px 24px rgba(52, 85, 139, 0.4) !important; filter: brightness(1.1) !important; }
+    .new-chat-btn:hover {
+        transform: scale(1.1) !important;
+        box-shadow: 0 4px 12px rgba(52, 85, 139, 0.4) !important;
+    }
 
     .room-list { 
         flex: 1 !important; 
         overflow-y: auto !important; 
-        padding: 16px 12px !important; 
-        display: flex !important; flex-direction: column !important; gap: 8px !important;
+        padding: 8px !important; 
+        display: flex !important; flex-direction: column !important; gap: 4px !important;
     }
-    .room-item {
-        padding: 14px 16px !important; border-radius: 14px !important;
+    .room-dropdown-item {
+        padding: 12px 14px !important; border-radius: 10px !important;
         color: #94a3b8 !important; cursor: pointer !important;
-        display: flex !important; align-items: center !important; gap: 8px !important;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important; 
-        position: relative !important;
-        background: rgba(255,255,255,0.03) !important;
-        border: 1px solid rgba(255,255,255,0.05) !important;
+        display: flex !important; align-items: center !important; justify-content: space-between !important;
+        transition: all 0.2s !important; 
+        background: transparent !important;
+        border: 1px solid transparent !important;
     }
-    .room-item:hover { 
+    .room-dropdown-item:hover { 
         background: rgba(255,255,255,0.08) !important; 
         color: white !important; 
-        transform: translateX(4px) !important;
-        border-color: rgba(255,255,255,0.1) !important;
+        border-color: rgba(255,255,255,0.05) !important;
     }
-    .room-item.active { 
-        background: rgba(52, 85, 139, 0.15) !important; 
+    .room-dropdown-item.active { 
+        background: rgba(52, 85, 139, 0.2) !important; 
         color: white !important; 
-        border-color: var(--primary-color) !important;
-        box-shadow: inset 0 0 0 1px var(--primary-color) !important;
+        border-color: rgba(52, 85, 139, 0.4) !important;
     }
-    .room-item.active::before {
-        content: '' !important; position: absolute !important; left: 0 !important; top: 25% !important; bottom: 25% !important;
-        width: 3px !important; background: var(--primary-color) !important; border-radius: 0 4px 4px 0 !important;
-        box-shadow: 0 0 10px var(--primary-color) !important;
+    .room-title { font-size: 13.5px !important; font-weight: 500 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; flex: 1 !important; margin-right: 8px !important; }
+    .delete-room-btn { 
+        opacity: 0; color: #f87171 !important; font-size: 18px !important; 
+        border: none !important; background: transparent !important; 
+        cursor: pointer !important; transition: 0.2s !important; 
+        padding: 0 4px !important; line-height: 1 !important;
     }
-    .room-title { font-size: 13.5px !important; font-weight: 500 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; flex: 1 !important; }
-    .delete-room-btn { opacity: 0; color: #f87171 !important; font-size: 18px !important; border: none !important; background: transparent !important; cursor: pointer !important; transition: 0.2s !important; }
-    .room-item:hover .delete-room-btn { opacity: 1 !important; }
+    .room-dropdown-item:hover .delete-room-btn { opacity: 1 !important; }
+    .delete-room-btn:hover { color: #ef4444 !important; transform: scale(1.2) !important; }
 
     /* Main Content Area */
     .chat-main { 
@@ -472,25 +478,39 @@ export function getCssStyles(themeColor = '#34558b') {
         padding: 24px !important; animation: fadeIn 0.3s ease !important;
     }
     .alert-box {
-        background: white !important; width: 100% !important; max-width: 320px !important;
-        padding: 32px !important; border-radius: 28px !important;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        background: rgba(255, 255, 255, 0.95) !important; width: 100% !important; max-width: 340px !important;
+        padding: 28px !important; border-radius: 20px !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.5) inset !important;
+        backdrop-filter: blur(20px) !important;
         text-align: center !important; transform: scale(1) !important;
         border: 1px solid rgba(0,0,0,0.05) !important;
-        animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        font-family: var(--font-sarabun) !important;
+        animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        font-family: var(--font-inter) !important;
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     
-    .alert-icon { font-size: 32px !important; margin-bottom: 16px !important; }
-    .alert-title { font-weight: 700 !important; font-size: 18px !important; margin-bottom: 8px !important; }
-    .alert-desc { color: var(--text-gray) !important; font-size: 14px !important; margin-bottom: 24px !important; }
-    .btn-alert { 
-        padding: 12px 24px !important; border-radius: 12px !important; font-weight: 600 !important; cursor: pointer !important; transition: 0.2s !important; width: 100% !important;
+    .alert-icon { 
+        width: 56px !important; height: 56px !important; 
+        background: #fee2e2 !important; color: #ef4444 !important; 
+        border-radius: 50% !important; 
+        display: flex !important; align-items: center !important; justify-content: center !important; 
+        margin: 0 auto 16px auto !important; 
     }
-    .btn-confirm { background: #0f172a !important; color: white !important; margin-bottom: 8px !important; }
-    .btn-cancel { background: #f1f5f9 !important; color: var(--text-dark) !important; }
+    .alert-icon svg { width: 28px !important; height: 28px !important; }
+    .alert-title { font-weight: 700 !important; font-size: 18px !important; margin-bottom: 8px !important; color: #0f172a !important; font-family: var(--font-sarabun) !important; }
+    .alert-desc { color: var(--text-gray) !important; font-size: 14px !important; line-height: 1.5 !important; margin-bottom: 0 !important; font-family: var(--font-sarabun) !important; }
+    .alert-actions {
+        display: flex !important; gap: 12px !important; justify-content: center !important; margin-top: 24px !important;
+    }
+    .btn-alert { 
+        padding: 12px 20px !important; border-radius: 12px !important; font-weight: 600 !important; cursor: pointer !important; transition: 0.2s !important; width: 100% !important; flex: 1 !important;
+        display: flex !important; justify-content: center !important; align-items: center !important; border: transparent; font-family: var(--font-inter) !important;
+    }
+    .btn-confirm { background: #ef4444 !important; color: white !important; }
+    .btn-confirm:hover { background: #dc2626 !important; transform: scale(1.02) !important; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important; }
+    .btn-cancel { background: transparent !important; color: var(--text-dark) !important; border: 1px solid #cbd5e1 !important; }
+    .btn-cancel:hover { background: #f1f5f9 !important; }
 
     /* Tooltip */
     .chat-tooltip {
@@ -602,13 +622,6 @@ export function getCssStyles(themeColor = '#34558b') {
         
         .chat-box.open {
             display: flex !important;
-        }
-        
-        .chat-sidebar {
-            width: 80% !important;
-            height: auto !important;
-            top: 70px !important;
-            max-height: calc(100% - 100px) !important;
         }
     }
 

@@ -6,7 +6,9 @@ export class ChatManager {
     constructor(bot) {
         this.bot = bot;
         this.api = bot.api;
-        this.roomKey = `carmen_room_${bot.bu}_${bot.username}`;
+
+        // Remove bu/username from room key since we're using a global carmen_rooms structure.
+        this.roomKey = `carmen_current_room`;
         this.typingBuffer = "";
         this.isTyping = false;
     }
@@ -16,8 +18,12 @@ export class ChatManager {
         if (this.bot.currentRoomId) {
             await this.api.clearHistory(this.bot.currentRoomId);
         }
+
+        // Let's create a new room immediately so it persists, 
+        // or just wait until they type. We'll wait until they type (lazy creation)
         this.bot.currentRoomId = null;
         localStorage.removeItem(this.roomKey);
+
         this.bot.ui.showWelcomeMessage();
         await this.loadRoomList();
     }
@@ -33,7 +39,7 @@ export class ChatManager {
 
     async deleteChatRoom(roomId) {
         this.bot.ui.showModal({
-            icon: '🗑️',
+            icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`,
             title: STRINGS.delete_room_confirm_title,
             text: STRINGS.delete_room_confirm_desc,
             confirmText: 'ลบทิ้ง',
@@ -55,7 +61,7 @@ export class ChatManager {
 
     async loadRoomList() {
         try {
-            const rooms = await this.api.getRooms(this.bot.bu, this.bot.username);
+            const rooms = await this.api.getRooms(); // Ignore bu/username parameters
             this.bot.ui.renderRoomList(rooms, this.bot.currentRoomId);
         } catch (err) {
             console.error("Room List Error:", err);
@@ -114,6 +120,14 @@ export class ChatManager {
             displayHTML = `<img src="${this.bot.currentImageBase64}" style="max-width:100%; border-radius:8px; margin-bottom:5px;"><br>${text}`;
         }
         this.bot.ui.addMessage(displayHTML, 'user');
+
+        // Save user message to memory
+        await this.api.saveMessage(this.bot.currentRoomId, {
+            sender: 'user',
+            message: text,
+            image: this.bot.currentImageBase64 ? true : false,
+            timestamp: new Date().toISOString()
+        });
 
         // Clear Input State
         input.value = '';
@@ -197,6 +211,7 @@ export class ChatManager {
                         const json = JSON.parse(line);
                         if (json.type === "chunk") {
                             this.typingBuffer += json.data;
+                            fullBotText += json.data; // track full text for storage
                         } else if (json.type === "sources") {
                             sourcesData = json.data;
                         } else if (json.type === "done") {
@@ -210,11 +225,21 @@ export class ChatManager {
 
             // Cleanup & Extras
             if (botUI.loader) botUI.loader.remove();
+
+            // Save bot response to local storage history
             if (messageId && botUI.container) {
                 const { createMessageExtras } = await import('../ui/dom-builder.js');
                 const extrasHTML = createMessageExtras('bot', messageId, sourcesData);
                 botUI.container.insertAdjacentHTML('beforeend', extrasHTML);
                 this.bot.bindCopyEvent(botUI.container);
+
+                await this.api.saveMessage(this.bot.currentRoomId, {
+                    id: messageId,
+                    sender: 'bot',
+                    message: fullBotText,
+                    sources: sourcesData,
+                    timestamp: new Date().toISOString()
+                });
             }
 
         } catch (error) {

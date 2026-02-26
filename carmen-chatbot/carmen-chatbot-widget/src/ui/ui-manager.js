@@ -136,7 +136,7 @@ export class UIManager {
 
         if (!overlay) return;
 
-        iconEl.textContent = icon;
+        iconEl.innerHTML = icon;
         titleEl.textContent = title;
         descEl.innerHTML = text;
         actionsEl.innerHTML = '';
@@ -254,7 +254,7 @@ export class UIManager {
                 container.appendChild(div.firstElementChild);
             });
         } else {
-            container.innerHTML = `<div style="padding:20px; text-align:center; color:#64748b; font-size:13px;">${STRINGS.history_empty}</div>`;
+            container.innerHTML = `<div style="padding:16px; text-align:center; color:#64748b; font-size:13px;">ไม่มีประวัติการสนทนา</div>`;
         }
     }
 

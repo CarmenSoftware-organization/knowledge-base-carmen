@@ -1,9 +1,9 @@
 import { ICONS } from '../assets/icons.js';
 
-// 🆕 สร้าง HTML สำหรับรายการห้องใน Sidebar
+// 🆕 สร้าง HTML สำหรับรายการห้องใน Dropdown
 export function createRoomItemHTML(room, isActive = false) {
     return `
-        <div class="room-item ${isActive ? 'active' : ''}" data-id="${room.room_id}">
+        <div class="room-dropdown-item ${isActive ? 'active' : ''}" data-id="${room.room_id}">
             <div class="room-title" title="${room.title || 'บทสนทนาใหม่'}">
                 ${room.title || 'บทสนทนาใหม่'}
             </div>
@@ -29,14 +29,6 @@ export function createWidgetHTML(options = { showClear: true, showAttach: true }
         <div class="chat-btn" id="carmen-launcher">${ICONS.launcher}</div>
         
         <div class="chat-box" id="carmenChatWindow">
-            
-            <div class="chat-sidebar" id="carmenSidebar" style="display: none !important;">
-                <div class="sidebar-header">
-                    <button id="new-chat-btn" class="new-chat-btn">+ เริ่มแชทใหม่</button>
-                </div>
-                <div class="room-list" id="carmenRoomList">
-                    </div>
-            </div>
 
             <div class="chat-main">
                 
@@ -51,8 +43,6 @@ export function createWidgetHTML(options = { showClear: true, showAttach: true }
 
                 <div class="chat-header">
                     <div class="header-info">
-                        <!-- Menu button hidden out: <div class="icon-btn" id="carmen-menu-btn" title="เมนู">☰</div> -->
-                        
                         <div class="avatar-wrapper">
                             ${ICONS.botAvatar}
                         </div>
@@ -66,6 +56,25 @@ export function createWidgetHTML(options = { showClear: true, showAttach: true }
                     </div>
                     
                     <div class="header-tools">
+                        <!-- Dropdown button will only be displayed when parent has .carmen-expanded -->
+                        <div class="room-dropdown-container" id="carmenRoomDropdownContainer">
+                            <div class="icon-btn room-dropdown-btn" id="carmen-room-dropdown-btn" title="ประวัติการสนทนา">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2z"></path>
+                                    <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"></path>
+                                </svg>
+                            </div>
+                            <div class="room-dropdown-menu" id="carmenRoomDropdownMenu" style="display: none;">
+                                <div class="dropdown-header">
+                                    <span>ประวัติแชท</span>
+                                    <button id="new-chat-btn" class="new-chat-btn" title="เริ่มแชทใหม่">+</button>
+                                </div>
+                                <div class="room-list" id="carmenRoomList">
+                                    <!-- Room items will be injected here -->
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="icon-btn" id="carmen-expand-btn" title="ขยายหน้าจอ">⛶</div>
                         ${showClear ? `<div class="icon-btn" id="carmen-clear-btn" title="ล้างแชท">${ICONS.clear}</div>` : ''}
                         <div class="icon-btn" id="carmen-close-btn" title="ปิด">${ICONS.close}</div>

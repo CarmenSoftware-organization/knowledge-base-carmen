@@ -13,16 +13,26 @@ export class EventManager {
         const expandBtn = this.bot.ui.findElement('carmen-expand-btn');
         const newChatBtn = this.bot.ui.findElement('new-chat-btn');
         const roomListContainer = this.bot.ui.findElement('carmenRoomList');
-        const menuBtn = this.bot.ui.findElement('carmen-menu-btn');
-        const sidebar = this.bot.ui.findElement('carmenSidebar');
+        const dropdownBtn = this.bot.ui.findElement('carmen-room-dropdown-btn');
+        const dropdownMenu = this.bot.ui.findElement('carmenRoomDropdownMenu');
         const header = this.bot.ui.findElement('.chat-header');
-        // const container = document.getElementById('carmen-chat-widget'); // This is no longer the draggable target
+
+        // Close dropdown when clicking outside
+        if (this.bot.ui.shadow) {
+            this.bot.ui.shadow.addEventListener('click', (e) => {
+                if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+                    if (!e.target.closest('#carmenRoomDropdownContainer')) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                }
+            });
+        }
 
         const closeWin = () => {
             if (win.classList.contains('closing')) return;
             win.classList.add('closing');
 
-            if (sidebar) sidebar.classList.remove('sidebar-visible');
+            if (dropdownMenu) dropdownMenu.classList.remove('show');
             localStorage.setItem(`carmen_open_${this.bot.bu}`, 'false');
             localStorage.setItem(`carmen_expanded_${this.bot.bu}`, 'false');
 
@@ -46,7 +56,7 @@ export class EventManager {
                     win.classList.remove('closing');
                     win.classList.add('open');
                     localStorage.setItem(`carmen_open_${this.bot.bu}`, 'true');
-                    if (sidebar) sidebar.classList.remove('sidebar-visible');
+                    if (dropdownMenu) dropdownMenu.classList.remove('show');
                     setTimeout(() => this.bot.ui.scrollToBottom(), 100);
                 }
             };
@@ -89,18 +99,30 @@ export class EventManager {
                     }
                 }
 
-                if (!isExpanding && sidebar) sidebar.classList.remove('sidebar-visible');
+                if (!isExpanding && dropdownMenu) dropdownMenu.classList.remove('show');
                 setTimeout(() => {
                     win.classList.remove('resizing');
                     this.bot.ui.scrollToBottom();
                 }, 600);
             };
         }
-        if (newChatBtn) newChatBtn.onclick = () => this.bot.chat.createNewChat();
+
+        if (newChatBtn) newChatBtn.onclick = () => {
+            if (dropdownMenu) dropdownMenu.classList.remove('show');
+            this.bot.chat.createNewChat();
+        };
+
+        if (dropdownBtn && dropdownMenu) {
+            dropdownBtn.onclick = (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('show');
+            };
+        }
+
         if (roomListContainer) {
             roomListContainer.onclick = async (e) => {
                 const deleteBtn = e.target.closest('.delete-room-btn');
-                const roomItem = e.target.closest('.room-item');
+                const roomItem = e.target.closest('.room-dropdown-item');
                 if (deleteBtn) {
                     e.stopPropagation();
                     const rId = deleteBtn.getAttribute('data-id');
@@ -110,17 +132,17 @@ export class EventManager {
                 if (roomItem) {
                     const rId = roomItem.getAttribute('data-id');
                     this.bot.chat.switchRoom(rId);
+                    if (dropdownMenu) dropdownMenu.classList.remove('show');
                 }
             };
         }
-        if (menuBtn && sidebar) menuBtn.onclick = () => sidebar.classList.toggle('sidebar-visible');
 
         const clearBtn = this.bot.ui.findElement('carmen-clear-btn');
         if (clearBtn) {
             clearBtn.onclick = () => {
                 if (!this.bot.currentRoomId) return;
                 this.bot.ui.showModal({
-                    icon: '🗑️',
+                    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`,
                     title: STRINGS.clear_history_confirm_title,
                     text: STRINGS.clear_history_confirm_desc,
                     confirmText: 'ลบเลย',
