@@ -45,3 +45,28 @@ func Migrate(models ...interface{}) error {
 	}
 	return nil
 }
+
+// ClearPublicTables truncates all user tables in the `public` schema while
+// preserving extensions, functions and types. It restarts identity (sequences)
+// and cascades to dependent tables. Use with care and always back up first.
+func ClearPublicTables() error {
+		sql := `DO $$
+DECLARE
+	tbls text;
+BEGIN
+	SELECT string_agg(format('%I.%I', schemaname, tablename), ', ')
+		INTO tbls
+	FROM pg_tables
+	WHERE schemaname = 'public'
+		AND tablename NOT LIKE 'pg_%'
+		AND tablename NOT LIKE 'sql_%';
+
+	IF tbls IS NULL THEN
+		RETURN;
+	END IF;
+
+	EXECUTE 'TRUNCATE TABLE ' || tbls || ' RESTART IDENTITY CASCADE';
+END$$;`
+
+		return DB.Exec(sql).Error
+}
