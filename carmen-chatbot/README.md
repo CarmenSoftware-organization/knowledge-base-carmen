@@ -4,23 +4,27 @@ AI-powered chatbot for **Carmen Enterprise Software** — uses RAG (Retrieval-Au
 
 ## 📁 Project Structure
 
-```
+```text
 carmen-chatbot/
 ├── backend/                    # Python FastAPI Server
 │   ├── main.py                 # Entry point — FastAPI app
-│   ├── config.py               # Environment & settings
-│   ├── database.py             # SQLAlchemy engine (PostgreSQL)
-│   ├── schemas.py              # Pydantic request/response models
-│   ├── routers/
-│   │   └── chat.py             # Chat API endpoints (/api/chat)
-│   └── services/
-│       ├── llm_service.py      # LLM integration (OpenRouter/Ollama)
-│       └── retrieval_service.py # RAG search (pgvector embeddings)
+│   ├── api/
+│   │   └── chat_routes.py      # Chat API endpoints (/api/chat)
+│   ├── core/
+│   │   ├── config.py           # Environment & settings
+│   │   ├── database.py         # SQLAlchemy engine (PostgreSQL)
+│   │   └── schemas.py          # Pydantic request/response models
+│   └── llm/
+│       ├── chat_history.py     # Memory cache & chat management
+│       ├── chat_service.py     # Main AI chat orchestration logic
+│       ├── prompt.py           # System prompts
+│       └── retrieval.py        # RAG search (pgvector embeddings)
 ├── carmen-chatbot-widget/      # Embeddable frontend widget (Vite)
 │   ├── src/                    # Widget source code
 │   ├── dist/                   # Built widget (carmen-widget.js)
 │   └── README.md               # Widget documentation & usage
 ├── requirements.txt            # Python dependencies
+├── .env.example                # Example environment variables
 └── .gitignore
 ```
 
@@ -49,15 +53,23 @@ pip install -r requirements.txt
 
 ### 2. Configure Environment
 
-Create a `.env` file in the **parent directory** (project root):
+Copy `.env.example` to `.env` in the **project root (`carmen-chatbot`)** and update the values:
+
+```bash
+cp .env.example .env
+```
+
+Your `.env` should include:
 
 ```env
-# LLM API
-OPENROUTER_API_KEY=your-openrouter-api-key
+# API Keys
+GOOGLE_API_KEY=your_google_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 
-# Ollama (for embeddings)
+# Ollama settings (for embeddings)
 OLLAMA_URL=http://localhost:11434
 OLLAMA_EMBED_MODEL=nomic-embed-text:latest
+OLLAMA_CHAT_MODEL=gemma3:1b
 
 # PostgreSQL (pgvector)
 PG_HOST=your-db-host
