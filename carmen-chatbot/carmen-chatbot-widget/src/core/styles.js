@@ -190,7 +190,6 @@ export function getCssStyles(themeColor = '#34558b') {
         overflow: hidden !important;
         display: none !important;
         flex-direction: column !important;
-        max-height: 400px !important;
         z-index: 200 !important;
         animation: dropdownIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
         transform-origin: top right !important;
@@ -237,10 +236,20 @@ export function getCssStyles(themeColor = '#34558b') {
 
     .room-list { 
         flex: 1 !important; 
+        max-height: 280px !important; /* Cap height to approx 5-6 items before scrolling */
         overflow-y: auto !important; 
         padding: 8px !important; 
         display: flex !important; flex-direction: column !important; gap: 4px !important;
     }
+    
+    /* Dropdown custom scrollbar */
+    .room-list::-webkit-scrollbar { width: 4px !important; }
+    .room-list::-webkit-scrollbar-track { background: transparent !important; }
+    .room-list::-webkit-scrollbar-thumb { 
+        background: rgba(255,255,255,0.1) !important; 
+        border-radius: 10px !important; 
+    }
+    .room-list:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2) !important; }
     .room-dropdown-item {
         padding: 12px 14px !important; border-radius: 10px !important;
         color: #94a3b8 !important; cursor: pointer !important;

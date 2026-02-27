@@ -6,7 +6,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- G
 
 # 2. Python Chatbot
 Write-Host "Starting Python Chatbot (Port 8000)..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Python Chatbot ---' -ForegroundColor Yellow; cd carmen-chatbot; .\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --port 8000" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Python Chatbot ---' -ForegroundColor Yellow; cd carmen-chatbot; .\.venv\Scripts\python.exe start_server.py" -WindowStyle Normal
 
 # 3. Frontend (Next.js)
 Write-Host "Starting Frontend (Port 3000)..."

@@ -62,7 +62,7 @@ cd carmen-chatbot
 source .venv/bin/activate
 
 pip install -r requirements.txt
-python -m uvicorn backend.main:app --reload --port 8000
+python start_server.py
 ```
 
 Runs on <http://localhost:8000>

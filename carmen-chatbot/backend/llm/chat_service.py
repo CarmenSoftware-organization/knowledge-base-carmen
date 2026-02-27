@@ -2,11 +2,11 @@ import json
 import time
 from datetime import datetime
 
-# --- LLM Provider: OpenRouter (active) ---
+# --- LLM Provider: OpenRouter ---
 from langchain_openai import ChatOpenAI
 
-# --- LLM Provider: Ollama (commented out, uncomment to switch back) ---
-# from langchain_ollama import ChatOllama
+# --- LLM Provider: Ollama ---
+from langchain_community.chat_models import ChatOllama
 
 from ..core.config import settings
 from .retrieval import retrieval_service
@@ -16,39 +16,38 @@ from . import chat_history
 
 class LLMService:
     def __init__(self):
-        # --- OpenRouter (active) ---
-        self.api_base = "https://openrouter.ai/api/v1"
-        self.default_model = "stepfun/step-3.5-flash:free"
-        print(f"💬 AI Chat Model Initialization Complete (OpenRouter) using {self.default_model}")
-
-        # --- Ollama (commented out, uncomment to switch back) ---
-        # self.default_model = settings.OLLAMA_CHAT_MODEL
-        # self.ollama_url = settings.OLLAMA_URL
-        # print(f"💬 AI Chat Model Initialization Complete (Ollama) using {self.default_model} @ {self.ollama_url}")
+        self.provider = settings.ACTIVE_LLM_PROVIDER.lower()
+        
+        if self.provider == "ollama":
+            self.default_model = settings.OLLAMA_CHAT_MODEL
+            self.api_base = settings.OLLAMA_URL
+            print(f"💬 AI Chat Model Initialization Complete (Ollama) using {self.default_model} @ {self.api_base}")
+        else:
+            self.default_model = settings.OPENROUTER_CHAT_MODEL
+            self.api_base = "https://openrouter.ai/api/v1"
+            print(f"💬 AI Chat Model Initialization Complete (OpenRouter) using {self.default_model}")
 
     def _create_llm(self, streaming=False):
         """Create the LLM instance based on the active provider."""
-        # --- OpenRouter (active) ---
-        return ChatOpenAI(
-            model=self.default_model,
-            openai_api_key=settings.OPENROUTER_API_KEY,
-            openai_api_base=self.api_base,
-            temperature=0.3,
-            max_tokens=2048,
-            streaming=streaming,
-            **({"stream_usage": True} if streaming else {})
-        )
-
-        # --- Ollama (commented out, uncomment to switch back) ---
-        # return ChatOllama(
-        #     model=self.default_model,
-        #     base_url=self.ollama_url,
-        #     temperature=0.3,
-        #     streaming=streaming,
-        #     think=False,
-        #     num_ctx=4096,
-        #     timeout=300,
-        # )
+        if self.provider == "ollama":
+            return ChatOllama(
+                model=self.default_model,
+                base_url=self.api_base,
+                temperature=0.3,
+                streaming=streaming,
+                num_ctx=4096,
+                timeout=300,
+            )
+        else:
+            return ChatOpenAI(
+                model=self.default_model,
+                openai_api_key=settings.OPENROUTER_API_KEY,
+                openai_api_base=self.api_base,
+                temperature=0.3,
+                max_tokens=2048,
+                streaming=streaming,
+                **({"stream_usage": True} if streaming else {})
+            )
 
     def get_active_model(self, override_model: str = None):
         model_name = override_model or self.default_model

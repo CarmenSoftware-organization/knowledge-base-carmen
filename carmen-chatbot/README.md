@@ -72,19 +72,19 @@ OLLAMA_EMBED_MODEL=nomic-embed-text:latest
 OLLAMA_CHAT_MODEL=gemma3:1b
 
 # PostgreSQL (pgvector)
-PG_HOST=your-db-host
-PG_PORT=5432
-PG_USER=your-db-user
-PG_PASSWORD=your-db-password
-PG_NAME=your-db-name
-PG_SSLMODE=require
+DB_HOST=your-db-host
+DB_PORT=5432
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+DB_NAME=your-db-name
+DB_SSLMODE=require
 ```
 
 ### 3. Run the Server
 
 ```bash
 # From the carmen-chatbot directory
-python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+python start_server.py
 ```
 
 The API will be available at `http://localhost:8000`

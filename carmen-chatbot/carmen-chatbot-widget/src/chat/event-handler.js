@@ -135,6 +135,20 @@ export class EventManager {
                     if (dropdownMenu) dropdownMenu.classList.remove('show');
                 }
             };
+
+            // Prevent scrolling the main window when scrolling inside the room list
+            roomListContainer.addEventListener('wheel', (e) => {
+                const isScrollingDown = e.deltaY > 0;
+                const isScrollingUp = e.deltaY < 0;
+
+                const isAtBottom = roomListContainer.scrollTop + roomListContainer.clientHeight >= roomListContainer.scrollHeight - 1;
+                const isAtTop = roomListContainer.scrollTop <= 0;
+
+                if ((isScrollingDown && isAtBottom) || (isScrollingUp && isAtTop)) {
+                    e.preventDefault();
+                }
+                e.stopPropagation();
+            }, { passive: false });
         }
 
         const clearBtn = this.bot.ui.findElement('carmen-clear-btn');
