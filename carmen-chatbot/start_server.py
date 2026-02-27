@@ -19,7 +19,8 @@ load_dotenv(ENV_PATH)
 def fetch_openrouter_models():
     print("Fetching OpenRouter models...")
     try:
-        resp = requests.get("https://openrouter.ai/api/v1/models", timeout=10)
+        base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
+        resp = requests.get(f"{base_url}/api/v1/models", timeout=10)
         resp.raise_for_status()
         data = resp.json()
         models = data.get("data", [])
@@ -60,7 +61,8 @@ def check_llm_health(provider: str, model: str) -> bool:
                 "messages": [{"role": "user", "content": "Hello"}],
                 "max_tokens": 5
             }
-            resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=10)
+            base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
+            resp = requests.post(f"{base_url}/api/v1/chat/completions", headers=headers, json=data, timeout=10)
             if resp.status_code == 200:
                 print("✅ Health check passed! Model responded successfully.")
                 return True
@@ -91,77 +93,120 @@ def check_llm_health(provider: str, model: str) -> bool:
     return False
 
 def main():
-    print("\n🤖 Welcome to Carmen LLM Configurator 🤖\n")
+    # 🌟 Check Environment Mode
+    env_mode = os.environ.get("ENVIRONMENT", "development").lower()
     
-    while True:
-        provider = inquirer.select(
-            message="Which LLM Provider would you like to use today?",
-            choices=[
-                Choice(value="openrouter", name="OpenRouter (Cloud API)"),
-                Choice(value="ollama", name="Ollama (Local Server)")
-            ],
-            default="openrouter"
-        ).execute()
+    if env_mode == "production":
+        print("\n🚀 [PRODUCTION MODE] Skipping Interactive Prompts 🚀\n")
+        provider = os.environ.get("ACTIVE_LLM_PROVIDER", "openrouter")
         
         if provider == "openrouter":
-            choices = fetch_openrouter_models()
-            if not choices:
-                print("Failed to load models. Exiting.")
-                sys.exit(1)
-                
-            model = inquirer.fuzzy(
-                message="Search and select an OpenRouter model:",
-                choices=choices,
-                match_exact=True,
-            ).execute()
-            
-        elif provider == "ollama":
-            choices = fetch_ollama_models()
-            if not choices:
-                print("No models found. Please ensure Ollama is running and models are pulled.")
-                sys.exit(1)
-                
-            model = inquirer.fuzzy(
-                message="Search and select a local Ollama model:",
-                choices=choices,
-                match_exact=True,
-            ).execute()
-            
-        # Apply configurations ONLY in memory for this run session
-        os.environ["ACTIVE_LLM_PROVIDER"] = provider
-        
-        if provider == "openrouter":
-            os.environ["OPENROUTER_CHAT_MODEL"] = model
+            model = os.environ.get("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
         else:
-            os.environ["OLLAMA_CHAT_MODEL"] = model
+            provider = "ollama" # fallback
+            model = os.environ.get("OLLAMA_CHAT_MODEL", "gemma3:1b")
             
-        # Pre-Flight Health Check
+        print(f"📌 Using Provider: {provider.upper()}")
+        print(f"📌 Using Model: {model}\n")
+        
+        # Pre-Flight Health Check (Non-blocking in Production)
+        print("⏳ Running pre-flight health check...")
         is_healthy = check_llm_health(provider, model)
         if not is_healthy:
-            action = inquirer.select(
-                message="⚠️ The selected model failed the health check or is unreachable. What would you like to do?",
+            print("⚠️ WARNING: Health check failed, but forcing start in PRODUCTION mode...")
+            
+    else:
+        # 💻 Development Mode (Interactive)
+        print("\n🤖 Welcome to Carmen LLM Configurator (Development Mode) 🤖\n")
+        
+        while True:
+            provider = inquirer.select(
+                message="Which LLM Provider would you like to use today?",
                 choices=[
-                    Choice(value="retry", name="Select a different model"),
-                    Choice(value="force", name="Force start the server anyway"),
-                    Choice(value="abort", name="Abort and exit")
+                    Choice(value="openrouter", name="OpenRouter (Cloud API)"),
+                    Choice(value="ollama", name="Ollama (Local Server)")
                 ],
-                default="retry"
+                default="openrouter"
+            ).execute()
+        
+            if provider == "openrouter":
+                choices = fetch_openrouter_models()
+                if not choices:
+                    print("Failed to load models. Exiting.")
+                    sys.exit(1)
+                    
+                model = inquirer.fuzzy(
+                    message="Search and select an OpenRouter model:",
+                    choices=choices,
+                    match_exact=True,
+                ).execute()
+                
+            elif provider == "ollama":
+                choices = fetch_ollama_models()
+                if not choices:
+                    print("No models found. Please ensure Ollama is running and models are pulled.")
+                    sys.exit(1)
+                    
+                model = inquirer.fuzzy(
+                    message="Search and select a local Ollama model:",
+                    choices=choices,
+                    match_exact=True,
+                ).execute()
+                
+            save_env = inquirer.confirm(
+                message="Do you want to save this configuration to .env as the new default?",
+                default=True
             ).execute()
             
-            if action == "retry":
-                print("\nRestarting selection process...\n")
-                continue
-            elif action == "abort":
-                print("\n🛑 Server startup aborted by user.")
-                sys.exit(1)
-            # if "force", it just breaks out of the loop and starts
+            # Apply configurations ONLY in memory for this run session
+            os.environ["ACTIVE_LLM_PROVIDER"] = provider
+            if save_env:
+                set_key(ENV_PATH, "ACTIVE_LLM_PROVIDER", provider)
             
-        break # Exit loop if healthy or if user chose "force"
+            if provider == "openrouter":
+                os.environ["OPENROUTER_CHAT_MODEL"] = model
+                if save_env:
+                    set_key(ENV_PATH, "OPENROUTER_CHAT_MODEL", model)
+            else:
+                os.environ["OLLAMA_CHAT_MODEL"] = model
+                if save_env:
+                    set_key(ENV_PATH, "OLLAMA_CHAT_MODEL", model)
+                
+            # Pre-Flight Health Check
+            is_healthy = check_llm_health(provider, model)
+            if not is_healthy:
+                action = inquirer.select(
+                    message="⚠️ The selected model failed the health check or is unreachable. What would you like to do?",
+                    choices=[
+                        Choice(value="retry", name="Select a different model"),
+                        Choice(value="force", name="Force start the server anyway"),
+                        Choice(value="abort", name="Abort and exit")
+                    ],
+                    default="retry"
+                ).execute()
+                
+                if action == "retry":
+                    print("\nRestarting selection process...\n")
+                    continue
+                elif action == "abort":
+                    print("\n🛑 Server startup aborted by user.")
+                    sys.exit(1)
+                # if "force", it just breaks out of the loop and starts
+                
+            break # Exit loop if healthy or if user chose "force"
         
     print(f"\n🚀 Starting Backend Server with [{provider.upper()}] -> [{model}]...\n")
     
     # Start Uvicorn
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+    # Use reload=True only in development mode
+    should_reload = (env_mode != "production")
+    if should_reload:
+        print("🔄 Hot-reload is ENABLED (Development Mode)")
+        uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+    else:
+        print("⏩ Hot-reload is DISABLED, starting with multiple workers (Production Mode)")
+        # In production on Windows, Gunicorn isn't available, so we use uvicorn with workers
+        uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=False, workers=4)
 
 if __name__ == "__main__":
     main()

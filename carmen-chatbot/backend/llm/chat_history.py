@@ -27,7 +27,7 @@ def clean_for_history(text: str, max_len: int = 200) -> str:
     return t
 
 
-def get_history_text(room_id: str, limit: int = 6) -> str:
+def get_history_text(room_id: str, limit: int = 4) -> str:
     """Get formatted chat history text for prompt injection."""
     if room_id not in _in_memory_history:
         return "(ไม่มีบทสนทนาก่อนหน้า)"

@@ -14,8 +14,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from functools import lru_cache
 
-from .core.config import FRONTEND_DIR, IMAGES_DIR, WIKI_DIR
+from .core.config import FRONTEND_DIR, IMAGES_DIR, WIKI_DIR, CORS_ORIGINS
 from .api import chat_routes as chat
 
 app = FastAPI(title="Carmen Chatbot System")
@@ -23,7 +24,7 @@ app = FastAPI(title="Carmen Chatbot System")
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://10.190.239.14:3000", "http://localhost:8080"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -32,28 +33,44 @@ app.add_middleware(
 # Include Routers
 app.include_router(chat.router)
 
+# Health Check Route
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok"}
+
 # Static Files
 if not IMAGES_DIR.exists(): os.makedirs(IMAGES_DIR)
+
+# ⚡ Caching Image Paths to prevent recursive IO bottlenecks in Production ⚡
+@lru_cache(maxsize=1024)
+def find_image_path(basename: str) -> Path | None:
+    if WIKI_DIR.exists():
+        # First check if the file matches the basename directly in WIKI_DIR
+        exact_path = WIKI_DIR / basename
+        if exact_path.is_file():
+            return exact_path
+            
+        # Fallback to searching by basename recursively
+        for path in WIKI_DIR.rglob(basename):
+            if path.is_file():
+                return path
+                
+    # Fallback to local images folder
+    local_path = IMAGES_DIR / basename
+    if local_path.is_file():
+        return local_path
+        
+    return None
 
 @app.get("/images/{filename:path}")
 async def get_image(filename: str):
     basename = os.path.basename(filename)
     
-    if WIKI_DIR.exists():
-        # 1. Try exact relative path first (e.g., ap/image-1.png)
-        exact_path = WIKI_DIR / filename
-        if exact_path.is_file():
-            return FileResponse(exact_path)
-            
-        # 2. Fallback to searching by basename
-        for path in WIKI_DIR.rglob(basename):
-            if path.is_file():
-                return FileResponse(path)
-                
-    # Fallback to local images
-    local_path = IMAGES_DIR / basename
-    if local_path.is_file():
-        return FileResponse(local_path)
+    # ⚡ Use LRU Cache to find the resolved path instantly
+    resolved_path = find_image_path(basename)
+    
+    if resolved_path:
+        return FileResponse(resolved_path)
         
     raise HTTPException(status_code=404, detail="Image not found")
 

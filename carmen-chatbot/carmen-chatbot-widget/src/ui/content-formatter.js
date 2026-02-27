@@ -6,9 +6,9 @@
 export function getYoutubeId(url) {
     if (!url) return null;
     try {
-        const regExp = /^.*((youtu.be\/)|(v\/)|(\/(u)\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+        const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
         const match = url.match(regExp);
-        return (match && match[7] && match[7].trim()) ? match[7].trim() : null;
+        return match ? match[1] : null;
     } catch (e) {
         return null;
     }

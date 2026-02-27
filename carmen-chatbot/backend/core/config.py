@@ -35,10 +35,18 @@ class Settings:
         
         self.DATABASE_URL: str = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?sslmode={db_sslmode}"
         
+        # Database Connection Pooling Setting
+        self.DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "10"))
+        self.DB_MAX_OVERFLOW: int = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+        
         # Static Assets
         self.FRONTEND_DIR: Path = BASE_DIR / "frontend"
         self.IMAGES_DIR: Path = BASE_DIR / "images"
         self.WIKI_DIR: Path = PROJECT_ROOT / "carmen_cloud"
+
+        # CORS Settings
+        cors_origins_str = os.getenv("CORS_ORIGINS", "*")
+        self.CORS_ORIGINS = [origin.strip() for origin in cors_origins_str.split(",")] if cors_origins_str else ["*"]
 
     @property
     def is_openrouter_api_ready(self) -> bool:
@@ -56,6 +64,9 @@ IMAGES_DIR = settings.IMAGES_DIR
 WIKI_DIR = settings.WIKI_DIR
 OPENROUTER_API_KEY = settings.OPENROUTER_API_KEY
 DATABASE_URL = settings.DATABASE_URL
+DB_POOL_SIZE = settings.DB_POOL_SIZE
+DB_MAX_OVERFLOW = settings.DB_MAX_OVERFLOW
+CORS_ORIGINS = settings.CORS_ORIGINS
 project_root = BASE_DIR
 
 if not settings.is_openrouter_api_ready:

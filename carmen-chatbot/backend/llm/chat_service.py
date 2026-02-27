@@ -6,7 +6,7 @@ from datetime import datetime
 from langchain_openai import ChatOpenAI
 
 # --- LLM Provider: Ollama ---
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 
 from ..core.config import settings
 from .retrieval import retrieval_service
@@ -226,7 +226,7 @@ class LLMService:
     def save_chat_logs(self, data: dict):
         return chat_history.save_chat_logs(data)
 
-    def get_chat_history_text(self, room_id: str, limit: int = 6) -> str:
+    def get_chat_history_text(self, room_id: str, limit: int = 4) -> str:
         return chat_history.get_history_text(room_id, limit)
 
 
