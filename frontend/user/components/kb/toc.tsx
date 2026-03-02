@@ -8,7 +8,9 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
   const [activeId, setActiveId] = useState("");
 
   useEffect(() => {
-    const elements = Array.from(document.querySelectorAll("article h2")).map((elem) => ({
+    const sections = Array.from(document.querySelectorAll("article h2")) as HTMLElement[];
+
+    const elements = sections.map((elem) => ({
       id: elem.id,
       text: elem.textContent || "",
     }));
@@ -16,19 +18,28 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-          }
-        });
+        // เลือก section ที่อยู่ใกล้ top ที่สุด
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort(
+            (a, b) =>
+              Math.abs(a.boundingClientRect.top) -
+              Math.abs(b.boundingClientRect.top)
+          );
+
+        if (visible.length > 0) {
+          setActiveId(visible[0].target.id);
+        }
       },
-      { rootMargin: "-120px 0px -70% 0px", threshold: 1.0 }
+      {
+        rootMargin: "-120px 0px -60% 0px",
+        threshold: 0.1,
+      }
     );
 
-    document.querySelectorAll("article h2").forEach((section) => observer.observe(section));
+    sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);
-
   if (headings.length === 0) return null;
 
   return (
@@ -41,7 +52,7 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
             On this page
           </p>
         )}
-        
+
         <nav className="flex flex-col gap-1 relative">
           {headings.map((h) => {
             const isActive = activeId === h.id;
@@ -52,8 +63,8 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
                 onClick={() => isMobile && onClose?.()}
                 className={cn(
                   "relative text-[13px] py-1.5 transition-all duration-200 pl-4 -ml-[18px] border-l-2",
-                  isActive 
-                    ? "text-primary font-bold border-primary" 
+                  isActive
+                    ? "text-primary font-bold border-primary"
                     : "text-muted-foreground hover:text-primary hover:border-gray-300 border-transparent"
                 )}
               >
