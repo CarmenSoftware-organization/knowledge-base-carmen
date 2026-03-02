@@ -21,10 +21,17 @@ class LLMService:
         if self.provider == "ollama":
             self.default_model = settings.OLLAMA_CHAT_MODEL
             self.api_base = settings.OLLAMA_URL
+            self.api_key = None
             print(f"💬 AI Chat Model Initialization Complete (Ollama) using {self.default_model} @ {self.api_base}")
+        elif self.provider == "zai":
+            self.default_model = settings.ZAI_CHAT_MODEL
+            self.api_base = settings.ZAI_API_BASE
+            self.api_key = settings.ZAI_API_KEY
+            print(f"💬 AI Chat Model Initialization Complete (Z.ai) using {self.default_model}")
         else:
             self.default_model = settings.OPENROUTER_CHAT_MODEL
             self.api_base = "https://openrouter.ai/api/v1"
+            self.api_key = settings.OPENROUTER_API_KEY
             print(f"💬 AI Chat Model Initialization Complete (OpenRouter) using {self.default_model}")
 
     def _create_llm(self, streaming=False):
@@ -41,7 +48,7 @@ class LLMService:
         else:
             return ChatOpenAI(
                 model=self.default_model,
-                openai_api_key=settings.OPENROUTER_API_KEY,
+                openai_api_key=self.api_key or settings.OPENROUTER_API_KEY,
                 openai_api_base=self.api_base,
                 temperature=0.3,
                 max_tokens=2048,
@@ -56,20 +63,36 @@ class LLMService:
     # ==========================================
     # 🔄 QUERY REWRITING (for follow-up questions)
     # ==========================================
-    async def _rewrite_query(self, message: str, history_text: str) -> str:
-        """Rewrite a follow-up question into a standalone query using chat history."""
+    async def _rewrite_query(self, message: str, history_text: str) -> tuple[str, int, int]:
+        """Rewrite a follow-up question into a standalone query using chat history. 
+        Returns (rewritten_query, input_tokens, output_tokens)."""
+        input_tokens = 0
+        output_tokens = 0
         try:
             llm = self._create_llm(streaming=False)
             prompt = REWRITE_PROMPT.format(history=history_text, question=message)
             response = await llm.ainvoke(prompt)
+            
+            # Extract token usage from the rewrite call
+            resp_meta = getattr(response, 'response_metadata', {})
+            if resp_meta and 'token_usage' in resp_meta:
+                tu = resp_meta['token_usage']
+                input_tokens = tu.get('prompt_tokens', 0)
+                output_tokens = tu.get('completion_tokens', 0)
+            else:
+                usage = getattr(response, 'usage_metadata', None)
+                if usage and isinstance(usage, dict):
+                    input_tokens = usage.get('input_tokens', 0)
+                    output_tokens = usage.get('output_tokens', 0)
+
             rewritten = response.content.strip().strip('"').strip("'")
             # Sanity check: if rewrite is too short or too long, use original
             if len(rewritten) < 3 or len(rewritten) > 200:
-                return message
-            return rewritten
+                return message, input_tokens, output_tokens
+            return rewritten, input_tokens, output_tokens
         except Exception as e:
             print(f"⚠️ Query rewrite failed: {e}")
-            return message
+            return message, 0, 0
 
     # ==========================================
     # 💬 CHAT METHODS
@@ -81,8 +104,10 @@ class LLMService:
 
         # Query Rewriting — rewrite follow-up questions using history context
         search_query = message
+        rewrite_input_tokens = 0
+        rewrite_output_tokens = 0
         if chat_history.has_history(room_id):
-            search_query = await self._rewrite_query(message, history_text)
+            search_query, rewrite_input_tokens, rewrite_output_tokens = await self._rewrite_query(message, history_text)
             print(f"🔄 Query Rewrite: \"{message}\" → \"{search_query}\"")
 
         # Retrieval — use rewritten query for better search results
@@ -137,7 +162,9 @@ class LLMService:
 
         # 📊 Token usage from API response
         duration = time.time() - start_time
-        input_tokens = output_tokens = total_tokens = 0
+        input_tokens = 0
+        output_tokens = 0
+        total_tokens = 0
         token_source = "estimated"
         
         if last_chunk:
@@ -165,7 +192,11 @@ class LLMService:
         if total_tokens == 0:
             input_tokens = len((context_text + message).encode('utf-8')) // 3
             output_tokens = len(full_response.encode('utf-8')) // 3
-            total_tokens = input_tokens + output_tokens
+            
+        # Add tokens from the query rewrite step
+        input_tokens += rewrite_input_tokens
+        output_tokens += rewrite_output_tokens
+        total_tokens = input_tokens + output_tokens
         
         print(f"\n📊 Token Usage ({token_source}):")
         print(f"   Input tokens:  {input_tokens}")
@@ -188,8 +219,10 @@ class LLMService:
 
         # Query Rewriting for follow-up questions
         search_query = message
+        rewrite_input_tokens = 0
+        rewrite_output_tokens = 0
         if chat_history.has_history(room_id):
-            search_query = await self._rewrite_query(message, history_text)
+            search_query, rewrite_input_tokens, rewrite_output_tokens = await self._rewrite_query(message, history_text)
 
         passed_docs, source_debug = retrieval_service.search(search_query)
         context_text = "\n\n".join([d.page_content for d in passed_docs]) if passed_docs else ""
@@ -209,12 +242,33 @@ class LLMService:
             
             response = await llm.ainvoke(formatted_prompt)
             bot_ans = response.content
+            
+            # Extract token usage
+            resp_meta = getattr(response, 'response_metadata', {})
+            if resp_meta and 'token_usage' in resp_meta:
+                tu = resp_meta['token_usage']
+                input_tokens = tu.get('prompt_tokens', 0)
+                output_tokens = tu.get('completion_tokens', 0)
+            else:
+                usage = getattr(response, 'usage_metadata', None)
+                if usage and isinstance(usage, dict):
+                    input_tokens = usage.get('input_tokens', 0)
+                    output_tokens = usage.get('output_tokens', 0)
+
         except Exception as e:
             bot_ans = f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {str(e)}"
+            input_tokens = 0
+            output_tokens = 0
+
+        # Aggregate tokens
+        total_input_tokens = input_tokens + rewrite_input_tokens
+        total_output_tokens = output_tokens + rewrite_output_tokens
 
         log_id = chat_history.save_chat_logs({
             "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": bot_ans,
-            "model_name": model_config['name'], "input_rate": model_config['input_rate'], "output_rate": model_config['output_rate'],
+            "model_name": model_config['name'], 
+            "input_tokens": total_input_tokens, 
+            "output_tokens": total_output_tokens,
             "sources": source_debug, "timestamp": datetime.now(), "duration": time.time() - start_time,
         })
         return {"reply": bot_ans, "sources": source_debug, "room_id": room_id, "message_id": log_id}

@@ -43,19 +43,26 @@ if not IMAGES_DIR.exists(): os.makedirs(IMAGES_DIR)
 
 # ⚡ Caching Image Paths to prevent recursive IO bottlenecks in Production ⚡
 @lru_cache(maxsize=1024)
-def find_image_path(basename: str) -> Path | None:
+def find_image_path(filename: str) -> Path | None:
+    # Support paths that might still have carmen_cloud/ prepended and normalize slashes
+    clean_filename = filename.replace("\\", "/")
+    if clean_filename.startswith("carmen_cloud/"):
+        clean_filename = clean_filename[len("carmen_cloud/"):]
+        
     if WIKI_DIR.exists():
-        # First check if the file matches the basename directly in WIKI_DIR
-        exact_path = WIKI_DIR / basename
+        # First check the exact relative path in WIKI_DIR
+        exact_path = WIKI_DIR / clean_filename
         if exact_path.is_file():
             return exact_path
             
-        # Fallback to searching by basename recursively
+        # Fallback to searching by basename recursively (if the path is broken/missing)
+        basename = os.path.basename(clean_filename)
         for path in WIKI_DIR.rglob(basename):
             if path.is_file():
                 return path
                 
     # Fallback to local images folder
+    basename = os.path.basename(clean_filename)
     local_path = IMAGES_DIR / basename
     if local_path.is_file():
         return local_path
@@ -64,10 +71,9 @@ def find_image_path(basename: str) -> Path | None:
 
 @app.get("/images/{filename:path}")
 async def get_image(filename: str):
-    basename = os.path.basename(filename)
-    
+    # ⚡ Pass the full filename (path) to find_image_path instead of just the basename
     # ⚡ Use LRU Cache to find the resolved path instantly
-    resolved_path = find_image_path(basename)
+    resolved_path = find_image_path(filename)
     
     if resolved_path:
         return FileResponse(resolved_path)

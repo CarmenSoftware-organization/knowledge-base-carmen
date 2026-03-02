@@ -49,13 +49,15 @@ function processYouTubeLinks(str) {
 
 function processImages(str, cleanApiBase) {
     const buildImageUrl = (url) => {
-        let cleanUrl = url.trim();
+        let cleanUrl = url.trim().replace(/\\/g, '/');
         if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) return cleanUrl;
         if (cleanUrl.startsWith('data:')) return cleanUrl;
 
         const getRelative = (u) => {
             let p = u.replace(/^https?:\/\/[^\/]+/, '').split('?')[0];
-            return p.replace(/^\/images\//, '').replace(/^\.\//, '').replace(/^\/+/, '');
+            p = p.replace(/^\/images\//, '').replace(/^\.\//, '').replace(/^\/+/, '');
+            // Clean carmen_cloud/ prefix if leaking to frontend
+            return p.replace(/^carmen_cloud\//, '');
         };
 
         if (/^(http|https):/.test(cleanUrl)) {
@@ -64,7 +66,12 @@ function processImages(str, cleanApiBase) {
                 (cleanApiBase && cleanUrl.startsWith(cleanApiBase));
 
             if (!isLocalServer) {
-                const filename = cleanUrl.split('/').pop().split('?')[0];
+                // Do not strip directory with .pop() ! Instead use getRelative to keep folder structure
+                const relPath = cleanUrl.split('/images/');
+                if (relPath.length > 1) {
+                    return `${cleanApiBase}/images/${relPath[1]}`;
+                }
+                const filename = getRelative(cleanUrl);
                 return `${cleanApiBase}/images/${filename}`;
             }
 

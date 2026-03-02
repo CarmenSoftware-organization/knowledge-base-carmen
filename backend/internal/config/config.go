@@ -17,6 +17,8 @@ type Config struct {
 	Ollama   OllamaConfig
 	GitHub   GitHubConfig
 	Git      GitConfig
+	OpenClaw OpenClawConfig
+	Make     MakeConfig
 }
 
 type ServerConfig struct {
@@ -133,6 +135,17 @@ func Load() error {
 			RepoPath:    getEnv("GIT_REPO_PATH", "./wiki-content"),
 			RepoURL:     getEnv("GIT_REPO_URL", ""),
 			ContentPath: getEnv("WIKI_CONTENT_PATH", ""),
+		},
+		OpenClaw: OpenClawConfig{
+			URL:     getEnv("OPENCLAW_URL", ""),
+			Token:   getEnv("OPENCLAW_TOKEN", ""),
+			Model:   getEnv("OPENCLAW_MODEL", ""),
+			Enabled: getEnvAsBool("OPENCLAW_ENABLED", false),
+		},
+		Make: MakeConfig{
+			WebhookURL:           getEnv("MAKE_WEBHOOK_URL", ""),
+			WebhookAPIKey:        getEnv("MAKE_WEBHOOK_API_KEY", ""),
+			UseForQuestionRouter: getEnvAsBool("MAKE_USE_FOR_ROUTER", false),
 		},
 	}
 

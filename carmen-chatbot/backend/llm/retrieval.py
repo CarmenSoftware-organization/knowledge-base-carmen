@@ -13,7 +13,7 @@ from ..core.database import SessionLocal
 # ==========================================
 class RetrievalService:
     # 🎛️ Tunable Parameters
-    TOP_K = 4                # จำนวนผลลัพธ์สูงสุดที่จะดึงมา
+    TOP_K = 8                # จำนวนผลลัพธ์สูงสุดที่จะดึงมา
     MAX_DISTANCE = 0.5       # Cosine distance threshold (0=เหมือนกัน, 1=ต่างสุด)
 
     def __init__(self):
@@ -74,7 +74,7 @@ class RetrievalService:
                     score = row.distance
                     
                     # Fix image paths by prepending subdirectories based on markdown file path
-                    base_dir = os.path.dirname(path)
+                    base_dir = os.path.dirname(path).replace("\\", "/")
                     if base_dir:
                         def resolve_src(src):
                             clean_src = src.lstrip("/")

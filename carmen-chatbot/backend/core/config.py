@@ -20,6 +20,11 @@ class Settings:
         self.ACTIVE_LLM_PROVIDER: str = os.getenv("ACTIVE_LLM_PROVIDER", "openrouter")
         self.OPENROUTER_CHAT_MODEL: str = os.getenv("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
 
+        # Z.ai
+        self.ZAI_API_KEY: str = os.getenv("ZAI_API_KEY", "")
+        self.ZAI_API_BASE: str = os.getenv("ZAI_API_BASE", "https://api.z.ai/api/coding/paas/v4")
+        self.ZAI_CHAT_MODEL: str = os.getenv("ZAI_CHAT_MODEL", "gpt-4o")
+
         # Ollama
         self.OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
         self.OLLAMA_EMBED_MODEL: str = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text:latest")
@@ -51,6 +56,10 @@ class Settings:
     @property
     def is_openrouter_api_ready(self) -> bool:
         return bool(self.OPENROUTER_API_KEY)
+
+    @property
+    def is_zai_api_ready(self) -> bool:
+        return bool(self.ZAI_API_KEY)
 
 # Instantiate settings singleton
 settings = Settings()

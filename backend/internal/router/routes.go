@@ -5,7 +5,6 @@ import (
 	"github.com/new-carmen/backend/internal/middleware"
 )
 
-
 func SetupRoutes(app *fiber.App) {
 	app.Use(middleware.Logger())
 	app.Use(middleware.CORS())
@@ -16,4 +15,5 @@ func SetupRoutes(app *fiber.App) {
 	RegisterWebhook(app)
 	RegisterIndexing(app)
 	RegisterDocuments(app)
+	RegisterPublicChat(app)
 }

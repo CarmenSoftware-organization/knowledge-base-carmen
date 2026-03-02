@@ -42,6 +42,26 @@ def fetch_ollama_models():
         print(f"Error fetching Ollama models at {ollama_url}: {e}")
         return []
 
+def fetch_zai_models():
+    print("Fetching Z.ai models...")
+    try:
+        base_url = os.environ.get("ZAI_API_BASE", "https://api.z.ai/api/coding/paas/v4")
+        api_key = os.environ.get("ZAI_API_KEY")
+        if not api_key:
+            print("⚠️ ZAI_API_KEY not found in .env, cannot fetch models.")
+            return []
+            
+        headers = {"Authorization": f"Bearer {api_key}"}
+        endpoint = f"{base_url.rstrip('/')}/models"
+        resp = requests.get(endpoint, headers=headers, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        models = data.get("data", [])
+        return [Choice(value=m["id"], name=m["id"]) for m in models]
+    except Exception as e:
+        print(f"Error fetching Z.ai models: {e}")
+        return []
+
 def check_llm_health(provider: str, model: str) -> bool:
     print(f"\n🩺 Performing health check for {provider.upper()} model '{model}'...")
     try:
@@ -63,6 +83,31 @@ def check_llm_health(provider: str, model: str) -> bool:
             }
             base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
             resp = requests.post(f"{base_url}/api/v1/chat/completions", headers=headers, json=data, timeout=10)
+            if resp.status_code == 200:
+                print("✅ Health check passed! Model responded successfully.")
+                return True
+            else:
+                print(f"❌ Health check failed with HTTP {resp.status_code}: {resp.text}")
+                return False
+                
+        elif provider == "zai":
+            api_key = os.environ.get("ZAI_API_KEY")
+            if not api_key:
+                print("❌ ERROR: ZAI_API_KEY is not set in .env")
+                return False
+            
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": model,
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 5
+            }
+            base_url = os.environ.get("ZAI_API_BASE", "https://api.z.ai/api/coding/paas/v4")
+            endpoint = f"{base_url.rstrip('/')}/chat/completions"
+            resp = requests.post(endpoint, headers=headers, json=data, timeout=10)
             if resp.status_code == 200:
                 print("✅ Health check passed! Model responded successfully.")
                 return True
@@ -102,6 +147,8 @@ def main():
         
         if provider == "openrouter":
             model = os.environ.get("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
+        elif provider == "zai":
+            model = os.environ.get("ZAI_CHAT_MODEL", "gpt-4o")
         else:
             provider = "ollama" # fallback
             model = os.environ.get("OLLAMA_CHAT_MODEL", "gemma3:1b")
@@ -124,9 +171,10 @@ def main():
                 message="Which LLM Provider would you like to use today?",
                 choices=[
                     Choice(value="openrouter", name="OpenRouter (Cloud API)"),
-                    Choice(value="ollama", name="Ollama (Local Server)")
+                    Choice(value="ollama", name="Ollama (Local Server)"),
+                    Choice(value="zai", name="Z.ai (Cloud API)")
                 ],
-                default="openrouter"
+                default=os.environ.get("ACTIVE_LLM_PROVIDER", "openrouter")
             ).execute()
         
             if provider == "openrouter":
@@ -140,6 +188,20 @@ def main():
                     choices=choices,
                     match_exact=True,
                 ).execute()
+                
+            elif provider == "zai":
+                choices = fetch_zai_models()
+                if not choices:
+                    model = inquirer.text(
+                        message="Enter the Z.ai model name (failed to fetch list):",
+                        default=os.environ.get("ZAI_CHAT_MODEL", "gpt-4o")
+                    ).execute()
+                else:
+                    model = inquirer.fuzzy(
+                        message="Search and select a Z.ai model:",
+                        choices=choices,
+                        match_exact=True,
+                    ).execute()
                 
             elif provider == "ollama":
                 choices = fetch_ollama_models()
@@ -167,6 +229,10 @@ def main():
                 os.environ["OPENROUTER_CHAT_MODEL"] = model
                 if save_env:
                     set_key(ENV_PATH, "OPENROUTER_CHAT_MODEL", model)
+            elif provider == "zai":
+                os.environ["ZAI_CHAT_MODEL"] = model
+                if save_env:
+                    set_key(ENV_PATH, "ZAI_CHAT_MODEL", model)
             else:
                 os.environ["OLLAMA_CHAT_MODEL"] = model
                 if save_env:
