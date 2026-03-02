@@ -18,19 +18,14 @@ export function ArticleHeaderInfo({
 
   return (
     <div className={`space-y-4 pt-4 ${hasMetadata ? 'pb-6' : 'pb-0'}`}>
-      <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+      
+      <h1 className="text-4xl font-bold text-foreground leading-tight">
         {title}
       </h1>
 
-      {/* {description && (
-          <p className="text-lg text-gray-600 italic leading-relaxed border-l-4 border-blue-400 pl-4 bg-blue-50/40 py-2 rounded-r-lg">
-            {description}
-          </p>
-        )} 
-      */}
-
       {hasMetadata && (
-        <div className="flex flex-wrap items-center gap-y-3 gap-x-6 text-sm text-gray-500 pt-1">
+        <div className="flex flex-wrap items-center gap-y-3 gap-x-6 text-sm text-muted-foreground pt-1">
+
           {formattedDate && (
             <div className="flex items-center gap-2">
               <span>📅</span>
@@ -41,7 +36,7 @@ export function ArticleHeaderInfo({
           {editor && (
             <div className="flex items-center gap-2">
               <span className="opacity-70">✍️ แก้ไขโดย:</span>
-              <span className="text-gray-800 font-semibold">{editor}</span>
+              <span className="text-foreground font-semibold">{editor}</span>
             </div>
           )}
 
@@ -52,7 +47,15 @@ export function ArticleHeaderInfo({
                 {tags.map((tag: string) => (
                   <span
                     key={tag}
-                    className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200"
+                    className="
+                      bg-muted
+                      text-foreground
+                      px-3 py-1
+                      rounded-full
+                      text-xs
+                      font-bold
+                      border border-border
+                    "
                   >
                     #{tag}
                   </span>
@@ -60,6 +63,7 @@ export function ArticleHeaderInfo({
               </div>
             </div>
           )}
+
         </div>
       )}
     </div>

@@ -17,16 +17,16 @@ const containerVariants: Variants = {
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { duration: 0.4, ease: "easeOut" } 
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: "easeOut" }
   }
 };
 
 export function CategoryGrid({ items }: { items: any[] }) {
   return (
-    <motion.div 
+    <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -39,19 +39,42 @@ export function CategoryGrid({ items }: { items: any[] }) {
         return (
           <motion.div key={c.slug} variants={itemVariants}>
             <Link href={`/categories/${c.slug}`} className="block h-full group">
-              <Card className={`h-full border-0 shadow-sm border-l-4 ${color.split(" ")[2]} transition-all duration-300 group-hover:shadow-xl group-hover:shadow-primary/5 group-hover:-translate-y-1 bg-white ring-1 ring-slate-100`}>
+              
+              <Card
+                className={`
+                  h-full border-l-4 ${color.split(" ")[2]}
+                  bg-card border border-border
+                  shadow-sm
+                  transition-all duration-300
+                  group-hover:shadow-lg
+                  group-hover:-translate-y-1
+                `}
+              >
                 <CardHeader className="flex flex-row items-center justify-between p-5">
+
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-2xl ${color} group-hover:scale-110 transition-transform duration-300 shadow-inner`}>
+                    <div
+                      className={`
+                        p-3 rounded-2xl
+                        ${color}
+                        group-hover:scale-110
+                        transition-transform duration-300
+                        shadow-inner
+                      `}
+                    >
                       <Folder className="h-6 w-6" />
                     </div>
-                    <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors tracking-tight">
+
+                    <CardTitle className="text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
                       {displayName}
                     </CardTitle>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+
                 </CardHeader>
               </Card>
+
             </Link>
           </motion.div>
         );

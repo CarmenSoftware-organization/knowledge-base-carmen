@@ -77,55 +77,56 @@ export default async function ArticlePage({ params }: Props) {
   const contentString = content.toString();
   const fixedContent = contentString.replace(/\n##/g, "\n\n##");
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        html { scroll-behavior: smooth !important; }
-      `}} />
-      <KBHeader />
-      <MobileSidebar />
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-6 py-10 flex gap-10 items-start">
-          <KBSidebar />
+return (
+  <div className="min-h-screen flex flex-col bg-background">
+    <KBHeader />
+    <MobileSidebar />
 
-          <div className="flex-1 max-w-4xl">
+    <main className="flex-1">
+      <div className="max-w-7xl mx-auto px-6 py-10 flex gap-10 items-start">
 
-            {/* Breadcrumb */}
-            <Breadcrumb
-              items={[
-                { label: "หมวดหมู่", href: "/categories" },
-                {
-                  label: formatCategoryName(category),
-                  href: `/categories/${category}`,
-                },
-                { label: title },
-              ]}
-            />
+        <KBSidebar />
 
-            {/* Title Content */}
-            <ArticleHeaderInfo
-              title={title}
-              description={description}
-              formattedDate={formattedDate}
-              tags={tags}
-              editor={editor}
-            />
+        <div className="flex-1 max-w-4xl">
 
-            <div className="border-b mb-8"></div>
+          {/* Breadcrumb */}
+          <Breadcrumb
+            items={[
+              { label: "หมวดหมู่", href: "/categories" },
+              {
+                label: formatCategoryName(category),
+                href: `/categories/${category}`,
+              },
+              { label: title },
+            ]}
+          />
 
-            {/* Markdown Render */}
-            <MarkdownRender
-              content={fixedContent}
-              category={category}
-            />
+          {/* Title Content */}
+          <ArticleHeaderInfo
+            title={title}
+            description={description}
+            formattedDate={formattedDate}
+            tags={tags}
+            editor={editor}
+          />
 
-          </div>
-          <TableOfContents />
+          {/* Divider */}
+          <div className="border-b border-border mb-8"></div>
+
+          {/* Markdown Render */}
+          <MarkdownRender
+            content={fixedContent}
+            category={category}
+          />
+
         </div>
-      </main>
 
-      <KBFooter />
-    </div>
-  );
+        <TableOfContents />
+
+      </div>
+    </main>
+
+    <KBFooter />
+  </div>
+);
 }
