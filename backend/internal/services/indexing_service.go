@@ -6,13 +6,13 @@ import (
 	"log"
 	"strings"
 
+	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/ollama"
 )
 
-// maxChunkChars limits each chunk to stay within nomic-embed-text's context window (~8192 tokens).
-const maxChunkChars = 4000
+// indexing_service.go constants have been moved to AppConfig.Git (WIKI_CHUNK_SIZE/WIKI_CHUNK_OVERLAP)
 
 type IndexingService struct {
 	wiki *WikiService
@@ -25,7 +25,6 @@ func NewIndexingService() *IndexingService {
 		llm:  ollama.NewEmbedClient(),
 	}
 }
-
 
 func (s *IndexingService) IndexAll(ctx context.Context) error {
 	entries, err := s.wiki.ListMarkdown()
@@ -67,7 +66,8 @@ RETURNING id
 		return fmt.Errorf("delete old chunks: %w", err)
 	}
 
-	for i, chunkText := range chunkContent(content.Content) {
+	cfg := config.AppConfig.Git
+	for i, chunkText := range chunkContent(content.Content, cfg.ChunkSize, cfg.ChunkOverlap) {
 		if strings.TrimSpace(chunkText) == "" {
 			continue
 		}
@@ -89,27 +89,53 @@ VALUES (?, ?, ?, ?::vector, now())
 	return nil
 }
 
-
-func chunkContent(text string) []string {
+func chunkContent(text string, chunkSize, overlap int) []string {
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return nil
 	}
 	var out []string
 	runes := []rune(text)
-	for len(runes) > 0 {
-		n := min(maxChunkChars, len(runes))
-		chunk := runes[:n]
-		if n < len(runes) {
-			for i := len(chunk) - 1; i >= 0; i-- {
-				if chunk[i] == '\n' {
-					chunk = chunk[:i+1]
+
+	if chunkSize <= 0 {
+		chunkSize = 500
+	}
+
+	start := 0
+	for start < len(runes) {
+		end := start + chunkSize
+		if end > len(runes) {
+			end = len(runes)
+		}
+
+		// Try to snap 'end' to the last newline within the chunk to avoid cutting mid-sentence.
+		// Look back up to 25% of chunkSize.
+		actualEnd := end
+		if end < len(runes) {
+			lookbackLimit := max(start, end-(chunkSize/4))
+			for i := end - 1; i >= lookbackLimit; i-- {
+				if runes[i] == '\n' {
+					actualEnd = i + 1
 					break
 				}
 			}
 		}
-		out = append(out, string(chunk))
-		runes = runes[len(chunk):]
+
+		chunk := runes[start:actualEnd]
+		if len(strings.TrimSpace(string(chunk))) > 0 {
+			out = append(out, string(chunk))
+		}
+
+		// Move start for the next chunk, subtracting overlap.
+		newStart := actualEnd - overlap
+		if newStart <= start {
+			newStart = actualEnd
+		}
+		start = newStart
+
+		if actualEnd >= len(runes) {
+			break
+		}
 	}
 	return out
 }
