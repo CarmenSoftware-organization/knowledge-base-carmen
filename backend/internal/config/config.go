@@ -83,9 +83,11 @@ type GitHubConfig struct {
 }
 
 type GitConfig struct {
-	RepoPath    string 
-	RepoURL     string
-	ContentPath string 
+	RepoPath     string
+	RepoURL      string
+	ContentPath  string
+	ChunkSize    int
+	ChunkOverlap int
 }
 
 var AppConfig *Config
@@ -132,9 +134,11 @@ func Load() error {
 			WebhookBranch: getEnv("GITHUB_WEBHOOK_BRANCH", getEnv("GITHUB_BRANCH", "main")),
 		},
 		Git: GitConfig{
-			RepoPath:    getEnv("GIT_REPO_PATH", "./wiki-content"),
-			RepoURL:     getEnv("GIT_REPO_URL", ""),
-			ContentPath: getEnv("WIKI_CONTENT_PATH", ""),
+			RepoPath:     getEnv("GIT_REPO_PATH", "./wiki-content"),
+			RepoURL:      getEnv("GIT_REPO_URL", ""),
+			ContentPath:  getEnv("WIKI_CONTENT_PATH", ""),
+			ChunkSize:    getEnvAsInt("WIKI_CHUNK_SIZE", 500),
+			ChunkOverlap: getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
 		},
 		OpenClaw: OpenClawConfig{
 			URL:     getEnv("OPENCLAW_URL", ""),
@@ -151,7 +155,6 @@ func Load() error {
 
 	return nil
 }
-
 
 func GetWikiContentPath() string {
 	c := AppConfig.Git
@@ -194,6 +197,13 @@ func normalizePath(path string) string {
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvAsInt(key string, defaultValue int) int {
+	if value, err := strconv.Atoi(getEnv(key, "")); err == nil {
 		return value
 	}
 	return defaultValue
