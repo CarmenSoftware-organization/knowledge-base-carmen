@@ -1,4 +1,4 @@
-// GET /api/documents — รายการเอกสารใน index (ให้ frontend โชว์)
+
 package router
 
 import (

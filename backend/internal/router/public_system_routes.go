@@ -1,4 +1,3 @@
-// GET /api/system/status 
 package router
 
 import (

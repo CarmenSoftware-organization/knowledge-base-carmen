@@ -1,4 +1,4 @@
-// GET /api/documents — รายการเอกสารที่ index แล้ว (จาก DB) สำหรับโชว์หน้าบ้าน
+
 package api
 
 import (
@@ -22,7 +22,7 @@ type documentRow struct {
 	UpdatedAt  *string `json:"updated_at,omitempty"`
 }
 
-// List รายการ documents ทั้งหมด (มีจำนวน chunk ต่อเอกสาร)
+
 func (h *DocumentsHandler) List(c *fiber.Ctx) error {
 	var rows []documentRow
 	err := database.DB.Raw(`
