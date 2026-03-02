@@ -35,6 +35,10 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
     }
     loadSidebar();
   }, []);
+  
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname]);
 
   useEffect(() => {
     const match = pathname.match(/\/categories\/([^/]+)/);
