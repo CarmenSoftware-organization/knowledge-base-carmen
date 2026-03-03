@@ -56,6 +56,29 @@ def clear_history(room_id: str):
         del _in_memory_history[room_id]
 
 
+def restore_history(room_id: str, frontend_history: list[dict] = None):
+    """Restore chat history from frontend localStorage if in-memory is empty."""
+    if not frontend_history:
+        return
+        
+    if room_id not in _in_memory_history or len(_in_memory_history[room_id]) == 0:
+        _in_memory_history[room_id] = []
+        for msg in frontend_history:
+            sender = msg.get("sender", "user")
+            # For restored messages we'll use a dummy timestamp since we only care about the text context
+            _in_memory_history[room_id].append({
+                "sender": sender,
+                "message": clean_for_history(msg.get("message", "")),
+                "timestamp": msg.get("timestamp", "")
+            })
+            
+        # Keep max 50 messages per room
+        if len(_in_memory_history[room_id]) > 50:
+            _in_memory_history[room_id] = _in_memory_history[room_id][-50:]
+            
+        print(f"🔄 Restored {len(_in_memory_history[room_id])} messages from frontend history for room {room_id}")
+
+
 def save_chat_logs(data: dict) -> int:
     """Save user query and bot response to in-memory history."""
     room_id = data['room_id']

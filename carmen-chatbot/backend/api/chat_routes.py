@@ -18,7 +18,7 @@ async def chat_stream_endpoint(req: ChatRequest):
     return StreamingResponse(
         chat_service.stream_chat(
             message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
-            model_name=req.model, prompt_extend=req.prompt_extend
+            model_name=req.model, prompt_extend=req.prompt_extend, history=req.history
         ),
         media_type="application/x-ndjson"
     )
@@ -31,7 +31,7 @@ async def chat_stream_endpoint(req: ChatRequest):
 async def chat_endpoint(req: ChatRequest):
     return await chat_service.invoke_chat(
         message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
-        model_name=req.model, prompt_extend=req.prompt_extend
+        model_name=req.model, prompt_extend=req.prompt_extend, history=req.history
     )
 
 # ==========================================

@@ -45,6 +45,17 @@ class LLMService:
                 num_ctx=4096,
                 timeout=300,
             )
+        elif self.provider == "zai":
+            return ChatOpenAI(
+                model=self.default_model,
+                openai_api_key=self.api_key,
+                openai_api_base=self.api_base,
+                temperature=1.0,
+                max_tokens=2048,
+                streaming=streaming,
+                extra_body={"thinking": {"type": "disabled"}},
+                **({"stream_usage": True} if streaming else {})
+            )
         else:
             return ChatOpenAI(
                 model=self.default_model,
@@ -97,9 +108,14 @@ class LLMService:
     # ==========================================
     # 💬 CHAT METHODS
     # ==========================================
-    async def stream_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = ""):
+    async def stream_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None):
         start_time = time.time()
         model_config = self.get_active_model(model_name)
+        
+        # Restore history from frontend if present and backend memory is empty
+        if history:
+            chat_history.restore_history(room_id, history)
+            
         history_text = chat_history.get_history_text(room_id)
 
         # Query Rewriting — rewrite follow-up questions using history context
@@ -107,11 +123,15 @@ class LLMService:
         rewrite_input_tokens = 0
         rewrite_output_tokens = 0
         if chat_history.has_history(room_id):
+            t0 = time.time()
             search_query, rewrite_input_tokens, rewrite_output_tokens = await self._rewrite_query(message, history_text)
+            print(f"⏱️ Rewrite Query Time: {time.time() - t0:.2f}s")
             print(f"🔄 Query Rewrite: \"{message}\" → \"{search_query}\"")
 
         # Retrieval — use rewritten query for better search results
+        t1 = time.time()
         passed_docs, source_debug = retrieval_service.search(search_query)
+        print(f"⏱️ Document Retrieval Time: {time.time() - t1:.2f}s")
         context_text = "\n\n".join([d.page_content for d in passed_docs]) if passed_docs else ""
 
         # 📋 Log retrieved sources
@@ -145,7 +165,12 @@ class LLMService:
             )
 
             accumulated = None
+            first_token_time = None
             async for chunk in llm.astream(formatted_prompt):
+                if first_token_time is None:
+                    first_token_time = time.time()
+                    print(f"⏱️ Time To First Token (TTFT): {first_token_time - start_time:.2f}s (Total time since request started)")
+                    
                 # Accumulate chunks (merges metadata across all chunks)
                 accumulated = chunk if accumulated is None else accumulated + chunk
                 if chunk.content:
@@ -212,9 +237,14 @@ class LLMService:
         })
         yield json.dumps({"type": "done", "id": log_id}) + "\n"
 
-    async def invoke_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = ""):
+    async def invoke_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None):
         start_time = time.time()
         model_config = self.get_active_model(model_name)
+        
+        # Restore history from frontend if present and backend memory is empty
+        if history:
+            chat_history.restore_history(room_id, history)
+            
         history_text = chat_history.get_history_text(room_id)
 
         # Query Rewriting for follow-up questions

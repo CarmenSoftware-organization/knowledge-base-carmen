@@ -152,13 +152,16 @@ export class ChatManager {
         let messageId = null;
 
         try {
+            const h_data = await this.api.getRoomHistory(this.bot.currentRoomId);
+            const history = h_data ? h_data.messages : [];
+
             const response = await fetch(`${this.bot.apiBase}/api/chat/stream`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: text, image: imageToSend, bu: this.bot.bu,
                     username: this.bot.username, room_id: this.bot.currentRoomId,
-                    prompt_extend: this.bot.prompt_extend
+                    prompt_extend: this.bot.prompt_extend, history: history
                 })
             });
 

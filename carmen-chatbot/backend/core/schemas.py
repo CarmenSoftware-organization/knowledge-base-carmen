@@ -12,3 +12,4 @@ class ChatRequest(BaseModel):
     model: Optional[str] = None
     prompt_extend: Optional[str] = None
     room_id: str 
+    history: Optional[list[dict]] = None

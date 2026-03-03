@@ -76,7 +76,12 @@ async def get_image(filename: str):
     resolved_path = find_image_path(filename)
     
     if resolved_path:
-        return FileResponse(resolved_path)
+        # Add cache-control headers to prevent browser from serving stale images
+        # This fixes issues where old code cached wrong images for generic filenames like image-12.png
+        response = FileResponse(resolved_path)
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        response.headers["X-Resolved-From"] = str(resolved_path)  # Debug: trace which file was served
+        return response
         
     raise HTTPException(status_code=404, detail="Image not found")
 
