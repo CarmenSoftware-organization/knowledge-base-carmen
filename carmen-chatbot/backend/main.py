@@ -13,13 +13,33 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
+from contextlib import asynccontextmanager
 from pathlib import Path
 from functools import lru_cache
 
 from .core.config import FRONTEND_DIR, IMAGES_DIR, WIKI_DIR, CORS_ORIGINS
 from .api import chat_routes as chat
 
-app = FastAPI(title="Carmen Chatbot System")
+IMAGE_INDEX = {}
+
+def build_image_index():
+    """Scan all images in WIKI_DIR at startup and cache their paths."""
+    print("📸 Building Image Index Cache...")
+    if WIKI_DIR.exists():
+        for path in WIKI_DIR.rglob("*"):
+            if path.is_file() and path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']:
+                IMAGE_INDEX[path.name] = path
+    print(f"✅ Image Index Built: {len(IMAGE_INDEX)} images found.")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup actions
+    build_image_index()
+    yield
+    # Shutdown actions
+    pass
+
+app = FastAPI(title="Carmen Chatbot System", lifespan=lifespan)
 
 # CORS
 app.add_middleware(
@@ -55,11 +75,10 @@ def find_image_path(filename: str) -> Path | None:
         if exact_path.is_file():
             return exact_path
             
-        # Fallback to searching by basename recursively (if the path is broken/missing)
+        # Fallback to searching by basename in cache (Instant lookup)
         basename = os.path.basename(clean_filename)
-        for path in WIKI_DIR.rglob(basename):
-            if path.is_file():
-                return path
+        if basename in IMAGE_INDEX:
+            return IMAGE_INDEX[basename]
                 
     # Fallback to local images folder
     basename = os.path.basename(clean_filename)

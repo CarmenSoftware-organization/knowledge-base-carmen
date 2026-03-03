@@ -15,6 +15,7 @@ export function createRoomItemHTML(room, isActive = false) {
 export function createTypingIndicatorHTML() {
     return `
         <div class="msg bot-msg typing-indicator-container">
+            <div class="typing-status-text"></div>
             <div class="typing-dots">
                 <span></span><span></span><span></span>
             </div>

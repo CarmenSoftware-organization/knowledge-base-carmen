@@ -1,5 +1,6 @@
 import json
 import time
+import asyncio
 from datetime import datetime
 
 # --- LLM Provider: OpenRouter ---
@@ -123,14 +124,18 @@ class LLMService:
         rewrite_input_tokens = 0
         rewrite_output_tokens = 0
         if chat_history.has_history(room_id):
+            yield json.dumps({"type": "status", "data": "กำลังวิเคราะห์คำถาม..."}) + "\n"
+            await asyncio.sleep(0)
             t0 = time.time()
             search_query, rewrite_input_tokens, rewrite_output_tokens = await self._rewrite_query(message, history_text)
             print(f"⏱️ Rewrite Query Time: {time.time() - t0:.2f}s")
             print(f"🔄 Query Rewrite: \"{message}\" → \"{search_query}\"")
 
         # Retrieval — use rewritten query for better search results
+        yield json.dumps({"type": "status", "data": "กำลังค้นหาเอกสารที่เกี่ยวข้อง..."}) + "\n"
+        await asyncio.sleep(0)
         t1 = time.time()
-        passed_docs, source_debug = retrieval_service.search(search_query)
+        passed_docs, source_debug = await asyncio.to_thread(retrieval_service.search, search_query)
         print(f"⏱️ Document Retrieval Time: {time.time() - t1:.2f}s")
         context_text = "\n\n".join([d.page_content for d in passed_docs]) if passed_docs else ""
 
@@ -146,6 +151,8 @@ class LLMService:
         print(f"{'='*60}\n")
 
         yield json.dumps({"type": "sources", "data": source_debug}) + "\n"
+        yield json.dumps({"type": "status", "data": "กำลังเรียบเรียงคำตอบ..."}) + "\n"
+        await asyncio.sleep(0)
 
         # LLM Logic — send full context with images, let frontend handle rendering
         full_response = ""
@@ -254,7 +261,7 @@ class LLMService:
         if chat_history.has_history(room_id):
             search_query, rewrite_input_tokens, rewrite_output_tokens = await self._rewrite_query(message, history_text)
 
-        passed_docs, source_debug = retrieval_service.search(search_query)
+        passed_docs, source_debug = await asyncio.to_thread(retrieval_service.search, search_query)
         context_text = "\n\n".join([d.page_content for d in passed_docs]) if passed_docs else ""
 
         try:

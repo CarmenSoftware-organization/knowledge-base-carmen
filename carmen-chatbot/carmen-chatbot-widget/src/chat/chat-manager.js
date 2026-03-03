@@ -147,6 +147,26 @@ export class ChatManager {
         botUI.container.appendChild(typingNode);
         this.bot.ui.scrollToBottom();
 
+        // Timer-based status messages for UX during long wait
+        const statusMessages = [
+            { delay: 2000, text: 'กำลังค้นหาเอกสารที่เกี่ยวข้อง' },
+            { delay: 8000, text: 'กำลังวิเคราะห์ข้อมูล' },
+            { delay: 20000, text: 'กำลังเรียบเรียงคำตอบ' },
+            { delay: 45000, text: 'ใกล้เสร็จแล้ว กรุณารอสักครู่' },
+        ];
+        const statusTimers = [];
+        const statusEl = typingNode?.querySelector('.typing-status-text');
+        for (const msg of statusMessages) {
+            statusTimers.push(setTimeout(() => {
+                if (statusEl && typingNode.parentNode) {
+                    statusEl.textContent = msg.text;
+                    statusEl.style.animation = 'none';
+                    statusEl.offsetHeight; // force reflow
+                    statusEl.style.animation = '';
+                }
+            }, msg.delay));
+        }
+
         let fullBotText = "";
         let sourcesData = null;
         let messageId = null;
@@ -176,6 +196,7 @@ export class ChatManager {
                 if (this.typingBuffer.length > 0) {
                     // Remove typing indicator on first text
                     if (firstChunk) {
+                        statusTimers.forEach(t => clearTimeout(t)); // Clear status timers
                         if (typingNode) typingNode.remove();
                         if (botUI.span) botUI.span.style.display = 'block';
                         firstChunk = false;
@@ -215,6 +236,10 @@ export class ChatManager {
                         if (json.type === "chunk") {
                             this.typingBuffer += json.data;
                             fullBotText += json.data; // track full text for storage
+                        } else if (json.type === "status") {
+                            // Update typing indicator with status text
+                            const statusEl = typingNode?.querySelector('.typing-status-text');
+                            if (statusEl) statusEl.textContent = json.data;
                         } else if (json.type === "sources") {
                             sourcesData = json.data;
                         } else if (json.type === "done") {

@@ -20,7 +20,11 @@ async def chat_stream_endpoint(req: ChatRequest):
             message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
             model_name=req.model, prompt_extend=req.prompt_extend, history=req.history
         ),
-        media_type="application/x-ndjson"
+        media_type="application/x-ndjson",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
     )
 
 # ==========================================

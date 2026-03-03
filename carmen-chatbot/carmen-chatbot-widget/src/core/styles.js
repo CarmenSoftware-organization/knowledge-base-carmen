@@ -635,17 +635,43 @@ export function getCssStyles(themeColor = '#34558b') {
     }
 
     /* Typing Indicator */
-    .typing-indicator-container { padding: 16px 20px !important; width: fit-content !important; min-width: 60px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
-    .typing-dots { display: flex !important; gap: 4px !important; align-items: center !important; height: 100% !important; }
+    .typing-indicator-container {
+        padding: 12px 18px !important; 
+        width: auto !important; 
+        max-width: 100% !important;
+        display: flex !important; 
+        flex-direction: row !important; 
+        align-items: center !important; 
+        gap: 8px !important;
+        background: var(--bg-color) !important;
+        flex-wrap: wrap !important;
+        box-sizing: border-box !important;
+    }
+    .typing-dots { display: flex !important; gap: 5px !important; align-items: center !important; flex-shrink: 0 !important; }
     .typing-dots span {
         width: 8px !important; height: 8px !important;
-        background: #94a3b8 !important; border-radius: 50% !important;
+        background: var(--primary-color, #34558b) !important; border-radius: 50% !important;
         animation: typingBounce 1.4s infinite ease-in-out !important;
-        display: block !important;
+        display: block !important; opacity: 0.5 !important;
     }
     .typing-dots span:nth-child(1) { animation-delay: -0.32s !important; }
     .typing-dots span:nth-child(2) { animation-delay: -0.16s !important; }
-    
+    .typing-status-text {
+        font-size: 13px !important;
+        color: #64748b !important;
+        font-family: var(--font-sarabun) !important;
+        font-weight: 400 !important;
+        white-space: nowrap !important;
+        animation: statusPulse 2s ease-in-out infinite, statusFadeIn 0.3s ease-out !important;
+    }
+    @keyframes statusPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    @keyframes statusFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
     @keyframes typingBounce {
         0%, 80%, 100% { transform: scale(0); }
         40% { transform: scale(1); }
