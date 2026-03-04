@@ -261,7 +261,7 @@ class LLMService:
         if chat_history.has_history(room_id):
             search_query, rewrite_input_tokens, rewrite_output_tokens = await self._rewrite_query(message, history_text)
 
-        passed_docs, source_debug = await asyncio.to_thread(retrieval_service.search, search_query)
+        passed_docs, source_debug = retrieval_service.search(search_query)
         context_text = "\n\n".join([d.page_content for d in passed_docs]) if passed_docs else ""
 
         try:

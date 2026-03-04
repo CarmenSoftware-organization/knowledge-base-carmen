@@ -4,8 +4,6 @@ import time
 # ==========================================
 # 💬 CHAT HISTORY (Frontend-Only / Stateless)
 # ==========================================
-# Backend ไม่เก็บ history เอง — ใช้ history ที่ Frontend ส่งมาใน request
-# ข้อดี: ไม่ต้องพึ่ง Redis หรือ Database เพิ่ม, ง่ายต่อการ scale
 
 # Temporary per-request cache (populated from frontend history each request)
 _request_history = {}

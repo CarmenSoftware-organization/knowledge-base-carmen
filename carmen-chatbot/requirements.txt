@@ -3,7 +3,6 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
-
 # LLM & AI
 langchain
 langchain-core
@@ -18,4 +17,4 @@ psycopg2-binary
 # HTTP
 requests
 InquirerPy
-redis
+slowapi

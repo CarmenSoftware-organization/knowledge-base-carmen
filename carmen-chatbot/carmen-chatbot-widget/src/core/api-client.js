@@ -133,9 +133,11 @@ export class ChatService {
 
     // 6. ส่งข้อความแชทไป backend (รอ response ก้อนเดียว)
     async sendMessage(payload) {
+        const headers = { 'Content-Type': 'application/json' };
+
         const res = await fetch(`${this.baseUrl}/api/chat`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(payload)
         });
 
@@ -156,9 +158,11 @@ export class ChatService {
     // 7. ส่ง Feedback (Like/Dislike)
     async sendFeedback(msgId, score) {
         try {
+            const headers = { 'Content-Type': 'application/json' };
+
             await fetch(`${this.baseUrl}/api/chat/feedback/${msgId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ score })
             });
         } catch (e) {
@@ -170,7 +174,12 @@ export class ChatService {
     async clearHistory(roomId) {
         try {
             if (!roomId) return;
-            await fetch(`${this.baseUrl}/api/chat/clear/${roomId}`, { method: 'DELETE' });
+            const headers = {};
+
+            await fetch(`${this.baseUrl}/api/chat/clear/${roomId}`, {
+                method: 'DELETE',
+                headers
+            });
         } catch (e) {
             console.warn("ClearHistory API Error:", e);
         }

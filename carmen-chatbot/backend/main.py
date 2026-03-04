@@ -17,6 +17,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from functools import lru_cache
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from .core.rate_limit import limiter
+
 from .core.config import FRONTEND_DIR, IMAGES_DIR, WIKI_DIR, CORS_ORIGINS
 from .api import chat_routes as chat
 
@@ -41,6 +46,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Carmen Chatbot System", lifespan=lifespan)
 
+# Initialize Rate Limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -55,7 +64,8 @@ app.include_router(chat.router)
 
 # Health Check Route
 @app.get("/api/health")
-async def health_check():
+@limiter.limit("20/minute")
+async def health_check(request: Request):
     return {"status": "ok"}
 
 # Static Files

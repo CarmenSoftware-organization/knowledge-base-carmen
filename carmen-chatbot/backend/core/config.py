@@ -44,7 +44,12 @@ class Settings:
         self.DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "10"))
         self.DB_MAX_OVERFLOW: int = int(os.getenv("DB_MAX_OVERFLOW", "20"))
         
-        # Static Assets
+        # API Rate Limiting
+        self.RATE_LIMIT_PER_MINUTE: str = os.getenv("RATE_LIMIT_PER_MINUTE", "20/minute")
+        
+        # Security / CORS Settings
+        cors_origins_str = os.getenv("CORS_ORIGINS", "*")
+        self.CORS_ORIGINS = [origin.strip() for origin in cors_origins_str.split(",")] if cors_origins_str else ["*"]
         self.FRONTEND_DIR: Path = BASE_DIR / "frontend"
         self.IMAGES_DIR: Path = BASE_DIR / "images"
         self.WIKI_DIR: Path = PROJECT_ROOT / "carmen_cloud"

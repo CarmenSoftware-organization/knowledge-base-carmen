@@ -615,23 +615,9 @@ export function getCssStyles(themeColor = '#34558b') {
     }
     .chat-box.expanded #carmen-menu-btn { display: flex !important; }
     
-    /* Responsive */
+    /* Responsive - Override old 480px rules */
     @media (max-width: 480px) {
-        .chat-box {
-            width: 100% !important;
-            height: 100% !important;
-            max-height: 100dvh !important;
-            bottom: 0 !important;
-            right: 0 !important;
-            top: 0 !important;
-            left: 0 !important;
-            border-radius: 0 !important;
-            transform: none !important;
-        }
-        
-        .chat-box.open {
-            display: flex !important;
-        }
+        /* Intentionally blank to let the 768px handle everything */
     }
 
     /* Typing Indicator */
@@ -691,5 +677,123 @@ export function getCssStyles(themeColor = '#34558b') {
     .msg ol { list-style-type: decimal !important; }
     .carmen-link { color: var(--primary-color) !important; text-decoration: none !important; font-weight: 500 !important; }
     .carmen-link:hover { text-decoration: underline !important; }
+
+    /* ==========================================
+       📱 Mobile Responsiveness
+       ========================================== */
+    @media (max-width: 768px) {
+        /* When chat is OPEN, the host must take full screen to avoid clipping */
+        :host(:has(.chat-box.open)) {
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: 100vw !important; height: 100vh !important;
+        }
+
+        /* Move the host container closer to the edge on mobile when CLOSED */
+        :host(:not(:has(.chat-box.open))) {
+            bottom: 16px !important;
+            right: 16px !important;
+        }
+
+        /* Launcher Button */
+        .chat-btn {
+            width: 60px !important;
+            height: 60px !important;
+        }
+
+        /* Hide launcher when chat is open on mobile */
+        :host(:has(.chat-box.open)) .chat-btn {
+            display: none !important;
+        }
+
+        /* Chat Window - Full Screen on Mobile */
+        .chat-box {
+            position: fixed !important;
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: 100vw !important; height: 100vh !important; height: 100dvh !important; /* Dynamic viewport height */
+            max-height: 100dvh !important; max-width: 100vw !important;
+            border-radius: 0 !important; border: none !important; margin: 0 !important;
+        }
+        
+        /* Ensure Chat Body Takes Remaining Space without Overflowing */
+        #carmenChatBody {
+            flex: 1 !important;
+            height: auto !important;
+            max-height: none !important; 
+        }
+
+        /* Dropdown Menu - Constrain width to fit screen */
+        .room-dropdown-menu {
+            width: calc(100vw - 32px) !important;
+            max-width: 300px !important;
+            right: 16px !important; 
+        }
+
+        /* Hide Chat History and Expand buttons on Mobile */
+        #carmenRoomDropdownContainer, #carmen-expand-btn {
+            display: none !important;
+        }
+
+        /* Main Chat Area */
+        .chat-main {
+            width: 100% !important;
+            height: 100% !important; 
+            padding-bottom: 0 !important;
+        }
+
+        /* Footer / Input Area */
+        .chat-footer {
+            padding: 12px 16px !important;
+            padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+            background: rgba(255, 255, 255, 0.98) !important; /* Ensure solid background over content */
+            border-top: 1px solid rgba(0,0,0,0.05) !important;
+            position: relative !important;
+            z-index: 10 !important;
+        }
+
+        /* Suggestion Chips - Refined Mobile View */
+        .suggestions-container {
+            display: flex !important;
+            flex-wrap: wrap !important; /* Allow wrapping on mobile for better visibility */
+            gap: 8px !important;
+            padding: 8px 16px 12px 16px !important;
+            margin: 0 !important;
+            justify-content: flex-start !important;
+        }
+        .suggestion-chip {
+            flex: 0 1 auto !important; 
+            font-size: 13px !important; /* Slightly smaller font */
+            padding: 6px 14px !important;
+            border-radius: 12px !important; /* Softer radius */
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 1px solid rgba(52, 85, 139, 0.15) !important;
+            color: var(--text-dark) !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+            text-align: left !important;
+            line-height: 1.4 !important;
+        }
+
+        /* Prevent iOS auto-zoom on input focus */
+        .chat-input {
+            font-size: 16px !important;
+            min-height: 48px !important;
+        }
+
+        /* Enlarge touch targets for header buttons (Apple HIG minimum) */
+        .icon-btn, .icon-btn-footer {
+            width: 44px !important;
+            height: 44px !important;
+        }
+
+        /* Prevent background rubber-band scrolling on iOS/Android */
+        .chat-box, #carmenChatBody {
+            overscroll-behavior-y: none !important;
+        }
+
+        /* Optimize message bubble padding for mobile screens */
+        .msg {
+            padding: 12px 16px !important;
+            max-width: 90% !important;
+        }
+    }
     `;
 }

@@ -271,7 +271,6 @@ def main():
         uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
     else:
         print("⏩ Hot-reload is DISABLED, starting with multiple workers (Production Mode)")
-        # In production on Windows, Gunicorn isn't available, so we use uvicorn with workers
         uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=False, workers=4)
 
 if __name__ == "__main__":
