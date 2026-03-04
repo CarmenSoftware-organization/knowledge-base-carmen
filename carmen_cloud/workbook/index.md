@@ -2,7 +2,7 @@
 title: Carmen Work Book
 description: Carmen Work Book
 published: true
-date: 2026-03-04T04:07:43.898Z
+date: 2026-03-04T04:34:39.351Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:56:15.320Z
@@ -24,4 +24,22 @@ flowchart TD
   C -->|Two| E[iPhone]
   C -->|Three| F[Car]
 ```
-  
+```mermaid
+mindmap
+  root((mindmap))
+    Origins
+      Long history
+      ::icon(fa fa-book)
+      Popularisation
+        British popular psychology author Tony Buzan
+    Research
+      On effectiveness<br/>and features
+      On Automatic creation
+        Uses
+            Creative techniques
+            Strategic planning
+            Argument mapping
+    Tools
+      Pen and paper
+      Mermaid
+```
