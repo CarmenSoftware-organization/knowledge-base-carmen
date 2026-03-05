@@ -9,3 +9,6 @@ docscarmencloud.zip
 
 # Wiki import staging (output of scripts/wiki-import-from-carmencloud.js)
 wiki-import/
+
+# Environment variables
+.env

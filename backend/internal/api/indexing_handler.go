@@ -9,7 +9,6 @@ import (
 	"github.com/new-carmen/backend/internal/services"
 )
 
-
 type IndexingHandler struct {
 	indexingService *services.IndexingService
 }
@@ -20,10 +19,9 @@ func NewIndexingHandler() *IndexingHandler {
 	}
 }
 
-
 func (h *IndexingHandler) Rebuild(c *fiber.Ctx) error {
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 		defer cancel()
 		if err := h.indexingService.IndexAll(ctx); err != nil {
 			log.Printf("[index/rebuild] error: %v", err)

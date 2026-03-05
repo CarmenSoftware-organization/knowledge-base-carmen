@@ -17,11 +17,14 @@ type Config struct {
 	Ollama   OllamaConfig
 	GitHub   GitHubConfig
 	Git      GitConfig
+	OpenClaw OpenClawConfig
+	Make     MakeConfig
 }
 
 type ServerConfig struct {
 	Port        string
 	Host        string
+	ChatbotURL  string
 	Environment string
 }
 
@@ -40,10 +43,34 @@ type JWTConfig struct {
 }
 
 type OllamaConfig struct {
-	URL                string
-	ChatModel          string
-	EmbedModel         string
-	InsecureSkipVerify bool
+	URL                  string
+	ChatModel            string
+	EmbedModel           string
+	InsecureSkipVerify   bool // true = ยอมรับ TLS certificate ไม่ตรง (ใช้กับ VM ที่ใช้ self-signed)
+}
+
+// OpenClawConfig ใช้สำหรับเชื่อมกับ OpenClaw Gateway (OpenAI-compatible HTTP)
+type OpenClawConfig struct {
+	URL   string // HTTP base URL เช่น http://127.0.0.1:18789
+	Token string // Gateway token
+	Model string // ชื่อ model ที่ Gateway map ไว้สำหรับ routing (เช่น openrouter/gpt-4o-mini)
+	// Enabled ไว้เผื่ออนาคตอยากปิดใช้ OpenClaw ชั่วคราว
+	Enabled bool
+}
+
+// MakeConfig ใช้เมื่อต้องการให้ขั้นตอน "แยกประเภทคำถาม" ไปรันบน Make (webhook)
+type MakeConfig struct {
+	WebhookURL           string // URL ของ Make Custom Webhook (ต้องเป็นแบบ Request–Response ถ้าต้องการรอผล)
+	WebhookAPIKey        string // ถ้าตั้งใน Make ให้ส่งใน header x-make-apikey
+	UseForQuestionRouter bool   // true = ใช้ Make แทน OpenClaw สำหรับ RouteQuestion
+}
+
+type ChromaDBConfig struct {
+	URL        string
+	Collection string
+	APIKey     string
+	Tenant     string
+	Database   string
 }
 
 type GitHubConfig struct {
@@ -66,8 +93,9 @@ type GitConfig struct {
 var AppConfig *Config
 
 func Load() error {
+	// Load .env: ลองจาก cwd ก่อน แล้วลอง backend/.env ถ้ารันจาก repo root
 	if err := godotenv.Load(".env"); err != nil {
-		if err2 := godotenv.Load("backend/.env"); err2 != nil {
+		if err2 := godotenv.Load("../.env"); err2 != nil {
 			log.Println("No .env file found, using environment variables")
 		}
 	}
@@ -76,6 +104,7 @@ func Load() error {
 		Server: ServerConfig{
 			Port:        getEnv("SERVER_PORT", "8080"),
 			Host:        getEnv("SERVER_HOST", "localhost"),
+			ChatbotURL:  getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
 			Environment: getEnv("ENVIRONMENT", "development"),
 		},
 		Database: DatabaseConfig{
@@ -111,6 +140,17 @@ func Load() error {
 			ChunkSize:    getEnvAsInt("WIKI_CHUNK_SIZE", 500),
 			ChunkOverlap: getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
 		},
+		OpenClaw: OpenClawConfig{
+			URL:     getEnv("OPENCLAW_URL", ""),
+			Token:   getEnv("OPENCLAW_TOKEN", ""),
+			Model:   getEnv("OPENCLAW_MODEL", ""),
+			Enabled: getEnvAsBool("OPENCLAW_ENABLED", false),
+		},
+		Make: MakeConfig{
+			WebhookURL:           getEnv("MAKE_WEBHOOK_URL", ""),
+			WebhookAPIKey:        getEnv("MAKE_WEBHOOK_API_KEY", ""),
+			UseForQuestionRouter: getEnvAsBool("MAKE_USE_FOR_ROUTER", false),
+		},
 	}
 
 	return nil
@@ -118,6 +158,8 @@ func Load() error {
 
 func GetWikiContentPath() string {
 	c := AppConfig.Git
+	var basePath string
+	
 	if c.ContentPath != "" {
 		return normalizePath(c.ContentPath)
 	}
@@ -129,7 +171,8 @@ func GetWikiContentPath() string {
 		}
 		return repo
 	}
-	return "./wiki-content"
+	
+	return normalizePath(basePath)
 }
 
 // normalizePath cleans and ensures relative paths are prefixed with "./".
@@ -137,13 +180,18 @@ func normalizePath(path string) string {
 	if path == "" {
 		return "./wiki-content"
 	}
+	
+	// ถ้าเป็น absolute path (เริ่มด้วย / หรือ drive letter) คืนเลย
 	if filepath.IsAbs(path) {
 		return filepath.Clean(path)
 	}
+	
+	// ถ้าเป็น relative path แต่ไม่มี ./ หรือ ../ นำหน้า ให้เพิ่ม ./
 	clean := filepath.Clean(path)
 	if !strings.HasPrefix(clean, ".") {
 		return "./" + clean
 	}
+	
 	return clean
 }
 
