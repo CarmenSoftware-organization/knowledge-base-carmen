@@ -289,11 +289,10 @@ LIMIT 10
 
 	// Log chat interaction
 	userID := c.Get("X-User-ID", "anonymous")
-	h.logService.Log(bu, userID, "chat_ask", "wiki", map[string]interface{}{
-		"question": q,
-		"sources":  len(sources),
-		"status":   "success",
-	}, c.IP(), c.Get("User-Agent"))
+	h.logService.Log(bu, userID, "ถาม Chat AI", "wiki", map[string]interface{}{
+		"status":  "POST",
+		"sources": len(sources),
+	}, c.Get("User-Agent"))
 
 	return c.JSON(models.ChatAskResponse{
 		Answer:  answer,

@@ -29,11 +29,11 @@ func NewIndexingService() *IndexingService {
 }
 
 func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
-	s.logService.Log(bu, "system", "reindex_start", "wiki", map[string]interface{}{"status": "started"}, "", "")
+	s.logService.Log(bu, "system", "เริ่มดึงข้อมูล ( Re-indexing )", "system", map[string]interface{}{"status": "started"}, "")
 	
 	entries, err := s.wiki.ListMarkdown(bu)
 	if err != nil {
-		s.logService.Log(bu, "system", "reindex_failed", "wiki", map[string]interface{}{"error": err.Error()}, "", "")
+		s.logService.Log(bu, "system", "ดึงข้อมูลไม่สำเร็จ", "system", map[string]interface{}{"status": "failed", "error": err.Error()}, "")
 		return fmt.Errorf("list markdown: %w", err)
 	}
 
@@ -41,7 +41,7 @@ func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
 	for _, e := range entries {
 		select {
 		case <-ctx.Done():
-			s.logService.Log(bu, "system", "reindex_interrupted", "wiki", map[string]interface{}{"processed": count}, "", "")
+			s.logService.Log(bu, "system", "ดึงข้อมูลถูกขัดจังหวะ", "system", map[string]interface{}{"status": "interrupted", "processed": count}, "")
 			return ctx.Err()
 		default:
 		}
@@ -51,7 +51,7 @@ func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
 			count++
 		}
 	}
-	s.logService.Log(bu, "system", "reindex_complete", "wiki", map[string]interface{}{"total_files": count}, "", "")
+	s.logService.Log(bu, "system", "เสร็จสิ้นดึงข้อมูล", "system", map[string]interface{}{"status": "completed", "files": count}, "")
 	return nil
 }
 

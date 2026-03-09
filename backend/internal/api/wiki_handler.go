@@ -89,7 +89,7 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 
 	// Log view
 	userID := c.Get("X-User-ID", "anonymous")
-	h.logService.Log(bu, userID, "view_article", "wiki", map[string]interface{}{"path": pathParam, "title": content.Title}, c.IP(), c.Get("User-Agent"))
+	h.logService.Log(bu, userID, "เปิดอ่านบทความ", "wiki", map[string]interface{}{"status": "GET", "path": pathParam, "title": content.Title}, c.Get("User-Agent"))
 
 	return c.JSON(content)
 }
@@ -108,7 +108,7 @@ func (h *WikiHandler) Search(c *fiber.Ctx) error {
 
 	// Log search
 	userID := c.Get("X-User-ID", "anonymous")
-	h.logService.Log(bu, userID, "search", "wiki", map[string]interface{}{"query": query, "results_count": len(results)}, c.IP(), c.Get("User-Agent"))
+	h.logService.Log(bu, userID, "ค้นหาข้อมูลวิกิ", "wiki", map[string]interface{}{"status": "GET", "query": query, "results": len(results)}, c.Get("User-Agent"))
 
 	return c.JSON(fiber.Map{"items": results})
 }

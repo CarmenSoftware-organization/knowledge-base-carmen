@@ -14,7 +14,7 @@ func NewActivityLogService() *ActivityLogService {
 }
 
 // Log records a new activity in the system
-func (s *ActivityLogService) Log(buSlug string, userID string, action string, category string, details interface{}, ipAddress string, userAgent string) error {
+func (s *ActivityLogService) Log(buSlug string, userID string, action string, category string, details interface{}, userAgent string) error {
 	var buID *uint
 	if buSlug != "" {
 		var bu models.BusinessUnit
@@ -24,18 +24,17 @@ func (s *ActivityLogService) Log(buSlug string, userID string, action string, ca
 		}
 	}
 
-	log := models.ActivityLog{
+	logEntry := models.ActivityLog{
 		BUID:      buID,
 		UserID:    userID,
 		Action:    action,
 		Category:  category,
 		Details:   details,
-		IPAddress: ipAddress,
 		UserAgent: userAgent,
 		Timestamp: time.Now(),
 	}
 
-	return database.DB.Create(&log).Error
+	return database.DB.Create(&logEntry).Error
 }
 
 func (s *ActivityLogService) GetLogs(buSlug string, limit int, offset int) ([]models.ActivityLog, error) {

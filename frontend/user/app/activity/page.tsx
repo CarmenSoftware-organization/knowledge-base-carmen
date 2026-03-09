@@ -51,9 +51,9 @@ export default async function ActivityPage() {
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
                 <TableHead className="w-[180px]">วันเวลา</TableHead>
-                <TableHead className="w-[140px]">กิจกรรม (Action)</TableHead>
+                <TableHead className="w-[150px]">ผู้ดำเนินการ</TableHead>
+                <TableHead className="w-[180px]">กิจกรรม (Action)</TableHead>
                 <TableHead>รายละเอียด (Details)</TableHead>
-                <TableHead className="w-[140px]">IP Address</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -64,26 +64,70 @@ export default async function ActivityPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                      {format(new Date(log.created_at), "dd MMM yyyy HH:mm:ss", { locale: th })}
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium ring-1 ring-inset ring-secondary-foreground/10">
-                        {log.action}
-                      </span>
-                    </TableCell>
-                    <TableCell className="max-w-[300px] truncate" title={typeof log.details === 'object' ? JSON.stringify(log.details) : log.details || ""}>
-                      {typeof log.details === 'object' 
-                        ? JSON.stringify(log.details) 
-                        : (log.details || "-")}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {log.ip_address || "-"}
-                    </TableCell>
-                  </TableRow>
-                ))
+                logs.map((log) => {
+                  // Format details for display
+                  let detailsText = "-";
+                  if (typeof log.details === 'object' && log.details !== null) {
+                    const d = log.details as any;
+                    const parts = [];
+                    
+                    // Show Method/Status Badge-like style
+                    if (d.status) parts.push(`[${d.status}]`);
+                    
+                    // Show Path or Title
+                    if (d.path) parts.push(d.path);
+                    if (d.title && !d.path) parts.push(d.title);
+                    
+                    // Show Search Query
+                    if (d.query) parts.push(`คำค้นหา: "${d.query}"`);
+                    
+                    // Show Results/Sources Count
+                    if (d.results !== undefined) parts.push(`(${d.results} ผลลัพธ์)`);
+                    if (d.sources !== undefined) parts.push(`(${d.sources} แหล่งอ้างอิง)`);
+                    
+                    // Show Specific Files for GitHub
+                    if (Array.isArray(d.files)) {
+                      if (d.files.length > 0) {
+                        parts.push(`ไฟล์: ${d.files.join(", ")}`);
+                      }
+                    } else if (d.files !== undefined) {
+                      parts.push(`(${d.files} ไฟล์)`);
+                    }
+
+                    if (d.repo) parts.push(`ที่เก็บ: ${d.repo}`);
+                    
+                    detailsText = parts.length > 0 ? parts.join(" ") : JSON.stringify(d);
+                  } else {
+                    detailsText = log.details || "-";
+                  }
+
+                  // Friendly Actor Name
+                  const actor = log.user_id === "system" ? "ระบบ (System)" : (log.user_id || "ไม่ระบุ");
+
+                  return (
+                    <TableRow key={log.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                        {format(new Date(log.created_at), "dd MMM yyyy HH:mm:ss", { locale: th })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                          <span className="font-medium text-sm">{actor}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-md bg-secondary/80 px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground ring-1 ring-inset ring-secondary-foreground/10 uppercase">
+                          {log.action}
+                        </span>
+                      </TableCell>
+                      <TableCell className="max-w-[450px]">
+                        <div className="text-sm leading-relaxed" title={detailsText}>
+                           {detailsText}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
