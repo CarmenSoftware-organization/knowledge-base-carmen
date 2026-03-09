@@ -285,7 +285,7 @@ export async function searchWiki(query: string, bu?: string): Promise<SearchResu
 export type ActivityLog = {
   id: number;
   bu_slug: string;
-  user_id?: number | null;
+  user_id?: string | null;
   action: string;
   details?: string | null;
   ip_address?: string | null;
