@@ -6,6 +6,8 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
 import rehypeRaw from "rehype-raw";
+import remarkEmoji from "remark-emoji";
+import { useEffect, useRef } from "react";
 
 interface MarkdownRenderProps {
   content: string;
@@ -18,6 +20,51 @@ function extractYoutubeId(url?: string) {
     /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
   );
   return match ? match[1] : null;
+}
+
+function MermaidDiagram({ chart }: { chart: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function render() {
+      const mermaid = (await import("mermaid")).default;
+
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "default",
+      });
+
+      if (!ref.current || cancelled) return;
+
+      const id = "mermaid-" + Math.random().toString(36).slice(2);
+
+      try {
+        const { svg } = await mermaid.render(id, chart);
+        if (!cancelled && ref.current) {
+          ref.current.innerHTML = svg;
+        }
+      } catch {
+        if (!cancelled && ref.current) {
+          ref.current.innerHTML = `<pre>${chart}</pre>`;
+        }
+      }
+    }
+
+    render();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chart]);
+
+  return (
+    <div
+      ref={ref}
+      className="my-6 flex justify-center overflow-x-auto rounded-xl border border-border p-4 bg-muted/30"
+    />
+  );
 }
 
 export function MarkdownRender({ content, category }: MarkdownRenderProps) {
@@ -36,9 +83,23 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
       "
     >
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
+        remarkPlugins={[remarkGfm, remarkBreaks, remarkEmoji]}
         rehypePlugins={[rehypeRaw, rehypeSlug, rehypeHighlight]}
         components={{
+
+          code: ({ className, children }) => {
+            if (className === "language-mermaid") {
+              return (
+                <MermaidDiagram chart={String(children).trim()} />
+              );
+            }
+
+            return (
+              <code className={className}>
+                {children}
+              </code>
+            );
+          },
 
           h1: ({ children, ...props }) => (
             <h1 {...props} className="text-3xl font-bold mt-1 mb-6 border-b border-border pb-3">
