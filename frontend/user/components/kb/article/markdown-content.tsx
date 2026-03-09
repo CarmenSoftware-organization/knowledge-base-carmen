@@ -8,6 +8,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeRaw from "rehype-raw";
 import remarkEmoji from "remark-emoji";
 import { useEffect, useRef } from "react";
+import { getSelectedBUClient } from "@/lib/wiki-api";
 
 interface MarkdownRenderProps {
   content: string;
@@ -197,10 +198,11 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
           img: ({ src, alt = "", ...props }) => {
             if (!src || typeof src !== "string") return null;
             const cleanSrc = src.replace("./", "");
+            const bu = getSelectedBUClient() || "carmen";
             return (
               <img
                 {...props}
-                src={`http://localhost:8080/wiki-assets/${category}/${cleanSrc}`}
+                src={`http://localhost:8080/wiki-assets/${category}/${cleanSrc}?bu=${bu}`}
                 alt={alt}
                 className="block rounded-xl my-6 shadow-md max-w-full"
               />

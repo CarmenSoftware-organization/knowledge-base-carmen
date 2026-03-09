@@ -4,16 +4,20 @@ import { HeroSection } from "@/components/kb/hero-section";
 import { CategoryCards } from "@/components/kb/category-cards";
 import { QuickHelp } from "@/components/kb/quick-help";
 import { getCategories, getCategory } from "@/lib/wiki-api";
+import { cookies } from "next/headers";
 
 export default async function HomePage() {
+  const cookieStore = await cookies();
+  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+
   // ดึงหมวดจริงจาก backend
-  const { items: categories } = await getCategories();
+  const { items: categories } = await getCategories(bu);
 
   //  ดึงจำนวนบทความแต่ละหมวด
   const categoriesWithCount = await Promise.all(
     categories.map(async (cat) => {
       try {
-        const data = await getCategory(cat.slug);
+        const data = await getCategory(cat.slug, bu);
         return {
           slug: cat.slug,
           articleCount: data.items.length,

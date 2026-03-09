@@ -11,7 +11,10 @@ import (
 	"strings"
 
 	"github.com/new-carmen/backend/internal/config"
+	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/github"
+	"github.com/new-carmen/backend/pkg/ollama"
 )
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
@@ -71,16 +74,21 @@ type SearchResult struct {
 
 type WikiService struct {
 	githubClient *github.Client
+	embedLLM     *ollama.Client
 }
 
 func NewWikiService() *WikiService {
 	return &WikiService{
 		githubClient: github.NewClient(),
+		embedLLM:     ollama.NewEmbedClient(),
 	}
 }
 
 func (s *WikiService) getRepoPath(bu string) string {
 	repoBase := config.AppConfig.Git.RepoPath
+	if bu == "carmen" {
+		return filepath.Join(repoBase, "carmen_cloud")
+	}
 	return filepath.Join(repoBase, bu)
 }
 
@@ -287,37 +295,54 @@ func (s *WikiService) GetContent(bu, relPath string) (*WikiContent, error) {
 	if content, err := s.getContentFromLocal(bu, relPath); err == nil {
 		return content, nil
 	}
-	return s.getContentFromGitHub(relPath)
+	
+	gitPath := relPath
+	if bu == "carmen" {
+		gitPath = "carmen_cloud/" + relPath
+	} else if bu != "" {
+		gitPath = bu + "/" + relPath
+	}
+	return s.getContentFromGitHub(gitPath)
 }
 
-// SearchInContent performs a simple case-insensitive full-text search in a BU.
+// SearchInContent performs a semantic search using pgvector in a BU's schema.
 func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) {
-	query = strings.ToLower(query)
-	entries, err := s.listFromLocal(bu)
+	emb, err := s.embedLLM.Embedding(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create embedding: %w", err)
+	}
+	embStr := utils.Float32SliceToPgVector(emb)
+
+	sql := fmt.Sprintf(`
+		SELECT d.path, d.title, dc.content as snippet
+		FROM %s.document_chunks dc
+		JOIN %s.documents d ON dc.document_id = d.id
+		ORDER BY dc.embedding <-> ?::vector
+		LIMIT 20
+	`, bu, bu)
+
+	var rows []struct {
+		Path    string
+		Title   string
+		Snippet string
+	}
+	if err := database.DB.Raw(sql, embStr).Scan(&rows).Error; err != nil {
+		return nil, fmt.Errorf("vector search: %w", err)
 	}
 
-	root := filepath.Clean(s.getRepoPath(bu))
-	var results []SearchResult
-
-	for _, entry := range entries {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(entry.Path)))
-		if err != nil {
-			continue
+	results := make([]SearchResult, len(rows))
+	for i, r := range rows {
+		// Clean and trim snippet for UI
+		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
+		if len(snippet) > 150 {
+			snippet = snippet[:147] + "..."
 		}
-		content := string(data)
-		contentLower := strings.ToLower(content)
-		idx := strings.Index(contentLower, query)
-		if idx < 0 {
-			continue
-		}
-		start := max(0, idx-40)
-		end := min(len(content), idx+len(query)+60)
-		snippet := "..." + strings.ReplaceAll(content[start:end], "\n", " ") + "..."
-		results = append(results, SearchResult{WikiEntry: entry, Snippet: snippet})
-		if len(results) >= 20 {
-			break
+		results[i] = SearchResult{
+			WikiEntry: WikiEntry{
+				Path:  r.Path,
+				Title: r.Title,
+			},
+			Snippet: snippet,
 		}
 	}
 	return results, nil
@@ -328,19 +353,28 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 const maxFrontmatterRead = 16384
 
 func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
-	root := filepath.Clean(s.getRepoPath(bu))
+	root := s.getRepoPath(bu)
+	if !filepath.IsAbs(root) {
+		absRoot, err := filepath.Abs(root)
+		if err == nil {
+			root = absRoot
+		}
+	}
+	root = filepath.Clean(root)
+	
 	var entries []WikiEntry
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			if os.IsNotExist(err) {
-				return filepath.SkipDir
+				return nil
 			}
 			return err
 		}
 		if info.IsDir() || strings.ToLower(filepath.Ext(info.Name())) != ".md" {
 			return nil
 		}
+		
 		rel, err := filepath.Rel(root, path)
 		if err != nil {
 			return nil
@@ -387,6 +421,11 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 	return entries, nil
 }
 
+func (s *WikiService) GetLocalAssetPath(bu, relPath string) string {
+	root := s.getRepoPath(bu)
+	return filepath.Clean(filepath.Join(root, filepath.FromSlash(relPath)))
+}
+
 func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, error) {
 	relPath = filepath.Clean(relPath)
 	if relPath == ".." || strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
@@ -402,7 +441,7 @@ func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, err
 	if err != nil {
 		return nil, err
 	}
-	out := &WikiContent{Path: relPath, Title: slugToTitle(filepath.Base(relPath))}
+	out := &WikiContent{Path: filepath.ToSlash(relPath), Title: slugToTitle(filepath.Base(relPath))}
 	meta, body := parseFrontmatter(data)
 	if len(meta) > 0 {
 		applyMeta(out, meta, body)
@@ -423,4 +462,5 @@ func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error)
 	}
 	return out, nil
 }
+
 

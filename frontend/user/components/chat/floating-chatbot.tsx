@@ -2,6 +2,8 @@
 import { CarmenChatConfig, useCarmenChat } from "@/hooks/use-carmen-chat";
 import { AnimatePresence, motion } from "framer-motion";
 import CarmenChatWindow from "./carmen-chat-window";
+import { getSelectedBUClient } from "@/lib/wiki-api";
+import { useEffect, useState } from "react";
 
 interface Props extends Partial<CarmenChatConfig> {
   bu?: string;
@@ -9,7 +11,7 @@ interface Props extends Partial<CarmenChatConfig> {
 }
 
 export default function FloatingChatBot({
-  bu = "global",
+  bu: initialBU,
   username = "Guest",
   apiBase,
   theme = "#34558b",
@@ -19,11 +21,21 @@ export default function FloatingChatBot({
   showAttach = false,
   suggestedQuestions,
 }: Props) {
+  const [currentBU, setCurrentBU] = useState(initialBU || getSelectedBUClient());
+
+  useEffect(() => {
+    if (!initialBU) {
+      const handleBUChange = () => setCurrentBU(getSelectedBUClient());
+      window.addEventListener("bu-changed", handleBUChange);
+      return () => window.removeEventListener("bu-changed", handleBUChange);
+    }
+  }, [initialBU]);
+
   const resolvedApiBase =
     apiBase ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
   const state = useCarmenChat({
-    bu,
+    bu: currentBU,
     username,
     apiBase: resolvedApiBase,
     theme,

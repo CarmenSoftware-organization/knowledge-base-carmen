@@ -10,7 +10,8 @@ import {
   searchWiki, 
   wikiPathToRoute, 
   findBestArticleForQuery, 
-  SearchResultItem 
+  SearchResultItem,
+  getSelectedBUClient
 } from "@/lib/wiki-api";
 
 /* --- 1. Helper HTML/Markdown --- */
@@ -64,6 +65,13 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
   const [suggestions, setSuggestions] = useState<SearchResultItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [bu, setBu] = useState(getSelectedBUClient());
+
+  useEffect(() => {
+    const handleBUChange = () => setBu(getSelectedBUClient());
+    window.addEventListener("bu-changed", handleBUChange);
+    return () => window.removeEventListener("bu-changed", handleBUChange);
+  }, []);
   
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -86,7 +94,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const results = await searchWiki(q);
+        const results = await searchWiki(q, bu);
         const filtered = results.filter(item => {
           const isIndex = item.path.endsWith('/index') || item.path === 'index';
           return !isIndex && cleanSnippet(item.snippet).length > 0;
@@ -99,7 +107,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
       }
     }, 350);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, bu]);
 
   const handleSelect = useCallback((item: SearchResultItem) => {
     router.push(wikiPathToRoute(item.path));
@@ -116,7 +124,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
     }
     setIsSearching(true);
     try {
-      const { route } = await findBestArticleForQuery(searchQuery);
+      const { route } = await findBestArticleForQuery(searchQuery, bu);
       router.push(route || "/categories");
       setShowDropdown(false);
     } finally {

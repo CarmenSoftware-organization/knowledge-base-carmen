@@ -22,6 +22,11 @@ func NewWikiHandler() *WikiHandler {
 	}
 }
 
+// GetWikiService returns the WikiService instance
+func (h *WikiHandler) GetWikiService() *services.WikiService {
+	return h.wikiService
+}
+
 // List returns all markdown entries. GET /api/wiki/list
 func (h *WikiHandler) List(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
