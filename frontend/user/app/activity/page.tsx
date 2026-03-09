@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { ActivityControls } from "@/components/activity/activity-controls";
 
 export default async function ActivityPage() {
   const supabase = await createClient();
@@ -34,11 +35,14 @@ export default async function ActivityPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Activity Logs</h1>
-        <p className="text-muted-foreground">
-          ประวัติการใช้งานและค้นหาข้อมูลภายในระบบ (หมวดหมู่: {buCookie})
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Activity Logs</h1>
+          <p className="text-muted-foreground">
+            ประวัติการใช้งานและค้นหาข้อมูลภายในระบบ (หน่วยธุรกิจ: {buCookie})
+          </p>
+        </div>
+        <ActivityControls bu={buCookie} />
       </div>
 
       <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
@@ -70,8 +74,10 @@ export default async function ActivityPage() {
                         {log.action}
                       </span>
                     </TableCell>
-                    <TableCell className="max-w-[300px] truncate" title={log.details || ""}>
-                      {log.details || "-"}
+                    <TableCell className="max-w-[300px] truncate" title={typeof log.details === 'object' ? JSON.stringify(log.details) : log.details || ""}>
+                      {typeof log.details === 'object' 
+                        ? JSON.stringify(log.details) 
+                        : (log.details || "-")}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {log.ip_address || "-"}

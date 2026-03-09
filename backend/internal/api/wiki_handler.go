@@ -13,12 +13,14 @@ import (
 type WikiHandler struct {
 	wikiService *services.WikiService
 	syncService *services.WikiSyncService
+	logService  *services.ActivityLogService
 }
 
 func NewWikiHandler() *WikiHandler {
 	return &WikiHandler{
 		wikiService: services.NewWikiService(),
 		syncService: services.NewWikiSyncService(),
+		logService:  services.NewActivityLogService(),
 	}
 }
 
@@ -84,6 +86,11 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	// Log view
+	userID := c.Get("X-User-ID", "anonymous")
+	h.logService.Log(bu, userID, "view_article", "wiki", map[string]interface{}{"path": pathParam, "title": content.Title}, c.IP(), c.Get("User-Agent"))
+
 	return c.JSON(content)
 }
 
@@ -98,6 +105,11 @@ func (h *WikiHandler) Search(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	// Log search
+	userID := c.Get("X-User-ID", "anonymous")
+	h.logService.Log(bu, userID, "search", "wiki", map[string]interface{}{"query": query, "results_count": len(results)}, c.IP(), c.Get("User-Agent"))
+
 	return c.JSON(fiber.Map{"items": results})
 }
 

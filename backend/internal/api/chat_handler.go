@@ -18,18 +18,20 @@ import (
 )
 
 type ChatHandler struct {
-	llm      *ollama.Client
-	embedLLM *ollama.Client
-	router   *services.QuestionRouterService
-	wiki     *services.WikiService
+	llm        *ollama.Client
+	embedLLM   *ollama.Client
+	router     *services.QuestionRouterService
+	wiki       *services.WikiService
+	logService *services.ActivityLogService
 }
 
 func NewChatHandler() *ChatHandler {
 	return &ChatHandler{
-		llm:      ollama.NewClient(),      // ใช้ ChatModel
-		embedLLM: ollama.NewEmbedClient(), // ใช้ EmbedModel
-		router:   services.NewQuestionRouterService(),
-		wiki:     services.NewWikiService(),
+		llm:        ollama.NewClient(),      // ใช้ ChatModel
+		embedLLM:   ollama.NewEmbedClient(), // ใช้ EmbedModel
+		router:     services.NewQuestionRouterService(),
+		wiki:       services.NewWikiService(),
+		logService: services.NewActivityLogService(),
 	}
 }
 
@@ -284,6 +286,14 @@ LIMIT 10
 			"sources": sources,
 		})
 	}
+
+	// Log chat interaction
+	userID := c.Get("X-User-ID", "anonymous")
+	h.logService.Log(bu, userID, "chat_ask", "wiki", map[string]interface{}{
+		"question": q,
+		"sources":  len(sources),
+		"status":   "success",
+	}, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(models.ChatAskResponse{
 		Answer:  answer,

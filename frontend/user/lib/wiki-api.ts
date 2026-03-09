@@ -3,7 +3,7 @@ const BASE_URL =
 
 /* =========================
    Types
-========================= */
+ ========================= */
 
 export type WikiListItem = {
   path: string;
@@ -26,7 +26,7 @@ export type BusinessUnit = {
 
 /* =========================
    Business Units
-========================= */
+ ========================= */
 
 export async function getBusinessUnits(): Promise<{ items: BusinessUnit[] }> {
   const res = await fetch(`${BASE_URL}/api/business-units`, {
@@ -55,7 +55,7 @@ export function setSelectedBU(slug: string) {
 
 /* =========================
    Categories
-========================= */
+ ========================= */
 
 // GET /api/wiki/categories
 export async function getCategories(bu?: string): Promise<{
@@ -93,7 +93,7 @@ export async function getCategory(slug: string, bu?: string): Promise<{
 
 /* =========================
    List + Search (สำหรับ hero search)
-========================= */
+ ========================= */
 
 let cachedList: { [bu: string]: WikiListItem[] } = {};
 
@@ -183,7 +183,7 @@ export async function findBestArticleForQuery(query: string, bu?: string): Promi
 
 /* =========================
    Content
-========================= */
+ ========================= */
 
 // GET /api/wiki/content/*
 export async function getContent(path: string, bu?: string): Promise<{
@@ -213,7 +213,7 @@ export async function getContent(path: string, bu?: string): Promise<{
 
 /* =========================
    Chat (RAG)
-========================= */
+ ========================= */
 
 export type ChatSource = { articleId?: string; title?: string };
 
@@ -280,7 +280,7 @@ export async function searchWiki(query: string, bu?: string): Promise<SearchResu
 
 /* =========================
    Activity Logs
-========================= */
+ ========================= */
 
 export type ActivityLog = {
   id: number;
@@ -300,5 +300,24 @@ export async function getActivityLogs(bu?: string, limit: number = 50, offset: n
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch activity logs");
+  return res.json();
+}
+
+// POST /api/wiki/sync
+export async function syncWiki(): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/wiki/sync`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to sync wiki");
+  return res.json();
+}
+
+// POST /api/index/rebuild
+export async function rebuildIndex(bu?: string): Promise<{ message: string }> {
+  const selectedBU = bu || getSelectedBUClient();
+  const res = await fetch(`${BASE_URL}/api/index/rebuild?bu=${selectedBU}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to rebuild index");
   return res.json();
 }

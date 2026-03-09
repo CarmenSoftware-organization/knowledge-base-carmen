@@ -15,32 +15,43 @@ import (
 // indexing_service.go constants have been moved to AppConfig.Git (WIKI_CHUNK_SIZE/WIKI_CHUNK_OVERLAP)
 
 type IndexingService struct {
-	wiki *WikiService
-	llm  *ollama.Client
+	wiki       *WikiService
+	llm        *ollama.Client
+	logService *ActivityLogService
 }
 
 func NewIndexingService() *IndexingService {
 	return &IndexingService{
-		wiki: NewWikiService(),
-		llm:  ollama.NewEmbedClient(),
+		wiki:       NewWikiService(),
+		llm:        ollama.NewEmbedClient(),
+		logService: NewActivityLogService(),
 	}
 }
 
 func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
+	s.logService.Log(bu, "system", "reindex_start", "wiki", map[string]interface{}{"status": "started"}, "", "")
+	
 	entries, err := s.wiki.ListMarkdown(bu)
 	if err != nil {
+		s.logService.Log(bu, "system", "reindex_failed", "wiki", map[string]interface{}{"error": err.Error()}, "", "")
 		return fmt.Errorf("list markdown: %w", err)
 	}
+
+	count := 0
 	for _, e := range entries {
 		select {
 		case <-ctx.Done():
+			s.logService.Log(bu, "system", "reindex_interrupted", "wiki", map[string]interface{}{"processed": count}, "", "")
 			return ctx.Err()
 		default:
 		}
 		if err := s.indexSingle(bu, e.Path); err != nil {
 			log.Printf("[indexing] %s (%s): %v", e.Path, bu, err)
+		} else {
+			count++
 		}
 	}
+	s.logService.Log(bu, "system", "reindex_complete", "wiki", map[string]interface{}{"total_files": count}, "", "")
 	return nil
 }
 
