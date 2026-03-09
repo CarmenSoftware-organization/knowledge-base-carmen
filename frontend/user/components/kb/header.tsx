@@ -88,7 +88,7 @@ export function KBHeader() {
                 <Link href="/categories">หมวดหมู่</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/activity">ประวัติการใช้งาน</Link>
+                <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
               </Button>
             </nav>
             <div className="hidden md:block">
