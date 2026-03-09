@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
-import FloatingChatBot from "@/components/chat/FloatingChatBot"
+import FloatingChatBot from "@/components/chat/floating-chatbot"
 import { ThemeProvider } from "@/components/theme-provider"   // 👈 เพิ่มบรรทัดนี้
 
 const _geist = Geist({ subsets: ["latin"] });
