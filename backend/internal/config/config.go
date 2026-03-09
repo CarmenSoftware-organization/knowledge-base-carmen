@@ -35,6 +35,7 @@ type DatabaseConfig struct {
 	Password string
 	Name     string
 	SSLMode  string
+	Schema   string
 }
 
 type JWTConfig struct {
@@ -114,6 +115,7 @@ func Load() error {
 			Password: getEnv("DB_PASSWORD", "postgres"),
 			Name:     getEnv("DB_NAME", "carmen_db"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			Schema:   getEnv("DB_SCHEMA", "public"),
 		},
 		JWT: JWTConfig{
 			Secret: getEnv("JWT_SECRET", "change-me-in-production"),

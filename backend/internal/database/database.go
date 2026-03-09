@@ -28,6 +28,14 @@ func Connect() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
+
+	// Set default schema search path
+	if cfg.Schema != "" {
+		if err := DB.Exec(fmt.Sprintf("SET search_path TO %s", cfg.Schema)).Error; err != nil {
+			return fmt.Errorf("failed to set search_path: %w", err)
+		}
+	}
+
 	return nil
 }
 

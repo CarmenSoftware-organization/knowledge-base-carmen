@@ -12,9 +12,10 @@ import (
 
 
 type WikiSyncService struct {
-	repoPath string
-	repoURL  string
-	branch   string
+	repoPath    string
+	repoURL     string
+	branch      string
+	logService  *ActivityLogService
 }
 
 func NewWikiSyncService() *WikiSyncService {
@@ -31,7 +32,12 @@ func NewWikiSyncService() *WikiSyncService {
 	if branch == "" {
 		branch = "wiki-content"
 	}
-	return &WikiSyncService{repoPath: repoPath, repoURL: repoURL, branch: branch}
+	return &WikiSyncService{
+		repoPath:   repoPath,
+		repoURL:    repoURL,
+		branch:     branch,
+		logService: NewActivityLogService(),
+	}
 }
 
 // Sync runs git pull if the repo exists, or git clone if it does not.
@@ -53,6 +59,7 @@ func (s *WikiSyncService) clone() error {
 		return fmt.Errorf("git clone: %w", err)
 	}
 	log.Printf("[wiki-sync] cloned %s (branch: %s) → %s", s.repoURL, s.branch, s.repoPath)
+	s.logService.Log("", "system", "git_clone", "wiki", map[string]interface{}{"url": s.repoURL, "branch": s.branch})
 	return nil
 }
 
@@ -65,5 +72,6 @@ func (s *WikiSyncService) pull() error {
 		return fmt.Errorf("git pull: %w", err)
 	}
 	log.Printf("[wiki-sync] pulled: %s", out)
+	s.logService.Log("", "system", "git_pull", "wiki", map[string]interface{}{"status": "success"})
 	return nil
 }
