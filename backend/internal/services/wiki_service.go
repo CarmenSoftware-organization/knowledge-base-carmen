@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -295,7 +296,7 @@ func (s *WikiService) GetContent(bu, relPath string) (*WikiContent, error) {
 	if content, err := s.getContentFromLocal(bu, relPath); err == nil {
 		return content, nil
 	}
-	
+
 	gitPath := relPath
 	if bu == "carmen" {
 		gitPath = "carmen_cloud/" + relPath
@@ -303,6 +304,11 @@ func (s *WikiService) GetContent(bu, relPath string) (*WikiContent, error) {
 		gitPath = bu + "/" + relPath
 	}
 	return s.getContentFromGitHub(gitPath)
+}
+
+func removeDots(s string) string {
+	re := regexp.MustCompile(`(\p{L})\.`)
+	return re.ReplaceAllString(s, "$1")
 }
 
 // SearchInContent performs a semantic search using pgvector in a BU's schema.
@@ -314,38 +320,74 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 	embStr := utils.Float32SliceToPgVector(emb)
 
 	sql := fmt.Sprintf(`
-		SELECT d.path, d.title, dc.content as snippet
-		FROM %s.document_chunks dc
-		JOIN %s.documents d ON dc.document_id = d.id
-		ORDER BY dc.embedding <-> ?::vector
-		LIMIT 20
-	`, bu, bu)
+        WITH vector_results AS (
+            SELECT
+                d.path,
+                d.title,
+                dc.content AS snippet,
+                (dc.embedding <-> ?::vector) AS vector_dist,
+                CASE
+                    WHEN d.title ILIKE ? THEN 0.5
+                    WHEN dc.content ILIKE ? THEN 0.3
+                    ELSE 0
+                END AS text_boost
+            FROM %s.document_chunks dc
+            JOIN %s.documents d ON dc.document_id = d.id
+            WHERE dc.embedding <-> ?::vector < 0.3
+        )
+        SELECT path, title, snippet,
+               (vector_dist - text_boost) AS final_score
+        FROM vector_results
+        ORDER BY final_score ASC
+        LIMIT 20
+    `, bu, bu)
+
+	query = removeDots(query)
+
+	likeQuery := "%" + query + "%"
 
 	var rows []struct {
-		Path    string
-		Title   string
-		Snippet string
+		Path       string
+		Title      string
+		Snippet    string
+		FinalScore float64
 	}
-	if err := database.DB.Raw(sql, embStr).Scan(&rows).Error; err != nil {
-		return nil, fmt.Errorf("vector search: %w", err)
+	if err := database.DB.Raw(sql,
+		embStr,    // vector compare
+		likeQuery, // title boost
+		likeQuery, // content boost
+		embStr,    // WHERE filter
+	).Scan(&rows).Error; err != nil {
+		return nil, fmt.Errorf("hybrid search: %w", err)
 	}
 
-	results := make([]SearchResult, len(rows))
-	for i, r := range rows {
-		// Clean and trim snippet for UI
+	seen := make(map[string]bool)
+	var results []SearchResult
+	for _, r := range rows {
+		if seen[r.Path] {
+			continue
+		}
+		seen[r.Path] = true
 		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
-		if len(snippet) > 150 {
-			snippet = snippet[:147] + "..."
-		}
-		results[i] = SearchResult{
-			WikiEntry: WikiEntry{
-				Path:  r.Path,
-				Title: r.Title,
-			},
-			Snippet: snippet,
-		}
+		snippet = smartTrim(snippet, 200)
+		results = append(results, SearchResult{
+			WikiEntry: WikiEntry{Path: r.Path, Title: r.Title},
+			Snippet:   snippet,
+		})
 	}
 	return results, nil
+}
+
+func smartTrim(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	trimmed := string(runes[:max])
+	if idx := strings.LastIndex(trimmed, " "); idx > max-30 {
+		trimmed = trimmed[:idx]
+	}
+	return trimmed + "..."
 }
 
 // ─── Private Helpers ─────────────────────────────────────────────────────────
@@ -361,7 +403,7 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 		}
 	}
 	root = filepath.Clean(root)
-	
+
 	var entries []WikiEntry
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -374,7 +416,7 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 		if info.IsDir() || strings.ToLower(filepath.Ext(info.Name())) != ".md" {
 			return nil
 		}
-		
+
 		rel, err := filepath.Rel(root, path)
 		if err != nil {
 			return nil
@@ -462,5 +504,3 @@ func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error)
 	}
 	return out, nil
 }
-
-
