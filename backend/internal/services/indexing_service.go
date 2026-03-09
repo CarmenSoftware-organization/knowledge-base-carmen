@@ -78,7 +78,8 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		if strings.TrimSpace(chunkText) == "" {
 			continue
 		}
-		emb, err := s.llm.Embedding(chunkText)
+		enrichedChunk := fmt.Sprintf("เรื่อง: %s\n\n%s", content.Title, chunkText)
+		emb, err := s.llm.Embedding(enrichedChunk)
 		if err != nil {
 			return fmt.Errorf("embedding chunk %d: %w", i, err)
 		}

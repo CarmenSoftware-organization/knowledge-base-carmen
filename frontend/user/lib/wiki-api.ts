@@ -1,3 +1,5 @@
+import Fuse from "fuse.js";
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -80,7 +82,7 @@ export async function getCategory(slug: string, bu?: string): Promise<{
 }> {
   const selectedBU = bu || getSelectedBUClient();
   const res = await fetch(
-    `${BASE_URL}/api/wiki/category/${slug}?bu=${selectedBU}`, 
+    `${BASE_URL}/api/wiki/category/${slug}?bu=${selectedBU}`,
     { cache: "no-store" }
   );
 
@@ -119,7 +121,7 @@ export async function getAllArticles(bu?: string): Promise<WikiListItem[]> {
 export function wikiPathToRoute(path: string): string {
   const normalizedPath = path.replace(/\\/g, "/");
   const parts = normalizedPath.split("/").filter(Boolean);
-  
+
   if (parts.length === 0) return "/";
 
   // Root level index.md
@@ -141,6 +143,7 @@ export function wikiPathToRoute(path: string): string {
 }
 
 // หาบทความที่ตรงกับคำค้นมากที่สุดคืนทั้ง item และ route
+
 export async function findBestArticleForQuery(query: string, bu?: string): Promise<{
   item: WikiListItem | null;
   route: string | null;
@@ -148,34 +151,50 @@ export async function findBestArticleForQuery(query: string, bu?: string): Promi
   const q = query.trim().toLowerCase();
   if (!q) return { item: null, route: null };
 
-  // 1. ลองหาแบบ Keyword Match ก่อน
+  // 1. Vector Search ก่อน (แม่นสุด)
+  try {
+    const aiResults = await searchWiki(query, bu);
+    if (aiResults?.length > 0) {
+      return { item: aiResults[0], route: wikiPathToRoute(aiResults[0].path) };
+    }
+  } catch (err) {
+    console.error("Vector search failed:", err);
+  }
+
   const items = await getAllArticles(bu);
+
+  // 2. Exact keyword match
   const scored = items
     .map((item) => {
       const haystack = `${item.title} ${item.path}`.toLowerCase();
       let score = 0;
-      if (haystack.includes(q)) score += 2;
       if (item.title.toLowerCase().startsWith(q)) score += 5;
       if (item.path.toLowerCase().startsWith(q)) score += 3;
+      if (haystack.includes(q)) score += 2;
       return { item, score };
     })
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score);
 
   if (scored.length > 0) {
-    const best = scored[0].item;
-    return { item: best, route: wikiPathToRoute(best.path) };
+    return { item: scored[0].item, route: wikiPathToRoute(scored[0].item.path) };
   }
 
-  // 2. ถ้า Keyword Match ไม่เจอ ให้ใช้ Semantic Search (AI)
-  try {
-    const aiResults = await searchWiki(query, bu);
-    if (aiResults && aiResults.length > 0) {
-      const best = aiResults[0];
-      return { item: best, route: wikiPathToRoute(best.path) };
-    }
-  } catch (err) {
-    console.error("Semantic search fallback failed:", err);
+  // 3. Fuzzy fallback (พิมผิด / พิมไม่ครบ)
+  const fuse = new Fuse(items, {
+    keys: [
+      { name: "title", weight: 0.7 },
+      { name: "path", weight: 0.3 },
+    ],
+    threshold: 0.45,
+    ignoreLocation: true,
+    minMatchCharLength: 2,
+  });
+
+  const fuzzy = fuse.search(q);
+  if (fuzzy.length > 0) {
+    const best = fuzzy[0].item;
+    return { item: best, route: wikiPathToRoute(best.path) };
   }
 
   return { item: null, route: null };
@@ -259,9 +278,21 @@ export type SearchResultItem = WikiListItem & {
   snippet: string;
 };
 
+function normalizeQuery(q: string): string {
+  return q
+    .trim()
+    .toLowerCase()
+    .normalize("NFC")
+    // ✅ ตัดจุดระหว่างตัวอักษรไทยออก: ภ.ง.ด. → ภงด
+    .replace(/(\p{L})\.(?=\p{L})/gu, "$1")
+    // ✅ ตัดจุดท้ายคำออก: ภ.ง.ด. → ภ.ง.ด
+    .replace(/\.$/, "")
+    .replace(/\s+/g, " ");
+}
+
 export async function searchWiki(query: string, bu?: string): Promise<SearchResultItem[]> {
-  const q = query.trim();
-  if (q.length < 2) return [];
+    const q = normalizeQuery(query); 
+  if (q.length < 1) return [];    
 
   const selectedBU = bu || getSelectedBUClient();
   try {

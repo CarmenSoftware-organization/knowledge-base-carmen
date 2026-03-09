@@ -6,24 +6,28 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { articleDisplayMap, cleanTitle } from "@/configs/sidebar-map";
-import { 
-  searchWiki, 
-  wikiPathToRoute, 
-  findBestArticleForQuery, 
+import {
+  searchWiki,
+  wikiPathToRoute,
+  findBestArticleForQuery,
   SearchResultItem,
-  getSelectedBUClient
+  getSelectedBUClient,
+  getAllArticles
 } from "@/lib/wiki-api";
+import Fuse from "fuse.js";
 
 /* --- 1. Helper HTML/Markdown --- */
 function cleanSnippet(text: string) {
   if (!text) return "";
+  text = text.replace(/^---[\s\S]*?---/, "");
+
   return text
     .replace(/(\/public\/[^\s'"]+\.(png|jpg|jpeg|gif|svg|webp))/gi, "")
     .replace(/[^\s'"]+\.(png|jpg|jpeg|gif|svg|webp)/gi, "")
     .replace(/(=?['"][^'"]+\.(png|jpg|jpeg|gif|svg|webp)['"]\s*\/?>)/gi, "")
     .replace(/<img[^>]*>?/gi, "")
     .replace(/(\/?>)/g, "")
-    .replace(/[a-z0-9-]+\s*=\s*['"][^'"]*['"]/gi, "") 
+    .replace(/[a-z0-9-]+\s*=\s*['"][^'"]*['"]/gi, "")
     .replace(/!?\[[^\]]*\]\([^)]*\)/g, "")
     .replace(/<[^>]*>?/gm, "")
     .replace(/[#*`_~]/g, "")
@@ -51,12 +55,22 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   );
 }
 
+function normalizeThai(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFC")
+    .replace(/(\p{L})\.(?=\p{L})/gu, "$1") // ภ.ง.ด. → ภงด
+    .replace(/\.$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /* --- 3. Main Component --- */
 interface GlobalSearchProps {
   variant?: "hero" | "header";
   placeholder?: string;
   className?: string;
-  defaultValue?: string; 
+  defaultValue?: string;
 }
 
 export function GlobalSearch({ variant = "hero", placeholder, className, defaultValue = "" }: GlobalSearchProps) {
@@ -72,7 +86,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
     window.addEventListener("bu-changed", handleBUChange);
     return () => window.removeEventListener("bu-changed", handleBUChange);
   }, []);
-  
+
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isHeader = variant === "header";
@@ -94,11 +108,58 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
+        // 1. Vector search
         const results = await searchWiki(q, bu);
-        const filtered = results.filter(item => {
-          const isIndex = item.path.endsWith('/index') || item.path === 'index';
-          return !isIndex && cleanSnippet(item.snippet).length > 0;
+
+        // 2. Fuzzy search บน title list (สำหรับ typo)
+        const allItems = await getAllArticles(bu);
+        // ✅ ใหม่ — Thai-aware
+        const isThaiQuery = /[\u0E00-\u0E7F]/.test(q);
+
+        const fuse = new Fuse(allItems, {
+          keys: [
+            { name: "title", weight: 0.8 },
+            { name: "description", weight: 0.2 },
+          ],
+          threshold: isThaiQuery ? 0.3 : 0.45,
+          ignoreLocation: true,
+          minMatchCharLength: isThaiQuery ? 1 : 2,
+          useExtendedSearch: true,
+          getFn: (obj, path) => {
+            const val = Fuse.config.getFn(obj, path);
+            if (typeof val === "string") return normalizeThai(val); // ✅ normalize title ด้วย
+            if (Array.isArray(val)) return val.map(v =>
+              typeof v === "string" ? normalizeThai(v) : v
+            );
+            return val;
+          },
         });
+
+        const normalizedQ = normalizeThai(q); 
+        const fuzzyHits = fuse.search(normalizedQ).map((r) => ({
+          ...r.item,
+          snippet: r.item.description || "",
+        }));
+
+        // 3. Merge: vector results ก่อน, fuzzy เติมถ้าไม่ซ้ำ path
+        const existingPaths = new Set(results.map((r) => r.path.replace(/\\/g, "/")));
+        const merged = [
+          ...results,
+          ...fuzzyHits.filter((r) => !existingPaths.has(r.path.replace(/\\/g, "/"))),
+        ];
+
+        const filtered = Array.from(
+          new Map(
+            merged
+              .map((item) => ({ ...item, path: item.path.replace(/\\/g, "/") }))
+              .filter((item) => {
+                const isIndex = item.path.endsWith("/index") || item.path === "index";
+                return !isIndex && (cleanSnippet(item.snippet).length > 0 || item.title);
+              })
+              .map((item) => [item.path, item])
+          ).values()
+        );
+
         setSuggestions(filtered);
         setShowDropdown(filtered.length > 0);
         setActiveIndex(-1);
@@ -106,11 +167,12 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
         setIsSearching(false);
       }
     }, 350);
+
     return () => clearTimeout(timer);
   }, [searchQuery, bu]);
 
   const handleSelect = useCallback((item: SearchResultItem) => {
-    router.push(wikiPathToRoute(item.path));
+    router.push(wikiPathToRoute(item.path.replace(/\\/g, "/")));
     setShowDropdown(false);
     setSearchQuery("");
   }, [router]);
@@ -142,11 +204,10 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
           <Input
             type="search"
             placeholder={placeholder || (isHeader ? "ค้นหาคู่มือ..." : "ค้นหาชื่อคู่มือ หรือเนื้อหาภายใน...")}
-            className={`transition-all ${
-              isHeader 
-                ? "h-10 pl-9 pr-4 text-sm bg-muted/50 focus:bg-card" 
-                : "h-14 pl-12 pr-24 text-base shadow-xl rounded-2xl"
-            }`}
+            className={`transition-all ${isHeader
+              ? "h-10 pl-9 pr-4 text-sm bg-muted/50 focus:bg-card"
+              : "h-14 pl-12 pr-24 text-base shadow-xl rounded-2xl"
+              }`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
@@ -181,12 +242,11 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
 
                 return (
                   <button
-                    key={item.path}
+                    key={`${item.path}-${index}`}
                     onClick={() => handleSelect(item)}
                     onMouseEnter={() => setActiveIndex(index)}
-                    className={`w-full flex flex-col items-start p-3 rounded-lg mb-1 last:mb-0 transition-all ${
-                      index === activeIndex ? "bg-primary/10" : "hover:bg-muted"
-                    }`}
+                    className={`w-full flex flex-col items-start p-3 rounded-lg mb-1 last:mb-0 transition-all ${index === activeIndex ? "bg-primary/10" : "hover:bg-muted"
+                      }`}
                   >
                     {/* Header: Icon + Title */}
                     <div className="flex items-center gap-2 w-full">
@@ -198,9 +258,8 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
 
                     {/* Content Snippet */}
                     {desc && (
-                      <p className={`mt-1 text-muted-foreground/80 line-clamp-2 pl-6 text-left leading-relaxed w-full ${
-                        isHeader ? "text-[11px]" : "text-xs"
-                      }`}>
+                      <p className={`mt-1 text-muted-foreground/80 line-clamp-2 pl-6 text-left leading-relaxed w-full ${isHeader ? "text-[11px]" : "text-xs"
+                        }`}>
                         <HighlightedText text={desc} query={searchQuery} />
                       </p>
                     )}
@@ -209,8 +268,8 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
               })}
             </div>
             <div className="bg-muted/50 px-3 py-1.5 border-t border-border/50 flex justify-between items-center">
-               <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">Search Results</span>
-               <span className="text-[10px] text-muted-foreground">↑↓ to navigate</span>
+              <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">Search Results</span>
+              <span className="text-[10px] text-muted-foreground">↑↓ to navigate</span>
             </div>
           </motion.div>
         )}
