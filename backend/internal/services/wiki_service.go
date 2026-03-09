@@ -70,15 +70,18 @@ type SearchResult struct {
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 type WikiService struct {
-	repoPath     string
 	githubClient *github.Client
 }
 
 func NewWikiService() *WikiService {
 	return &WikiService{
-		repoPath:     config.GetWikiContentPath(),
 		githubClient: github.NewClient(),
 	}
+}
+
+func (s *WikiService) getRepoPath(bu string) string {
+	repoBase := config.AppConfig.Git.RepoPath
+	return filepath.Join(repoBase, bu)
 }
 
 // ─── Frontmatter Helpers ─────────────────────────────────────────────────────
@@ -114,9 +117,6 @@ func parseFrontmatter(data []byte) (meta map[string]string, body []byte) {
 	return meta, body
 }
 
-// parseWeight reads "weight" from meta first, then falls back to scanning the
-// raw file bytes for a bare "weight: N" line outside the frontmatter block.
-// Returns 999 if no valid weight is found (sorts last by default).
 func parseWeight(meta map[string]string, data []byte) int {
 	if wStr := meta["weight"]; wStr != "" {
 		if w, err := strconv.Atoi(wStr); err == nil {
@@ -136,8 +136,6 @@ func parseWeight(meta map[string]string, data []byte) int {
 	return 999
 }
 
-// stripWeightLines removes bare "weight: N" lines from body content so they
-// are not rendered on the frontend.
 func stripWeightLines(body []byte) string {
 	var lines []string
 	sc := bufio.NewScanner(bytes.NewReader(body))
@@ -150,14 +148,12 @@ func stripWeightLines(body []byte) string {
 	return strings.Join(lines, "\n")
 }
 
-// slugToTitle converts a filename slug into a human-readable title.
 func slugToTitle(name string) string {
 	title := strings.TrimSuffix(name, filepath.Ext(name))
 	title = strings.ReplaceAll(title, "-", " ")
 	return strings.ReplaceAll(title, "_", " ")
 }
 
-// metaToTags parses a comma-separated "tags" field from frontmatter.
 func metaToTags(meta map[string]string) []string {
 	s := meta["tags"]
 	if s == "" {
@@ -177,7 +173,6 @@ func metaBool(meta map[string]string, key string) bool {
 	return v == "true" || v == "1"
 }
 
-// applyMeta populates a WikiContent from parsed frontmatter and cleaned body.
 func applyMeta(out *WikiContent, meta map[string]string, body []byte) {
 	if t := meta["title"]; t != "" {
 		out.Title = t
@@ -196,11 +191,8 @@ func applyMeta(out *WikiContent, meta map[string]string, body []byte) {
 	out.Content = stripWeightLines(body)
 }
 
-// ─── Public API ──────────────────────────────────────────────────────────────
-
-// ListMarkdown returns all markdown entries, reading from the local repo.
-func (s *WikiService) ListMarkdown() ([]WikiEntry, error) {
-	entries, err := s.listFromLocal()
+func (s *WikiService) ListMarkdown(bu string) ([]WikiEntry, error) {
+	entries, err := s.listFromLocal(bu)
 	if err != nil {
 		fmt.Println("listFromLocal error:", err)
 		return []WikiEntry{}, nil
@@ -208,9 +200,8 @@ func (s *WikiService) ListMarkdown() ([]WikiEntry, error) {
 	return entries, nil
 }
 
-// ListCategories returns top-level category slugs sorted by weight then title.
-func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
-	entries, err := s.ListMarkdown()
+func (s *WikiService) ListCategories(bu string) ([]CategoryEntry, error) {
+	entries, err := s.ListMarkdown(bu)
 	if err != nil {
 		return nil, err
 	}
@@ -252,9 +243,8 @@ func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
 	return out, nil
 }
 
-// ListByCategory returns articles within a category, sorted by weight then path.
-func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error) {
-	entries, err := s.ListMarkdown()
+func (s *WikiService) ListByCategory(bu, slug string) (string, []CategoryItem, error) {
+	entries, err := s.ListMarkdown(bu)
 	if err != nil {
 		return "", nil, err
 	}
@@ -292,23 +282,23 @@ func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error
 	return slug, list, nil
 }
 
-// GetContent reads article content from local first, falling back to GitHub.
-func (s *WikiService) GetContent(relPath string) (*WikiContent, error) {
-	if content, err := s.getContentFromLocal(relPath); err == nil {
+// GetContent reads article content for a BU from local first, falling back to GitHub.
+func (s *WikiService) GetContent(bu, relPath string) (*WikiContent, error) {
+	if content, err := s.getContentFromLocal(bu, relPath); err == nil {
 		return content, nil
 	}
 	return s.getContentFromGitHub(relPath)
 }
 
-// SearchInContent performs a simple case-insensitive full-text search.
-func (s *WikiService) SearchInContent(query string) ([]SearchResult, error) {
+// SearchInContent performs a simple case-insensitive full-text search in a BU.
+func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) {
 	query = strings.ToLower(query)
-	entries, err := s.listFromLocal()
+	entries, err := s.listFromLocal(bu)
 	if err != nil {
 		return nil, err
 	}
 
-	root := filepath.Clean(s.repoPath)
+	root := filepath.Clean(s.getRepoPath(bu))
 	var results []SearchResult
 
 	for _, entry := range entries {
@@ -337,8 +327,8 @@ func (s *WikiService) SearchInContent(query string) ([]SearchResult, error) {
 
 const maxFrontmatterRead = 16384
 
-func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
-	root := filepath.Clean(s.repoPath)
+func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
+	root := filepath.Clean(s.getRepoPath(bu))
 	var entries []WikiEntry
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -397,12 +387,12 @@ func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 	return entries, nil
 }
 
-func (s *WikiService) getContentFromLocal(relPath string) (*WikiContent, error) {
+func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, error) {
 	relPath = filepath.Clean(relPath)
 	if relPath == ".." || strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
 		return nil, os.ErrNotExist
 	}
-	root := filepath.Clean(s.repoPath)
+	root := filepath.Clean(s.getRepoPath(bu))
 	full := filepath.Clean(filepath.Join(root, filepath.FromSlash(relPath)))
 	relCheck, err := filepath.Rel(root, full)
 	if err != nil || strings.HasPrefix(relCheck, "..") {

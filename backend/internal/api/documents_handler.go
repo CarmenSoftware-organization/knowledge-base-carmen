@@ -2,8 +2,11 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/middleware"
 )
 
 type DocumentsHandler struct{}
@@ -25,12 +28,14 @@ type documentRow struct {
 
 func (h *DocumentsHandler) List(c *fiber.Ctx) error {
 	var rows []documentRow
-	err := database.DB.Raw(`
-SELECT d.id, d.path, d.title, d.source, d.created_at, d.updated_at,
-       (SELECT COUNT(*) FROM document_chunks c WHERE c.document_id = d.id) AS chunk_count
-FROM documents d
-ORDER BY d.path ASC, d.id ASC
-`).Scan(&rows).Error
+	bu := middleware.GetBU(c)
+	sql := fmt.Sprintf(`
+		SELECT d.id, d.path, d.title, d.source, d.created_at, d.updated_at,
+			(SELECT COUNT(*) FROM %s.document_chunks c WHERE c.document_id = d.id) AS chunk_count
+		FROM %s.documents d
+		ORDER BY d.path ASC, d.id ASC
+	`, bu, bu)
+	err := database.DB.Raw(sql).Scan(&rows).Error
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

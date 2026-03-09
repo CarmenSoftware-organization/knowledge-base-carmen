@@ -26,8 +26,8 @@ func NewIndexingService() *IndexingService {
 	}
 }
 
-func (s *IndexingService) IndexAll(ctx context.Context) error {
-	entries, err := s.wiki.ListMarkdown()
+func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
+	entries, err := s.wiki.ListMarkdown(bu)
 	if err != nil {
 		return fmt.Errorf("list markdown: %w", err)
 	}
@@ -37,32 +37,28 @@ func (s *IndexingService) IndexAll(ctx context.Context) error {
 			return ctx.Err()
 		default:
 		}
-		if err := s.indexSingle(e.Path); err != nil {
-			log.Printf("[indexing] %s: %v", e.Path, err)
+		if err := s.indexSingle(bu, e.Path); err != nil {
+			log.Printf("[indexing] %s (%s): %v", e.Path, bu, err)
 		}
 	}
 	return nil
 }
 
-func (s *IndexingService) indexSingle(path string) error {
-	content, err := s.wiki.GetContent(path)
+func (s *IndexingService) indexSingle(bu, path string) error {
+	content, err := s.wiki.GetContent(bu, path)
 	if err != nil {
 		return fmt.Errorf("get content: %w", err)
 	}
 
 	var docID int64
-	err = database.DB.Raw(`
-INSERT INTO documents (path, title, source, created_at, updated_at)
-VALUES (?, ?, 'wiki', now(), now())
-ON CONFLICT (path) DO UPDATE
-SET title = EXCLUDED.title, updated_at = now()
-RETURNING id
-`, content.Path, content.Title).Scan(&docID).Error
+	sqlDoc := fmt.Sprintf("INSERT INTO %s.documents (path, title, source, created_at, updated_at) VALUES (?, ?, 'wiki', now(), now()) ON CONFLICT (path) DO UPDATE SET title = EXCLUDED.title, updated_at = now() RETURNING id", bu)
+	err = database.DB.Raw(sqlDoc, content.Path, content.Title).Scan(&docID).Error
 	if err != nil {
 		return fmt.Errorf("upsert document: %w", err)
 	}
 
-	if err := database.DB.Exec("DELETE FROM document_chunks WHERE document_id = ?", docID).Error; err != nil {
+	sqlDel := fmt.Sprintf("DELETE FROM %s.document_chunks WHERE document_id = ?", bu)
+	if err := database.DB.Exec(sqlDel, docID).Error; err != nil {
 		return fmt.Errorf("delete old chunks: %w", err)
 	}
 
@@ -79,10 +75,8 @@ RETURNING id
 			log.Printf("[indexing] skip %s chunk %d: empty embedding", path, i)
 			continue
 		}
-		if err := database.DB.Exec(`
-INSERT INTO document_chunks (document_id, chunk_index, content, embedding, created_at)
-VALUES (?, ?, ?, ?::vector, now())
-`, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
+		sqlChunk := fmt.Sprintf("INSERT INTO %s.document_chunks (document_id, chunk_index, content, embedding, created_at) VALUES (?, ?, ?, ?::vector, now())", bu)
+		if err := database.DB.Exec(sqlChunk, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)
 		}
 	}

@@ -12,6 +12,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/config"
+	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
 )
 
@@ -63,10 +65,20 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 	}
 
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		if err := h.indexingService.IndexAll(ctx); err != nil {
-			log.Printf("[webhook] indexing error: %v", err)
+
+		var bus []models.BusinessUnit
+		if err := database.DB.Find(&bus).Error; err != nil {
+			log.Printf("[webhook] failed to fetch BUs: %v", err)
+			return
+		}
+
+		for _, bu := range bus {
+			log.Printf("[webhook] starting indexing for BU: %s", bu.Slug)
+			if err := h.indexingService.IndexAll(ctx, bu.Slug); err != nil {
+				log.Printf("[webhook] indexing error for %s: %v", bu.Slug, err)
+			}
 		}
 	}()
 
