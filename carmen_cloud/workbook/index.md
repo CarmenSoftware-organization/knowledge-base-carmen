@@ -2,7 +2,7 @@
 title: Carmen Work Book
 description: Carmen Work Book
 published: true
-date: 2026-03-09T10:07:04.412Z
+date: 2026-03-09T10:14:44.393Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:56:15.320Z
@@ -14,7 +14,7 @@ weight: 3
 ---
 
 
-# Carmen Work Book Sun test
+# Carmen Work Book Sun test อีกรอบ
 
 ```mermaid
 flowchart TD
