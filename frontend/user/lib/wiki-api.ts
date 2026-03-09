@@ -276,4 +276,29 @@ export async function searchWiki(query: string, bu?: string): Promise<SearchResu
     console.error("Search Wiki Error:", error);
     return [];
   }
-}
+}
+
+/* =========================
+   Activity Logs
+========================= */
+
+export type ActivityLog = {
+  id: number;
+  bu_slug: string;
+  user_id?: number | null;
+  action: string;
+  details?: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+};
+
+// GET /api/activity/list
+export async function getActivityLogs(bu?: string, limit: number = 50, offset: number = 0): Promise<{ items: ActivityLog[] }> {
+  const selectedBU = bu || getSelectedBUClient();
+  const res = await fetch(`${BASE_URL}/api/activity/list?bu=${selectedBU}&limit=${limit}&offset=${offset}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch activity logs");
+  return res.json();
+}

@@ -87,6 +87,9 @@ export function KBHeader() {
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/categories">หมวดหมู่</Link>
               </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/activity">ประวัติการใช้งาน</Link>
+              </Button>
             </nav>
             <div className="hidden md:block">
               <BUSwitcher />
