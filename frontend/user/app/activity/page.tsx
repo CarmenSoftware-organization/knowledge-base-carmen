@@ -1,5 +1,7 @@
 import { getActivityLogs } from "@/lib/wiki-api";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import {
   Table,
   TableBody,
@@ -12,6 +14,13 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 
 export default async function ActivityPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const c = await cookies();
   const buCookie = c.get("selected_bu")?.value || "carmen";
   
