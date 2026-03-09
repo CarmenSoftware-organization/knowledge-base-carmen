@@ -18,7 +18,6 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // เลือก section ที่อยู่ใกล้ top ที่สุด
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort(
@@ -40,6 +39,7 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);
+
   if (headings.length === 0) return null;
 
   return (
@@ -60,7 +60,16 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
               <a
                 key={h.id}
                 href={`#${h.id}`}
-                onClick={() => isMobile && onClose?.()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const el = document.getElementById(h.id);
+                  if (el) {
+                    const offset = 96;
+                    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+                    window.scrollTo({ top, behavior: "smooth" });
+                  }
+                  isMobile && onClose?.();
+                }}
                 className={cn(
                   "relative text-[13px] py-1.5 transition-all duration-200 pl-4 -ml-[18px] border-l-2",
                   isActive
