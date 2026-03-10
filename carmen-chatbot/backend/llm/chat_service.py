@@ -109,7 +109,7 @@ class LLMService:
     # ==========================================
     # 💬 CHAT METHODS
     # ==========================================
-    async def stream_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None):
+    async def stream_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None, db_schema: str = "carmen"):
         start_time = time.time()
         model_config = self.get_active_model(model_name)
         
@@ -135,7 +135,7 @@ class LLMService:
         yield json.dumps({"type": "status", "data": "กำลังค้นหาเอกสารที่เกี่ยวข้อง..."}) + "\n"
         await asyncio.sleep(0)
         t1 = time.time()
-        passed_docs, source_debug = await asyncio.to_thread(retrieval_service.search, search_query)
+        passed_docs, source_debug = await asyncio.to_thread(retrieval_service.search, search_query, db_schema)
         print(f"⏱️ Document Retrieval Time: {time.time() - t1:.2f}s")
         context_text = "\n\n".join([d.page_content for d in passed_docs]) if passed_docs else ""
 
@@ -244,7 +244,7 @@ class LLMService:
         })
         yield json.dumps({"type": "done", "id": log_id}) + "\n"
 
-    async def invoke_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None):
+    async def invoke_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None, db_schema: str = "carmen"):
         start_time = time.time()
         model_config = self.get_active_model(model_name)
         
@@ -261,7 +261,7 @@ class LLMService:
         if chat_history.has_history(room_id):
             search_query, rewrite_input_tokens, rewrite_output_tokens = await self._rewrite_query(message, history_text)
 
-        passed_docs, source_debug = retrieval_service.search(search_query)
+        passed_docs, source_debug = retrieval_service.search(search_query, db_schema)
         context_text = "\n\n".join([d.page_content for d in passed_docs]) if passed_docs else ""
 
         try:

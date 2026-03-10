@@ -32,13 +32,9 @@ export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b"
   }, []);
 
   return (
-    <div className="flex flex-col items-center px-4 pt-8 pb-4 text-center">
+    <div className="flex flex-col items-center px-4 pt-8 pb-4 text-center" style={{ "--carmen-theme": theme, "--carmen-theme-low": `${theme}cc` } as React.CSSProperties}>
       <div
-        className="w-16 h-16 rounded-[22px] flex items-center justify-center mb-4 shadow-lg"
-        style={{
-          background: `linear-gradient(135deg, ${theme} 0%, ${theme}cc 100%)`,
-          animation: "heroIconPop 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
-        }}
+        className="w-16 h-16 rounded-[22px] flex items-center justify-center mb-4 shadow-lg bg-[linear-gradient(135deg,var(--carmen-theme)_0%,var(--carmen-theme-low)_100%)] animate-[heroIconPop_0.8s_cubic-bezier(0.16,1,0.3,1)]"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="32" height="32">
           <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -51,8 +47,7 @@ export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b"
         {typedTitle}<span className="animate-pulse text-slate-300 dark:text-slate-600">|</span>
       </h2>
 
-      <p className="text-sm text-slate-500 dark:text-slate-400max-w-[260px] leading-relaxed transition-all duration-700"
-        style={{ opacity: showDesc ? 1 : 0, transform: showDesc ? "translateY(0)" : "translateY(10px)" }}>
+      <p className={`text-sm text-slate-500 dark:text-slate-400 max-w-[260px] leading-relaxed transition-all duration-700 ${showDesc ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2.5"}`}>
         {WELCOME_DESC}
       </p>
 
@@ -62,23 +57,13 @@ export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b"
             <button
               key={i}
               onClick={() => onSelect(s)}
-              className="text-sm px-3 py-1.5 rounded-xl border
+              className={`text-sm px-3 py-1.5 rounded-xl border border-slate-200
     bg-white dark:bg-slate-800
     text-slate-600 dark:text-slate-300
     cursor-pointer transition-all duration-200
-    hover:-translate-y-0.5 hover:shadow-md text-left"
-              style={{
-                borderColor: "#e2e8f0",
-                animation: `chipEnter 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.08}s backwards`,
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = theme;
-                e.currentTarget.style.color = theme;
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = "#e2e8f0";
-                e.currentTarget.style.color = "";
-              }}
+    hover:-translate-y-0.5 hover:shadow-md text-left
+    hover:border-[var(--carmen-theme)] hover:text-[var(--carmen-theme)]
+    carmen-chip carmen-chip-delay-${i}`}
             >
               {s}
             </button>
@@ -86,7 +71,18 @@ export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b"
         </div>
       )}
 
-      <style>{`
+      <style jsx>{`
+        .carmen-chip {
+          animation: chipEnter 0.5s cubic-bezier(0.16,1,0.3,1) backwards;
+        }
+        /* Handle up to 10 suggestions with delays */
+        .carmen-chip-delay-0 { animation-delay: 0s; }
+        .carmen-chip-delay-1 { animation-delay: 0.08s; }
+        .carmen-chip-delay-2 { animation-delay: 0.16s; }
+        .carmen-chip-delay-3 { animation-delay: 0.24s; }
+        .carmen-chip-delay-4 { animation-delay: 0.32s; }
+        .carmen-chip-delay-5 { animation-delay: 0.40s; }
+
         @keyframes heroIconPop {
           from { transform: scale(0.5) rotate(-15deg); opacity: 0; }
           to { transform: scale(1) rotate(0); opacity: 1; }

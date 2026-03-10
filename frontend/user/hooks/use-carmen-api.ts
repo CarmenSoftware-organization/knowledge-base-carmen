@@ -2,6 +2,7 @@ export interface CarmenRoom {
   room_id: string;
   title: string;
   updated_at: string;
+  lastMessage?: string;
 }
 
 export interface CarmenMessage {

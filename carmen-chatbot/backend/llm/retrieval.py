@@ -59,7 +59,7 @@ class RetrievalService:
                     return "AND (" + " OR ".join(parts) + ")"
         return ""
 
-    def search(self, query: str):
+    def search(self, query: str, db_schema: str = "carmen"):
         passed_docs = []
         source_debug = []
         
@@ -81,8 +81,8 @@ class RetrievalService:
             # Raw SQL Query
             sql_query = text(f"""
                 SELECT d.path, d.title, dc.content, (dc.embedding <=> CAST(:emb AS vector)) as distance
-                FROM document_chunks dc
-                JOIN documents d ON dc.document_id = d.id
+                FROM {db_schema}.document_chunks dc
+                JOIN {db_schema}.documents d ON dc.document_id = d.id
                 WHERE (dc.embedding <=> CAST(:emb AS vector)) < :max_dist
                   AND d.path NOT LIKE '%index.md'
                   {path_filter_sql}

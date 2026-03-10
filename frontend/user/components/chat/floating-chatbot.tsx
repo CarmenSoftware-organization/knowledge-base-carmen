@@ -32,6 +32,10 @@ export default function FloatingChatBot({
     showClear,
     showAttach,
     suggestedQuestions,
+    onTypingFrame: () => {
+      // Dispatch a custom event to sync auto-scroll with typing frames
+      window.dispatchEvent(new CustomEvent("carmen-typing-frame"));
+    }
   });
 
   const { isOpen, tooltipVisible, toggleOpen, dismissTooltip } = state;
@@ -42,8 +46,7 @@ export default function FloatingChatBot({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0 z-[1999997] sm:hidden"
-            style={{ background: "rgba(0,0,0,0.35)" }}
+            className="fixed inset-0 z-[1999997] sm:hidden bg-black/35"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -54,7 +57,12 @@ export default function FloatingChatBot({
       </AnimatePresence>
 
       {/* Fixed anchor */}
-      <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-[2000000]">
+      <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-[2000000]"
+        style={{
+          "--carmen-theme": theme,
+          "--carmen-theme-low": `${theme}dd`
+        } as React.CSSProperties}
+      >
 
         {/* Chat window */}
         <AnimatePresence mode="wait">
@@ -66,7 +74,7 @@ export default function FloatingChatBot({
           {tooltipVisible && !isOpen && (
             <motion.div
               className="absolute bottom-[80px] right-0 flex items-center gap-3
-                bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700shadow-xl
+                bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl
                 px-4 py-3 rounded-2xl cursor-pointer w-max max-w-[280px]"
               initial={{ opacity: 0, y: 16, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -75,8 +83,7 @@ export default function FloatingChatBot({
               onClick={() => { dismissTooltip(); toggleOpen(); }}
             >
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md"
-                style={{ background: `linear-gradient(135deg, ${theme}, ${theme}dd)` }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md carmen-gradient"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -86,7 +93,7 @@ export default function FloatingChatBot({
               </div>
 
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[12px] font-bold tracking-wide" style={{ color: theme }}>
+                <span className="text-[12px] font-bold tracking-wide carmen-theme-text">
                   ผู้ช่วย AI พร้อมให้คำแนะนำ
                 </span>
                 <span className="text-[12px] font-medium text-slate-600 dark:text-slate-400
@@ -97,6 +104,7 @@ export default function FloatingChatBot({
 
               <button
                 onClick={(e) => { e.stopPropagation(); dismissTooltip(); }}
+                aria-label="Close tooltip"
                 className="absolute -top-2 -right-2 w-5 h-5 bg-white dark:bg-slate-700 rounded-full
                   flex items-center justify-center shadow border border-slate-200 dark:border-slate-600
                   text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
@@ -113,11 +121,7 @@ export default function FloatingChatBot({
         {/* Launcher — กลมเสมอ */}
         <motion.button
           onClick={() => { dismissTooltip(); toggleOpen(); }}
-          className="w-[60px] h-[60px] sm:w-[66px] sm:h-[66px] flex items-center justify-center cursor-pointer shadow-2xl"
-          style={{
-            background: `linear-gradient(135deg, ${theme} 0%, ${theme}cc 100%)`,
-            borderRadius: "50%", // กลมตายตัว ไม่เปลี่ยนรูป
-          }}
+          className="w-[60px] h-[60px] sm:w-[66px] sm:h-[66px] flex items-center justify-center cursor-pointer shadow-2xl carmen-launcher"
           whileHover={{ scale: 1.1, y: -3 }}
           whileTap={{ scale: 0.92 }}
           animate={{
@@ -136,6 +140,10 @@ export default function FloatingChatBot({
           }}
           title="Carmen AI"
         >
+          {/* Shine Effect */}
+          <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shine_1.5s_infinite]" />
+          </div>
           <AnimatePresence mode="wait" initial={false}>
             {isOpen ? (
               <motion.div
@@ -171,6 +179,25 @@ export default function FloatingChatBot({
           </AnimatePresence>
         </motion.button>
       </div>
+
+      <style>{`
+        .carmen-gradient {
+          background: linear-gradient(135deg, var(--carmen-theme), var(--carmen-theme-low));
+        }
+        .carmen-theme-text {
+          color: var(--carmen-theme);
+        }
+        .carmen-launcher {
+          background: linear-gradient(135deg, var(--carmen-theme) 0%, var(--carmen-theme-low) 100%);
+          border-radius: 50% !important;
+          position: relative;
+          overflow: hidden;
+        }
+        @keyframes shine {
+          0% { transform: translateX(-100%) translateY(-100%) rotate(-45deg); }
+          100% { transform: translateX(100%) translateY(100%) rotate(-45deg); }
+        }
+      `}</style>
     </>
   );
 }

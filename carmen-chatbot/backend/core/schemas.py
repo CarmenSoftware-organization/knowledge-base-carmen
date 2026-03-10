@@ -13,3 +13,4 @@ class ChatRequest(BaseModel):
     prompt_extend: Optional[str] = None
     room_id: str 
     history: Optional[list[dict]] = None
+    db_schema: Optional[str] = "carmen"

@@ -141,6 +141,7 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
                       className="w-full h-full rounded-xl shadow-md"
                       src={`https://www.youtube.com/embed/${videoId}`}
                       allowFullScreen
+                      title="YouTube video player"
                     />
                   </div>
                 );
@@ -160,6 +161,7 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
                     src={`https://www.youtube.com/embed/${videoId}`}
                     className="w-full h-full rounded-xl shadow-md"
                     allowFullScreen
+                    title="YouTube video player"
                   />
                 </span>
               );
@@ -186,12 +188,6 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
 
           ul: ({ children }) => (
             <ul className="list-disc ml-6 space-y-2">{children}</ul>
-          ),
-
-          li: ({ children, ...props }) => (
-            <li {...props} className="pl-1 marker:text-muted-foreground">
-              {children}
-            </li>
           ),
 
           img: ({ src, alt = "", ...props }) => {
