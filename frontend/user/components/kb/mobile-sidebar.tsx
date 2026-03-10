@@ -22,14 +22,14 @@ export function MobileSidebar() {
   return (
     <>
       {/* 📱 Sticky Sub-Header */}
-      <div className="lg:hidden sticky top-[64px] z-40 w-full bg-white/80 backdrop-blur-md border-b">
+      <div className="lg:hidden sticky top-[64px] z-40 w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-700/60">
         <div className={cn(
           "flex items-center px-4 h-12",
           isArticlePage ? "justify-between" : "justify-start"
         )}>
           <button 
             onClick={() => setActiveDrawer("menu")}
-            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors"
           >
             <Menu className="h-4 w-4" />
             <span>Menu</span>
@@ -39,7 +39,7 @@ export function MobileSidebar() {
           {isArticlePage && (
             <button 
               onClick={() => setActiveDrawer("toc")}
-              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors"
             >
               <span>On this page</span>
               <ChevronRight className="h-4 w-4" />
@@ -51,21 +51,24 @@ export function MobileSidebar() {
       {/* Overlay */}
       <div 
         className={cn(
-          "fixed inset-0 bg-black/40 z-[110] backdrop-blur-sm transition-opacity duration-300",
+          "fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] backdrop-blur-sm transition-opacity duration-300",
           activeDrawer ? "opacity-100" : "opacity-0 pointer-events-none"
         )} 
         onClick={closeDrawer} 
       />
       
-      {/* Drawer  Menu */}
+      {/* Drawer Menu */}
       <div className={cn(
-        "fixed inset-y-0 left-0 w-[280px] bg-white z-[120] shadow-2xl transition-transform duration-300 ease-in-out",
+        "fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-zinc-900 z-[120] shadow-2xl dark:shadow-black/50 transition-transform duration-300 ease-in-out",
         activeDrawer === "menu" ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
-          <div className="p-6 border-b flex justify-between items-center">
-            <span className="font-bold text-primary">เมนูเอกสาร</span>
-            <button onClick={closeDrawer} className="text-muted-foreground p-1 hover:bg-gray-100 rounded">
+          <div className="p-6 border-b border-zinc-200 dark:border-zinc-700/60 flex justify-between items-center">
+            <span className="font-bold text-primary dark:text-zinc-100">เมนูเอกสาร</span>
+            <button 
+              onClick={closeDrawer} 
+              className="text-muted-foreground dark:text-zinc-400 p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors"
+            >
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -77,13 +80,16 @@ export function MobileSidebar() {
 
       {isArticlePage && (
         <div className={cn(
-          "fixed inset-y-0 right-0 w-[280px] bg-white z-[120] shadow-2xl transition-transform duration-300 ease-in-out",
+          "fixed inset-y-0 right-0 w-[280px] bg-white dark:bg-zinc-900 z-[120] shadow-2xl dark:shadow-black/50 transition-transform duration-300 ease-in-out",
           activeDrawer === "toc" ? "translate-x-0" : "translate-x-full"
         )}>
           <div className="flex flex-col h-full">
-            <div className="p-6 border-b flex justify-between items-center bg-gray-50">
-              <span className="font-bold text-primary italic">On this page</span>
-              <button onClick={closeDrawer} className="text-muted-foreground p-1 hover:bg-gray-100 rounded">
+            <div className="p-6 border-b border-zinc-200 dark:border-zinc-700/60 flex justify-between items-center bg-gray-50 dark:bg-zinc-800/50">
+              <span className="font-bold text-primary dark:text-zinc-100 italic">On this page</span>
+              <button 
+                onClick={closeDrawer} 
+                className="text-muted-foreground dark:text-zinc-400 p-1 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded transition-colors"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
