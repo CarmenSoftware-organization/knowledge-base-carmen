@@ -87,7 +87,7 @@ export default function CarmenChatWindow({ state }: Props) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
 
     const style = window.getComputedStyle(windowRef.current);
-    const startB = parseInt(style.getPropertyValue("--chat-bottom")) || parseInt(style.bottom) || 84;
+    const startB = parseInt(style.getPropertyValue("--chat-bottom")) || parseInt(style.bottom) || 120;
     const startR = parseInt(style.getPropertyValue("--chat-right")) || parseInt(style.right) || 32;
 
     dragState.current = {
@@ -186,7 +186,7 @@ export default function CarmenChatWindow({ state }: Props) {
           ["--chat-theme" as string]: theme,
           ["--input-border-color" as string]: isInputFocused ? theme : "transparent",
           ["--input-focus-shadow" as string]: isInputFocused ? `0 0 0 3px ${theme}22` : "none",
-          ["--chat-bottom" as string]: isExpanded ? "20px" : safeFormat(state.position?.bottom ?? 84),
+          ["--chat-bottom" as string]: isExpanded ? "20px" : safeFormat(state.position?.bottom ?? 120),
           ["--chat-right" as string]: isExpanded ? "20px" : safeFormat(state.position?.right ?? 32),
           ["--chat-width" as string]: isExpanded ? "calc(100% - 40px)" : "370px",
           ["--chat-height" as string]: isExpanded ? "calc(100% - 40px)" : "600px",
