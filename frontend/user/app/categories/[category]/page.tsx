@@ -10,6 +10,7 @@ import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import matter from "gray-matter";
 import { ArticleGridTransition } from "@/components/kb/article-grid-client";
+import { cookies } from "next/headers";
 
 export default async function CategoryPage({
   params,
@@ -21,14 +22,17 @@ export default async function CategoryPage({
 
   if (!category) notFound();
 
+  const cookieStore = await cookies();
+  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+
   let data;
   let indexContent = null;
 
   try {
-    data = await getCategory(category);
+    data = await getCategory(category, bu);
 
     try {
-      const rawIndex = await getContent(`${category}/index.md`);
+      const rawIndex = await getContent(`${category}/index.md`, bu);
       if (rawIndex) {
         indexContent = matter(rawIndex.content);
       }

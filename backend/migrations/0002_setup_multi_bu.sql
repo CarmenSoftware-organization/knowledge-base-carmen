@@ -44,7 +44,7 @@ BEGIN
             document_id BIGINT NOT NULL REFERENCES %I.documents(id) ON DELETE CASCADE,
             chunk_index INT NOT NULL,
             content TEXT,
-            embedding VECTOR(1536),
+            embedding VECTOR(768),
             created_at TIMESTAMPTZ DEFAULT NOW()
         );
     ', schema_name, schema_name, schema_name);

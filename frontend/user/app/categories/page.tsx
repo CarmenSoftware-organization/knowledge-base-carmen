@@ -5,11 +5,15 @@ import { Breadcrumb } from "@/components/kb/breadcrumb";
 import { getCategories } from "@/lib/wiki-api";
 import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { CategoryGrid } from "@/components/kb/category-grid";
+import { cookies } from "next/headers";
 
 export default async function CategoriesPage() {
+  const cookieStore = await cookies();
+  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+
   let data;
   try {
-    data = await getCategories();
+    data = await getCategories(bu);
   } catch (error) {
     return (
       <div className="min-h-screen flex flex-col bg-background">

@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/new-carmen/backend/internal/config"
+	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/github"
+	"github.com/new-carmen/backend/pkg/ollama"
 )
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
@@ -70,15 +74,23 @@ type SearchResult struct {
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 type WikiService struct {
-	repoPath     string
 	githubClient *github.Client
+	embedLLM     *ollama.Client
 }
 
 func NewWikiService() *WikiService {
 	return &WikiService{
-		repoPath:     config.GetWikiContentPath(),
 		githubClient: github.NewClient(),
+		embedLLM:     ollama.NewEmbedClient(),
 	}
+}
+
+func (s *WikiService) getRepoPath(bu string) string {
+	repoBase := config.AppConfig.Git.RepoPath
+	if bu == "carmen" {
+		return filepath.Join(repoBase, "carmen_cloud")
+	}
+	return filepath.Join(repoBase, bu)
 }
 
 // ─── Frontmatter Helpers ─────────────────────────────────────────────────────
@@ -114,9 +126,6 @@ func parseFrontmatter(data []byte) (meta map[string]string, body []byte) {
 	return meta, body
 }
 
-// parseWeight reads "weight" from meta first, then falls back to scanning the
-// raw file bytes for a bare "weight: N" line outside the frontmatter block.
-// Returns 999 if no valid weight is found (sorts last by default).
 func parseWeight(meta map[string]string, data []byte) int {
 	if wStr := meta["weight"]; wStr != "" {
 		if w, err := strconv.Atoi(wStr); err == nil {
@@ -136,8 +145,6 @@ func parseWeight(meta map[string]string, data []byte) int {
 	return 999
 }
 
-// stripWeightLines removes bare "weight: N" lines from body content so they
-// are not rendered on the frontend.
 func stripWeightLines(body []byte) string {
 	var lines []string
 	sc := bufio.NewScanner(bytes.NewReader(body))
@@ -150,14 +157,12 @@ func stripWeightLines(body []byte) string {
 	return strings.Join(lines, "\n")
 }
 
-// slugToTitle converts a filename slug into a human-readable title.
 func slugToTitle(name string) string {
 	title := strings.TrimSuffix(name, filepath.Ext(name))
 	title = strings.ReplaceAll(title, "-", " ")
 	return strings.ReplaceAll(title, "_", " ")
 }
 
-// metaToTags parses a comma-separated "tags" field from frontmatter.
 func metaToTags(meta map[string]string) []string {
 	s := meta["tags"]
 	if s == "" {
@@ -177,7 +182,6 @@ func metaBool(meta map[string]string, key string) bool {
 	return v == "true" || v == "1"
 }
 
-// applyMeta populates a WikiContent from parsed frontmatter and cleaned body.
 func applyMeta(out *WikiContent, meta map[string]string, body []byte) {
 	if t := meta["title"]; t != "" {
 		out.Title = t
@@ -196,11 +200,8 @@ func applyMeta(out *WikiContent, meta map[string]string, body []byte) {
 	out.Content = stripWeightLines(body)
 }
 
-// ─── Public API ──────────────────────────────────────────────────────────────
-
-// ListMarkdown returns all markdown entries, reading from the local repo.
-func (s *WikiService) ListMarkdown() ([]WikiEntry, error) {
-	entries, err := s.listFromLocal()
+func (s *WikiService) ListMarkdown(bu string) ([]WikiEntry, error) {
+	entries, err := s.listFromLocal(bu)
 	if err != nil {
 		fmt.Println("listFromLocal error:", err)
 		return []WikiEntry{}, nil
@@ -208,9 +209,8 @@ func (s *WikiService) ListMarkdown() ([]WikiEntry, error) {
 	return entries, nil
 }
 
-// ListCategories returns top-level category slugs sorted by weight then title.
-func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
-	entries, err := s.ListMarkdown()
+func (s *WikiService) ListCategories(bu string) ([]CategoryEntry, error) {
+	entries, err := s.ListMarkdown(bu)
 	if err != nil {
 		return nil, err
 	}
@@ -252,9 +252,8 @@ func (s *WikiService) ListCategories() ([]CategoryEntry, error) {
 	return out, nil
 }
 
-// ListByCategory returns articles within a category, sorted by weight then path.
-func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error) {
-	entries, err := s.ListMarkdown()
+func (s *WikiService) ListByCategory(bu, slug string) (string, []CategoryItem, error) {
+	entries, err := s.ListMarkdown(bu)
 	if err != nil {
 		return "", nil, err
 	}
@@ -292,65 +291,132 @@ func (s *WikiService) ListByCategory(slug string) (string, []CategoryItem, error
 	return slug, list, nil
 }
 
-// GetContent reads article content from local first, falling back to GitHub.
-func (s *WikiService) GetContent(relPath string) (*WikiContent, error) {
-	if content, err := s.getContentFromLocal(relPath); err == nil {
+// GetContent reads article content for a BU from local first, falling back to GitHub.
+func (s *WikiService) GetContent(bu, relPath string) (*WikiContent, error) {
+	if content, err := s.getContentFromLocal(bu, relPath); err == nil {
 		return content, nil
 	}
-	return s.getContentFromGitHub(relPath)
+
+	gitPath := relPath
+	if bu == "carmen" {
+		gitPath = "carmen_cloud/" + relPath
+	} else if bu != "" {
+		gitPath = bu + "/" + relPath
+	}
+	return s.getContentFromGitHub(gitPath)
 }
 
-// SearchInContent performs a simple case-insensitive full-text search.
-func (s *WikiService) SearchInContent(query string) ([]SearchResult, error) {
-	query = strings.ToLower(query)
-	entries, err := s.listFromLocal()
+func removeDots(s string) string {
+	re := regexp.MustCompile(`(\p{L})\.`)
+	return re.ReplaceAllString(s, "$1")
+}
+
+// SearchInContent performs a semantic search using pgvector in a BU's schema.
+func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) {
+	emb, err := s.embedLLM.Embedding(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create embedding: %w", err)
+	}
+	embStr := utils.Float32SliceToPgVector(emb)
+
+	sql := fmt.Sprintf(`
+        WITH vector_results AS (
+            SELECT
+                d.path,
+                d.title,
+                dc.content AS snippet,
+                (dc.embedding <-> ?::vector) AS vector_dist,
+                CASE
+                    WHEN d.title ILIKE ? THEN 0.5
+                    WHEN dc.content ILIKE ? THEN 0.3
+                    ELSE 0
+                END AS text_boost
+            FROM %s.document_chunks dc
+            JOIN %s.documents d ON dc.document_id = d.id
+            WHERE dc.embedding <-> ?::vector < 0.3
+        )
+        SELECT path, title, snippet,
+               (vector_dist - text_boost) AS final_score
+        FROM vector_results
+        ORDER BY final_score ASC
+        LIMIT 20
+    `, bu, bu)
+
+	query = removeDots(query)
+
+	likeQuery := "%" + query + "%"
+
+	var rows []struct {
+		Path       string
+		Title      string
+		Snippet    string
+		FinalScore float64
+	}
+	if err := database.DB.Raw(sql,
+		embStr,    // vector compare
+		likeQuery, // title boost
+		likeQuery, // content boost
+		embStr,    // WHERE filter
+	).Scan(&rows).Error; err != nil {
+		return nil, fmt.Errorf("hybrid search: %w", err)
 	}
 
-	root := filepath.Clean(s.repoPath)
+	seen := make(map[string]bool)
 	var results []SearchResult
-
-	for _, entry := range entries {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(entry.Path)))
-		if err != nil {
+	for _, r := range rows {
+		if seen[r.Path] {
 			continue
 		}
-		content := string(data)
-		contentLower := strings.ToLower(content)
-		idx := strings.Index(contentLower, query)
-		if idx < 0 {
-			continue
-		}
-		start := max(0, idx-40)
-		end := min(len(content), idx+len(query)+60)
-		snippet := "..." + strings.ReplaceAll(content[start:end], "\n", " ") + "..."
-		results = append(results, SearchResult{WikiEntry: entry, Snippet: snippet})
-		if len(results) >= 20 {
-			break
-		}
+		seen[r.Path] = true
+		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
+		snippet = smartTrim(snippet, 200)
+		results = append(results, SearchResult{
+			WikiEntry: WikiEntry{Path: r.Path, Title: r.Title},
+			Snippet:   snippet,
+		})
 	}
 	return results, nil
+}
+
+func smartTrim(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	trimmed := string(runes[:max])
+	if idx := strings.LastIndex(trimmed, " "); idx > max-30 {
+		trimmed = trimmed[:idx]
+	}
+	return trimmed + "..."
 }
 
 // ─── Private Helpers ─────────────────────────────────────────────────────────
 
 const maxFrontmatterRead = 16384
 
-func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
-	root := filepath.Clean(s.repoPath)
+func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
+	root := s.getRepoPath(bu)
+	if !filepath.IsAbs(root) {
+		absRoot, err := filepath.Abs(root)
+		if err == nil {
+			root = absRoot
+		}
+	}
+	root = filepath.Clean(root)
+
 	var entries []WikiEntry
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			if os.IsNotExist(err) {
-				return filepath.SkipDir
+				return nil
 			}
 			return err
 		}
 		if info.IsDir() || strings.ToLower(filepath.Ext(info.Name())) != ".md" {
 			return nil
 		}
+
 		rel, err := filepath.Rel(root, path)
 		if err != nil {
 			return nil
@@ -397,12 +463,17 @@ func (s *WikiService) listFromLocal() ([]WikiEntry, error) {
 	return entries, nil
 }
 
-func (s *WikiService) getContentFromLocal(relPath string) (*WikiContent, error) {
+func (s *WikiService) GetLocalAssetPath(bu, relPath string) string {
+	root := s.getRepoPath(bu)
+	return filepath.Clean(filepath.Join(root, filepath.FromSlash(relPath)))
+}
+
+func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, error) {
 	relPath = filepath.Clean(relPath)
 	if relPath == ".." || strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
 		return nil, os.ErrNotExist
 	}
-	root := filepath.Clean(s.repoPath)
+	root := filepath.Clean(s.getRepoPath(bu))
 	full := filepath.Clean(filepath.Join(root, filepath.FromSlash(relPath)))
 	relCheck, err := filepath.Rel(root, full)
 	if err != nil || strings.HasPrefix(relCheck, "..") {
@@ -412,7 +483,7 @@ func (s *WikiService) getContentFromLocal(relPath string) (*WikiContent, error) 
 	if err != nil {
 		return nil, err
 	}
-	out := &WikiContent{Path: relPath, Title: slugToTitle(filepath.Base(relPath))}
+	out := &WikiContent{Path: filepath.ToSlash(relPath), Title: slugToTitle(filepath.Base(relPath))}
 	meta, body := parseFrontmatter(data)
 	if len(meta) > 0 {
 		applyMeta(out, meta, body)
@@ -433,4 +504,3 @@ func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error)
 	}
 	return out, nil
 }
-

@@ -1,7 +1,6 @@
 package services
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/new-carmen/backend/internal/database"
@@ -15,7 +14,7 @@ func NewActivityLogService() *ActivityLogService {
 }
 
 // Log records a new activity in the system
-func (s *ActivityLogService) Log(buSlug string, userID string, action string, category string, details interface{}) error {
+func (s *ActivityLogService) Log(buSlug string, userID string, action string, category string, details interface{}, userAgent string) error {
 	var buID *uint
 	if buSlug != "" {
 		var bu models.BusinessUnit
@@ -25,30 +24,28 @@ func (s *ActivityLogService) Log(buSlug string, userID string, action string, ca
 		}
 	}
 
-	detailsJSON, _ := json.Marshal(details)
-
-	log := models.ActivityLog{
+	logEntry := models.ActivityLog{
 		BUID:      buID,
 		UserID:    userID,
 		Action:    action,
 		Category:  category,
-		Details:   string(detailsJSON),
+		Details:   details,
+		UserAgent: userAgent,
 		Timestamp: time.Now(),
 	}
 
-	return database.DB.Create(&log).Error
+	return database.DB.Create(&logEntry).Error
 }
 
-// GetLogs returns a list of activity logs with optional filtering
 func (s *ActivityLogService) GetLogs(buSlug string, limit int, offset int) ([]models.ActivityLog, error) {
 	var logs []models.ActivityLog
-	query := database.DB.Preload("BusinessUnit").Order("timestamp DESC")
+	query := database.DB.Model(&models.ActivityLog{}).Preload("BusinessUnit").Order("activity_logs.timestamp DESC")
 
 	if buSlug != "" {
 		query = query.Joins("JOIN public.business_units bu ON bu.id = activity_logs.bu_id").Where("bu.slug = ?", buSlug)
 	}
 
-	err := query.Limit(limit).Offset(offset).Find(&logs).Error
+	err := query.Select("activity_logs.*").Limit(limit).Offset(offset).Find(&logs).Error
 	return logs, err
 }
 

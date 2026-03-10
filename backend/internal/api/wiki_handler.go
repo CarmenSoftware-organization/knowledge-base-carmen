@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/new-carmen/backend/internal/middleware"
 	"github.com/new-carmen/backend/internal/services"
 )
 
@@ -12,18 +13,26 @@ import (
 type WikiHandler struct {
 	wikiService *services.WikiService
 	syncService *services.WikiSyncService
+	logService  *services.ActivityLogService
 }
 
 func NewWikiHandler() *WikiHandler {
 	return &WikiHandler{
 		wikiService: services.NewWikiService(),
 		syncService: services.NewWikiSyncService(),
+		logService:  services.NewActivityLogService(),
 	}
+}
+
+// GetWikiService returns the WikiService instance
+func (h *WikiHandler) GetWikiService() *services.WikiService {
+	return h.wikiService
 }
 
 // List returns all markdown entries. GET /api/wiki/list
 func (h *WikiHandler) List(c *fiber.Ctx) error {
-	entries, err := h.wikiService.ListMarkdown()
+	bu := middleware.GetBU(c)
+	entries, err := h.wikiService.ListMarkdown(bu)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -35,7 +44,8 @@ func (h *WikiHandler) List(c *fiber.Ctx) error {
 
 // ListCategories returns top-level category slugs. GET /api/wiki/categories
 func (h *WikiHandler) ListCategories(c *fiber.Ctx) error {
-	items, err := h.wikiService.ListCategories()
+	bu := middleware.GetBU(c)
+	items, err := h.wikiService.ListCategories(bu)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -51,7 +61,8 @@ func (h *WikiHandler) GetCategory(c *fiber.Ctx) error {
 	if slug == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "slug is required"})
 	}
-	category, items, err := h.wikiService.ListByCategory(slug)
+	bu := middleware.GetBU(c)
+	category, items, err := h.wikiService.ListByCategory(bu, slug)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -67,13 +78,19 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	if pathParam == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "path is required"})
 	}
-	content, err := h.wikiService.GetContent(pathParam)
+	bu := middleware.GetBU(c)
+	content, err := h.wikiService.GetContent(bu, pathParam)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	// Log view
+	userID := c.Get("X-User-ID", "anonymous")
+	h.logService.Log(bu, userID, "เปิดอ่านบทความ", "wiki", map[string]interface{}{"status": "GET", "path": pathParam, "title": content.Title}, c.Get("User-Agent"))
+
 	return c.JSON(content)
 }
 
@@ -83,10 +100,16 @@ func (h *WikiHandler) Search(c *fiber.Ctx) error {
 	if query == "" {
 		return c.JSON(fiber.Map{"items": []interface{}{}})
 	}
-	results, err := h.wikiService.SearchInContent(query)
+	bu := middleware.GetBU(c)
+	results, err := h.wikiService.SearchInContent(bu, query)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	// Log search
+	userID := c.Get("X-User-ID", "anonymous")
+	h.logService.Log(bu, userID, "ค้นหาข้อมูลวิกิ", "wiki", map[string]interface{}{"status": "GET", "query": query, "results": len(results)}, c.Get("User-Agent"))
+
 	return c.JSON(fiber.Map{"items": results})
 }
 

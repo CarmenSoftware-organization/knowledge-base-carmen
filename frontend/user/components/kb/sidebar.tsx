@@ -6,21 +6,28 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { getCategories, getCategory } from "@/lib/wiki-api";
+import { getCategories, getCategory, getSelectedBUClient } from "@/lib/wiki-api";
 import { articleDisplayMap, categoryDisplayMap, cleanTitle } from "@/configs/sidebar-map";
 
 export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
   const pathname = usePathname();
   const [categories, setCategories] = useState<any[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [bu, setBu] = useState(getSelectedBUClient());
+
+  useEffect(() => {
+    const handleBUChange = () => setBu(getSelectedBUClient());
+    window.addEventListener("bu-changed", handleBUChange);
+    return () => window.removeEventListener("bu-changed", handleBUChange);
+  }, []);
 
   useEffect(() => {
     async function loadSidebar() {
       try {
-        const res = await getCategories();
+        const res = await getCategories(bu);
         const loaded = [];
         for (const cat of res.items) {
-          const catRes = await getCategory(cat.slug);
+          const catRes = await getCategory(cat.slug, bu);
           loaded.push({
             name: cat.title || categoryDisplayMap[cat.slug] || cat.slug.toUpperCase(),
             slug: cat.slug,
@@ -34,7 +41,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
       } catch (err) { console.error(err); }
     }
     loadSidebar();
-  }, []);
+  }, [bu]);
   
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });

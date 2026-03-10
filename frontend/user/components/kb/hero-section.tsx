@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { motion, type Variants } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { motion, Variants } from "framer-motion";
 import { GlobalSearch } from "@/components/search/global-search";
+import { getBusinessUnits, getSelectedBUClient } from "@/lib/wiki-api";
+import { useEffect, useState } from "react";
 
 const popularSearches = [
   "AP Invoice", "Input VAT Reconciliation", "AR Receipt",
@@ -27,6 +28,23 @@ const fadeUp: Variants = {
 export function HeroSection() {
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [buName, setBuName] = useState("Carmen Cloud");
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const slug = getSelectedBUClient();
+        const { items } = await getBusinessUnits();
+        const found = items.find(b => b.slug === slug);
+        if (found) setBuName(found.name);
+      } catch (e) {}
+    }
+    load();
+
+    const handleBUChange = () => load();
+    window.addEventListener("bu-changed", handleBUChange);
+    return () => window.removeEventListener("bu-changed", handleBUChange);
+  }, []);
 
   const handlePopularClick = (term: string) => {
     setSearchQuery(term);
@@ -62,14 +80,14 @@ export function HeroSection() {
           className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground text-balance"
         >
           ศูนย์รวมความรู้
-          <span className="block text-primary mt-3">สำหรับ Carmen Cloud</span>
+          <span className="block text-primary mt-3">สำหรับ {buName}</span>
         </motion.h1>
 
         <motion.p
           variants={fadeUp}
           className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
         >
-          ค้นหาคู่มือ บทความ และคำตอบสำหรับทุกคำถามเกี่ยวกับการใช้งาน Carmen Cloud ระบบบริหารจัดการบัญชี
+          ค้นหาคู่มือ บทความ และคำตอบสำหรับทุกคำถามเกี่ยวกับการใช้งาน {buName} ระบบบริหารจัดการบัญชี
         </motion.p>
 
         <motion.div variants={fadeUp} className="mt-10 max-w-xl mx-auto relative">

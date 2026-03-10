@@ -11,6 +11,7 @@ import { GlobalSearch } from "@/components/search/global-search";
 import Image from "next/image";
 import { ThemeToggle } from "./theme-toggle";
 import { useTheme } from "next-themes";
+import { BUSwitcher } from "./bu-switcher";
 
 const headerVariants: Variants = {
   hidden: { y: -60, opacity: 0 },
@@ -86,8 +87,13 @@ export function KBHeader() {
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/categories">หมวดหมู่</Link>
               </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
+              </Button>
             </nav>
-
+            <div className="hidden md:block">
+              <BUSwitcher />
+            </div>
             <ThemeToggle />
 
             <Button
@@ -123,6 +129,9 @@ export function KBHeader() {
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/categories">หมวดหมู่</Link>
                 </Button>
+                <div className="px-3">
+                  <BUSwitcher />
+                </div>
                 <ThemeToggle />
               </nav>
             </motion.div>

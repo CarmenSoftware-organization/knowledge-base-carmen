@@ -59,7 +59,7 @@ func (s *WikiSyncService) clone() error {
 		return fmt.Errorf("git clone: %w", err)
 	}
 	log.Printf("[wiki-sync] cloned %s (branch: %s) → %s", s.repoURL, s.branch, s.repoPath)
-	s.logService.Log("", "system", "git_clone", "wiki", map[string]interface{}{"url": s.repoURL, "branch": s.branch})
+	s.logService.Log("", "system", "ซิงค์ Wiki (จาก GitHub)", "system", map[string]interface{}{"status": "cloned", "repo": s.repoURL}, "")
 	return nil
 }
 
@@ -72,6 +72,6 @@ func (s *WikiSyncService) pull() error {
 		return fmt.Errorf("git pull: %w", err)
 	}
 	log.Printf("[wiki-sync] pulled: %s", out)
-	s.logService.Log("", "system", "git_pull", "wiki", map[string]interface{}{"status": "success"})
+	s.logService.Log("", "system", "ซิงค์ Wiki (จาก GitHub)", "system", map[string]interface{}{"status": "pulled", "output": out}, "")
 	return nil
 }

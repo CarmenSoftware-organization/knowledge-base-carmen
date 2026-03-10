@@ -15,54 +15,61 @@ import (
 // indexing_service.go constants have been moved to AppConfig.Git (WIKI_CHUNK_SIZE/WIKI_CHUNK_OVERLAP)
 
 type IndexingService struct {
-	wiki *WikiService
-	llm  *ollama.Client
+	wiki       *WikiService
+	llm        *ollama.Client
+	logService *ActivityLogService
 }
 
 func NewIndexingService() *IndexingService {
 	return &IndexingService{
-		wiki: NewWikiService(),
-		llm:  ollama.NewEmbedClient(),
+		wiki:       NewWikiService(),
+		llm:        ollama.NewEmbedClient(),
+		logService: NewActivityLogService(),
 	}
 }
 
-func (s *IndexingService) IndexAll(ctx context.Context) error {
-	entries, err := s.wiki.ListMarkdown()
+func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
+	s.logService.Log(bu, "system", "เริ่มดึงข้อมูล ( Re-indexing )", "system", map[string]interface{}{"status": "started"}, "")
+	
+	entries, err := s.wiki.ListMarkdown(bu)
 	if err != nil {
+		s.logService.Log(bu, "system", "ดึงข้อมูลไม่สำเร็จ", "system", map[string]interface{}{"status": "failed", "error": err.Error()}, "")
 		return fmt.Errorf("list markdown: %w", err)
 	}
+
+	count := 0
 	for _, e := range entries {
 		select {
 		case <-ctx.Done():
+			s.logService.Log(bu, "system", "ดึงข้อมูลถูกขัดจังหวะ", "system", map[string]interface{}{"status": "interrupted", "processed": count}, "")
 			return ctx.Err()
 		default:
 		}
-		if err := s.indexSingle(e.Path); err != nil {
-			log.Printf("[indexing] %s: %v", e.Path, err)
+		if err := s.indexSingle(bu, e.Path); err != nil {
+			log.Printf("[indexing] %s (%s): %v", e.Path, bu, err)
+		} else {
+			count++
 		}
 	}
+	s.logService.Log(bu, "system", "เสร็จสิ้นดึงข้อมูล", "system", map[string]interface{}{"status": "completed", "files": count}, "")
 	return nil
 }
 
-func (s *IndexingService) indexSingle(path string) error {
-	content, err := s.wiki.GetContent(path)
+func (s *IndexingService) indexSingle(bu, path string) error {
+	content, err := s.wiki.GetContent(bu, path)
 	if err != nil {
 		return fmt.Errorf("get content: %w", err)
 	}
 
 	var docID int64
-	err = database.DB.Raw(`
-INSERT INTO documents (path, title, source, created_at, updated_at)
-VALUES (?, ?, 'wiki', now(), now())
-ON CONFLICT (path) DO UPDATE
-SET title = EXCLUDED.title, updated_at = now()
-RETURNING id
-`, content.Path, content.Title).Scan(&docID).Error
+	sqlDoc := fmt.Sprintf("INSERT INTO %s.documents (path, title, source, created_at, updated_at) VALUES (?, ?, 'wiki', now(), now()) ON CONFLICT (path) DO UPDATE SET title = EXCLUDED.title, updated_at = now() RETURNING id", bu)
+	err = database.DB.Raw(sqlDoc, content.Path, content.Title).Scan(&docID).Error
 	if err != nil {
 		return fmt.Errorf("upsert document: %w", err)
 	}
 
-	if err := database.DB.Exec("DELETE FROM document_chunks WHERE document_id = ?", docID).Error; err != nil {
+	sqlDel := fmt.Sprintf("DELETE FROM %s.document_chunks WHERE document_id = ?", bu)
+	if err := database.DB.Exec(sqlDel, docID).Error; err != nil {
 		return fmt.Errorf("delete old chunks: %w", err)
 	}
 
@@ -71,7 +78,8 @@ RETURNING id
 		if strings.TrimSpace(chunkText) == "" {
 			continue
 		}
-		emb, err := s.llm.Embedding(chunkText)
+		enrichedChunk := fmt.Sprintf("เรื่อง: %s\n\n%s", content.Title, chunkText)
+		emb, err := s.llm.Embedding(enrichedChunk)
 		if err != nil {
 			return fmt.Errorf("embedding chunk %d: %w", i, err)
 		}
@@ -79,10 +87,8 @@ RETURNING id
 			log.Printf("[indexing] skip %s chunk %d: empty embedding", path, i)
 			continue
 		}
-		if err := database.DB.Exec(`
-INSERT INTO document_chunks (document_id, chunk_index, content, embedding, created_at)
-VALUES (?, ?, ?, ?::vector, now())
-`, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
+		sqlChunk := fmt.Sprintf("INSERT INTO %s.document_chunks (document_id, chunk_index, content, embedding, created_at) VALUES (?, ?, ?, ?::vector, now())", bu)
+		if err := database.DB.Exec(sqlChunk, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)
 		}
 	}

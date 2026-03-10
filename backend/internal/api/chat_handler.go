@@ -2,6 +2,7 @@
 package api
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/middleware"
 	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
 	"github.com/new-carmen/backend/internal/utils"
@@ -16,18 +18,20 @@ import (
 )
 
 type ChatHandler struct {
-	llm      *ollama.Client
-	embedLLM *ollama.Client
-	router   *services.QuestionRouterService
-	wiki     *services.WikiService
+	llm        *ollama.Client
+	embedLLM   *ollama.Client
+	router     *services.QuestionRouterService
+	wiki       *services.WikiService
+	logService *services.ActivityLogService
 }
 
 func NewChatHandler() *ChatHandler {
 	return &ChatHandler{
-		llm:      ollama.NewClient(),      // ใช้ ChatModel
-		embedLLM: ollama.NewEmbedClient(), // ใช้ EmbedModel
-		router:   services.NewQuestionRouterService(),
-		wiki:     services.NewWikiService(),
+		llm:        ollama.NewClient(),      // ใช้ ChatModel
+		embedLLM:   ollama.NewEmbedClient(), // ใช้ EmbedModel
+		router:     services.NewQuestionRouterService(),
+		wiki:       services.NewWikiService(),
+		logService: services.NewActivityLogService(),
 	}
 }
 
@@ -96,6 +100,7 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	}
 
 	embStr := utils.Float32SliceToPgVector(emb)
+	bu := middleware.GetBU(c)
 
 	// 2.a กรณีมี OpenClaw หรือ Make (แยกประเภทคำถาม) ให้ลองใช้ routing + wiki โดยตรงก่อน (ไม่พึ่ง DB)
 	useRouter := config.AppConfig.OpenClaw.Enabled || (config.AppConfig.Make.UseForQuestionRouter && config.AppConfig.Make.WebhookURL != "")
@@ -104,7 +109,7 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 			// ถ้าผู้ใช้เลือก path มาแล้ว (preferredPath) ให้ใช้ path นั้นตรง ๆ เลย
 			if strings.TrimSpace(req.PreferredPath) != "" {
 				selectedPath := strings.TrimSpace(req.PreferredPath)
-				content, err := h.wiki.GetContent(selectedPath)
+				content, err := h.wiki.GetContent(bu, selectedPath)
 				if err != nil {
 					// ถ้า path นี้อ่านไม่ได้ ให้ fallback ใช้ routingResult ปกติด้านล่าง
 				} else {
@@ -133,7 +138,7 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 				opts := make([]models.DisambiguationOption, 0, len(res.Candidates))
 				for _, cnd := range res.Candidates {
 					title := cnd.Path
-					if content, err := h.wiki.GetContent(cnd.Path); err == nil && strings.TrimSpace(content.Title) != "" {
+					if content, err := h.wiki.GetContent(bu, cnd.Path); err == nil && strings.TrimSpace(content.Title) != "" {
 						title = content.Title
 					}
 					opts = append(opts, models.DisambiguationOption{
@@ -159,7 +164,7 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 				if i >= 3 {
 					break
 				}
-				content, err := h.wiki.GetContent(cnd.Path)
+				content, err := h.wiki.GetContent(bu, cnd.Path)
 				if err != nil {
 					continue
 				}
@@ -223,11 +228,11 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	}
 
 	// 3) ดึง context จาก Postgres/pgvector
-	query := `
+	query := fmt.Sprintf(`
 SELECT d.path, d.title, dc.content
-FROM document_chunks dc
-JOIN documents d ON dc.document_id = d.id
-` + pathFilter + `
+FROM %s.document_chunks dc
+JOIN %s.documents d ON dc.document_id = d.id
+`, bu, bu) + pathFilter + `
 ORDER BY dc.embedding <-> ?::vector
 LIMIT 10
 `
@@ -281,6 +286,13 @@ LIMIT 10
 			"sources": sources,
 		})
 	}
+
+	// Log chat interaction
+	userID := c.Get("X-User-ID", "anonymous")
+	h.logService.Log(bu, userID, "ถาม Chat AI", "wiki", map[string]interface{}{
+		"status":  "POST",
+		"sources": len(sources),
+	}, c.Get("User-Agent"))
 
 	return c.JSON(models.ChatAskResponse{
 		Answer:  answer,

@@ -24,14 +24,15 @@ func (BusinessUnit) TableName() string {
 
 // ActivityLog records events within the system
 type ActivityLog struct {
-	ID        uint64         `gorm:"primaryKey" json:"id"`
-	BUID      *uint          `json:"bu_id"`
-	UserID    string         `json:"user_id"` // Store user reference as text for now
-	Action    string         `gorm:"not null" json:"action"`
-	Category  string         `gorm:"not null" json:"category"` // wiki, system, admin
-	Details   interface{}    `gorm:"type:jsonb" json:"details"`
-	Timestamp time.Time      `gorm:"default:now()" json:"timestamp"`
-	CreatedAt time.Time      `json:"created_at"`
+	ID        uint64          `gorm:"primaryKey" json:"id"`
+	BUID      *uint           `gorm:"column:bu_id" json:"bu_id"`
+	UserID    string          `gorm:"column:user_id" json:"user_id"` 
+	Action    string          `gorm:"column:action;not null" json:"action"`
+	Category  string          `gorm:"column:category;not null" json:"category"` 
+	Details   interface{}     `gorm:"column:details;type:jsonb" json:"details"`
+	UserAgent string          `gorm:"column:user_agent" json:"user_agent"`
+	Timestamp time.Time       `gorm:"column:timestamp;default:now()" json:"timestamp"`
+	CreatedAt time.Time       `gorm:"column:created_at" json:"created_at"`
 	
 	// Association
 	BusinessUnit *BusinessUnit `gorm:"foreignKey:BUID" json:"business_unit,omitempty"`

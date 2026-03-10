@@ -10,7 +10,7 @@ import { TableOfContents } from "@/components/kb/toc";
 import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
-
+import { cookies } from "next/headers";
 
 type Props = {
   params: Promise<{
@@ -26,12 +26,15 @@ export default async function ArticlePage({ params }: Props) {
     notFound();
   }
 
+  const cookieStore = await cookies();
+  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+
   const path = `${category}/${article}.md`;
 
   let raw;
 
   try {
-    raw = await getContent(path);
+    raw = await getContent(path, bu);
   } catch {
     notFound();
   }

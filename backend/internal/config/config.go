@@ -166,12 +166,7 @@ func GetWikiContentPath() string {
 		return normalizePath(c.ContentPath)
 	}
 	if c.RepoPath != "" {
-		repo := normalizePath(c.RepoPath)
-		sub := filepath.Join(repo, "carmen_cloud")
-		if st, err := os.Stat(sub); err == nil && st.IsDir() {
-			return normalizePath(sub)
-		}
-		return repo
+		return normalizePath(c.RepoPath)
 	}
 	
 	return normalizePath(basePath)

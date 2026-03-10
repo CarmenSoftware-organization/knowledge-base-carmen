@@ -8,6 +8,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeRaw from "rehype-raw";
 import remarkEmoji from "remark-emoji";
 import { useEffect, useRef } from "react";
+import { getSelectedBUClient } from "@/lib/wiki-api";
 
 interface MarkdownRenderProps {
   content: string;
@@ -88,18 +89,14 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
         components={{
 
           code: ({ className, children }) => {
-            if (className === "language-mermaid") {
-              return (
-                <MermaidDiagram chart={String(children).trim()} />
-              );
-            }
+  const code = String(children).trim();
 
-            return (
-              <code className={className}>
-                {children}
-              </code>
-            );
-          },
+  if (className?.includes("mermaid")) {
+    return <MermaidDiagram chart={code} />;
+  }
+
+  return <code className={className}>{children}</code>;
+},
 
           h1: ({ children, ...props }) => (
             <h1 {...props} className="text-3xl font-bold mt-1 mb-6 border-b border-border pb-3">
@@ -193,10 +190,11 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
           img: ({ src, alt = "", ...props }) => {
             if (!src || typeof src !== "string") return null;
             const cleanSrc = src.replace("./", "");
+            const bu = getSelectedBUClient() || "carmen";
             return (
               <img
                 {...props}
-                src={`http://localhost:8080/wiki-assets/${category}/${cleanSrc}`}
+                src={`http://localhost:8080/wiki-assets/${category}/${cleanSrc}?bu=${bu}`}
                 alt={alt}
                 className="block rounded-xl my-6 shadow-md max-w-full"
               />
