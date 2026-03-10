@@ -22,7 +22,8 @@ async def chat_stream_endpoint(request: Request, req: ChatRequest):
     return StreamingResponse(
         chat_service.stream_chat(
             message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
-            model_name=req.model, prompt_extend=req.prompt_extend, history=req.history
+            model_name=req.model, prompt_extend=req.prompt_extend, history=req.history,
+            db_schema=req.db_schema
         ),
         media_type="application/x-ndjson",
         headers={
@@ -40,7 +41,8 @@ async def chat_stream_endpoint(request: Request, req: ChatRequest):
 async def chat_endpoint(request: Request, req: ChatRequest):
     return await chat_service.invoke_chat(
         message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
-        model_name=req.model, prompt_extend=req.prompt_extend, history=req.history
+        model_name=req.model, prompt_extend=req.prompt_extend, history=req.history,
+        db_schema=req.db_schema
     )
 
 # ==========================================

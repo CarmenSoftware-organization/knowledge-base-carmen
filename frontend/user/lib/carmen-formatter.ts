@@ -10,34 +10,31 @@ function extractYoutubeId(url: string): string | null {
 }
 
 function processYoutube(text: string): string {
-  text = text.replace(
-    /\[(.*?)\]\((https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^\s<)"']+)\)/g,
-    (_match, _label, url) => {
-      const vid = extractYoutubeId(url);
-      return vid
-        ? `<div style="position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden;margin:8px 0;">
-            <iframe src="https://www.youtube.com/embed/${vid}" 
-              style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" 
-              allowfullscreen></iframe>
-           </div>`
-        : _match;
+  // 1.1 Markdown link [title](youtube_url)
+  const mdVideoRegex = /\[(.*?)\]\((https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^\s<)"']+)\)/g;
+  text = text.replace(mdVideoRegex, (match, _title, url) => {
+    const videoId = extractYoutubeId(url);
+    if (videoId) {
+      return `<div class="carmen-processed-video" style="margin:8px 0; border-radius:10px; overflow:hidden; position:relative; width:100%; padding-bottom:56.25%; height:0;"><iframe src="https://www.youtube.com/embed/${videoId}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none; border-radius:10px;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
     }
-  );
-  text = text.replace(
-    /(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^\s<)"']+)/g,
-    (url, _p, offset, str) => {
-      const before = str.substring(Math.max(0, offset - 10), offset);
-      if (/src=['"]$|href=['"]$|\($/.test(before)) return url;
-      const vid = extractYoutubeId(url);
-      return vid
-        ? `<div style="position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden;margin:8px 0;">
-            <iframe src="https://www.youtube.com/embed/${vid}" 
-              style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" 
-              allowfullscreen></iframe>
-           </div>`
-        : url;
+    return match;
+  });
+
+  // 1.2 Raw YouTube URL
+  const urlRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^\s<)"']+)/g;
+  text = text.replace(urlRegex, (match, _p1, offset, fullString) => {
+    const prefix = fullString.substring(Math.max(0, offset - 10), offset);
+    if (/src=['"]$|href=['"]$|\($/.test(prefix)) return match;
+    const before = fullString.substring(Math.max(0, offset - 100), offset);
+    if (before.includes('carmen-processed-video')) return match;
+
+    const videoId = extractYoutubeId(match);
+    if (videoId) {
+      return `<div class="carmen-processed-video" style="margin:8px 0; border-radius:10px; overflow:hidden; position:relative; width:100%; padding-bottom:56.25%; height:0;"><iframe src="https://www.youtube.com/embed/${videoId}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none; border-radius:10px;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
     }
-  );
+    return match;
+  });
+
   return text;
 }
 
@@ -72,24 +69,29 @@ function processImages(text: string, apiBase: string): string {
   text = text.replace(/!\[(.*?)\]\((.*?)\)/g, (_m, alt, src) => {
     if (src.includes("youtube")) return _m;
     const url = resolveUrl(src);
-    return `<br><a href="${url}" target="_blank">
-      <img src="${url}" alt="${alt}" style="max-width:100%;border-radius:12px;margin:8px 0;" />
-    </a><br>`;
+    return `<br><a href="${url}" target="_blank"><img src="${url}" alt="${alt}" style="max-width:100%;border-radius:12px;margin:8px 0;" /></a><br>`;
   });
 
   return text;
 }
 
 function processLinks(text: string): string {
-  return text.replace(
-    /(https?:\/\/(?!(?:www\.)?(?:youtube\.com|youtu\.be))[^\s<)"']+)/g,
-    (url, _p, offset, str) => {
-      const before = str.substring(Math.max(0, offset - 10), offset);
-      if (/src=['"]$|href=['"]$|>$/.test(before)) return url;
-      return `<a href="${url}" target="_blank" 
-        style="color:#2563eb;text-decoration:underline;">${url}</a>`;
-    }
-  );
+  // 1. Markdown Links [text](url)
+  const mdLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+  text = text.replace(mdLinkRegex, (match, label, url) => {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) return match;
+    return `<a href="${url}" target="_blank" class="carmen-link" style="color:#2563eb; text-decoration:underline;">${label}</a>`;
+  });
+
+  // 2. Bare URLs
+  const urlRegex = /(https?:\/\/(?!(?:www\.)?(?:youtube\.com|youtu\.be))[^\s<)"']+)/g;
+  text = text.replace(urlRegex, (match, _p1, offset, fullString) => {
+    const prefix = fullString.substring(Math.max(0, offset - 15), offset);
+    if (/src=['"]?$|href=['"]?$|>$/.test(prefix)) return match;
+    return `<a href="${match}" target="_blank" class="carmen-link" style="color:#2563eb; text-decoration:underline;">${match}</a>`;
+  });
+
+  return text;
 }
 
 function processMarkdownStructure(text: string): string {
@@ -162,6 +164,7 @@ function processInlineMarkdown(text: string): string {
 export function formatCarmenMessage(text: string, apiBase: string): string {
   if (!text) return "";
   let t = String(text);
+
   t = processYoutube(t);
   t = processImages(t, apiBase);
   t = processLinks(t);
