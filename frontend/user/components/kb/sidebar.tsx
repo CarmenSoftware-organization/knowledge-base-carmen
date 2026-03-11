@@ -57,7 +57,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
   return (
     <aside className={cn(
       "shrink-0",
-      isMobile ? "w-full" : "w-64 hidden lg:block sticky top-28 h-fit"
+      isMobile ? "w-full" : "w-64  sticky top-28 h-fit"
     )}>
       <nav className="space-y-1 pr-4 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-hide">
         {categories.map((categoryItem) => {
