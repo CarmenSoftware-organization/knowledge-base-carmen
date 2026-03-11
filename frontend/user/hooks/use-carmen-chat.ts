@@ -622,6 +622,27 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     localStorage.setItem(`carmen_chat_pos_${config.bu}`, JSON.stringify(newPos));
   }
 
+  // Use refs to keep stable function identities for child components (avoids re-rendering MessageList on every keystroke)
+  const sendMessageRef = useRef(sendMessage);
+  const retryMessageRef = useRef(retryMessage);
+  const sendFeedbackRef = useRef(sendFeedback);
+  const createNewChatRef = useRef(createNewChat);
+  const switchRoomRef = useRef(switchRoom);
+
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+    retryMessageRef.current = retryMessage;
+    sendFeedbackRef.current = sendFeedback;
+    createNewChatRef.current = createNewChat;
+    switchRoomRef.current = switchRoom;
+  });
+
+  const stableSendMessage = useState(() => (text?: string) => sendMessageRef.current(text))[0];
+  const stableRetryMessage = useState(() => (errorText: string) => retryMessageRef.current(errorText))[0];
+  const stableSendFeedback = useState(() => (msgId: string, score: number) => sendFeedbackRef.current(msgId, score))[0];
+  const stableCreateNewChat = useState(() => () => createNewChatRef.current())[0];
+  const stableSwitchRoom = useState(() => (roomId: string) => switchRoomRef.current(roomId))[0];
+
   return {
     isOpen,
     isExpanded,
@@ -651,11 +672,11 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     setAlertModal,
     toggleOpen,
     toggleExpand,
-    createNewChat,
-    switchRoom,
-    sendMessage,
-    retryMessage,
-    sendFeedback,
+    createNewChat: stableCreateNewChat,
+    switchRoom: stableSwitchRoom,
+    sendMessage: stableSendMessage,
+    retryMessage: stableRetryMessage,
+    sendFeedback: stableSendFeedback,
     confirmDeleteRoom,
     confirmClearHistory,
     dismissTooltip,

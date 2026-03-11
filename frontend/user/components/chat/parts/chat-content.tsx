@@ -7,6 +7,7 @@ import CarmenHistoryScreen from "../carmen-history-screen";
 import { ChatHeader } from "./chat-header";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
+import ImageLightbox from "./image-lightbox";
 
 type ChatState = ReturnType<typeof useCarmenChat>;
 interface ContentProps {
@@ -36,7 +37,25 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
+    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const lastProgrammaticScrollTime = useRef(0);
+
+    // Image lightbox: delegate click on images with data-lightbox attribute
+    useEffect(() => {
+        const el = bodyRef.current;
+        if (!el) return;
+        const handleImageClick = (e: MouseEvent) => {
+            const img = (e.target as HTMLElement).closest('[data-lightbox]') as HTMLElement | null;
+            if (img) {
+                e.preventDefault();
+                e.stopPropagation();
+                const src = img.getAttribute('data-lightbox') || img.getAttribute('src');
+                if (src) setLightboxSrc(src);
+            }
+        };
+        el.addEventListener('click', handleImageClick);
+        return () => el.removeEventListener('click', handleImageClick);
+    }, []);
 
     const scrollToBottom = (force = false, instant = false) => {
         const el = bodyRef.current;
@@ -64,7 +83,11 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
 
     useEffect(() => {
         if (!userHasScrolledUp || messages.length === 0) {
-            scrollToBottom(false, messages.length < 5);
+            // Mark programmatic scroll time BEFORE the rAF to prevent
+            // the scroll handler from detecting the content shift as "user scrolled up"
+            lastProgrammaticScrollTime.current = Date.now();
+            setUserHasScrolledUp(false);
+            scrollToBottom(true, messages.length < 5);
         }
     }, [messages.length]);
 
@@ -73,7 +96,8 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
         if (!el) return;
 
         const handleScroll = () => {
-            if (Date.now() - lastProgrammaticScrollTime.current < 500) return;
+            // Ignore scroll events triggered by programmatic scrolling (e.g. after sending a message)
+            if (Date.now() - lastProgrammaticScrollTime.current < 1200) return;
             const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
             if (distanceFromBottom > 25) setUserHasScrolledUp(true);
             else if (distanceFromBottom < 5) setUserHasScrolledUp(false);
@@ -195,6 +219,8 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 theme={theme}
                 isResizing={isResizing}
             />
+
+            <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
 
             <AnimatePresence>
                 {messages.filter(m => m.isQueued && m.role === "user").length > 0 && (

@@ -11,7 +11,7 @@ from InquirerPy.base.control import Choice
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent
-ENV_PATH = BASE_DIR.parent / ".env"
+ENV_PATH = BASE_DIR / ".env"
 
 # Load current env context
 load_dotenv(ENV_PATH)

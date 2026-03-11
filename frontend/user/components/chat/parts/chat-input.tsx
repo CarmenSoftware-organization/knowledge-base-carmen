@@ -41,7 +41,7 @@ export const ChatInput = React.memo(({
                 )}
             </AnimatePresence>
 
-            <div className={`flex items-center gap-3 px-6 pt-5 pb-6 flex-shrink-0 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all duration-300 ${isResizing ? "opacity-10 blur-sm pointer-events-none" : "opacity-100 blur-0"}`}>
+            <div className={`flex items-center gap-3 px-6 pt-5 pb-6 flex-shrink-0 border-t border-slate-100/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 transition-all duration-300 ${isResizing ? "opacity-10 blur-sm pointer-events-none" : "opacity-100 blur-0"}`}>
                 {config.showAttach && (
                     <>
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} title="แนบรูปภาพ" aria-label="แนบรูปภาพ" />
@@ -66,7 +66,7 @@ export const ChatInput = React.memo(({
                     onKeyDown={handleKeyDown}
                     rows={1}
                     placeholder="พิมพ์ข้อความที่นี่..."
-                    className="flex-1 px-5 py-[14px] rounded-[16px] border outline-none resize-none transition-all bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 min-h-[50px] max-h-[120px] font-['Sarabun',_sans-serif] text-[15px] leading-[1.5] border-[color:var(--input-border-color,transparent)] [box-shadow:var(--input-focus-shadow,none)]"
+                    className="flex-1 px-5 py-[14px] rounded-[16px] border outline-none resize-none transition-all bg-white/60 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-600/50 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 min-h-[50px] max-h-[120px] font-['Sarabun',_sans-serif] text-[15px] leading-[1.5] border-[color:var(--input-border-color,transparent)] [box-shadow:var(--input-focus-shadow,none)] backdrop-blur-md"
                     onFocus={() => setIsInputFocused(true)}
                     onBlur={() => setIsInputFocused(false)}
                 />

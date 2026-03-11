@@ -66,8 +66,8 @@ export default function CarmenChatWindow({ state }: Props) {
     if (!d.isMoving || !windowRef.current) return;
 
     // LERP calculation for smoothing
-    d.currentB += (d.targetB - d.currentB) * 0.18; // 0.18 is the smoothing factor (หน่วงหนึบๆ)
-    d.currentR += (d.targetR - d.currentR) * 0.18;
+    d.currentB += (d.targetB - d.currentB) * 0.15; // 0.15 (หน่วงหนึบๆ กว่าเดิม)
+    d.currentR += (d.targetR - d.currentR) * 0.15;
 
     windowRef.current.style.setProperty("--chat-bottom", d.currentB + "px");
     windowRef.current.style.setProperty("--chat-right", d.currentR + "px");
@@ -192,7 +192,7 @@ export default function CarmenChatWindow({ state }: Props) {
           ["--chat-height" as string]: isExpanded ? "calc(100% - 40px)" : "600px",
           ["--chat-radius" as string]: isExpanded ? "24px" : "32px",
         } as React.CSSProperties}
-        className="hidden sm:flex flex-col overflow-hidden border border-black/10 shadow-2xl bg-white dark:bg-slate-900 z-[2000001] touch-none fixed carmen-chat-box"
+        className="hidden sm:flex flex-col overflow-hidden border border-black/10 shadow-2xl bg-white/60 dark:bg-slate-900/60 z-[2000001] touch-none fixed carmen-chat-box"
       >
         <ChatContent state={state} theme={theme} isResizing={isResizing} onDragStart={handlePointerDown}
           isInputFocused={isInputFocused} setIsInputFocused={setIsInputFocused} // Pass down
@@ -221,10 +221,12 @@ export default function CarmenChatWindow({ state }: Props) {
           border-radius: var(--chat-radius);
           background: linear-gradient(
             135deg,
-            rgba(255, 255, 255, 0.98) 0%,
-            rgba(250, 250, 252, 0.98) 50%,
-            rgba(255, 255, 255, 0.98) 100%
+            rgba(255, 255, 255, 0.97) 0%,
+            rgba(248, 250, 252, 0.97) 50%,
+            rgba(255, 255, 255, 0.97) 100%
           ) !important;
+          backdrop-filter: blur(40px) saturate(1.5) !important;
+          -webkit-backdrop-filter: blur(40px) saturate(1.5) !important;
           box-shadow:
             0 20px 60px rgba(0, 0, 0, 0.15),
             0 8px 24px rgba(0, 0, 0, 0.1),
@@ -234,10 +236,12 @@ export default function CarmenChatWindow({ state }: Props) {
         :global(.dark) .carmen-chat-box {
           background: linear-gradient(
             135deg,
-            rgba(15, 23, 42, 0.98) 0%,
-            rgba(30, 41, 59, 0.98) 50%,
-            rgba(15, 23, 42, 0.98) 100%
+            rgba(15, 23, 42, 0.96) 0%,
+            rgba(30, 41, 59, 0.96) 50%,
+            rgba(15, 23, 42, 0.96) 100%
           ) !important;
+          backdrop-filter: blur(40px) saturate(1.5) !important;
+          -webkit-backdrop-filter: blur(40px) saturate(1.5) !important;
           box-shadow:
             0 20px 60px rgba(0, 0, 0, 0.45),
             0 8px 24px rgba(0, 0, 0, 0.3),
@@ -272,12 +276,75 @@ export default function CarmenChatWindow({ state }: Props) {
         .carmen-content ol {
           list-style-type: decimal !important;
         }
+
+        /* === Dark Mode Compatible Formatter Styles === */
+        .carmen-hr {
+          border: none;
+          border-top: 1px solid #e2e8f0;
+          margin: 12px 0;
+        }
+        .dark .carmen-hr {
+          border-top-color: #475569;
+        }
+        .carmen-heading-2 {
+          font-weight: 700;
+          font-size: 16px;
+          margin: 14px 0 6px 0;
+          color: #1e293b;
+        }
+        .dark .carmen-heading-2 {
+          color: #e2e8f0;
+        }
+        .carmen-heading-3 {
+          font-weight: 700;
+          font-size: 15px;
+          margin: 12px 0 6px 0;
+          color: #1e293b;
+        }
+        .dark .carmen-heading-3 {
+          color: #e2e8f0;
+        }
+        .carmen-numbered-item {
+          display: flex;
+          gap: 8px;
+          margin: 6px 0 2px 0;
+        }
+        .carmen-number {
+          min-width: 20px;
+          color: #1e40af;
+        }
+        .dark .carmen-number {
+          color: #93c5fd;
+        }
+        .carmen-inline-code {
+          background: #f1f5f9;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 13px;
+          color: #334155;
+        }
+        .dark .carmen-inline-code {
+          background: #334155;
+          color: #e2e8f0;
+        }
         .carmen-link {
+          color: #2563eb;
+          text-decoration: underline;
           transition: opacity 0.2s;
+        }
+        .dark .carmen-link {
+          color: #93c5fd;
         }
         .carmen-link:hover {
           opacity: 0.7;
         }
+        .carmen-content a:not(.carmen-link) {
+          color: #2563eb;
+        }
+        .dark .carmen-content a:not(.carmen-link) {
+          color: #93c5fd;
+        }
+
         .carmen-processed-video {
           box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
           transform: translateZ(0);

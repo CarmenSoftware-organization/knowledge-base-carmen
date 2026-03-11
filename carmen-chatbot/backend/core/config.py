@@ -8,8 +8,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Project root (localChromaDB + openrouter)
 PROJECT_ROOT = BASE_DIR.parent.parent
 
-# Load .env from project root (single source of truth)
-load_dotenv(PROJECT_ROOT / ".env")
+# Chatbot Root (.env is here)
+CHATBOT_ROOT = BASE_DIR.parent
+
+# Load .env from chatbot root
+load_dotenv(CHATBOT_ROOT / ".env")
 
 class Settings:
     PROJECT_NAME: str = "Carmen Chatbot System"

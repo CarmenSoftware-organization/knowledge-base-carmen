@@ -66,10 +66,30 @@ function processImages(text: string, apiBase: string): string {
     return `${apiBase}/images/${u}`;
   };
 
+  // 1. Markdown images: ![alt](src)
   text = text.replace(/!\[(.*?)\]\((.*?)\)/g, (_m, alt, src) => {
     if (src.includes("youtube")) return _m;
     const url = resolveUrl(src);
-    return `<br><a href="${url}" target="_blank"><img src="${url}" alt="${alt}" style="max-width:100%;border-radius:12px;margin:8px 0;" /></a><br>`;
+    return `<br><img src="${url}" alt="${alt}" data-lightbox="${url}" class="carmen-lightbox-img" style="max-width:100%;border-radius:12px;margin:8px 0;cursor:zoom-in;" /><br>`;
+  });
+
+  // 2. Existing HTML <img> tags with relative src — resolve to full API URL
+  text = text.replace(/<img\s+([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi, (_m, before, src, after) => {
+    // Skip if already an absolute URL or data URI
+    if (/^(https?:|data:)/.test(src.trim())) return _m;
+    const url = resolveUrl(src);
+    // Add lightbox support and cursor hint
+    const hasLightbox = before.includes('data-lightbox') || after.includes('data-lightbox');
+    const lightboxAttr = hasLightbox ? '' : ` data-lightbox="${url}"`;
+    const cursorStyle = 'cursor:zoom-in;';
+    // Inject cursor into existing style or add new style
+    let newAfter = after;
+    if (after.includes('style="')) {
+      newAfter = after.replace('style="', `style="${cursorStyle}`);
+    } else {
+      newAfter = ` style="${cursorStyle}"${after}`;
+    }
+    return `<img ${before}src="${url}"${lightboxAttr}${newAfter}>`;
   });
 
   return text;
@@ -80,15 +100,21 @@ function processLinks(text: string): string {
   const mdLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
   text = text.replace(mdLinkRegex, (match, label, url) => {
     if (url.includes('youtube.com') || url.includes('youtu.be')) return match;
-    return `<a href="${url}" target="_blank" class="carmen-link" style="color:#2563eb; text-decoration:underline;">${label}</a>`;
+    return `<a href="${url}" target="_blank" class="carmen-link">${label}</a>`;
   });
 
-  // 2. Bare URLs
+  // 2. Bare URLs — skip URLs inside HTML attributes
   const urlRegex = /(https?:\/\/(?!(?:www\.)?(?:youtube\.com|youtu\.be))[^\s<)"']+)/g;
   text = text.replace(urlRegex, (match, _p1, offset, fullString) => {
-    const prefix = fullString.substring(Math.max(0, offset - 15), offset);
-    if (/src=['"]?$|href=['"]?$|>$/.test(prefix)) return match;
-    return `<a href="${match}" target="_blank" class="carmen-link" style="color:#2563eb; text-decoration:underline;">${match}</a>`;
+    // Check if URL is inside an HTML attribute (look for =" or =' immediately before)
+    const prefix = fullString.substring(Math.max(0, offset - 50), offset);
+    // Skip if preceded by any attribute assignment like src=", href=", data-lightbox=", etc.
+    if (/[=]['"]\s*$/.test(prefix)) return match;
+    // Skip if inside an HTML tag (unclosed < before, no > between < and URL)
+    const lastAngle = prefix.lastIndexOf('<');
+    const lastClose = prefix.lastIndexOf('>');
+    if (lastAngle > lastClose) return match; // inside a tag
+    return `<a href="${match}" target="_blank" class="carmen-link">${match}</a>`;
   });
 
   return text;
@@ -105,19 +131,17 @@ function processMarkdownStructure(text: string): string {
 
     if (/^---+$/.test(line)) {
       if (inList) { out.push("</ul>"); inList = false; }
-      out.push('<hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0;" />');
+      out.push('<hr class="carmen-hr" />');
       continue;
     }
     if (/^### (.+)$/.test(line)) {
       if (inList) { out.push("</ul>"); inList = false; }
-      out.push(`<div style="font-weight:700;font-size:15px;margin:12px 0 6px 0;">
-        ${line.replace(/^### /, "")}</div>`);
+      out.push(`<div class="carmen-heading-3">${line.replace(/^### /, "")}</div>`);
       continue;
     }
     if (/^## (.+)$/.test(line)) {
       if (inList) { out.push("</ul>"); inList = false; }
-      out.push(`<div style="font-weight:700;font-size:16px;margin:14px 0 6px 0;">
-        ${line.replace(/^## /, "")}</div>`);
+      out.push(`<div class="carmen-heading-2">${line.replace(/^## /, "")}</div>`);
       continue;
     }
     if (/^[-*] (.+)$/.test(line)) {
@@ -129,8 +153,8 @@ function processMarkdownStructure(text: string): string {
     const numbered = line.match(/^(\d+)\.\s+(.+)$/);
     if (numbered) {
       if (inList) { out.push("</ul>"); inList = false; }
-      out.push(`<div style="display:flex;gap:8px;margin:6px 0 2px 0;">
-        <b style="min-width:20px;color:#1e40af;">${numbered[1]}.</b>
+      out.push(`<div class="carmen-numbered-item">
+        <b class="carmen-number">${numbered[1]}.</b>
         <span>${numbered[2]}</span>
       </div>`);
       blankCount = 0;
@@ -154,7 +178,7 @@ function processMarkdownStructure(text: string): string {
 function processInlineMarkdown(text: string): string {
   text = text.replace(
     /`([^`]+)`/g,
-    '<code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px;">$1</code>'
+    '<code class="carmen-inline-code">$1</code>'
   );
   text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
   text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<i>$1</i>");
