@@ -31,10 +31,10 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
     async function render() {
       const mermaid = (await import("mermaid")).default;
-
+      const isDark = document.documentElement.classList.contains("dark");
       mermaid.initialize({
         startOnLoad: false,
-        theme: "default",
+       theme: isDark ? "dark" : "default",
       });
 
       if (!ref.current || cancelled) return;
@@ -89,14 +89,14 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
         components={{
 
           code: ({ className, children }) => {
-  const code = String(children).trim();
+            const code = String(children).trim();
 
-  if (className?.includes("mermaid")) {
-    return <MermaidDiagram chart={code} />;
-  }
+            if (className?.includes("mermaid")) {
+              return <MermaidDiagram chart={code} />;
+            }
 
-  return <code className={className}>{children}</code>;
-},
+            return <code className={className}>{children}</code>;
+          },
 
           h1: ({ children, ...props }) => (
             <h1 {...props} className="text-3xl font-bold mt-1 mb-6 border-b border-border pb-3">

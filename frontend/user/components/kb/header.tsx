@@ -45,7 +45,7 @@ export function KBHeader() {
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-   
+
   const logoSrc = mounted && resolvedTheme === "dark"
     ? "/carmen-logo-light.png"
     : "/carmen02-logo.png";
@@ -72,15 +72,17 @@ export function KBHeader() {
             />
           </Link>
 
+          {/* Search — แสดงตั้งแต่ sm (iPad) ขึ้นไป */}
           {!isHome && (
-            <div className="hidden md:flex flex-1 max-w-2xl mx-4">
+            <div className="hidden sm:flex flex-1 max-w-2xl mx-4">
               <GlobalSearch variant="header" />
             </div>
           )}
 
           <div className="flex items-center gap-1">
 
-            <nav className="hidden md:flex items-center gap-1 mr-2">
+            {/* Desktop nav — lg ขึ้นไปเท่านั้น */}
+            <nav className="hidden lg:flex items-center gap-1 mr-2">
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/">หน้าหลัก</Link>
               </Button>
@@ -91,15 +93,19 @@ export function KBHeader() {
                 <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
               </Button>
             </nav>
-            <div className="hidden md:block">
+
+            <div className="hidden lg:block">
               <BUSwitcher />
             </div>
-            <ThemeToggle />
+            <div className="hidden lg:block">
+              <ThemeToggle />
+            </div>
 
+            {/* Hamburger — mobile & iPad (ซ่อนที่ lg ขึ้นไป) */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="lg:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -108,6 +114,7 @@ export function KBHeader() {
           </div>
         </div>
 
+        {/* Mobile/iPad dropdown menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -115,10 +122,11 @@ export function KBHeader() {
               initial="hidden"
               animate="show"
               exit="exit"
-              className="md:hidden border-t border-border py-4 space-y-4 px-2"
+              className="lg:hidden border-t border-border py-4 space-y-4 px-2"
             >
+              {/* Search เฉพาะ mobile เท่านั้น เพราะ sm ขึ้นไปแสดงใน header แล้ว */}
               {!isHome && (
-                <div className="pb-2">
+                <div className="pb-2 sm:hidden">
                   <GlobalSearch variant="header" placeholder="ค้นหาคู่มือหรือเนื้อหา..." />
                 </div>
               )}
@@ -129,7 +137,10 @@ export function KBHeader() {
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/categories">หมวดหมู่</Link>
                 </Button>
-                <div className="px-3">
+                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
+                </Button>
+                <div className="px-3 py-1">
                   <BUSwitcher />
                 </div>
                 <ThemeToggle />
