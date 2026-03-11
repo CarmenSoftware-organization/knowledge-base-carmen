@@ -55,11 +55,16 @@ class Settings:
         self.CORS_ORIGINS = [origin.strip() for origin in cors_origins_str.split(",")] if cors_origins_str else ["*"]
         self.FRONTEND_DIR: Path = BASE_DIR / "frontend"
         self.IMAGES_DIR: Path = BASE_DIR / "images"
-        self.WIKI_DIR: Path = PROJECT_ROOT / "carmen_cloud"
-
-        # CORS Settings
-        cors_origins_str = os.getenv("CORS_ORIGINS", "*")
-        self.CORS_ORIGINS = [origin.strip() for origin in cors_origins_str.split(",")] if cors_origins_str else ["*"]
+        
+        # Read WIKI_DIR from env, fallback to PROJECT_ROOT/carmen_cloud
+        wiki_path = os.getenv("WIKI_CONTENT_PATH", "")
+        if wiki_path:
+            wiki_resolved = Path(wiki_path)
+            if not wiki_resolved.is_absolute():
+                wiki_resolved = (CHATBOT_ROOT / wiki_resolved).resolve()
+            self.WIKI_DIR: Path = wiki_resolved
+        else:
+            self.WIKI_DIR: Path = PROJECT_ROOT / "carmen_cloud"
 
     @property
     def is_openrouter_api_ready(self) -> bool:

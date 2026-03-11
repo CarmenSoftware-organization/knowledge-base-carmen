@@ -82,6 +82,7 @@ export interface UseCarmenChatReturn {
   confirmClearHistory: () => void;
   dismissTooltip: () => void;
   updatePosition: (pos: { bottom: string | number; right: string | number }) => void;
+  stopGeneration: () => void;
 }
 
 export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
@@ -123,6 +124,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   // Added references for queue processing and aborting streams
   const messageQueue = useRef<{ text: string; roomId: string; botMsgId: string; userMsgId: string }[]>([]);
   const abortController = useRef<AbortController | null>(null);
+  const isUserStopRef = useRef(false);
   const isProcessingRef = useRef(false);
   const statusTimers = useRef<NodeJS.Timeout[]>([]);
   const suggestions = config.suggestedQuestions ?? DEFAULT_SUGGESTIONS;
@@ -187,8 +189,12 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   async function loadHistory(roomId: string) {
     const history = await api.getRoomHistory(roomId);
-    if (history.messages && history.messages.length > 0) {
-      const displayed: DisplayMessage[] = history.messages.map((m, i) => ({
+    
+    // Clean up any empty bot messages that might have been stuck from previous bugs
+    const validMessages = history.messages?.filter(m => !(m.sender === "bot" && !m.message.trim())) || [];
+
+    if (validMessages.length > 0) {
+      const displayed: DisplayMessage[] = validMessages.map((m, i) => ({
         id: `${roomId}-${i}`,
         role: m.sender,
         html: formatCarmenMessage(m.message, api.baseUrl),
@@ -301,11 +307,15 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     await loadHistory(currentRoomId);
   }
 
-  function retryMessage(errorText: string) {
+  async function retryMessage(errorText: string) {
     setMessages((prev) => prev.filter((m) => !(m.isError && m.errorText === errorText)));
     if (currentRoomId) {
       const userMsgId = `user-${Math.random().toString(36).substring(2, 11)}`;
       const botMsgId = `bot-${Math.random().toString(36).substring(2, 11)}`;
+      
+      const userTimestamp = new Date().toISOString();
+      const botTimestamp = new Date(Date.now() + 1).toISOString();
+
       setMessages((prev) => [
         ...prev,
         {
@@ -313,7 +323,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           role: "user",
           html: formatCarmenMessage(errorText, api.baseUrl),
           isQueued: true,
-          timestamp: new Date().toISOString(),
+          timestamp: userTimestamp,
         },
         {
           id: botMsgId,
@@ -323,6 +333,21 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           statusText: "รอคิว...",
         },
       ]);
+
+      await api.saveMessage(currentRoomId, {
+        id: userMsgId,
+        sender: "user",
+        message: errorText,
+        image: false,
+        timestamp: userTimestamp,
+      });
+
+      await api.saveMessage(currentRoomId, {
+        id: botMsgId,
+        sender: "bot",
+        message: "",
+        timestamp: botTimestamp,
+      });
 
       messageQueue.current.push({ text: errorText, roomId: currentRoomId, botMsgId, userMsgId });
       processQueue();
@@ -390,6 +415,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
     let accumulated = "";
     let finalMsgId: string | null = null;
+    let didSave = false;
 
     // ... [Stream fetching logic] Same as the inner block of sendMessage ...
     try {
@@ -404,7 +430,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           username: config.username,
           room_id: processingRoomId,
           prompt_extend: config.promptExtend,
-          history: history.messages,
+          history: history.messages.filter((m: any) => m.id !== botMsgId && m.id !== userMsgId),
         }),
         signal,
       });
@@ -510,29 +536,37 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       });
     } catch (e: any) {
       if (e.name === "AbortError") {
-        console.log("Stream request aborted due to room switch.");
-        return;
-      }
-      console.warn("Stream Error:", e.message || e);
-      // Only show error and clear timers if we are still in the same room context
-      if (abortController.current === controller) {
-        statusTimers.current.forEach(clearTimeout);
-        statusTimers.current = [];
-        setMessages((prev) => prev.map((m) => {
-          if (m.id === botMsgId) {
-            return {
-              ...m,
-              html: "⚠️ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
-              isError: true,
-              errorText: msgText,
-            };
-          }
-          return m;
-        }));
+        if (isUserStopRef.current) {
+          const finalHtml = formatCarmenMessage(accumulated + "\n\n**[หยุดการสร้างคำตอบแล้ว]**", api.baseUrl);
+          setMessages((prev) =>
+            prev.map((m) => (m.id === botMsgId ? { ...m, html: finalHtml } : m))
+          );
+        } else {
+          console.log("Stream request aborted due to room switch.");
+          return;
+        }
+      } else {
+        console.warn("Stream Error:", e.message || e);
+        // Only show error and clear timers if we are still in the same room context
+        if (abortController.current === controller) {
+          statusTimers.current.forEach(clearTimeout);
+          statusTimers.current = [];
+          setMessages((prev) => prev.map((m) => {
+            if (m.id === botMsgId) {
+              return {
+                ...m,
+                html: "⚠️ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+                isError: true,
+                errorText: msgText,
+              };
+            }
+            return m;
+          }));
+        }
       }
     } finally {
       // Only run cleanup if this specific process wasn't aborted by a room switch
-      if (abortController.current === controller) {
+      if (abortController.current === controller || isUserStopRef.current) {
         statusTimers.current.forEach(clearTimeout);
         statusTimers.current = [];
 
@@ -543,15 +577,24 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       }
     }
 
-    if (accumulated && processingRoomId && !signal.aborted) {
+    if (accumulated && processingRoomId && (!signal.aborted || isUserStopRef.current)) {
+      const stopNote = signal.aborted ? "\n\n**[หยุดการสร้างคำตอบแล้ว]**" : "";
       await api.saveMessage(processingRoomId, {
         id: finalMsgId || botMsgId,
         sender: "bot",
-        message: accumulated,
+        message: accumulated + stopNote,
         timestamp: new Date().toISOString(),
-      });
+      }, botMsgId);
+      didSave = true;
       await loadRoomList();
     }
+    
+    if (!didSave && processingRoomId) {
+      // Clean up the placeholder if we didn't save a final message
+      await api.deleteMessage(processingRoomId, botMsgId);
+    }
+    
+    isUserStopRef.current = false;
   }
 
   async function sendMessage(text?: string) {
@@ -608,6 +651,14 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       timestamp: userMsg.timestamp || new Date().toISOString(),
     });
 
+    // Save a placeholder for the bot message to maintain chronological order in localStorage
+    await api.saveMessage(roomId, {
+      id: botMsgId,
+      sender: "bot",
+      message: "",
+      timestamp: new Date(Date.now() + 1).toISOString(), // slightly after the user message
+    });
+
     // Pass the actual roomId (local variable) to the queue
     messageQueue.current.push({ text: msgText, roomId, botMsgId, userMsgId });
     processQueue();
@@ -620,6 +671,13 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   function updatePosition(newPos: { bottom: string | number; right: string | number }) {
     setPosition(newPos);
     localStorage.setItem(`carmen_chat_pos_${config.bu}`, JSON.stringify(newPos));
+  }
+
+  function stopGeneration() {
+    if (isProcessingRef.current && abortController.current) {
+      isUserStopRef.current = true;
+      abortController.current.abort();
+    }
   }
 
   // Use refs to keep stable function identities for child components (avoids re-rendering MessageList on every keystroke)
@@ -640,6 +698,11 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const stableSendMessage = useState(() => (text?: string) => sendMessageRef.current(text))[0];
   const stableRetryMessage = useState(() => (errorText: string) => retryMessageRef.current(errorText))[0];
   const stableSendFeedback = useState(() => (msgId: string, score: number) => sendFeedbackRef.current(msgId, score))[0];
+  
+  const stopGenerationRef = useRef(stopGeneration);
+  useEffect(() => { stopGenerationRef.current = stopGeneration; });
+  const stableStopGeneration = useState(() => () => stopGenerationRef.current())[0];
+
   const stableCreateNewChat = useState(() => () => createNewChatRef.current())[0];
   const stableSwitchRoom = useState(() => (roomId: string) => switchRoomRef.current(roomId))[0];
 
@@ -681,5 +744,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     confirmClearHistory,
     dismissTooltip,
     updatePosition,
+    stopGeneration: stableStopGeneration,
   };
 }

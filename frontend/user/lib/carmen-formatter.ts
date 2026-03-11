@@ -180,6 +180,7 @@ function processInlineMarkdown(text: string): string {
     /`([^`]+)`/g,
     '<code class="carmen-inline-code">$1</code>'
   );
+  text = text.replace(/\*\*\*(.*?)\*\*\*/g, "<b><i>$1</i></b>");
   text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
   text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<i>$1</i>");
   return text;

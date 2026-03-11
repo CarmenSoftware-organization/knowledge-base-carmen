@@ -32,7 +32,7 @@ export default function FloatingChatBot({
   }, [initialBU]);
 
   const resolvedApiBase =
-    apiBase ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+    apiBase ?? process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
 
   const state = useCarmenChat({
     bu: currentBU,

@@ -4,7 +4,6 @@ from fastapi.responses import StreamingResponse
 from ..core.schemas import ChatRequest
 from ..llm.chat_service import chat_service
 from ..core.rate_limit import limiter
-from ..core.rate_limit import limiter
 from ..core.config import settings
 
 router = APIRouter(

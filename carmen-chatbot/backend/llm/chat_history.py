@@ -5,9 +5,11 @@ import time
 # 💬 CHAT HISTORY (Frontend-Only / Stateless)
 # ==========================================
 
-# Temporary per-request cache (populated from frontend history each request)
-_request_history = {}
+from cachetools import LRUCache
 
+# Temporary per-request cache (populated from frontend history each request)
+# Limit to 20 rooms to prevent memory leaks
+_request_history = LRUCache(maxsize=20)
 
 def clean_for_history(text: str, max_len: int = 200) -> str:
     """Strip images, HTML, videos from text before storing in chat history."""

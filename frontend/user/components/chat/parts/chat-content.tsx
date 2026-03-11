@@ -29,7 +29,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
         setDeleteModal, setClearModal, toggleOpen, toggleExpand,
         createNewChat, switchRoom, sendMessage, retryMessage, sendFeedback,
         confirmDeleteRoom, confirmClearHistory,
-        alertModal, setAlertModal,
+        alertModal, setAlertModal, stopGeneration,
     } = state;
 
     const bodyRef = useRef<HTMLDivElement>(null);
@@ -145,6 +145,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
+            setUserHasScrolledUp(false);
             if (inputRef.current) inputRef.current.style.height = "auto";
         }
     }
@@ -223,28 +224,32 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
 
             <AnimatePresence>
-                {messages.filter(m => m.isQueued && m.role === "user").length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        className="absolute bottom-[90px] left-0 right-0 px-4 z-40 flex flex-col items-end gap-2 pointer-events-none"
-                    >
-                        {messages.filter(m => m.isQueued && m.role === "user").map(msg => (
-                            <motion.div
-                                key={`sticky-${msg.id}`}
-                                layout
-                                initial={{ opacity: 0, scale: 0.9, x: 20 }}
-                                animate={{ opacity: 0.9, scale: 1, x: 0 }}
-                                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
-                                className="bg-slate-800/80 backdrop-blur-md text-white text-[13px] px-3 py-2 rounded-2xl rounded-br-sm shadow-lg max-w-[70%] truncate pointer-events-auto border border-white/10 flex items-center gap-2"
-                            >
-                                <div className="w-3 h-3 rounded-full border-[1.5px] border-white/30 border-t-white animate-spin flex-shrink-0" />
-                                <span className="truncate" dangerouslySetInnerHTML={{ __html: msg.html }} />
-                            </motion.div>
-                        ))}
-                    </motion.div>
-                )}
+                {(() => {
+                    const queuedUserMessages = messages.filter(m => m.isQueued && m.role === "user");
+                    if (queuedUserMessages.length === 0) return null;
+                    return (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            className="absolute bottom-[90px] left-0 right-0 px-4 z-40 flex flex-col items-end gap-2 pointer-events-none"
+                        >
+                            {queuedUserMessages.map(msg => (
+                                <motion.div
+                                    key={`sticky-${msg.id}`}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                                    animate={{ opacity: 0.9, scale: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+                                    className="bg-slate-800/80 backdrop-blur-md text-white text-[13px] px-3 py-2 rounded-2xl rounded-br-sm shadow-lg max-w-[70%] truncate pointer-events-auto border border-white/10 flex items-center gap-2"
+                                >
+                                    <div className="w-3 h-3 rounded-full border-[1.5px] border-white/30 border-t-white animate-spin flex-shrink-0" />
+                                    <span className="truncate" dangerouslySetInnerHTML={{ __html: msg.html }} />
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    );
+                })()}
             </AnimatePresence>
 
             <AnimatePresence>
@@ -279,6 +284,9 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 theme={theme}
                 imageBase64={imageBase64}
                 setImageBase64={setImageBase64}
+                isProcessing={isProcessing()}
+                stopGeneration={stopGeneration}
+                forceScrollToBottom={() => { setUserHasScrolledUp(false); scrollToBottom(true, false); }}
             />
 
             <AnimatePresence>

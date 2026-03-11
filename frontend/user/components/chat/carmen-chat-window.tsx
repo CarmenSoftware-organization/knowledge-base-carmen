@@ -146,22 +146,20 @@ export default function CarmenChatWindow({ state }: Props) {
     window.removeEventListener("pointerup", handlePointerUp);
 
     const d = dragState.current;
+    const wasMoving = d.isMoving;
 
     // Allow the loop to finish its smoothing settling before cancelling
     setTimeout(() => {
       if (d.rafId) cancelAnimationFrame(d.rafId);
       d.isMoving = false;
 
-      if (windowRef.current) {
+      if (windowRef.current && wasMoving) {
+        state.updatePosition({
+          bottom: windowRef.current.style.getPropertyValue("--chat-bottom"),
+          right: windowRef.current.style.getPropertyValue("--chat-right"),
+        });
         windowRef.current.classList.remove("carmen-dragging");
-        if (d.isMoving) {
-          state.updatePosition({
-            bottom: windowRef.current.style.getPropertyValue("--chat-bottom"),
-            right: windowRef.current.style.getPropertyValue("--chat-right"),
-          });
-        }
       }
-      d.isMoving = false;
     }, 150); // Small wait to allow the LERP to visibly complete its journey
 
     document.body.style.userSelect = "";

@@ -2,7 +2,7 @@
 import { DisplayMessage } from "@/hooks/use-carmen-chat";
 import React, { useState, useMemo, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import rehypeRaw from "rehype-raw";
+import DOMPurify from "dompurify";
 
 interface Props {
   msg: DisplayMessage;
@@ -65,7 +65,16 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
   };
 
   const processedContent = useMemo(() => {
-    return stripIncompleteTags(rawContent);
+    const cleaned = stripIncompleteTags(rawContent);
+    // Sanitize HTML to prevent XSS from LLM prompt injection
+    if (typeof window !== "undefined") {
+      return DOMPurify.sanitize(cleaned, {
+        ADD_TAGS: ["iframe"],
+        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "data-lightbox"],
+        ALLOWED_URI_REGEXP: /^(?:(?:https?|data):|\/|images\/)/i,
+      });
+    }
+    return cleaned;
   }, [rawContent]);
 
 

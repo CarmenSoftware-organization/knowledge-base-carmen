@@ -16,10 +16,13 @@ interface ChatInputProps {
     theme: string;
     imageBase64: string | null;
     setImageBase64: (val: string | null) => void;
+    isProcessing?: boolean;
+    stopGeneration?: () => void;
+    forceScrollToBottom?: () => void;
 }
 
 export const ChatInput = React.memo(({
-    isResizing, config, fileInputRef, handleFileChange, inputRef, inputValue, handleInput, handleKeyDown, setIsInputFocused, sendMessage, theme, imageBase64, setImageBase64
+    isResizing, config, fileInputRef, handleFileChange, inputRef, inputValue, handleInput, handleKeyDown, setIsInputFocused, sendMessage, theme, imageBase64, setImageBase64, isProcessing, stopGeneration, forceScrollToBottom
 }: ChatInputProps) => {
     return (
         <>
@@ -71,17 +74,45 @@ export const ChatInput = React.memo(({
                     onBlur={() => setIsInputFocused(false)}
                 />
 
-                <motion.button
-                    onClick={() => { sendMessage(); if (inputRef.current) inputRef.current.style.height = "auto"; }}
-                    className="w-12 h-12 rounded-[14px] text-white flex items-center justify-center flex-shrink-0 shadow-lg bg-[#0f172a] hover:bg-[var(--chat-theme)]"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    title="ส่งข้อความ"
-                >
-                    <svg viewBox="0 0 24 24" fill="white" width="24" height="24">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                    </svg>
-                </motion.button>
+                <div className="relative w-12 h-12 flex-shrink-0">
+                    <AnimatePresence mode="popLayout">
+                        {isProcessing ? (
+                            <motion.button
+                                key="stop-btn"
+                                onClick={() => stopGeneration?.()}
+                                initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
+                                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                exit={{ opacity: 0, scale: 0.5, rotate: 45 }}
+                                transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+                                className="absolute inset-0 group rounded-[14px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 flex items-center justify-center shadow-sm bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors font-medium"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                title="หยุดการสร้างคำตอบ"
+                            >
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="transform group-hover:scale-110 transition-transform">
+                                    <rect x="7" y="7" width="10" height="10" rx="2" ry="2" />
+                                </svg>
+                            </motion.button>
+                        ) : (
+                            <motion.button
+                                key="send-btn"
+                                onClick={() => { sendMessage(); forceScrollToBottom?.(); if (inputRef.current) inputRef.current.style.height = "auto"; }}
+                                initial={{ opacity: 0, scale: 0.5, rotate: 45 }}
+                                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                exit={{ opacity: 0, scale: 0.5, rotate: -45 }}
+                                transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+                                className="absolute inset-0 rounded-[14px] text-white flex items-center justify-center shadow-lg bg-[#0f172a] hover:bg-[var(--chat-theme)]"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                title="ส่งข้อความ"
+                            >
+                                <svg viewBox="0 0 24 24" fill="white" width="24" height="24">
+                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                                </svg>
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
         </>
     );

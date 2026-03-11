@@ -77,7 +77,8 @@ export function createCarmenApi(baseUrl: string) {
 
   async function saveMessage(
     roomId: string,
-    msg: CarmenMessage
+    msg: CarmenMessage,
+    matchId?: string
   ): Promise<void> {
     if (!roomId || !msg) return;
     let saved = false;
@@ -85,7 +86,13 @@ export function createCarmenApi(baseUrl: string) {
     while (!saved && attempt < 10) {
       try {
         const history = await getRoomHistory(roomId);
-        history.messages.push(msg);
+        const searchId = matchId || msg.id;
+        const existingIdx = history.messages.findIndex(m => m.id === searchId && searchId);
+        if (existingIdx !== -1) {
+          history.messages[existingIdx] = msg;
+        } else {
+          history.messages.push(msg);
+        }
         localStorage.setItem(
           `carmen_history_${roomId}`,
           JSON.stringify(history)
@@ -129,6 +136,17 @@ export function createCarmenApi(baseUrl: string) {
     }
   }
 
+  async function deleteMessage(roomId: string, messageId: string): Promise<void> {
+    try {
+      if (!roomId || !messageId) return;
+      const history = await getRoomHistory(roomId);
+      history.messages = history.messages.filter((m) => m.id !== messageId);
+      localStorage.setItem(`carmen_history_${roomId}`, JSON.stringify(history));
+    } catch {
+      // silent
+    }
+  }
+
   async function sendFeedback(msgId: string, score: number): Promise<void> {
     try {
       await fetch(`${base}/api/chat/feedback/${msgId}`, {
@@ -156,6 +174,7 @@ export function createCarmenApi(baseUrl: string) {
     getRoomHistory,
     saveMessage,
     deleteRoom,
+    deleteMessage,
     sendFeedback,
     clearHistory,
     baseUrl: base,

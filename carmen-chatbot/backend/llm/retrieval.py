@@ -37,7 +37,8 @@ class RetrievalService:
         try:
             self.embeddings = OllamaEmbeddings(
                 model=settings.OLLAMA_EMBED_MODEL,
-                base_url=settings.OLLAMA_URL
+                base_url=settings.OLLAMA_URL,
+                client_kwargs={"timeout": 10.0}
             )
         except Exception as e:
             print(f"❌ Error Initializing AI Brain: {e}")
@@ -80,9 +81,17 @@ class RetrievalService:
         
         return all_patterns, matched_keywords
 
+    # Whitelist: only allow safe schema names (alphanumeric + underscore)
+    SAFE_SCHEMA_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+
     def search(self, query: str, db_schema: str = "carmen"):
         passed_docs = []
         source_debug = []
+
+        # Validate db_schema to prevent SQL injection
+        if not self.SAFE_SCHEMA_PATTERN.match(db_schema):
+            print(f"❌ Invalid db_schema rejected: {db_schema!r}")
+            return passed_docs, source_debug
         
         if not self.embeddings:
             return passed_docs, source_debug
