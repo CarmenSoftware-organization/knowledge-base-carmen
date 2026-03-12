@@ -28,6 +28,7 @@ export interface CarmenChatConfig {
   showClear?: boolean;
   showAttach?: boolean;
   suggestedQuestions?: string[];
+  proactiveMessages?: { pathPattern: RegExp | string; delayMs: number; message: string; subMessage?: string; timeoutMs?: number }[];
   onTypingFrame?: () => void;
 }
 
@@ -60,7 +61,7 @@ export interface UseCarmenChatReturn {
     description: string;
     variant: "danger" | "info" | "success";
   };
-  tooltipVisible: boolean;
+  tooltipData: { visible: boolean; message: string; subMessage?: string };
   position: { bottom: string | number; right: string | number } | null;
   suggestions: string[];
   config: CarmenChatConfig;
@@ -113,7 +114,11 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     description: "",
     variant: "info",
   });
-  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipData, setTooltipData] = useState<{ visible: boolean; message: string; subMessage?: string }>({
+    visible: false,
+    message: "ผู้ช่วย AI พร้อมให้คำแนะนำ",
+    subMessage: "สอบถามข้อมูลคู่มือได้ทันที!",
+  });
   const [position, setPosition] = useState<{
     bottom: string | number;
     right: string | number;
@@ -136,11 +141,55 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     if (wasOpen) setIsOpen(true);
     if (wasExpanded) setIsExpanded(true);
 
-    const seen = localStorage.getItem(`carmen_tooltip_seen_${config.bu}`);
-    if (!seen) {
-      setTimeout(() => setTooltipVisible(true), 2000);
-      setTimeout(() => setTooltipVisible(false), 10000);
-    }
+    const checkProactiveMessages = () => {
+      if (isOpen || !config.proactiveMessages) return;
+      const currentPath = window.location.pathname;
+
+      for (const rule of config.proactiveMessages) {
+        let isMatch = false;
+        if (rule.pathPattern instanceof RegExp) {
+          isMatch = rule.pathPattern.test(currentPath);
+        } else {
+          isMatch = currentPath.includes(rule.pathPattern);
+        }
+
+        if (isMatch) {
+          const ruleId = `carmen_proactive_${config.bu}_${rule.message}`;
+          const hasSeenRule = sessionStorage.getItem(ruleId); // Use sessionStorage so it resets on new tab/session
+          
+          if (!hasSeenRule) {
+            setTimeout(() => {
+              // Check again if it's open, user might have opened it during the delay
+              setIsOpen(currentIsOpen => {
+                 if(!currentIsOpen) {
+                    setTooltipData({
+                      visible: true,
+                      message: rule.message,
+                      subMessage: rule.subMessage || "มีข้อสงสัยถาม Carmen ได้เลย!",
+                    });
+                    if (rule.timeoutMs) {
+                      setTimeout(() => setTooltipData(prev => ({...prev, visible: false})), rule.timeoutMs);
+                    }
+                 }
+                 return currentIsOpen;
+              })
+            }, rule.delayMs);
+            sessionStorage.setItem(ruleId, "true");
+            return; // Stop after first match
+          }
+        }
+      }
+      
+      // Default Welcome Tooltip (only if hasn't seen any tooltip)
+      const seenDefault = localStorage.getItem(`carmen_tooltip_seen_${config.bu}`);
+      if (!seenDefault) {
+        setTimeout(() => setTooltipData(prev => ({...prev, visible: true})), 2000);
+        setTimeout(() => setTooltipData(prev => ({...prev, visible: false})), 10000);
+        localStorage.setItem(`carmen_tooltip_seen_${config.bu}`, "true");
+      }
+    };
+    
+    checkProactiveMessages();
 
     const savedPos = localStorage.getItem(`carmen_chat_pos_${config.bu}`);
     if (savedPos) {
@@ -219,10 +268,11 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       setShowRoomDropdown(false);
       localStorage.setItem(`carmen_expanded_${config.bu}`, "false");
     }
+    if (next) setTooltipData(prev => ({...prev, visible: false})); // Auto dismiss tooltip when opened
   }
 
   function dismissTooltip() {
-    setTooltipVisible(false);
+    setTooltipData(prev => ({...prev, visible: false}));
     localStorage.setItem(`carmen_tooltip_seen_${config.bu}`, "true");
   }
 
@@ -722,7 +772,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     deleteModal,
     clearModal,
     alertModal,
-    tooltipVisible,
+    tooltipData,
     position,
     suggestions,
     config,
