@@ -76,11 +76,15 @@ type GitHubConfig struct {
 }
 
 type GitConfig struct {
-	RepoPath     string
-	RepoURL      string
-	ContentPath  string
-	ChunkSize    int
-	ChunkOverlap int
+	RepoPath          string
+	RepoURL           string
+	ContentPath       string
+	ChunkSize         int
+	ChunkOverlap      int
+	SyncBranch        string   // branch สำหรับ wiki sync (GIT_SYNC_BRANCH)
+	DefaultBU         string   // BU เมื่อ schema ไม่ valid (WIKI_DEFAULT_BU)
+	CarmenContentDirs []string // paths ที่ลองสำหรับ carmen (WIKI_CARMEN_PATHS)
+	CarmenGitPath     string   // prefix ใน GitHub สำหรับ carmen (WIKI_CARMEN_GIT_PATH)
 }
 
 // WikiSearchConfig holds configurable values for wiki search (avoids hardcoding).
@@ -98,6 +102,21 @@ type ChatConfig struct {
 }
 
 var AppConfig *Config
+
+// Default values (ใช้เมื่อ env ไม่ได้ตั้ง — แก้ได้ผ่าน env)
+const (
+	defaultRepoPath      = "./wiki-content"
+	defaultBU            = "carmen"
+	defaultCarmenPaths   = "../carmen_cloud,./carmen_cloud"
+	defaultCarmenGitPath = "carmen_cloud"
+	defaultGitSyncBranch = "wiki-content"
+)
+
+// DefaultRepoPath returns the default wiki repo path when config is empty.
+func DefaultRepoPath() string { return defaultRepoPath }
+
+// DefaultGitSyncBranch returns the default branch for wiki sync.
+func DefaultGitSyncBranch() string { return defaultGitSyncBranch }
 
 func Load() error {
 	if err := godotenv.Load(".env"); err != nil {
@@ -142,11 +161,15 @@ func Load() error {
 			WebhookBranch: getEnv("GITHUB_WEBHOOK_BRANCH", getEnv("GITHUB_BRANCH", "main")),
 		},
 		Git: GitConfig{
-			RepoPath:     getEnv("GIT_REPO_PATH", "./wiki-content"),
-			RepoURL:      getEnv("GIT_REPO_URL", ""),
-			ContentPath:  getEnv("WIKI_CONTENT_PATH", ""),
-			ChunkSize:    getEnvAsInt("WIKI_CHUNK_SIZE", 500),
-			ChunkOverlap: getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
+			RepoPath:          getEnv("GIT_REPO_PATH", defaultRepoPath),
+			RepoURL:           getEnv("GIT_REPO_URL", ""),
+			ContentPath:       getEnv("WIKI_CONTENT_PATH", ""),
+			ChunkSize:         getEnvAsInt("WIKI_CHUNK_SIZE", 500),
+			ChunkOverlap:      getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
+			SyncBranch:        getEnv("GIT_SYNC_BRANCH", getEnv("GITHUB_BRANCH", defaultGitSyncBranch)),
+			DefaultBU:         getEnv("WIKI_DEFAULT_BU", defaultBU),
+			CarmenContentDirs: getEnvAsStringSlice("WIKI_CARMEN_PATHS", defaultCarmenPaths),
+			CarmenGitPath:     getEnv("WIKI_CARMEN_GIT_PATH", defaultCarmenGitPath),
 		},
 		WikiSearch: WikiSearchConfig{
 			SearchLimit:       getEnvAsInt("WIKI_SEARCH_LIMIT", 20),
@@ -191,7 +214,7 @@ func GetWikiContentPath() string {
 // NormalizePath cleans and normalizes a path (used for wiki content paths).
 func NormalizePath(path string) string {
 	if path == "" {
-		return "./wiki-content"
+		return defaultRepoPath
 	}
 	if filepath.IsAbs(path) {
 		return filepath.Clean(path)
@@ -229,4 +252,18 @@ func getEnvAsFloat(key string, defaultValue float64) float64 {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsStringSlice(key, defaultCSV string) []string {
+	val := getEnv(key, defaultCSV)
+	if val == "" {
+		val = defaultCSV
+	}
+	var out []string
+	for _, s := range strings.Split(val, ",") {
+		if t := strings.TrimSpace(s); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
