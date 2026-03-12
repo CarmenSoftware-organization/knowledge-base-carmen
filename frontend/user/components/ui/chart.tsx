@@ -78,19 +78,41 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
+  const safeCssIdent = (s: string) => {
+    // Very small allowlist for CSS custom property suffixes.
+    // Anything else is dropped to avoid style injection via config keys.
+    return String(s).replace(/[^a-zA-Z0-9_-]/g, '')
+  }
+
+  const isSafeColor = (value: unknown) => {
+    if (typeof value !== 'string') return false
+    const v = value.trim()
+    // Allow common safe color formats; reject anything containing ';' or braces.
+    if (/[;{}]/.test(v)) return false
+    return (
+      /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v) ||
+      /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(v) ||
+      /^hsla?\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%(\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(v) ||
+      /^var\(--[a-zA-Z0-9_-]+\)$/.test(v)
+    )
+  }
+
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart="${id.replace(/"/g, '\\"')}"] {
 ${colorConfig
   .map(([key, itemConfig]) => {
+    const safeKey = safeCssIdent(key)
+    if (!safeKey) return null
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+    if (!color || !isSafeColor(color)) return null
+    return `  --color-${safeKey}: ${color};`
   })
   .join('\n')}
 }
