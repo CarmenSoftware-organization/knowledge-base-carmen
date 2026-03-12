@@ -22,7 +22,7 @@ from slowapi.errors import RateLimitExceeded
 
 from .core.rate_limit import limiter
 
-from .core.config import FRONTEND_DIR, IMAGES_DIR, WIKI_DIR, CORS_ORIGINS
+from .core.config import settings
 from .api import chat_routes as chat
 
 IMAGE_INDEX = {}
@@ -30,8 +30,8 @@ IMAGE_INDEX = {}
 def build_image_index():
     """Scan all images in WIKI_DIR at startup and cache their paths."""
     print("📸 Building Image Index Cache...")
-    if WIKI_DIR.exists():
-        for path in WIKI_DIR.rglob("*"):
+    if settings.WIKI_DIR.exists():
+        for path in settings.WIKI_DIR.rglob("*"):
             if path.is_file() and path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']:
                 IMAGE_INDEX[path.name] = path
     print(f"✅ Image Index Built: {len(IMAGE_INDEX)} images found.")
@@ -53,7 +53,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -69,7 +69,7 @@ async def health_check(request: Request):
     return {"status": "ok"}
 
 # Static Files
-if not IMAGES_DIR.exists(): os.makedirs(IMAGES_DIR)
+if not settings.IMAGES_DIR.exists(): os.makedirs(settings.IMAGES_DIR)
 
 # ⚡ Caching Image Paths to prevent recursive IO bottlenecks in Production ⚡
 @lru_cache(maxsize=1024)
@@ -79,9 +79,9 @@ def find_image_path(filename: str) -> Path | None:
     if clean_filename.startswith("carmen_cloud/"):
         clean_filename = clean_filename[len("carmen_cloud/"):]
         
-    if WIKI_DIR.exists():
+    if settings.WIKI_DIR.exists():
         # First check the exact relative path in WIKI_DIR
-        exact_path = WIKI_DIR / clean_filename
+        exact_path = settings.WIKI_DIR / clean_filename
         if exact_path.is_file():
             return exact_path
             
@@ -92,7 +92,7 @@ def find_image_path(filename: str) -> Path | None:
                 
     # Fallback to local images folder
     basename = os.path.basename(clean_filename)
-    local_path = IMAGES_DIR / basename
+    local_path = settings.IMAGES_DIR / basename
     if local_path.is_file():
         return local_path
         

@@ -9,7 +9,6 @@ import (
 	"github.com/new-carmen/backend/internal/services"
 )
 
-
 type WikiHandler struct {
 	wikiService *services.WikiService
 	syncService *services.WikiSyncService

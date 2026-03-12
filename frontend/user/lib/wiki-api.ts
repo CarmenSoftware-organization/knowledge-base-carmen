@@ -64,6 +64,7 @@ export async function getCategories(bu?: string): Promise<{
   items: { slug: string; title: string }[];
 }> {
   const selectedBU = bu || getSelectedBUClient();
+  
   const res = await fetch(`${BASE_URL}/api/wiki/categories?bu=${selectedBU}`, {
     cache: "no-store",
   });
