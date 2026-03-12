@@ -87,15 +87,39 @@ func NewWikiService() *WikiService {
 	}
 }
 
+// getRepoPath returns the filesystem path for a BU's wiki content.
+// สำหรับ "carmen": ใช้ carmen_cloud ที่ project root เท่านั้น (อยู่ใน repo, pull มาได้)
 func (s *WikiService) getRepoPath(bu string) string {
 	if !security.ValidateSchema(bu) {
 		bu = "carmen"
 	}
-	repoBase := config.AppConfig.Git.RepoPath
+	cfg := config.AppConfig.Git
 	if bu == "carmen" {
-		return filepath.Join(repoBase, "carmen_cloud")
+		// หลัก: carmen_cloud ที่ project root (../carmen_cloud เมื่อรันจาก backend/)
+		// WIKI_CONTENT_PATH ใช้ override ได้ถ้าต้องการ
+		if cfg.ContentPath != "" {
+			p := config.NormalizePath(cfg.ContentPath)
+			if abs, err := filepath.Abs(p); err == nil {
+				if info, err := os.Stat(abs); err == nil && info.IsDir() {
+					return abs
+				}
+			}
+		}
+		for _, p := range []string{"../carmen_cloud", "./carmen_cloud"} {
+			if abs, err := filepath.Abs(p); err == nil {
+				if info, err := os.Stat(abs); err == nil && info.IsDir() {
+					return abs
+				}
+			}
+		}
+		abs, _ := filepath.Abs("../carmen_cloud")
+		return abs
 	}
-	return filepath.Join(repoBase, bu)
+	repoBase := cfg.RepoPath
+	if repoBase == "" || repoBase == "." {
+		repoBase = "./wiki-content"
+	}
+	return filepath.Join(filepath.Clean(repoBase), bu)
 }
 
 // ─── Frontmatter Helpers ─────────────────────────────────────────────────────

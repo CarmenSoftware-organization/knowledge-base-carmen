@@ -177,18 +177,19 @@ func Load() error {
 func GetWikiContentPath() string {
 	c := AppConfig.Git
 	var basePath string
-	
+
 	if c.ContentPath != "" {
-		return normalizePath(c.ContentPath)
+		return NormalizePath(c.ContentPath)
 	}
 	if c.RepoPath != "" {
-		return normalizePath(c.RepoPath)
+		return NormalizePath(c.RepoPath)
 	}
-	
-	return normalizePath(basePath)
+
+	return NormalizePath(basePath)
 }
 
-func normalizePath(path string) string {
+// NormalizePath cleans and normalizes a path (used for wiki content paths).
+func NormalizePath(path string) string {
 	if path == "" {
 		return "./wiki-content"
 	}
