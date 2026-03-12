@@ -80,56 +80,69 @@ export default async function ArticlePage({ params }: Props) {
   const contentString = content.toString();
   const fixedContent = contentString.replace(/\n##/g, "\n\n##");
 
-return (
-  <div className="min-h-screen flex flex-col bg-background">
-    <KBHeader />
-    <MobileSidebar />
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <KBHeader />
+      {/* MobileSidebar shows only on mobile/tablet via its own internal logic */}
+      <MobileSidebar />
 
-    <main className="flex-1">
-      <div className="max-w-7xl mx-auto px-6 py-10 flex gap-10 items-start">
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex gap-10 items-start">
 
-        <KBSidebar />
+          {/* Desktop Sidebar — hidden on mobile & tablet, visible on xl+ */}
+          <div className="hidden xl:block shrink-0">
+            <KBSidebar />
+          </div>
 
-        <div className="flex-1 max-w-4xl">
+          {/* Main Article Content */}
+          <div className="flex-1 min-w-0 w-full max-w-4xl">
 
-          {/* Breadcrumb */}
-          <Breadcrumb
-            items={[
-              { label: "หมวดหมู่", href: "/categories" },
-              {
-                label: formatCategoryName(category),
-                href: `/categories/${category}`,
-              },
-              { label: title },
-            ]}
-          />
+            {/* Breadcrumb */}
+            <Breadcrumb
+              items={[
+                { label: "หมวดหมู่", href: "/categories" },
+                {
+                  label: formatCategoryName(category),
+                  href: `/categories/${category}`,
+                },
+                { label: title },
+              ]}
+            />
 
-          {/* Title Content */}
-          <ArticleHeaderInfo
-            title={title}
-            description={description}
-            formattedDate={formattedDate}
-            tags={tags}
-            editor={editor}
-          />
+            {/* Title Content */}
+            <ArticleHeaderInfo
+              title={title}
+              description={description}
+              formattedDate={formattedDate}
+              tags={tags}
+              editor={editor}
+            />
 
-          {/* Divider */}
-          <div className="border-b border-border mb-8"></div>
+            {/* Divider */}
+            <div className="border-b border-border mb-8"></div>
 
-          {/* Markdown Render */}
-          <MarkdownRender
-            content={fixedContent}
-            category={category}
-          />
+            {/* Table of Contents inline — shown only on mobile & tablet (below xl) */}
+            <div className="block xl:hidden mb-8">
+              <TableOfContents />
+            </div>
+
+            {/* Markdown Render */}
+            <MarkdownRender
+              content={fixedContent}
+              category={category}
+            />
+
+          </div>
+
+          {/* Desktop Table of Contents — hidden on mobile & tablet, visible on xl+ */}
+          <div className="hidden xl:block shrink-0">
+            <TableOfContents />
+          </div>
 
         </div>
+      </main>
 
-        <TableOfContents />
-
-      </div>
-    </main>
-
-    <KBFooter />
-  </div>
-);
+      <KBFooter />
+    </div>
+  );
 }
