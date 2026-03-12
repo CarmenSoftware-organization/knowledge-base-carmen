@@ -20,7 +20,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
 
   function handleCopy() {
     const el = document.createElement("div");
-    el.innerHTML = msg.html;
+    // Use sanitized content to avoid injecting attacker-controlled HTML into the DOM.
+    el.innerHTML = processedContent;
     const text = el.innerText || el.textContent || "";
 
     const onSuccess = () => {

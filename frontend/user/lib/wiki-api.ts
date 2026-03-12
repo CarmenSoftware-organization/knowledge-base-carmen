@@ -39,13 +39,21 @@ export async function getBusinessUnits(): Promise<{ items: BusinessUnit[] }> {
 export function getSelectedBUClient(): string {
   if (typeof window === "undefined") return "carmen";
   const match = document.cookie.match(/(^| )selected_bu=([^;]+)/);
-  if (match) return match[2];
+  if (match) {
+    try {
+      return decodeURIComponent(match[2]);
+    } catch {
+      return match[2];
+    }
+  }
   return "carmen";
 }
 
 export function setSelectedBU(slug: string) {
   if (typeof window !== "undefined") {
-    document.cookie = `selected_bu=${slug}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    const maxAge = 60 * 60 * 24 * 30;
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `selected_bu=${encodeURIComponent(slug)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
     window.dispatchEvent(new Event("bu-changed"));
   }
 }
@@ -115,20 +123,24 @@ export async function getAllArticles(bu?: string): Promise<WikiListItem[]> {
 // แปลง path จาก wiki → route ของหน้า content
 export function wikiPathToRoute(path: string): string {
   const normalizedPath = path.replace(/\\/g, "/");
-  const parts = normalizedPath.split("/").filter(Boolean);
+  const parts = normalizedPath
+    .split(/[?#]/)[0]
+    .split("/")
+    .filter(Boolean)
+    .filter((p) => p !== "." && p !== "..");
 
   if (parts.length === 0) return "/";
 
   // Root level index.md
   if (parts.length === 1) {
-    const slug = parts[0].replace(/\.md$/i, "");
+    const slug = encodeURIComponent(parts[0].replace(/\.md$/i, ""));
     if (slug === "index") return "/";
     return `/categories/root/${slug}`;
   }
 
-  const category = parts[0];
+  const category = encodeURIComponent(parts[0]);
   const file = parts[parts.length - 1];
-  const slug = file.replace(/\.md$/i, "");
+  const slug = encodeURIComponent(file.replace(/\.md$/i, ""));
 
   if (slug === "index") {
     return `/categories/${category}`;

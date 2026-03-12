@@ -37,9 +37,14 @@ function cleanSnippet(text: string) {
 }
 
 /* --- 2. Component Highlight Search --- */
+function escapeRegExp(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
-  const parts = text.split(new RegExp(`(${query})`, "gi"));
+  const safeQuery = escapeRegExp(query);
+  const parts = text.split(new RegExp(`(${safeQuery})`, "gi"));
   return (
     <>
       {parts.map((part, i) =>

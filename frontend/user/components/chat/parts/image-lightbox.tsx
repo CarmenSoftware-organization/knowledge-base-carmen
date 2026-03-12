@@ -57,15 +57,26 @@ export default function ImageLightbox({ src, onClose }: Props) {
           />
 
           {/* Open in new tab link */}
-          <a
-            href={src}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-4 right-4 text-xs text-white/50 hover:text-white/80 underline transition-colors"
-          >
-            เปิดในแท็บใหม่ ↗
-          </a>
+          {(() => {
+            const s = String(src);
+            const isSafe =
+              s.startsWith("/") ||
+              s.startsWith("http://") ||
+              s.startsWith("https://") ||
+              s.startsWith("data:") ||
+              s.startsWith("blob:");
+            return isSafe ? (
+              <a
+                href={s}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute bottom-4 right-4 text-xs text-white/50 hover:text-white/80 underline transition-colors"
+              >
+                เปิดในแท็บใหม่ ↗
+              </a>
+            ) : null;
+          })()}
         </motion.div>
       )}
     </AnimatePresence>

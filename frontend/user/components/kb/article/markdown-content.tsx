@@ -6,11 +6,13 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkEmoji from "remark-emoji";
 import { useEffect, useRef } from "react";
 import { API_BASE, DEFAULT_BU } from "@/lib/config";
 import { extractYoutubeId } from "@/lib/utils";
 import { getSelectedBUClient } from "@/lib/wiki-api";
+import DOMPurify from "dompurify";
 
 interface MarkdownRenderProps {
   content: string;
@@ -28,7 +30,8 @@ function MermaidDiagram({ chart }: { chart: string }) {
       const isDark = document.documentElement.classList.contains("dark");
       mermaid.initialize({
         startOnLoad: false,
-       theme: isDark ? "dark" : "default",
+        theme: isDark ? "dark" : "default",
+        securityLevel: "strict",
       });
 
       if (!ref.current || cancelled) return;
@@ -38,11 +41,24 @@ function MermaidDiagram({ chart }: { chart: string }) {
       try {
         const { svg } = await mermaid.render(id, chart);
         if (!cancelled && ref.current) {
-          ref.current.innerHTML = svg;
+          const sanitized = DOMPurify.sanitize(svg, {
+            USE_PROFILES: { svg: true },
+            ADD_TAGS: ["tspan", "textPath", "foreignObject"],
+            ADD_ATTR: [
+              "x", "y", "dx", "dy", "text-anchor", "lengthAdjust", "textLength",
+              "font-family", "font-size", "font-weight", "style", "class",
+              "transform", "viewBox", "xmlns", "xmlns:xlink",
+            ],
+          });
+          ref.current.innerHTML = sanitized;
         }
       } catch {
         if (!cancelled && ref.current) {
-          ref.current.innerHTML = `<pre>${chart}</pre>`;
+          const escaped = chart
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;");
+          ref.current.innerHTML = `<pre>${escaped}</pre>`;
         }
       }
     }
@@ -79,7 +95,41 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks, remarkEmoji]}
-        rehypePlugins={[rehypeRaw, rehypeSlug, rehypeHighlight]}
+        rehypePlugins={[
+          rehypeRaw,
+          [
+            rehypeSanitize,
+            {
+              ...defaultSchema,
+              attributes: {
+                ...defaultSchema.attributes,
+                code: [
+                  ...(defaultSchema.attributes?.code || []),
+                  ["className"],
+                ],
+                span: [
+                  ...(defaultSchema.attributes?.span || []),
+                  ["className"],
+                ],
+                img: [
+                  ...(defaultSchema.attributes?.img || []),
+                  "src",
+                  "alt",
+                  "title",
+                  "width",
+                  "height",
+                  ["className"],
+                ],
+              },
+              protocols: {
+                ...defaultSchema.protocols,
+                src: ["http", "https", "data"],
+              },
+            },
+          ],
+          rehypeSlug,
+          rehypeHighlight,
+        ]}
         components={{
 
           code: ({ className, children }) => {
