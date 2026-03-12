@@ -1,0 +1,106 @@
+// =============================================================================
+// New Carmen - Database Schema (DBML)
+// สำหรับ import ใน dbdiagram.io
+// =============================================================================
+// Note: vector type ใช้ VECTOR(768) ใน PostgreSQL จริง
+// dbdiagram.io อาจไม่รู้จัก — ใช้ BYTEA หรือ note ไว้
+// =============================================================================
+
+Table business_units {
+  id serial [pk, increment]
+  name text [not null, unique]
+  slug text [not null, unique]
+  description text
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+  
+  Note: 'public schema - ต้นทางของทุก BU'
+}
+
+Table activity_logs {
+  id bigserial [pk, increment]
+  bu_id int [ref: > business_units.id, note: 'ON DELETE SET NULL']
+  user_id text
+  action text [not null]
+  category text [not null]
+  details jsonb
+  user_agent text
+  timestamp timestamptz [default: `now()`]
+  created_at timestamptz [default: `now()`]
+  
+  Note: 'public schema'
+}
+
+Table chat_history {
+  id bigserial [pk, increment]
+  bu_id int [not null, ref: > business_units.id]
+  user_id text
+  question text [not null]
+  answer text [not null]
+  sources jsonb
+  question_embedding bytea [note: 'VECTOR(768) - similarity search']
+  created_at timestamptz [default: `now()`]
+  
+  Note: 'public schema - ประวัติ Q&A ต่อ BU'
+}
+
+Table carmen_documents {
+  id bigserial [pk, increment]
+  path text [not null, unique]
+  title text
+  source text
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+  
+  Note: 'carmen schema'
+}
+
+Table carmen_document_chunks {
+  id bigserial [pk, increment]
+  document_id bigint [not null, ref: > carmen_documents.id]
+  chunk_index int [not null]
+  content text
+  embedding bytea [note: 'VECTOR(768) - pgvector']
+  created_at timestamptz [default: `now()`]
+  
+  Note: 'carmen schema - ON DELETE CASCADE'
+}
+
+Table inventory_documents {
+  id bigserial [pk, increment]
+  path text [not null, unique]
+  title text
+  source text
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+  
+  Note: 'inventory schema'
+}
+
+Table inventory_document_chunks {
+  id bigserial [pk, increment]
+  document_id bigint [not null, ref: > inventory_documents.id]
+  chunk_index int [not null]
+  content text
+  embedding bytea [note: 'VECTOR(768) - pgvector']
+  created_at timestamptz [default: `now()`]
+  
+  Note: 'inventory schema - ON DELETE CASCADE'
+}
+
+// Group สำหรับจัดกลุ่มใน diagram
+TableGroup business_units_group {
+  business_units
+  activity_logs
+  chat_history
+}
+
+TableGroup carmen_group {
+  carmen_documents
+  carmen_document_chunks
+}
+
+TableGroup inventory_group {
+  inventory_documents
+  inventory_document_chunks
+}

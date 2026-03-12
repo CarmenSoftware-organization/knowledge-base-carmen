@@ -310,19 +310,31 @@ export async function searchWiki(query: string, bu?: string): Promise<SearchResu
 
 export type ActivityLog = {
   id: number;
-  bu_slug: string;
+  bu_slug?: string;
   user_id?: string | null;
   action: string;
-  details?: string | null;
+  details?: Record<string, unknown> | string | null;
   ip_address?: string | null;
   user_agent?: string | null;
-  created_at: string;
+  created_at?: string;
+  timestamp?: string;
 };
 
 // GET /api/activity/list
-export async function getActivityLogs(bu?: string, limit: number = 50, offset: number = 0): Promise<{ items: ActivityLog[] }> {
+export async function getActivityLogs(
+  bu?: string,
+  limit: number = 20,
+  offset: number = 0,
+  source: "all" | "user" | "admin" = "all"
+): Promise<{ items: ActivityLog[]; total: number; limit: number; offset: number }> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(`${API_BASE}/api/activity/list?bu=${selectedBU}&limit=${limit}&offset=${offset}`, {
+  const params = new URLSearchParams({
+    bu: selectedBU,
+    limit: String(limit),
+    offset: String(offset),
+    source,
+  });
+  const res = await fetch(`${API_BASE}/api/activity/list?${params}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch activity logs");

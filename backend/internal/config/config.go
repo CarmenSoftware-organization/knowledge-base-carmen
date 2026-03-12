@@ -96,9 +96,11 @@ type WikiSearchConfig struct {
 
 // ChatConfig holds configurable values for chat context (avoids hardcoding).
 type ChatConfig struct {
-	ContextLimit      int // CHAT_CONTEXT_LIMIT
-	MaxContextChars   int // CHAT_MAX_CONTEXT_CHARS
-	MaxChunkContent   int // CHAT_MAX_CHUNK_CONTENT
+	ContextLimit               int     // CHAT_CONTEXT_LIMIT
+	MaxContextChars            int     // CHAT_MAX_CONTEXT_CHARS
+	MaxChunkContent            int     // CHAT_MAX_CHUNK_CONTENT
+	HistoryEnabled             bool    // CHAT_HISTORY_ENABLED
+	HistorySimilarityThreshold float64 // CHAT_HISTORY_SIMILARITY_THRESHOLD
 }
 
 var AppConfig *Config
@@ -177,9 +179,11 @@ func Load() error {
 			SnippetMaxLen:     getEnvAsInt("WIKI_SNIPPET_MAX_LEN", 200),
 		},
 		Chat: ChatConfig{
-			ContextLimit:    getEnvAsInt("CHAT_CONTEXT_LIMIT", 10),
-			MaxContextChars: getEnvAsInt("CHAT_MAX_CONTEXT_CHARS", 8000),
-			MaxChunkContent: getEnvAsInt("CHAT_MAX_CHUNK_CONTENT", 2000),
+			ContextLimit:               getEnvAsInt("CHAT_CONTEXT_LIMIT", 10),
+			MaxContextChars:            getEnvAsInt("CHAT_MAX_CONTEXT_CHARS", 8000),
+			MaxChunkContent:            getEnvAsInt("CHAT_MAX_CHUNK_CONTENT", 2000),
+			HistoryEnabled:             getEnvAsBool("CHAT_HISTORY_ENABLED", true),
+			HistorySimilarityThreshold: getEnvAsFloat("CHAT_HISTORY_SIMILARITY_THRESHOLD", 0.15),
 		},
 		OpenClaw: OpenClawConfig{
 			URL:     getEnv("OPENCLAW_URL", ""),

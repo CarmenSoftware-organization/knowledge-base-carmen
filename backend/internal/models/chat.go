@@ -24,6 +24,15 @@ type DisambiguationOption struct {
 	Score  float64 `json:"score"`
 }
 
+// RecordHistoryRequest is used by Python chatbot to save Q&A to DB after stream completes
+type RecordHistoryRequest struct {
+	BU       string        `json:"bu"`
+	UserID   string        `json:"user_id"`
+	Question string        `json:"question"`
+	Answer   string        `json:"answer"`
+	Sources  []ChatSource  `json:"sources"`
+}
+
 type RouteResult struct {
 	Candidates []RouteCandidate `json:"candidates"`
 }

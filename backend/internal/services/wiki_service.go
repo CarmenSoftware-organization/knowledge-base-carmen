@@ -350,6 +350,7 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 	if err != nil {
 		return nil, fmt.Errorf("create embedding: %w", err)
 	}
+	emb = utils.TruncateEmbedding(emb)
 	embStr := utils.Float32SliceToPgVector(emb)
 
 	cfg := config.AppConfig.WikiSearch

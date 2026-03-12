@@ -3,6 +3,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -18,21 +19,92 @@ import (
 )
 
 type ChatHandler struct {
-	llm        *ollama.Client
-	embedLLM   *ollama.Client
-	router     *services.QuestionRouterService
-	wiki       *services.WikiService
-	logService *services.ActivityLogService
+	llm            *ollama.Client
+	embedLLM       *ollama.Client
+	router         *services.QuestionRouterService
+	wiki           *services.WikiService
+	logService     *services.ActivityLogService
+	historyService *services.ChatHistoryService
 }
 
 func NewChatHandler() *ChatHandler {
 	return &ChatHandler{
-		llm:        ollama.NewClient(),      
-		embedLLM:   ollama.NewEmbedClient(), 
-		router:     services.NewQuestionRouterService(),
-		wiki:       services.NewWikiService(),
-		logService: services.NewActivityLogService(),
+		llm:            ollama.NewClient(),
+		embedLLM:       ollama.NewEmbedClient(),
+		router:         services.NewQuestionRouterService(),
+		wiki:           services.NewWikiService(),
+		logService:     services.NewActivityLogService(),
+		historyService: services.NewChatHistoryService(),
 	}
+}
+
+// RecordHistory accepts Q&A from Python chatbot and saves to chat_history (with embedding).
+// Called by carmen-chatbot after stream completes. POST /api/chat/record-history
+func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
+	var req models.RecordHistoryRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	bu := strings.TrimSpace(req.BU)
+	q := strings.TrimSpace(req.Question)
+	a := strings.TrimSpace(req.Answer)
+	if bu == "" || q == "" || a == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bu, question, answer required"})
+	}
+
+	if !config.AppConfig.Chat.HistoryEnabled {
+		return c.JSON(fiber.Map{"ok": true, "skipped": "history disabled"})
+	}
+
+	buID, err := h.historyService.GetBUIDFromSlug(bu)
+	if err != nil || buID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu: " + bu})
+	}
+
+	emb, err := h.embedLLM.Embedding(q)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "embedding failed: " + err.Error()})
+	}
+
+	userID := req.UserID
+	if userID == "" {
+		userID = "anonymous"
+	}
+
+	sources := req.Sources
+	if sources == nil {
+		sources = []models.ChatSource{}
+	}
+
+	if err := h.historyService.Save(buID, userID, q, a, sources, emb); err != nil {
+		log.Printf("[chat] record-history save failed: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"ok": true})
+}
+
+// ListHistory returns chat history for verification. GET /api/chat/history/list?bu=carmen&limit=10&offset=0
+func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {
+	bu := middleware.GetBU(c)
+	buID, err := h.historyService.GetBUIDFromSlug(bu)
+	if err != nil || buID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu"})
+	}
+	limit, _ := strconv.Atoi(c.Query("limit", "20"))
+	offset, _ := strconv.Atoi(c.Query("offset", "0"))
+	if limit > 100 {
+		limit = 100
+	}
+	entries, total, err := h.historyService.List(buID, limit, offset)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{
+		"items":  entries,
+		"total":  total,
+		"limit":  limit,
+		"offset": offset,
+	})
 }
 
 // RouteOnly ใช้เทส OpenClaw question routing โดยไม่ยิง vector DB / LLM
@@ -95,9 +167,27 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 			"sources": []models.ChatSource{},
 		})
 	}
-
+	emb = utils.TruncateEmbedding(emb) // DB uses VECTOR(1536); qwen3-embedding returns 4096
 	embStr := utils.Float32SliceToPgVector(emb)
 	bu := middleware.GetBU(c)
+	chatCfg := config.AppConfig.Chat
+
+	// 1.5) ถ้าเปิด chat history — ค้นหาประวัติก่อน
+	if chatCfg.HistoryEnabled {
+		if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
+			if cached, ok := h.historyService.FindSimilar(buID, emb, chatCfg.HistorySimilarityThreshold); ok {
+				userID := c.Get("X-User-ID", "anonymous")
+				h.logService.Log(bu, userID, "ถาม Chat AI (จาก cache)", "wiki", map[string]interface{}{
+					"status": "cached",
+					"sources": len(cached.Sources),
+				}, c.Get("User-Agent"))
+				return c.JSON(models.ChatAskResponse{
+					Answer:  cached.Answer,
+					Sources: cached.Sources,
+				})
+			}
+		}
+	}
 
 	// 2.a กรณีมี OpenClaw หรือ Make (แยกประเภทคำถาม) ให้ลองใช้ routing + wiki โดยตรงก่อน (ไม่พึ่ง DB)
 	useRouter := config.AppConfig.OpenClaw.Enabled || (config.AppConfig.Make.UseForQuestionRouter && config.AppConfig.Make.WebhookURL != "")
@@ -122,6 +212,13 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 							"answer":  "",
 							"sources": sources,
 						})
+					}
+					if chatCfg.HistoryEnabled {
+						if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
+							if err := h.historyService.Save(buID, c.Get("X-User-ID", "anonymous"), q, answer, sources, emb); err != nil {
+								log.Printf("[chat] save history failed: %v", err)
+							}
+						}
 					}
 					return c.JSON(models.ChatAskResponse{
 						Answer:  answer,
@@ -189,6 +286,13 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 						"sources": sources,
 					})
 				}
+				if chatCfg.HistoryEnabled {
+					if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
+						if err := h.historyService.Save(buID, c.Get("X-User-ID", "anonymous"), q, answer, sources, emb); err != nil {
+							log.Printf("[chat] save history failed: %v", err)
+						}
+					}
+				}
 				return c.JSON(models.ChatAskResponse{
 					Answer:  answer,
 					Sources: sources,
@@ -230,7 +334,6 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	}
 
 	// 3) ดึง context จาก Postgres/pgvector (parameterized เพื่อป้องกัน SQL injection)
-	chatCfg := config.AppConfig.Chat
 	query := fmt.Sprintf(`
 SELECT d.path, d.title, dc.content
 FROM %s.document_chunks dc
@@ -301,6 +404,15 @@ LIMIT ?
 		"status":  "POST",
 		"sources": len(sources),
 	}, c.Get("User-Agent"))
+
+	// บันทึกลง chat history
+	if chatCfg.HistoryEnabled {
+		if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
+			if err := h.historyService.Save(buID, userID, q, answer, sources, emb); err != nil {
+				log.Printf("[chat] save history failed: %v", err)
+			}
+		}
+	}
 
 	return c.JSON(models.ChatAskResponse{
 		Answer:  answer,

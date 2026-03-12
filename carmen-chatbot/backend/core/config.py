@@ -56,6 +56,10 @@ class Settings:
         self.FRONTEND_DIR: Path = BASE_DIR / "frontend"
         self.IMAGES_DIR: Path = BASE_DIR / "images"
         
+        # Go backend URL for recording chat history to DB (optional)
+        # When set, save_chat_logs will POST to /api/chat/record-history
+        self.GO_BACKEND_URL: str = os.getenv("GO_BACKEND_URL", "").rstrip("/")
+
         # Read WIKI_DIR from env, fallback to PROJECT_ROOT/carmen_cloud
         wiki_path = os.getenv("WIKI_CONTENT_PATH", "")
         if wiki_path:
