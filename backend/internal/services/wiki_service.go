@@ -13,6 +13,7 @@ import (
 
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/nlp"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/github"
 	"github.com/new-carmen/backend/pkg/ollama"
@@ -368,6 +369,57 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 			continue
 		}
 		seen[r.Path] = true
+		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
+		snippet = smartTrim(snippet, 200)
+		results = append(results, SearchResult{
+			WikiEntry: WikiEntry{Path: r.Path, Title: r.Title},
+			Snippet:   snippet,
+		})
+	}
+	return results, nil
+}
+
+// SearchByKeyword performs keyword search (ILIKE) with NLP-expanded terms.
+// Used alongside semantic search to improve recall for domain terms.
+func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) {
+	terms := nlp.ExpandQuery(query)
+	if len(terms) == 0 {
+		return nil, nil
+	}
+
+	// Build (d.title ILIKE ? OR dc.content ILIKE ?) OR ... for each term
+	var conditions []string
+	var args []interface{}
+	for _, t := range terms {
+		pattern := "%" + t + "%"
+		conditions = append(conditions, "(d.title ILIKE ? OR dc.content ILIKE ?)")
+		args = append(args, pattern, pattern)
+	}
+	whereClause := "(" + strings.Join(conditions, " OR ") + ")"
+
+	sql := fmt.Sprintf(`
+		SELECT DISTINCT ON (d.path) d.path, d.title, dc.content AS snippet
+		FROM %s.document_chunks dc
+		JOIN %s.documents d ON dc.document_id = d.id
+		WHERE %s
+		ORDER BY d.path, CASE WHEN d.title ILIKE ? THEN 0 ELSE 1 END
+		LIMIT 20
+	`, bu, bu, whereClause)
+
+	// Add primary term for ORDER BY (use first term)
+	args = append(args, "%"+terms[0]+"%")
+
+	var rows []struct {
+		Path    string
+		Title   string
+		Snippet string
+	}
+	if err := database.DB.Raw(sql, args...).Scan(&rows).Error; err != nil {
+		return nil, fmt.Errorf("keyword search: %w", err)
+	}
+
+	var results []SearchResult
+	for _, r := range rows {
 		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
 		snippet = smartTrim(snippet, 200)
 		results = append(results, SearchResult{
