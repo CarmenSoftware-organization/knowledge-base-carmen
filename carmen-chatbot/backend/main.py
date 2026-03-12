@@ -1,12 +1,5 @@
 import uvicorn
 import os
-import sys
-
-# Patch for ChromaDB/SQLite on some systems
-try:
-    __import__('pysqlite3')
-    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-except ImportError: pass
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware

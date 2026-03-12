@@ -1,21 +1,28 @@
+import logging
 import os
 import re
 from sqlalchemy import text
 from langchain_ollama import OllamaEmbeddings
 from langchain_core.documents import Document
 
-import asyncio
 from ..core.config import settings
 from ..core.database import AsyncSessionLocal
 
-# ==========================================
-# 🛡️ HYBRID SEARCH SETUP (Optimized)
-# ==========================================
 class RetrievalService:
-    # 🎛️ Tunable Parameters
-    TOP_K = 4                # Number of final results
-    CANDIDATES_K = 20        # Number of candidates for re-ranking
-    MAX_DISTANCE = 0.8       # Cosine distance threshold
+    TOP_K = 4
+    MAX_DISTANCE = 0.8
+
+    TOPIC_PATH_RULES = [
+        {"keywords": ["vendor", "ap-vendor", "ผู้ขาย", "ร้านค้า"], "patterns": ["%vendor%", "%ผู้ขาย%", "%ร้านค้า%"]},
+        {"keywords": ["configuration", "company profile", "chart of account", "department", "currency", "payment type", "permission", "cf-", "สิทธิ์ผู้ใช้", "กำหนดสิทธิ์"], "patterns": ["%configuration%", "%cf-%"]},
+        {"keywords": [" ar ", "ar-", "ar invoice", "ar receipt", "ลูกค้า", "receipt", "contract", "folio", "ใบเสร็จ", "ลูกหนี้"], "patterns": ["%ar-%", "%ar\\\\%", "%/ar/%"]},
+        {"keywords": [" ap ", "ap-", "ap invoice", "ap payment", "เจ้าหนี้", "cheque", "wht", "หัก ณ ที่จ่าย", "input tax", "ภาษีซื้อ"], "patterns": ["%ap-%", "%ap\\\\%", "%/ap/%"]},
+        {"keywords": ["asset", "สินทรัพย์", "as-", "ทะเบียนสินทรัพย์", "asset register", "asset disposal"], "patterns": ["%as-%", "%asset%"]},
+        {"keywords": [" gl ", "gl ", "general ledger", "journal voucher", "voucher", "บัญชีแยกประเภท", "ผังบัญชี", "allocation", "amortization", "budget", "recurring"], "patterns": ["%gl%", "%c-%"]},
+        {"keywords": ["dashboard", "สถิติ", "revenue", "occupancy", "adr", "revpar", "trevpar", "p&l", "กำไรขาดทุน"], "patterns": ["%dashboard%"]},
+        {"keywords": ["workbook", "excel", "refresh", "formula", "function", "add-in"], "patterns": ["%workbook%", "%wb-%", "%excel%"]},
+        {"keywords": ["comment", "activity log", "document management", "ไฟล์แนบ", "รูปภาพแนบ", "ประวัติเอกสาร", "คอมเมนต์", "ความคิดเห็น"], "patterns": ["%comment%", "%cm-%"]}
+    ]
 
     def __init__(self):
         self.embeddings = None
@@ -54,9 +61,8 @@ class RetrievalService:
                     break
         
         if matched_rules_count >= 3:
-            return []
-        
-        return all_patterns
+            return [], matched_keywords
+        return all_patterns, matched_keywords
 
     SAFE_SCHEMA_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
@@ -75,7 +81,28 @@ class RetrievalService:
             query_embedding = await asyncio.to_thread(self.embeddings.embed_query, query)
             emb_str = self.format_pgvector(query_embedding)
 
-            # Fetch candidates using pure vector search for index efficiency
+            boost_patterns, matched_keywords = self.build_path_boost_from_query(query)
+
+            params = {
+                "emb": emb_str,
+                "top_k": self.TOP_K * 3,
+                "max_dist": self.MAX_DISTANCE,
+            }
+
+            if boost_patterns:
+                placeholders = " OR ".join(
+                    f"d.path ILIKE :bp{i}" for i in range(len(boost_patterns))
+                )
+                score_expr = f"""
+                    (dc.embedding <=> CAST(:emb AS vector))
+                    - CASE WHEN ({placeholders}) THEN :path_boost ELSE 0 END
+                """
+                params["path_boost"] = self.PATH_BOOST
+                for i, p in enumerate(boost_patterns):
+                    params[f"bp{i}"] = p
+            else:
+                score_expr = "(dc.embedding <=> CAST(:emb AS vector))"
+
             sql_query = text(f"""
                 SELECT 
                     d.path, 
@@ -90,59 +117,19 @@ class RetrievalService:
                 LIMIT :limit
             """)
 
-            boost_patterns = self.get_path_boost_patterns(query)
-
-            async with AsyncSessionLocal() as db:
-                result = await db.execute(sql_query, {
-                    "emb": emb_str, 
-                    "limit": self.CANDIDATES_K,
-                    "max_dist": self.MAX_DISTANCE
-                })
-                candidates = result.fetchall()
-
-            # Re-ranking and resolving content in Python
-            unique_contents = set()
-            re_ranked = []
-
-            for row in candidates:
-                path = row.path
-                actual_distance = row.distance
+            with SessionLocal() as db:
+                results = db.execute(sql_query, params).fetchall()
                 
-                # Calculate effective distance (Path Boost)
-                is_boosted = False
-                effective_dist = actual_distance
-                if boost_patterns:
-                    for p in boost_patterns:
-                        # Convert SQL ILIKE pattern to Regex:
-                        # 1. Escape regex special chars
-                        # 2. Replace escaped % with .*
-                        # 3. Handle the double backslash in the original patterns
-                        clean_p = p.replace("\\\\", "\\") # handle double backslash from JSON/Go port
-                        reg = re.escape(clean_p).replace("\\%", ".*").replace("_", ".")
-                        if not reg.startswith(".*"): reg = "^" + reg
-                        if not reg.endswith(".*"): reg = reg + "$"
+                for row in results:
+                    # Break when we have enough unique documents
+                    if len(passed_docs) >= self.TOP_K:
+                        break
                         
-                        if re.search(reg, path, re.IGNORECASE):
-                            effective_dist -= self.PATH_BOOST
-                            is_boosted = True
-                            break
-                
-                re_ranked.append({
-                    "row": row,
-                    "effective_dist": effective_dist,
-                    "is_boosted": is_boosted
-                })
-
-            # Sort by effective distance
-            re_ranked.sort(key=lambda x: x["effective_dist"])
-
-            for item in re_ranked[:self.TOP_K]:
-                row = item["row"]
-                path = row.path
-                content = row.content
-                
-                if content in unique_contents:
-                    continue
+                    path = row.path
+                    title = row.title.strip() if row.title and row.title.strip() else path
+                    content = row.content
+                    actual_distance = row.distance
+                    effective_dist = row.effective_distance
                     
                 unique_contents.add(content)
                 title = row.title.strip() if row.title and row.title.strip() else path
@@ -170,8 +157,7 @@ class RetrievalService:
                 source_debug.append({"source": path, "title": title, "score": score_label})
 
         except Exception as e:
-            print(f"❌ Async Search Error: {e}")
-            
+            logging.getLogger(__name__).error("Search error: %s", e)
         return passed_docs, source_debug
 
 # Singleton instance

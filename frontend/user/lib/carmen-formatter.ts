@@ -1,16 +1,15 @@
-function extractYoutubeId(url: string): string | null {
-  try {
-    const re =
-      /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
-    const m = url.match(re);
-    return m ? m[1] : null;
-  } catch {
-    return null;
-  }
+import { extractYoutubeId } from "./utils";
+
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function processYoutube(text: string): string {
-  // 1.1 Markdown link [title](youtube_url)
   const mdVideoRegex = /\[(.*?)\]\((https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^\s<)"']+)\)/g;
   text = text.replace(mdVideoRegex, (match, _title, url) => {
     const videoId = extractYoutubeId(url);
@@ -20,7 +19,6 @@ function processYoutube(text: string): string {
     return match;
   });
 
-  // 1.2 Raw YouTube URL
   const urlRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^\s<)"']+)/g;
   text = text.replace(urlRegex, (match, _p1, offset, fullString) => {
     const prefix = fullString.substring(Math.max(0, offset - 10), offset);
@@ -66,55 +64,47 @@ function processImages(text: string, apiBase: string): string {
     return `${apiBase}/images/${u}`;
   };
 
-  // 1. Markdown images: ![alt](src)
   text = text.replace(/!\[(.*?)\]\((.*?)\)/g, (_m, alt, src) => {
     if (src.includes("youtube")) return _m;
     const url = resolveUrl(src);
-    return `<br><img src="${url}" alt="${alt}" data-lightbox="${url}" class="carmen-lightbox-img" style="max-width:100%;border-radius:12px;margin:8px 0;cursor:zoom-in;" /><br>`;
+    return `<br><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" data-lightbox="${escapeHtml(url)}" class="carmen-lightbox-img" style="max-width:100%;border-radius:12px;margin:8px 0;cursor:zoom-in;" /><br>`;
   });
 
   // 2. Existing HTML <img> tags with relative src — resolve to full API URL
   text = text.replace(/<img\s+([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi, (_m, before, src, after) => {
-    // Skip if already an absolute URL or data URI
     if (/^(https?:|data:)/.test(src.trim())) return _m;
     const url = resolveUrl(src);
-    // Add lightbox support and cursor hint
-    const hasLightbox = before.includes('data-lightbox') || after.includes('data-lightbox');
-    const lightboxAttr = hasLightbox ? '' : ` data-lightbox="${url}"`;
-    const cursorStyle = 'cursor:zoom-in;';
-    // Inject cursor into existing style or add new style
+    const safeUrl = escapeHtml(url);
+    const hasLightbox = before.includes("data-lightbox") || after.includes("data-lightbox");
+    const lightboxAttr = hasLightbox ? "" : ` data-lightbox="${safeUrl}"`;
+    const cursorStyle = "cursor:zoom-in;";
     let newAfter = after;
     if (after.includes('style="')) {
       newAfter = after.replace('style="', `style="${cursorStyle}`);
     } else {
       newAfter = ` style="${cursorStyle}"${after}`;
     }
-    return `<img ${before}src="${url}"${lightboxAttr}${newAfter}>`;
+    return `<img ${before}src="${safeUrl}"${lightboxAttr}${newAfter}>`;
   });
 
   return text;
 }
 
 function processLinks(text: string): string {
-  // 1. Markdown Links [text](url)
   const mdLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
   text = text.replace(mdLinkRegex, (match, label, url) => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) return match;
-    return `<a href="${url}" target="_blank" class="carmen-link">${label}</a>`;
+    if (url.includes("youtube.com") || url.includes("youtu.be")) return match;
+    return `<a href="${escapeHtml(url)}" target="_blank" class="carmen-link">${escapeHtml(label)}</a>`;
   });
 
-  // 2. Bare URLs — skip URLs inside HTML attributes
   const urlRegex = /(https?:\/\/(?!(?:www\.)?(?:youtube\.com|youtu\.be))[^\s<)"']+)/g;
   text = text.replace(urlRegex, (match, _p1, offset, fullString) => {
-    // Check if URL is inside an HTML attribute (look for =" or =' immediately before)
     const prefix = fullString.substring(Math.max(0, offset - 50), offset);
-    // Skip if preceded by any attribute assignment like src=", href=", data-lightbox=", etc.
     if (/[=]['"]\s*$/.test(prefix)) return match;
-    // Skip if inside an HTML tag (unclosed < before, no > between < and URL)
-    const lastAngle = prefix.lastIndexOf('<');
-    const lastClose = prefix.lastIndexOf('>');
-    if (lastAngle > lastClose) return match; // inside a tag
-    return `<a href="${match}" target="_blank" class="carmen-link">${match}</a>`;
+    const lastAngle = prefix.lastIndexOf("<");
+    const lastClose = prefix.lastIndexOf(">");
+    if (lastAngle > lastClose) return match;
+    return `<a href="${escapeHtml(match)}" target="_blank" class="carmen-link">${escapeHtml(match)}</a>`;
   });
 
   return text;
@@ -136,17 +126,17 @@ function processMarkdownStructure(text: string): string {
     }
     if (/^### (.+)$/.test(line)) {
       if (inList) { out.push("</ul>"); inList = false; }
-      out.push(`<div class="carmen-heading-3">${line.replace(/^### /, "")}</div>`);
+      out.push(`<div class="carmen-heading-3">${escapeHtml(line.replace(/^### /, ""))}</div>`);
       continue;
     }
     if (/^## (.+)$/.test(line)) {
       if (inList) { out.push("</ul>"); inList = false; }
-      out.push(`<div class="carmen-heading-2">${line.replace(/^## /, "")}</div>`);
+      out.push(`<div class="carmen-heading-2">${escapeHtml(line.replace(/^## /, ""))}</div>`);
       continue;
     }
     if (/^[-*] (.+)$/.test(line)) {
       if (!inList) { out.push("<ul>"); inList = true; }
-      out.push(`<li>${line.replace(/^[-*] /, "")}</li>`);
+      out.push(`<li>${escapeHtml(line.replace(/^[-*] /, ""))}</li>`);
       blankCount = 0;
       continue;
     }
@@ -154,8 +144,8 @@ function processMarkdownStructure(text: string): string {
     if (numbered) {
       if (inList) { out.push("</ul>"); inList = false; }
       out.push(`<div class="carmen-numbered-item">
-        <b class="carmen-number">${numbered[1]}.</b>
-        <span>${numbered[2]}</span>
+        <b class="carmen-number">${escapeHtml(numbered[1])}.</b>
+        <span>${escapeHtml(numbered[2])}</span>
       </div>`);
       blankCount = 0;
       continue;
@@ -167,7 +157,7 @@ function processMarkdownStructure(text: string): string {
       if (blankCount >= 2 && out[out.length - 1] !== "<br>") out.push("<br>");
     } else {
       blankCount = 0;
-      out.push(line + "<br>");
+      out.push(escapeHtml(line) + "<br>");
     }
   }
 
@@ -176,13 +166,10 @@ function processMarkdownStructure(text: string): string {
 }
 
 function processInlineMarkdown(text: string): string {
-  text = text.replace(
-    /`([^`]+)`/g,
-    '<code class="carmen-inline-code">$1</code>'
-  );
-  text = text.replace(/\*\*\*(.*?)\*\*\*/g, "<b><i>$1</i></b>");
-  text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
-  text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<i>$1</i>");
+  text = text.replace(/`([^`]+)`/g, (_, c) => `<code class="carmen-inline-code">${escapeHtml(c)}</code>`);
+  text = text.replace(/\*\*\*(.*?)\*\*\*/g, (_, c) => `<b><i>${escapeHtml(c)}</i></b>`);
+  text = text.replace(/\*\*(.*?)\*\*/g, (_, c) => `<b>${escapeHtml(c)}</b>`);
+  text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, (_, c) => `<i>${escapeHtml(c)}</i>`);
   return text;
 }
 

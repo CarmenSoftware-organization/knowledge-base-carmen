@@ -93,23 +93,49 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	return c.JSON(content)
 }
 
-// Search performs a full-text search across wiki content. GET /api/wiki/search?q=...
+// Search performs hybrid search: semantic (pgvector) + keyword (NLP-expanded).
+// GET /api/wiki/search?q=...
 func (h *WikiHandler) Search(c *fiber.Ctx) error {
 	query := c.Query("q")
 	if query == "" {
 		return c.JSON(fiber.Map{"items": []interface{}{}})
 	}
 	bu := middleware.GetBU(c)
-	results, err := h.wikiService.SearchInContent(bu, query)
+
+	// 1. Semantic search (pgvector)
+	semanticResults, err := h.wikiService.SearchInContent(bu, query)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	// 2. Keyword search with NLP expansion (ILIKE)
+	keywordResults, _ := h.wikiService.SearchByKeyword(bu, query)
+
+	// 3. Merge: semantic first, then keyword (dedupe by path)
+	seen := make(map[string]bool)
+	var merged []services.SearchResult
+	for _, r := range semanticResults {
+		path := r.Path
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
+		merged = append(merged, r)
+	}
+	for _, r := range keywordResults {
+		path := r.Path
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
+		merged = append(merged, r)
+	}
+
 	// Log search
 	userID := c.Get("X-User-ID", "anonymous")
-	h.logService.Log(bu, userID, "ค้นหาข้อมูลวิกิ", "wiki", map[string]interface{}{"status": "GET", "query": query, "results": len(results)}, c.Get("User-Agent"))
+	h.logService.Log(bu, userID, "ค้นหาข้อมูลวิกิ", "wiki", map[string]interface{}{"status": "GET", "query": query, "results": len(merged)}, c.Get("User-Agent"))
 
-	return c.JSON(fiber.Map{"items": results})
+	return c.JSON(fiber.Map{"items": merged})
 }
 
 // Sync triggers a git pull to update local wiki content. POST /api/wiki/sync
