@@ -2,6 +2,7 @@
 import { CarmenChatConfig, useCarmenChat } from "@/hooks/use-carmen-chat";
 import { AnimatePresence, motion } from "framer-motion";
 import CarmenChatWindow from "./carmen-chat-window";
+import { API_BASE } from "@/lib/config";
 import { getSelectedBUClient } from "@/lib/wiki-api";
 import { useEffect, useState } from "react";
 
@@ -31,8 +32,7 @@ export default function FloatingChatBot({
     }
   }, [initialBU]);
 
-  const resolvedApiBase =
-    apiBase ?? process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
+  const resolvedApiBase = apiBase ?? API_BASE;
 
   const state = useCarmenChat({
     bu: currentBU,

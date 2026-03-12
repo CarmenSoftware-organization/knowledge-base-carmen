@@ -1,4 +1,4 @@
-// ใช้ดึง context จาก pgvector + ส่งให้ Ollama ตอบ → ใช้ทำ chatbot
+
 package api
 
 import (
@@ -27,8 +27,8 @@ type ChatHandler struct {
 
 func NewChatHandler() *ChatHandler {
 	return &ChatHandler{
-		llm:        ollama.NewClient(),      // ใช้ ChatModel
-		embedLLM:   ollama.NewEmbedClient(), // ใช้ EmbedModel
+		llm:        ollama.NewClient(),      
+		embedLLM:   ollama.NewEmbedClient(), 
 		router:     services.NewQuestionRouterService(),
 		wiki:       services.NewWikiService(),
 		logService: services.NewActivityLogService(),
@@ -60,11 +60,8 @@ func (h *ChatHandler) RouteOnly(c *fiber.Ctx) error {
 func (h *ChatHandler) Proxy(c *fiber.Ctx) error {
 	chatbotURL := config.AppConfig.Server.ChatbotURL
 
-	// สร้าง target URL โดยใช้ OriginalURL เพื่อรวม query parameters ด้วย
 	target := chatbotURL + c.OriginalURL()
 
-	// proxy.Do จะเขียนทับ response headers ทั้งหมดด้วย headers จาก upstream
-	// ดังนั้นต้องตั้งค่า CORS headers หลังจาก proxy.Do เสร็จ
 	if err := proxy.Do(c, target); err != nil {
 		return err
 	}
@@ -206,38 +203,48 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 		Title   string
 		Content string
 	}
-	pathFilter := buildPathFilterFromQuestion(q)
+	pathWhere, pathArgs := buildPathFilterFromQuestion(q)
 
 	// ถ้าเปิดใช้ routing (OpenClaw หรือ Make) ให้ลอง route question → ได้ path ที่โฟกัสมากขึ้น
 	if useRouter {
 		if res, err := h.router.RouteQuestion(q); err == nil && len(res.Candidates) > 0 {
-			var conds []string
+			var paths []string
 			for _, cnd := range res.Candidates {
 				p := strings.TrimSpace(cnd.Path)
-				if p == "" {
-					continue
+				if p != "" {
+					paths = append(paths, p)
 				}
-				// ป้องกัน quote แตก
-				escaped := strings.ReplaceAll(p, "'", "''")
-				conds = append(conds, "d.path = '"+escaped+"'")
 			}
-			if len(conds) > 0 {
-				pathFilter = "WHERE (" + strings.Join(conds, " OR ") + ")"
+			if len(paths) > 0 {
+				placeholders := make([]string, len(paths))
+				for i := range paths {
+					placeholders[i] = "d.path = ?"
+				}
+				pathWhere = "WHERE (" + strings.Join(placeholders, " OR ") + ")"
+				pathArgs = make([]interface{}, len(paths))
+				for i, p := range paths {
+					pathArgs[i] = p
+				}
 			}
 		}
 	}
 
-	// 3) ดึง context จาก Postgres/pgvector
+	// 3) ดึง context จาก Postgres/pgvector (parameterized เพื่อป้องกัน SQL injection)
+	chatCfg := config.AppConfig.Chat
 	query := fmt.Sprintf(`
 SELECT d.path, d.title, dc.content
 FROM %s.document_chunks dc
 JOIN %s.documents d ON dc.document_id = d.id
-`, bu, bu) + pathFilter + `
+`, bu, bu) + pathWhere + `
 ORDER BY dc.embedding <-> ?::vector
-LIMIT 10
+LIMIT ?
 `
+	args := make([]interface{}, 0, len(pathArgs)+2)
+	args = append(args, pathArgs...)
+	args = append(args, embStr, chatCfg.ContextLimit)
+
 	var rows []chunkRow
-	if err := database.DB.Raw(query, embStr).Scan(&rows).Error; err != nil {
+	if err := database.DB.Raw(query, args...).Scan(&rows).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "failed to query vector index: " + err.Error(),
 			"answer":  "",
@@ -248,12 +255,13 @@ LIMIT 10
 	// 3) รวม context เป็นข้อความยาวให้ LLM ใช้ตอบ
 	var contextBuilder strings.Builder
 	sources := make([]models.ChatSource, 0)
-	const maxContextChars = 8000 // กัน prompt ยาวเกินจน Ollama / proxy timeout
+	maxContextChars := chatCfg.MaxContextChars
+	maxChunkContent := chatCfg.MaxChunkContent
 	for i, row := range rows {
 		// ตัดเนื้อหาให้สั้นลงต่อชิ้น
 		content := row.Content
-		if len(content) > 2000 {
-			content = content[:2000]
+		if len(content) > maxChunkContent {
+			content = content[:maxChunkContent]
 		}
 
 		if contextBuilder.Len() >= maxContextChars {
@@ -300,10 +308,10 @@ LIMIT 10
 	})
 }
 
-// topicPathRule กำหนดว่าเมื่อคำถามมีคำใน keywords ใดคำหนึ่ง ให้กรอง path ตาม patterns (ILIKE)
+
 type topicPathRule struct {
-	Keywords []string // มีคำใดคำหนึ่งในคำถาม (lowercase สำหรับอังกฤษ)
-	Patterns []string // d.path ILIKE pattern อย่างน้อยหนึ่งอัน (ใช้ OR)
+	Keywords []string 
+	Patterns []string 
 }
 
 var topicPathRules = []topicPathRule{
@@ -318,18 +326,23 @@ var topicPathRules = []topicPathRule{
 	{Keywords: []string{"comment", "activity log", "document management", "ไฟล์แนบ", "รูปภาพแนบ", "ประวัติเอกสาร", "คอมเมนต์", "ความคิดเห็น"}, Patterns: []string{"%comment%", "%CM-%"}},
 }
 
-func buildPathFilterFromQuestion(question string) string {
+// buildPathFilterFromQuestion returns (whereClause, args) for parameterized query.
+func buildPathFilterFromQuestion(question string) (string, []interface{}) {
 	qLower := strings.ToLower(question)
 	for _, rule := range topicPathRules {
 		for _, kw := range rule.Keywords {
 			if strings.Contains(qLower, strings.ToLower(kw)) || strings.Contains(question, kw) {
-				parts := make([]string, len(rule.Patterns))
-				for i, p := range rule.Patterns {
-					parts[i] = "d.path ILIKE '" + strings.ReplaceAll(p, "'", "''") + "'"
+				placeholders := make([]string, len(rule.Patterns))
+				for i := range rule.Patterns {
+					placeholders[i] = "d.path ILIKE ?"
 				}
-				return "WHERE (" + strings.Join(parts, " OR ") + ")"
+				args := make([]interface{}, len(rule.Patterns))
+				for i, p := range rule.Patterns {
+					args[i] = p
+				}
+				return "WHERE (" + strings.Join(placeholders, " OR ") + ")", args
 			}
 		}
 	}
-	return ""
+	return "", nil
 }

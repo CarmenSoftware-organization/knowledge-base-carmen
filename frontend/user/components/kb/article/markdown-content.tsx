@@ -8,19 +8,13 @@ import rehypeSlug from "rehype-slug";
 import rehypeRaw from "rehype-raw";
 import remarkEmoji from "remark-emoji";
 import { useEffect, useRef } from "react";
+import { API_BASE, DEFAULT_BU } from "@/lib/config";
+import { extractYoutubeId } from "@/lib/utils";
 import { getSelectedBUClient } from "@/lib/wiki-api";
 
 interface MarkdownRenderProps {
   content: string;
   category: string;
-}
-
-function extractYoutubeId(url?: string) {
-  if (!url) return null;
-  const match = url.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-  );
-  return match ? match[1] : null;
 }
 
 function MermaidDiagram({ chart }: { chart: string }) {
@@ -124,13 +118,9 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
               "props" in (children[0] as any)
             ) {
               const child: any = children[0];
-              const href = child?.props?.href;
-              const youtubeMatch = href?.match(
-                /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-              );
+              const videoId = extractYoutubeId(child?.props?.href ?? "");
 
-              if (youtubeMatch) {
-                const videoId = youtubeMatch[1];
+              if (videoId) {
 
                 return (
                   <div className="my-6 aspect-video w-full">
@@ -190,11 +180,11 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
           img: ({ src, alt = "", ...props }) => {
             if (!src || typeof src !== "string") return null;
             const cleanSrc = src.replace("./", "");
-            const bu = getSelectedBUClient() || "carmen";
+            const bu = getSelectedBUClient() || DEFAULT_BU;
             return (
               <img
                 {...props}
-                src={`http://localhost:8080/wiki-assets/${category}/${cleanSrc}?bu=${bu}`}
+                src={`${API_BASE}/wiki-assets/${category}/${cleanSrc}?bu=${bu}`}
                 alt={alt}
                 className="block rounded-xl my-6 shadow-md max-w-full"
               />

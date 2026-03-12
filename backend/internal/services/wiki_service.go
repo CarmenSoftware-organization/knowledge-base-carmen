@@ -14,6 +14,7 @@ import (
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/nlp"
+	"github.com/new-carmen/backend/internal/security"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/github"
 	"github.com/new-carmen/backend/pkg/ollama"
@@ -87,6 +88,9 @@ func NewWikiService() *WikiService {
 }
 
 func (s *WikiService) getRepoPath(bu string) string {
+	if !security.ValidateSchema(bu) {
+		bu = "carmen"
+	}
 	repoBase := config.AppConfig.Git.RepoPath
 	if bu == "carmen" {
 		return filepath.Join(repoBase, "carmen_cloud")
@@ -320,6 +324,7 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 	}
 	embStr := utils.Float32SliceToPgVector(emb)
 
+	cfg := config.AppConfig.WikiSearch
 	sql := fmt.Sprintf(`
         WITH vector_results AS (
             SELECT
@@ -334,13 +339,13 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
                 END AS text_boost
             FROM %s.document_chunks dc
             JOIN %s.documents d ON dc.document_id = d.id
-            WHERE dc.embedding <-> ?::vector < 0.3
+            WHERE (dc.embedding <-> ?::vector) < ?
         )
         SELECT path, title, snippet,
                (vector_dist - text_boost) AS final_score
         FROM vector_results
         ORDER BY final_score ASC
-        LIMIT 20
+        LIMIT ?
     `, bu, bu)
 
 	query = removeDots(query)
@@ -354,10 +359,12 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 		FinalScore float64
 	}
 	if err := database.DB.Raw(sql,
-		embStr,    // vector compare
+		embStr,    // vector compare (SELECT)
 		likeQuery, // title boost
 		likeQuery, // content boost
-		embStr,    // WHERE filter
+		embStr,    // WHERE vector compare
+		cfg.VectorDistanceMax,
+		cfg.SearchLimit,
 	).Scan(&rows).Error; err != nil {
 		return nil, fmt.Errorf("hybrid search: %w", err)
 	}
@@ -370,7 +377,7 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 		}
 		seen[r.Path] = true
 		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
-		snippet = smartTrim(snippet, 200)
+		snippet = smartTrim(snippet, config.AppConfig.WikiSearch.SnippetMaxLen)
 		results = append(results, SearchResult{
 			WikiEntry: WikiEntry{Path: r.Path, Title: r.Title},
 			Snippet:   snippet,
@@ -382,6 +389,9 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 // SearchByKeyword performs keyword search (ILIKE) with NLP-expanded terms.
 // Used alongside semantic search to improve recall for domain terms.
 func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) {
+	if !security.ValidateSchema(bu) {
+		return nil, fmt.Errorf("invalid schema/bu: %q", bu)
+	}
 	terms := nlp.ExpandQuery(query)
 	if len(terms) == 0 {
 		return nil, nil
@@ -397,17 +407,18 @@ func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) 
 	}
 	whereClause := "(" + strings.Join(conditions, " OR ") + ")"
 
+	searchLimit := config.AppConfig.WikiSearch.SearchLimit
 	sql := fmt.Sprintf(`
 		SELECT DISTINCT ON (d.path) d.path, d.title, dc.content AS snippet
 		FROM %s.document_chunks dc
 		JOIN %s.documents d ON dc.document_id = d.id
 		WHERE %s
 		ORDER BY d.path, CASE WHEN d.title ILIKE ? THEN 0 ELSE 1 END
-		LIMIT 20
+		LIMIT ?
 	`, bu, bu, whereClause)
 
-	// Add primary term for ORDER BY (use first term)
-	args = append(args, "%"+terms[0]+"%")
+	// Add primary term for ORDER BY (use first term) and limit
+	args = append(args, "%"+terms[0]+"%", searchLimit)
 
 	var rows []struct {
 		Path    string
@@ -419,9 +430,10 @@ func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) 
 	}
 
 	var results []SearchResult
+	snippetMaxLen := config.AppConfig.WikiSearch.SnippetMaxLen
 	for _, r := range rows {
 		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
-		snippet = smartTrim(snippet, 200)
+		snippet = smartTrim(snippet, snippetMaxLen)
 		results = append(results, SearchResult{
 			WikiEntry: WikiEntry{Path: r.Path, Title: r.Title},
 			Snippet:   snippet,

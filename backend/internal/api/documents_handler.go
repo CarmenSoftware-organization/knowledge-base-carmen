@@ -1,4 +1,3 @@
-
 package api
 
 import (
@@ -7,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/middleware"
+	"github.com/new-carmen/backend/internal/security"
 )
 
 type DocumentsHandler struct{}
@@ -25,10 +25,12 @@ type documentRow struct {
 	UpdatedAt  *string `json:"updated_at,omitempty"`
 }
 
-
 func (h *DocumentsHandler) List(c *fiber.Ctx) error {
-	var rows []documentRow
 	bu := middleware.GetBU(c)
+	if !security.ValidateSchema(bu) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu parameter"})
+	}
+	var rows []documentRow
 	sql := fmt.Sprintf(`
 		SELECT d.id, d.path, d.title, d.source, d.created_at, d.updated_at,
 			(SELECT COUNT(*) FROM %s.document_chunks c WHERE c.document_id = d.id) AS chunk_count

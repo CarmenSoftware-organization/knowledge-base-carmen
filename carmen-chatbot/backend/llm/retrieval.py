@@ -1,22 +1,17 @@
+import logging
 import os
 import re
 from sqlalchemy import text
 from langchain_ollama import OllamaEmbeddings
 from langchain_core.documents import Document
 
-# Internal Imports
 from ..core.config import settings
 from ..core.database import SessionLocal
 
-# ==========================================
-# 🛡️ HYBRID SEARCH SETUP
-# ==========================================
 class RetrievalService:
-    # 🎛️ Tunable Parameters
-    TOP_K = 4                # จำนวนผลลัพธ์สูงสุดที่จะดึงมา
-    MAX_DISTANCE = 0.8       # Cosine distance threshold (0=เหมือนกัน, 1=ต่างสุด)
+    TOP_K = 4
+    MAX_DISTANCE = 0.8
 
-    # Path Filtering Rules (Ported from Go)
     TOPIC_PATH_RULES = [
         {"keywords": ["vendor", "ap-vendor", "ผู้ขาย", "ร้านค้า"], "patterns": ["%vendor%", "%ผู้ขาย%", "%ร้านค้า%"]},
         {"keywords": ["configuration", "company profile", "chart of account", "department", "currency", "payment type", "permission", "cf-", "สิทธิ์ผู้ใช้", "กำหนดสิทธิ์"], "patterns": ["%configuration%", "%cf-%"]},
@@ -47,8 +42,7 @@ class RetrievalService:
         """Convert python list of floats to string format required by pgvector [1.0, 2.0, ...]"""
         return "[" + ",".join(str(v) for v in vector_list) + "]"
 
-    # Boost amount: how much to reduce distance for path-matched docs (lower = ranked higher)
-    PATH_BOOST = 0.08  # e.g., 0.35 distance → 0.27 effective distance
+    PATH_BOOST = 0.08
 
     def build_path_boost_from_query(self, question: str) -> tuple[list[str], list[str]]:
         """
@@ -71,17 +65,10 @@ class RetrievalService:
                             all_patterns.append(p)
                     break  # Found a match for this rule, move to next rule
         
-        # Confidence check: if too many rules match, query is ambiguous → no boost
         if matched_rules_count >= 3:
-            print(f"   ⚠️ Ambiguous query: matched {matched_rules_count} rules ({matched_keywords}) → skipping path boost")
             return [], matched_keywords
-        
-        if all_patterns:
-            print(f"   📌 Path boost keywords: {matched_keywords}")
-        
         return all_patterns, matched_keywords
 
-    # Whitelist: only allow safe schema names (alphanumeric + underscore)
     SAFE_SCHEMA_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
     def search(self, query: str, db_schema: str = "carmen"):
@@ -103,25 +90,28 @@ class RetrievalService:
             query_embedding = self.embeddings.embed_query(query)
             emb_str = self.format_pgvector(query_embedding)
 
-            # Build path boost patterns
             boost_patterns, matched_keywords = self.build_path_boost_from_query(query)
-            
-            # Build SQL with optional path boost scoring
+
+            params = {
+                "emb": emb_str,
+                "top_k": self.TOP_K * 3,
+                "max_dist": self.MAX_DISTANCE,
+            }
+
             if boost_patterns:
-                # Build CASE WHEN for path boost: matching paths get reduced distance
-                boost_conditions = " OR ".join(
-                    f"d.path ILIKE '{p.replace(chr(39), chr(39)+chr(39))}'" 
-                    for p in boost_patterns
+                placeholders = " OR ".join(
+                    f"d.path ILIKE :bp{i}" for i in range(len(boost_patterns))
                 )
-                # effective_distance = actual_distance - boost (if path matches)
                 score_expr = f"""
-                    (dc.embedding <=> CAST(:emb AS vector)) 
-                    - CASE WHEN ({boost_conditions}) THEN :path_boost ELSE 0 END
+                    (dc.embedding <=> CAST(:emb AS vector))
+                    - CASE WHEN ({placeholders}) THEN :path_boost ELSE 0 END
                 """
-                print(f"🚦 Path Boost Applied: {boost_conditions}")
+                params["path_boost"] = self.PATH_BOOST
+                for i, p in enumerate(boost_patterns):
+                    params[f"bp{i}"] = p
             else:
                 score_expr = "(dc.embedding <=> CAST(:emb AS vector))"
-            
+
             sql_query = text(f"""
                 SELECT 
                     d.path, 
@@ -136,14 +126,6 @@ class RetrievalService:
                 ORDER BY ({score_expr})
                 LIMIT :top_k
             """)
-
-            params = {
-                "emb": emb_str, 
-                "top_k": self.TOP_K * 3,
-                "max_dist": self.MAX_DISTANCE,
-            }
-            if boost_patterns:
-                params["path_boost"] = self.PATH_BOOST
 
             with SessionLocal() as db:
                 results = db.execute(sql_query, params).fetchall()
@@ -205,8 +187,7 @@ class RetrievalService:
                         })
 
         except Exception as e:
-            print(f"❌ Search Error (PostgreSQL/pgvector): {e}")
-            
+            logging.getLogger(__name__).error("Search error: %s", e)
         return passed_docs, source_debug
 
 # Singleton instance

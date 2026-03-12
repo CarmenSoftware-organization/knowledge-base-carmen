@@ -24,7 +24,6 @@ backend/
 │   └── utils/              # Utilities
 ├── pkg/
 │   ├── ollama/             # Ollama client
-│   ├── chromadb/           # ChromaDB client
 │   └── github/             # GitHub integration
 ├── migrations/             # Database migrations
 ├── .env.example
@@ -37,7 +36,6 @@ backend/
 - 📄 Document Management
 - 🔍 AI-Powered Semantic Search
 - 🤖 Ollama Integration
-- 🗄️ ChromaDB Vector Database
 - 📚 GitHub Integration (for wiki.js content)
 - 🐘 PostgreSQL Database
 

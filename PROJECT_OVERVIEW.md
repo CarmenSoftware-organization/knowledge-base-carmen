@@ -24,14 +24,9 @@
               ▼                                    ▼
 ┌───────────────────────────┐        ┌───────────────────────────┐
 │   N8N (Orchestration)     │        │   Ollama (LLM)             │
-│   Trigger → Index         │        │   ChromaDB (Vector)       │
+│   Trigger → Index         │        │   pgvector (PostgreSQL)    │
 └─────────────┬─────────────┘        │   Neon (PostgreSQL)       │
               │                      └───────────────────────────┘
-              ▼
-┌───────────────────────────┐
-│   ChromaDB (Vector DB)     │
-│   เก็บ embedding           │
-└───────────────────────────┘
 ```
 
 ---
@@ -42,11 +37,10 @@
 |------|--------|--------|
 | **Wiki.js** | สร้าง/แก้ไข/ลบ เอกสาร (markdown), sync ขึ้น Git | ✅ ใช้อยู่ (บน VM) |
 | **Git (GitHub)** | เก็บเนื้อหาจาก Wiki, เป็น source of truth | ✅ new-carmen repo |
-| **Backend (Go Fiber)** | REST API, Auth, Document, Search, เชื่อม Ollama + ChromaDB + Neon | ✅ มีแล้ว |
+| **Backend (Go Fiber)** | REST API, Auth, Document, Search, เชื่อม Ollama + pgvector + Neon | ✅ มีแล้ว |
 | **Frontend** | หน้า Search / Chat UI ให้ผู้ใช้ | ⏳ ยังไม่สร้าง (แผนใช้ Next.js) |
-| **N8N** | Trigger เมื่อ Git อัปเดต → ดึงจาก Git → สร้าง embedding → ส่งเข้า ChromaDB | 📋 วางแผนใช้ |
-| **Neon (PostgreSQL)** | เก็บ metadata: users, documents, versions, permissions | ✅ ใช้อยู่ |
-| **ChromaDB** | เก็บ vector สำหรับ semantic search | 📋 เตรียมใช้ (Week 2+) |
+| **N8N** | Trigger เมื่อ Git อัปเดต → ดึงจาก Git → สร้าง embedding → อัปเดต pgvector | 📋 วางแผนใช้ |
+| **Neon (PostgreSQL)** | เก็บ metadata, pgvector สำหรับ semantic search | ✅ ใช้อยู่ |
 | **Ollama** | LLM สำหรับวิเคราะห์คำถาม, สร้างคำตอบ, (และ embedding ถ้าใช้) | 📋 เตรียมใช้ (Week 2+) |
 
 ---
@@ -81,7 +75,7 @@
 | โครงสร้าง | Clean Architecture (api, router, services, repositories, domain, config, database, middleware, utils) |
 | ORM | GORM |
 | Auth | JWT, bcrypt, Role-based (Superadmin, Admin, Guest) |
-| External clients | Ollama, ChromaDB, GitHub (ใน pkg/) |
+| External clients | Ollama, GitHub (ใน pkg/) |
 
 ---
 
@@ -105,10 +99,10 @@
 ### 6. Vector DB (Semantic Search)
 | รายการ | เทคโนโลยี |
 |--------|-----------|
-| บริการ | ChromaDB |
+| บริการ | pgvector (PostgreSQL) |
 | บทบาท | เก็บ embedding ของเอกสาร สำหรับ semantic search |
-| การอัปเดต | N8N (ดึงจาก Git → สร้าง embedding → ส่งเข้า ChromaDB) |
-| การ query | Backend (Go) เรียก ChromaDB ตอน search |
+| การอัปเดต | Backend indexing service |
+| การ query | Backend (Go) เรียก pgvector ตอน search |
 
 ---
 
@@ -124,7 +118,7 @@
 ### 8. N8N (Orchestration)
 | รายการ | เทคโนโลยี |
 |--------|-----------|
-| บทบาท | Trigger เมื่อ Git อัปเดต → ดึงเนื้อหา → สร้าง embedding → อัปเดต ChromaDB |
+| บทบาท | Trigger เมื่อ Git อัปเดต → ดึงเนื้อหา → สร้าง embedding → อัปเดต pgvector |
 | Trigger | GitHub Webhook (push) หรือ Schedule |
 | Tech | N8N (low-code workflow) |
 
@@ -146,7 +140,7 @@ New-carmen/
 ├── backend/                 # Backend API (Go Fiber)
 │   ├── cmd/server/          # Entry point
 │   ├── internal/            # api, config, database, domain, middleware, repositories, router, services, utils
-│   ├── pkg/                  # ollama, chromadb, github clients
+│   ├── pkg/                  # ollama, github clients
 │   ├── migrations/
 │   └── docs/                 # เอกสาร flow, debug
 ├── frontend/                 # (ยังไม่สร้าง) Next.js
@@ -166,7 +160,7 @@ New-carmen/
 | **Version Control** | Git, GitHub (new-carmen) |
 | **Backend** | Go, Fiber, GORM |
 | **Database** | Neon (PostgreSQL) |
-| **Vector DB** | ChromaDB |
+| **Vector DB** | pgvector (PostgreSQL) |
 | **AI/LLM** | Ollama |
 | **Orchestration (Indexing)** | N8N |
 | **Frontend (แผน)** | Next.js |
@@ -177,7 +171,7 @@ New-carmen/
 ## Flow สั้นๆ
 
 1. **Wiki.js** — ผู้ใช้สร้าง/แก้ไข เอกสาร → Sync ขึ้น **GitHub (new-carmen)**
-2. **N8N** — ถูก trigger (Webhook/Schedule) → ดึงจาก Git → สร้าง embedding → ส่งเข้า **ChromaDB**
+2. **N8N** — ถูก trigger (Webhook/Schedule) → ดึงจาก Git → สร้าง embedding → อัปเดต **pgvector**
 3. **Frontend** — ผู้ใช้ค้นหา → เรียก **Backend API**
-4. **Backend** — รับคำค้น → ใช้ **ChromaDB** (vector) + **Ollama** (RAG) → ส่งผลลัพธ์กลับ
+4. **Backend** — รับคำค้น → ใช้ **pgvector** (vector) + **Ollama** (RAG) → ส่งผลลัพธ์กลับ
 5. **Backend** — เก็บ metadata ผู้ใช้/เอกสาร/สิทธิ์ ใน **Neon (PostgreSQL)**

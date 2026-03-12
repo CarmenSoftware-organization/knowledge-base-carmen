@@ -8,6 +8,7 @@ import (
 
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/security"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/ollama"
 )
@@ -29,6 +30,9 @@ func NewIndexingService() *IndexingService {
 }
 
 func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
+	if !security.ValidateSchema(bu) {
+		return fmt.Errorf("invalid schema/bu: %q", bu)
+	}
 	s.logService.Log(bu, "system", "เริ่มดึงข้อมูล ( Re-indexing )", "system", map[string]interface{}{"status": "started"}, "")
 	
 	entries, err := s.wiki.ListMarkdown(bu)

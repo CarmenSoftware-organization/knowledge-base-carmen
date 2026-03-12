@@ -25,9 +25,14 @@ migrate-down:
 migrate-create:
 	migrate create -ext sql -dir migrations -seq $(name)
 
-# Run tests
+# Run tests (tests live in backend/tests/)
 test:
-	go test ./...
+	go test ./tests/... -v
+
+# Run tests with coverage
+test-coverage:
+	go test ./tests/... -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
 
 # Clean build artifacts
 clean:

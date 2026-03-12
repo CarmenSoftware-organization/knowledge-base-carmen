@@ -1,7 +1,5 @@
 import Fuse from "fuse.js";
-
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+import { API_BASE, DEFAULT_BU } from "./config";
 
 /* =========================
    Types
@@ -31,16 +29,13 @@ export type BusinessUnit = {
  ========================= */
 
 export async function getBusinessUnits(): Promise<{ items: BusinessUnit[] }> {
-  const res = await fetch(`${BASE_URL}/api/business-units`, {
+  const res = await fetch(`${API_BASE}/api/business-units`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch business units");
   return res.json();
 }
 
-/**
- * ดึง BU ที่เลือกไว้ (Client-side เท่านั้น)
- */
 export function getSelectedBUClient(): string {
   if (typeof window === "undefined") return "carmen";
   const match = document.cookie.match(/(^| )selected_bu=([^;]+)/);
@@ -64,7 +59,7 @@ export async function getCategories(bu?: string): Promise<{
   items: { slug: string; title: string }[];
 }> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(`${BASE_URL}/api/wiki/categories?bu=${selectedBU}`, {
+  const res = await fetch(`${API_BASE}/api/wiki/categories?bu=${selectedBU}`, {
     cache: "no-store",
   });
 
@@ -82,7 +77,7 @@ export async function getCategory(slug: string, bu?: string): Promise<{
 }> {
   const selectedBU = bu || getSelectedBUClient();
   const res = await fetch(
-    `${BASE_URL}/api/wiki/category/${slug}?bu=${selectedBU}`,
+    `${API_BASE}/api/wiki/category/${slug}?bu=${selectedBU}`,
     { cache: "no-store" }
   );
 
@@ -104,7 +99,7 @@ export async function getAllArticles(bu?: string): Promise<WikiListItem[]> {
   const selectedBU = bu || getSelectedBUClient();
   if (cachedList[selectedBU]) return cachedList[selectedBU];
 
-  const res = await fetch(`${BASE_URL}/api/wiki/list?bu=${selectedBU}`, {
+  const res = await fetch(`${API_BASE}/api/wiki/list?bu=${selectedBU}`, {
     cache: "no-store",
   });
 
@@ -219,7 +214,7 @@ export async function getContent(path: string, bu?: string): Promise<{
 }> {
   const selectedBU = bu || getSelectedBUClient();
   const res = await fetch(
-    `${BASE_URL}/api/wiki/content/${path}?bu=${selectedBU}`,
+    `${API_BASE}/api/wiki/content/${path}?bu=${selectedBU}`,
     { cache: "no-store" }
   );
 
@@ -258,7 +253,7 @@ export async function askChat(
   bu?: string
 ): Promise<ChatAskResponse> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(`${BASE_URL}/api/chat/ask?bu=${selectedBU}`, {
+  const res = await fetch(`${API_BASE}/api/chat/ask?bu=${selectedBU}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -296,7 +291,7 @@ export async function searchWiki(query: string, bu?: string): Promise<SearchResu
 
   const selectedBU = bu || getSelectedBUClient();
   try {
-    const res = await fetch(`${BASE_URL}/api/wiki/search?q=${encodeURIComponent(q)}&bu=${selectedBU}`, {
+    const res = await fetch(`${API_BASE}/api/wiki/search?q=${encodeURIComponent(q)}&bu=${selectedBU}`, {
       cache: "no-store",
     });
 
@@ -327,7 +322,7 @@ export type ActivityLog = {
 // GET /api/activity/list
 export async function getActivityLogs(bu?: string, limit: number = 50, offset: number = 0): Promise<{ items: ActivityLog[] }> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(`${BASE_URL}/api/activity/list?bu=${selectedBU}&limit=${limit}&offset=${offset}`, {
+  const res = await fetch(`${API_BASE}/api/activity/list?bu=${selectedBU}&limit=${limit}&offset=${offset}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch activity logs");
@@ -336,7 +331,7 @@ export async function getActivityLogs(bu?: string, limit: number = 50, offset: n
 
 // POST /api/wiki/sync
 export async function syncWiki(): Promise<{ ok: boolean; message: string }> {
-  const res = await fetch(`${BASE_URL}/api/wiki/sync`, {
+  const res = await fetch(`${API_BASE}/api/wiki/sync`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to sync wiki");
@@ -346,7 +341,7 @@ export async function syncWiki(): Promise<{ ok: boolean; message: string }> {
 // POST /api/index/rebuild
 export async function rebuildIndex(bu?: string): Promise<{ message: string }> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(`${BASE_URL}/api/index/rebuild?bu=${selectedBU}`, {
+  const res = await fetch(`${API_BASE}/api/index/rebuild?bu=${selectedBU}`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to rebuild index");

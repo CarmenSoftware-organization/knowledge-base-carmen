@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 # Base Directory Setup
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Project root (localChromaDB + openrouter)
+# Project root
 PROJECT_ROOT = BASE_DIR.parent.parent
 
 # Chatbot Root (.env is here)
@@ -92,4 +92,4 @@ CORS_ORIGINS = settings.CORS_ORIGINS
 project_root = BASE_DIR
 
 if not settings.is_openrouter_api_ready:
-    print("⚠️ WARNING: OPENROUTER_API_KEY is missing in .env")
+    print("WARNING: OPENROUTER_API_KEY is missing in .env")
