@@ -108,12 +108,12 @@ async def get_image(filename: str):
     raise HTTPException(status_code=404, detail="Image not found")
 
 # Serve carmen-widget.js and other frontend assets as static
-if FRONTEND_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+if settings.FRONTEND_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(settings.FRONTEND_DIR)), name="static")
 
 # Helper to serve carmen-widget.js directly if needed by legacy relative paths
 @app.get("/carmen-widget.js")
-async def widget_js(): return FileResponse(FRONTEND_DIR / 'carmen-widget.js')
+async def widget_js(): return FileResponse(settings.FRONTEND_DIR / 'carmen-widget.js')
 
 # Specific Pages serving using Templates
 

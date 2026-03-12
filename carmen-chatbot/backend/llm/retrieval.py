@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import asyncio
 from sqlalchemy import text
 from langchain_ollama import OllamaEmbeddings
 from langchain_core.documents import Document
@@ -8,21 +9,13 @@ from langchain_core.documents import Document
 from ..core.config import settings
 from ..core.database import AsyncSessionLocal
 
+logger = logging.getLogger(__name__)
+
 class RetrievalService:
     TOP_K = 4
-    MAX_DISTANCE = 0.8
-
-    TOPIC_PATH_RULES = [
-        {"keywords": ["vendor", "ap-vendor", "ผู้ขาย", "ร้านค้า"], "patterns": ["%vendor%", "%ผู้ขาย%", "%ร้านค้า%"]},
-        {"keywords": ["configuration", "company profile", "chart of account", "department", "currency", "payment type", "permission", "cf-", "สิทธิ์ผู้ใช้", "กำหนดสิทธิ์"], "patterns": ["%configuration%", "%cf-%"]},
-        {"keywords": [" ar ", "ar-", "ar invoice", "ar receipt", "ลูกค้า", "receipt", "contract", "folio", "ใบเสร็จ", "ลูกหนี้"], "patterns": ["%ar-%", "%ar\\\\%", "%/ar/%"]},
-        {"keywords": [" ap ", "ap-", "ap invoice", "ap payment", "เจ้าหนี้", "cheque", "wht", "หัก ณ ที่จ่าย", "input tax", "ภาษีซื้อ"], "patterns": ["%ap-%", "%ap\\\\%", "%/ap/%"]},
-        {"keywords": ["asset", "สินทรัพย์", "as-", "ทะเบียนสินทรัพย์", "asset register", "asset disposal"], "patterns": ["%as-%", "%asset%"]},
-        {"keywords": [" gl ", "gl ", "general ledger", "journal voucher", "voucher", "บัญชีแยกประเภท", "ผังบัญชี", "allocation", "amortization", "budget", "recurring"], "patterns": ["%gl%", "%c-%"]},
-        {"keywords": ["dashboard", "สถิติ", "revenue", "occupancy", "adr", "revpar", "trevpar", "p&l", "กำไรขาดทุน"], "patterns": ["%dashboard%"]},
-        {"keywords": ["workbook", "excel", "refresh", "formula", "function", "add-in"], "patterns": ["%workbook%", "%wb-%", "%excel%"]},
-        {"keywords": ["comment", "activity log", "document management", "ไฟล์แนบ", "รูปภาพแนบ", "ประวัติเอกสาร", "คอมเมนต์", "ความคิดเห็น"], "patterns": ["%comment%", "%cm-%"]}
-    ]
+    MAX_DISTANCE = 0.5
+    PATH_BOOST = 0.08
+    FETCH_K = 20  # Fetch more for re-ranking
 
     def __init__(self):
         self.embeddings = None
@@ -36,33 +29,35 @@ class RetrievalService:
                 client_kwargs={"timeout": 10.0}
             )
         except Exception as e:
-            print(f"❌ Error Initializing AI Brain: {e}")
+            logger.error(f"❌ Error Initializing AI Brain: {e}")
 
     def format_pgvector(self, vector_list: list[float]) -> str:
         return "[" + ",".join(str(v) for v in vector_list) + "]"
 
-    PATH_BOOST = 0.08
-
     def get_path_boost_patterns(self, question: str) -> list[str]:
         """Match applicable path rules from external config."""
         q_lower = question.lower()
-        matched_rules_count = 0
         all_patterns = []
         matched_keywords = []
         
+        # settings.PATH_RULES is loaded from YAML/JSON
         for rule in settings.PATH_RULES:
-            for kw in rule["keywords"]:
+            keywords = rule.get("keywords", [])
+            patterns = rule.get("patterns", [])
+            
+            for kw in keywords:
                 if kw.lower() in q_lower:
-                    matched_rules_count += 1
                     matched_keywords.append(kw)
-                    for p in rule["patterns"]:
+                    for p in patterns:
                         if p not in all_patterns:
                             all_patterns.append(p)
-                    break
-        
-        if matched_rules_count >= 3:
-            return [], matched_keywords
-        return all_patterns, matched_keywords
+                    break # Move to next rule once one keyword matches
+
+        # If too many rules match, it might be a generic query, skip boosting
+        if len(matched_keywords) >= 5:
+            return []
+            
+        return all_patterns
 
     SAFE_SCHEMA_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
@@ -71,38 +66,20 @@ class RetrievalService:
         source_debug = []
 
         if not self.SAFE_SCHEMA_PATTERN.match(db_schema):
+            logger.warning(f"Invalid schema name: {db_schema}")
             return passed_docs, source_debug
         
         if not self.embeddings:
+            logger.error("Embeddings not initialized")
             return passed_docs, source_debug
 
         try:
-            # Generate embedding
+            # Generate embedding in a thread-safe way for LangChain
             query_embedding = await asyncio.to_thread(self.embeddings.embed_query, query)
             emb_str = self.format_pgvector(query_embedding)
 
-            boost_patterns, matched_keywords = self.build_path_boost_from_query(query)
-
-            params = {
-                "emb": emb_str,
-                "top_k": self.TOP_K * 3,
-                "max_dist": self.MAX_DISTANCE,
-            }
-
-            if boost_patterns:
-                placeholders = " OR ".join(
-                    f"d.path ILIKE :bp{i}" for i in range(len(boost_patterns))
-                )
-                score_expr = f"""
-                    (dc.embedding <=> CAST(:emb AS vector))
-                    - CASE WHEN ({placeholders}) THEN :path_boost ELSE 0 END
-                """
-                params["path_boost"] = self.PATH_BOOST
-                for i, p in enumerate(boost_patterns):
-                    params[f"bp{i}"] = p
-            else:
-                score_expr = "(dc.embedding <=> CAST(:emb AS vector))"
-
+            boost_patterns = self.get_path_boost_patterns(query)
+            
             sql_query = text(f"""
                 SELECT 
                     d.path, 
@@ -114,50 +91,125 @@ class RetrievalService:
                 WHERE (dc.embedding <=> CAST(:emb AS vector)) < :max_dist
                   AND d.path NOT LIKE '%index.md'
                 ORDER BY (dc.embedding <=> CAST(:emb AS vector))
-                LIMIT :limit
+                LIMIT :fetch_limit
             """)
 
-            with SessionLocal() as db:
-                results = db.execute(sql_query, params).fetchall()
+            params = {
+                "emb": emb_str,
+                "max_dist": self.MAX_DISTANCE,
+                "fetch_limit": self.FETCH_K
+            }
+
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(sql_query, params)
+                rows = result.fetchall()
                 
-                for row in results:
-                    # Break when we have enough unique documents
+                # Re-ranking Logic in Python
+                candidates = []
+                for row in rows:
+                    path = row.path
+                    actual_dist = float(row.distance)
+                    is_boosted = False
+                    
+                    if boost_patterns:
+                        for pattern in boost_patterns:
+                            # Convert SQL LIKE pattern to regex
+                            regex_pattern = pattern.replace("%", ".*").replace("_", ".")
+                            if re.search(regex_pattern, path, re.IGNORECASE):
+                                is_boosted = True
+                                break
+                    
+                    effective_dist = actual_dist - (self.PATH_BOOST if is_boosted else 0)
+                    
+                    if is_boosted:
+                        logger.info(f"🚀 [Path Boost Applied] -> path: {path} | Original: {actual_dist:.4f} | Boosted: {effective_dist:.4f}")
+
+                    candidates.append({
+                        "path": path,
+                        "title": row.title or os.path.basename(path),
+                        "content": row.content,
+                        "actual_dist": actual_dist,
+                        "effective_dist": effective_dist,
+                        "is_boosted": is_boosted
+                    })
+
+                # Sort by effective distance
+                candidates.sort(key=lambda x: x["effective_dist"])
+
+                unique_contents = set()
+                for item in candidates:
                     if len(passed_docs) >= self.TOP_K:
                         break
-                        
-                    path = row.path
-                    title = row.title.strip() if row.title and row.title.strip() else path
-                    content = row.content
-                    actual_distance = row.distance
-                    effective_dist = row.effective_distance
                     
-                unique_contents.add(content)
-                title = row.title.strip() if row.title and row.title.strip() else path
-                
-                # Fix image paths
-                base_dir = os.path.dirname(path).replace("\\", "/")
-                if base_dir:
-                    def resolve_src(src):
-                        clean_src = src.lstrip("/")
-                        if clean_src.startswith("./"): clean_src = clean_src[2:]
-                        if clean_src.startswith("http") or clean_src.startswith("data:"): return src
-                        if "/" not in clean_src: clean_src = f"{base_dir}/{clean_src}"
-                        return clean_src
+                    # Deduplicate by content
+                    content = item["content"]
+                    if content in unique_contents:
+                        continue
+                    unique_contents.add(content)
 
-                    content = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', 
-                        lambda m: f"![{m.group(1)}]({resolve_src(m.group(2))})", content)
-                    content = re.sub(r'<img\s+[^>]*src=["\']([^"\']+)["\'][^>]*>', 
-                        lambda m: m.group(0).replace(f'"{m.group(1)}"', f'"{resolve_src(m.group(1))}"'), content)
+                    # Fix image paths in content
+                    path = item["path"]
+                    base_dir = os.path.dirname(path).replace("\\", "/")
+                    
+                    if base_dir:
+                        def resolve_src(src):
+                            # 1. Clean up the source path
+                            clean_src = src.lstrip("/")
+                            if clean_src.startswith("./"):
+                                clean_src = clean_src[2:]
+                            
+                            # 2. Preserve absolute URLs or data URIs
+                            if clean_src.startswith("http") or clean_src.startswith("data:"):
+                                return src
+                            
+                            # 3. Handle paths that already have 'images/' prefix
+                            if clean_src.startswith("images/"):
+                                clean_src = clean_src[len("images/"):]
+                            
+                            # 4. Resolve relative path using base_dir
+                            if "/" not in clean_src:
+                                clean_src = f"{base_dir}/{clean_src}"
+                            
+                            # 5. Return a full relative-style path (e.g., /images/ap/image.png)
+                            # Prepending /images/ makes it unmistakable for the LLM
+                            res = clean_src.lstrip("/")
+                            return f"/images/{res}"
 
-                score_label = f"{row.distance:.4f}"
-                if item["is_boosted"]:
-                    score_label += f" (Boosted → {item['effective_dist']:.4f})"
+                        # Fix <img> tags: only replace the src attribute, don't convert to Markdown
+                        # This preserves inline styles like height/width
+                        def fix_img_tag(match):
+                            full_tag = match.group(0)
+                            src_match = re.search(r'src=["\']([^"\']+)["\']', full_tag)
+                            if not src_match:
+                                return full_tag
+                            
+                            new_src = resolve_src(src_match.group(1))
+                            # Use double quotes for the new src
+                            return re.sub(r'src=["\']([^"\']+)["\']', f'src="{new_src}"', full_tag)
 
-                passed_docs.append(Document(page_content=content, metadata={"source": path, "title": title}))
-                source_debug.append({"source": path, "title": title, "score": score_label})
+                        content = re.sub(r'<img\s+[^>]*src=["\']([^"\']+)["\'][^>]*>', fix_img_tag, content)
+
+                        # Fix Markdown images: ![alt](src)
+                        content = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', 
+                            lambda m: f"![{m.group(1)}]({resolve_src(m.group(2))})", content)
+
+                    score_label = f"{item['actual_dist']:.4f}"
+                    if item["is_boosted"]:
+                        score_label += f" (Boosted → {item['effective_dist']:.4f})"
+
+                    passed_docs.append(Document(
+                        page_content=content, 
+                        metadata={
+                            "source": path, 
+                            "title": item["title"],
+                            "score": score_label
+                        }
+                    ))
+                    source_debug.append({"source": path, "title": item["title"], "score": score_label})
 
         except Exception as e:
-            logging.getLogger(__name__).error("Search error: %s", e)
+            logger.exception(f"Search error: {e}")
+            
         return passed_docs, source_debug
 
 # Singleton instance

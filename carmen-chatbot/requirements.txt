@@ -12,7 +12,9 @@ langchain-ollama
 
 # Embeddings & Vector Search (via pgvector)
 sqlalchemy
+asyncpg
 psycopg2-binary
+PyYAML
 
 # HTTP
 requests

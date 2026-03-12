@@ -50,18 +50,26 @@ function processImages(text: string, apiBase: string): string {
         u.includes("127.0.0.1") ||
         u.includes("localhost") ||
         (apiBase && u.startsWith(apiBase))
-      )
-        return u.includes("/images/")
-          ? u
-          : `${apiBase}/images/${u.split("/").pop()}`;
+      ) {
+        if (u.includes("/images/")) return u;
+        // Fix: preserve the path after the domain/port instead of just the pop()
+        const urlObj = new URL(u);
+        const pathPart = urlObj.pathname.startsWith("/") ? urlObj.pathname.slice(1) : urlObj.pathname;
+        return `${apiBase}/images/${pathPart}`;
+      }
       const after = u.split("/images/");
       if (after.length > 1) return `${apiBase}/images/${after[1]}`;
-      return `${apiBase}/images/${u
-        .replace(/^https?:\/\/[^/]+/, "")
-        .replace(/^\/+/, "")}`;
+      
+      const pathOnly = u.replace(/^https?:\/\/[^/]+/, "").replace(/^\/+/, "");
+      return `${apiBase}/images/${pathOnly}`;
     }
-    u = u.replace(/^carmen_cloud\//, "").replace(/^\/+/, "");
-    return `${apiBase}/images/${u}`;
+    // Check if it already starts with images/ (with or without leading slash)
+    const cleanU = u.replace(/^\/+/, "");
+    if (cleanU.startsWith("images/")) {
+      return `${apiBase}/${cleanU}`;
+    }
+    
+    return `${apiBase}/images/${cleanU}`;
   };
 
   text = text.replace(/!\[(.*?)\]\((.*?)\)/g, (_m, alt, src) => {
@@ -140,12 +148,12 @@ function processMarkdownStructure(text: string): string {
       blankCount = 0;
       continue;
     }
-    const numbered = line.match(/^(\d+)\.\s+(.+)$/);
+    const numbered = line.match(/^(\d+)\.(?:\s+(.*))?$/);
     if (numbered) {
       if (inList) { out.push("</ul>"); inList = false; }
       out.push(`<div class="carmen-numbered-item">
         <b class="carmen-number">${escapeHtml(numbered[1])}.</b>
-        <span>${escapeHtml(numbered[2])}</span>
+        <span>${escapeHtml(numbered[2] || "")}</span>
       </div>`);
       blankCount = 0;
       continue;
@@ -177,11 +185,28 @@ export function formatCarmenMessage(text: string, apiBase: string): string {
   if (!text) return "";
   let t = String(text);
 
-  t = processYoutube(t);
-  t = processImages(t, apiBase);
-  t = processLinks(t);
-  t = processMarkdownStructure(t);
+  // 1. Only protect specific HTML tags that are legitimate from Context
+  // This prevents accidental protection of text like "Amount < 100"
+  const protections: string[] = [];
+  const tagRegex = /<(img|span|br|p|div|a|b|i|code)(\s+[^>]*?)?\/?>|<\/(span|p|div|a|b|i|code)>/gi;
+  
+  t = t.replace(tagRegex, (match) => {
+    const placeholder = `__HTML_TAG_PROTECTED_${protections.length}__`;
+    protections.push(match);
+    return placeholder;
+  });
+
+  t = processMarkdownStructure(t); // 2. Put structure first, now safe because tags are protected
+
+  // 3. Restore protected tags
+  protections.forEach((tag, i) => {
+    t = t.split(`__HTML_TAG_PROTECTED_${i}__`).join(tag);
+  });
+
+  t = processYoutube(t);           // 4. Inject Video tags
+  t = processImages(t, apiBase);    // 5. Inject Image tags (handles URL resolution)
+  t = processLinks(t);             // 6. Inject Link tags
   t = t.replace(/(<br>){3,}/g, "<br><br>");
-  t = processInlineMarkdown(t);
+  t = processInlineMarkdown(t);    // 7. Final bold/italic/code
   return t;
 }
