@@ -95,6 +95,7 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 }
 
 // Search performs hybrid search: semantic (pgvector) + keyword (NLP-expanded).
+// Falls back to keyword-only when Ollama/embedding fails (timeout, unreachable).
 // GET /api/wiki/search?q=...
 func (h *WikiHandler) Search(c *fiber.Ctx) error {
 	query := c.Query("q")
@@ -103,10 +104,18 @@ func (h *WikiHandler) Search(c *fiber.Ctx) error {
 	}
 	bu := middleware.GetBU(c)
 
-	// 1. Semantic search (pgvector)
+	// 1. Semantic search (pgvector) — อาจล้มเหลวถ้า Ollama ช้า/timeout
 	semanticResults, err := h.wikiService.SearchInContent(bu, query)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		// Fallback: ใช้ keyword (NLP) แทน — ไม่ต้องเรียก Ollama
+		keywordResults, kwErr := h.wikiService.SearchByKeyword(bu, query)
+		if kwErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		// Log search (fallback mode)
+		userID := c.Get("X-User-ID", "anonymous")
+		h.logService.Log(bu, userID, "ค้นหาข้อมูลวิกิ", "wiki", map[string]interface{}{"status": "GET", "query": query, "results": len(keywordResults), "fallback": "keyword"}, c.Get("User-Agent"))
+		return c.JSON(fiber.Map{"items": keywordResults})
 	}
 
 	// 2. Keyword search with NLP expansion (ILIKE)
