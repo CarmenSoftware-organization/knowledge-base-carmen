@@ -26,6 +26,14 @@ export default function CarmenHistoryScreen({
     isProcessing = false,
     theme = "#34558b"
 }: Props) {
+    // Utility to convert hex to rgb for shadow effects
+    const hexToRgb = (hex: string) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `${r}, ${g}, ${b}`;
+    };
+
     const formatDate = (dateStr: string) => {
         if (!dateStr) return "";
         try {
@@ -49,29 +57,34 @@ export default function CarmenHistoryScreen({
                     className="absolute inset-0 z-[150] flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white overflow-hidden rounded-[inherit]"
                     style={{
                         "--carmen-theme": theme,
-                        "--carmen-theme-fade": `${theme}dd`
+                        "--carmen-theme-fade": `${theme}dd`,
+                        "--carmen-theme-rgb": hexToRgb(theme)
                     } as React.CSSProperties}
                 >
                     {/* Header */}
-                    <div className="px-6 py-5 flex items-center gap-4 border-b border-black/5 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+                    <div className="px-5 py-4 flex items-center gap-4 border-b border-black/5 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl z-20">
                         <button
                             onClick={onClose}
                             title="กลับไปที่แชท"
-                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 hover:scale-105 transition-all"
+                            className="w-10 h-10 flex items-center justify-center rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all text-slate-600 dark:text-slate-300 active:scale-90"
                         >
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M19 12H5M12 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <h2 className="flex-1 m-0 text-[18px] font-semibold">ประวัติการสนทนา</h2>
+                        <h2 className="flex-1 m-0 text-[17px] font-bold tracking-tight text-slate-800 dark:text-white">ประวัติการสนทนา</h2>
                         <button
                             onClick={onNewChat}
                             disabled={isProcessing}
                             title={isProcessing ? "ระบบกำลังประมวลผล" : "เริ่มแชทใหม่"}
-                            className={`w-9 h-9 flex items-center justify-center rounded-xl text-xl font-bold transition-all shadow-lg bg-[linear-gradient(135deg,var(--carmen-theme),var(--carmen-theme-fade))] ${isProcessing ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
-                                }`}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-[14px] font-bold transition-all shadow-lg 
+                                bg-[linear-gradient(135deg,var(--carmen-theme),var(--carmen-theme-fade))] text-white
+                                ${isProcessing ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95 hover:shadow-[0_8px_20px_-4px_rgba(var(--carmen-theme-rgb),0.5)]"}`}
                         >
-                            +
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            <span>แชทใหม่</span>
                         </button>
                     </div>
 
@@ -89,10 +102,13 @@ export default function CarmenHistoryScreen({
                                 <button
                                     onClick={onNewChat}
                                     disabled={isProcessing}
-                                    className={`mt-5 px-6 py-2.5 rounded-xl text-white font-semibold transition-all shadow-md bg-[linear-gradient(135deg,var(--carmen-theme),var(--carmen-theme-fade))] ${isProcessing ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
-                                        }`}
+                                    className={`relative mt-5 px-8 py-3 rounded-2xl text-white font-bold transition-all shadow-xl overflow-hidden
+                                        bg-[linear-gradient(135deg,var(--carmen-theme),var(--carmen-theme-fade))] 
+                                        ${isProcessing ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95 hover:shadow-[0_12px_24px_-6px_rgba(var(--carmen-theme-rgb),0.6)]"}`}
                                 >
-                                    เริ่มบทสนทนาแรก
+                                    {/* Shine overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full hover:animate-[shine_1.5s_infinite] pointer-events-none" />
+                                    <span>เริ่มบทสนทนาแรก</span>
                                 </button>
                             </div>
                         ) : (
