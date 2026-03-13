@@ -91,6 +91,9 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 			log.Printf("[indexing] skip %s chunk %d: empty embedding", path, i)
 			continue
 		}
+		if len(emb) > config.AppConfig.Ollama.VectorDimension {
+			emb = emb[:config.AppConfig.Ollama.VectorDimension]
+		}
 		sqlChunk := fmt.Sprintf("INSERT INTO %s.document_chunks (document_id, chunk_index, content, embedding, created_at) VALUES (?, ?, ?, ?::vector, now())", bu)
 		if err := database.DB.Exec(sqlChunk, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)

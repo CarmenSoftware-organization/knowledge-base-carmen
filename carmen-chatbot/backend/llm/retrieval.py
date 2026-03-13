@@ -15,7 +15,7 @@ class RetrievalService:
     TOP_K = 4
     MAX_DISTANCE = 0.5
     PATH_BOOST = 0.08
-    FETCH_K = 20  # Fetch more for re-ranking
+    FETCH_K = 20  
 
     def __init__(self):
         self.embeddings = None
@@ -26,7 +26,7 @@ class RetrievalService:
             self.embeddings = OllamaEmbeddings(
                 model=settings.OLLAMA_EMBED_MODEL,
                 base_url=settings.OLLAMA_URL,
-                client_kwargs={"timeout": 10.0}
+                client_kwargs={"timeout": 60.0}
             )
         except Exception as e:
             logger.error(f"❌ Error Initializing AI Brain: {e}")
@@ -76,6 +76,9 @@ class RetrievalService:
         try:
             # Generate embedding in a thread-safe way for LangChain
             query_embedding = await asyncio.to_thread(self.embeddings.embed_query, query)
+            # Truncate to match DB schema (Matryoshka Truncation)
+            dim = settings.VECTOR_DIMENSION
+            query_embedding = query_embedding[:dim]
             emb_str = self.format_pgvector(query_embedding)
 
             boost_patterns = self.get_path_boost_patterns(query)

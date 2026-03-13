@@ -302,6 +302,24 @@ export default function CarmenChatWindow({ state }: Props) {
         .dark .carmen-heading-3 {
           color: #e2e8f0;
         }
+        .carmen-heading-4 {
+          font-weight: 700;
+          font-size: 14.5px;
+          margin: 10px 0 5px 0;
+          color: #1e293b;
+        }
+        .dark .carmen-heading-4 {
+          color: #e2e8f0;
+        }
+        .carmen-heading-5 {
+          font-weight: 700;
+          font-size: 14px;
+          margin: 8px 0 4px 0;
+          color: #1e293b;
+        }
+        .dark .carmen-heading-5 {
+          color: #e2e8f0;
+        }
         .carmen-numbered-item {
           display: flex;
           gap: 8px;

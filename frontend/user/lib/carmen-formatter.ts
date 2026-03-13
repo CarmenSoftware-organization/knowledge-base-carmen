@@ -132,6 +132,16 @@ function processMarkdownStructure(text: string): string {
       out.push('<hr class="carmen-hr" />');
       continue;
     }
+    if (/^##### (.+)$/.test(line)) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      out.push(`<div class="carmen-heading-5">${escapeHtml(line.replace(/^##### /, ""))}</div>`);
+      continue;
+    }
+    if (/^#### (.+)$/.test(line)) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      out.push(`<div class="carmen-heading-4">${escapeHtml(line.replace(/^#### /, ""))}</div>`);
+      continue;
+    }
     if (/^### (.+)$/.test(line)) {
       if (inList) { out.push("</ul>"); inList = false; }
       out.push(`<div class="carmen-heading-3">${escapeHtml(line.replace(/^### /, ""))}</div>`);
@@ -174,10 +184,15 @@ function processMarkdownStructure(text: string): string {
 }
 
 function processInlineMarkdown(text: string): string {
-  text = text.replace(/`([^`]+)`/g, (_, c) => `<code class="carmen-inline-code">${escapeHtml(c)}</code>`);
-  text = text.replace(/\*\*\*(.*?)\*\*\*/g, (_, c) => `<b><i>${escapeHtml(c)}</i></b>`);
-  text = text.replace(/\*\*(.*?)\*\*/g, (_, c) => `<b>${escapeHtml(c)}</b>`);
-  text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, (_, c) => `<i>${escapeHtml(c)}</i>`);
+  // We process bold/italic/code tags. 
+  // We should NOT call escapeHtml here because the text might already contain protected placeholders 
+  // or injected HTML tags like <a> or <img> from previous steps.
+  // Instead, the escaping should happen in the structural phase (processMarkdownStructure).
+  
+  text = text.replace(/`([^`]+)`/g, (_, c) => `<code class="carmen-inline-code">${c}</code>`);
+  text = text.replace(/\*\*\*(.*?)\*\*\*/g, (_, c) => `<b><i>${c}</i></b>`);
+  text = text.replace(/\*\*(.*?)\*\*/g, (_, c) => `<b>${c}</b>`);
+  text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, (_, c) => `<i>${c}</i>`);
   return text;
 }
 

@@ -50,6 +50,7 @@ type OllamaConfig struct {
 	URL                string
 	ChatModel          string
 	EmbedModel         string
+	VectorDimension    int
 	InsecureSkipVerify bool
 }
 
@@ -131,6 +132,7 @@ func Load() error {
 			URL:                getEnv("OLLAMA_URL", "http://localhost:11434"),
 			ChatModel:          getEnv("OLLAMA_CHAT_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
 			EmbedModel:         getEnv("OLLAMA_EMBED_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
+			VectorDimension:    getEnvAsInt("VECTOR_DIMENSION", 1536),
 			InsecureSkipVerify: getEnvAsBool("OLLAMA_INSECURE_SKIP_VERIFY", false),
 		},
 		GitHub: GitHubConfig{

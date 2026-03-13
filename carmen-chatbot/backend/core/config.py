@@ -69,6 +69,9 @@ class Settings:
         self.PROMPTS = self._load_config_file(BASE_DIR / "core" / "prompts.yaml") or \
                        self._load_config_file(BASE_DIR / "core" / "prompts.json") or {}
 
+        # --- Vector Settings ---
+        self.VECTOR_DIMENSION: int = int(os.getenv("VECTOR_DIMENSION", "1536"))
+
     @property
     def DATABASE_URL(self) -> str:
         """Standard SQLAlchemy URL (Sync)."""
