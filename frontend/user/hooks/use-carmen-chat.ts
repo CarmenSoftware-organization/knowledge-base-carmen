@@ -573,6 +573,21 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         }
       }
 
+      // Process any remaining content in lineBuffer after stream ends
+      if (lineBuffer.trim()) {
+        try {
+          const parsed = JSON.parse(lineBuffer.trim());
+          if (parsed.type === "chunk") {
+            typingBuffer += parsed.data;
+            accumulated += parsed.data;
+          } else if (parsed.type === "done" && !finalMsgId) {
+             finalMsgId = parsed.id;
+          }
+        } catch (e) {
+          console.warn("Final lineBuffer parse error:", e);
+        }
+      }
+
       // Signal that network streaming is done, but typing might still be catching up
       isStreamingActive = false;
 
@@ -580,7 +595,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       await new Promise<void>((resolve) => {
         const checkDone = () => {
           if (typingBuffer.length === 0 || signal.aborted) resolve();
-          else setTimeout(checkDone, 50);
+          else setTimeout(checkDone, 20); // Faster check-in for final completion
         };
         checkDone();
       });

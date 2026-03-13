@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 
 # --- LLM Provider: Ollama ---
 from langchain_ollama import ChatOllama
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 from ..core.config import settings
 from .retrieval import retrieval_service
@@ -82,8 +83,16 @@ class LLMService:
         output_tokens = 0
         try:
             llm = self._create_llm(streaming=False)
-            prompt = REWRITE_PROMPT.format(history=history_text, question=message)
-            response = await llm.ainvoke(prompt)
+            
+            # Split into system instructions and user data
+            system_part = REWRITE_PROMPT.split("Conversation:")[0].strip()
+            human_part = f"Conversation:\n{history_text}\n\nLatest message: {message}\n\nStandalone Query:"
+            
+            messages = [
+                SystemMessage(content=system_part),
+                HumanMessage(content=human_part)
+            ]
+            response = await llm.ainvoke(messages)
             
             # Extract token usage from the rewrite call
             resp_meta = getattr(response, 'response_metadata', {})
@@ -132,7 +141,7 @@ class LLMService:
             print(f"🔄 Query Rewrite: \"{message}\" → \"{search_query}\"")
 
         # Retrieval — use rewritten query for better search results
-        yield json.dumps({"type": "status", "data": "กำลังค้นหาเอกสารที่เกี่ยวข้อง..."}) + "\n"
+        yield json.dumps({"type": "status", "data": "กำลังค้นหาและคัดกรองข้อมูล..."}) + "\n"
         await asyncio.sleep(0)
         t1 = time.time()
         passed_docs, source_debug = await retrieval_service.search(search_query, db_schema)
@@ -160,20 +169,20 @@ class LLMService:
         try:
             llm = self._create_llm(streaming=True)
             
-            # Format prompt manually (bypass chain to get token metadata from OpenRouter)
-            final_prompt_text = BASE_PROMPT
-            if prompt_extend:
-                final_prompt_text = f"Additional Instructions: {prompt_extend}\n" + final_prompt_text
+            # Format prompt as structured messages
+            # Split BASE_PROMPT into system and human components if possible, 
+            # but for now we'll put the instruction in SystemMessage and context/query in HumanMessage
             
-            formatted_prompt = final_prompt_text.format(
-                context=context_text,
-                question=message,
-                chat_history=history_text
-            )
+            # The current BASE_PROMPT has everything in one string. 
+            # We'll split it or wrap it.
+            messages = [
+                SystemMessage(content=BASE_PROMPT.split("data_input:")[0].strip()),
+                HumanMessage(content=f"Context:\n{context_text}\n\nChat History:\n{history_text}\n\nQuestion: {message}\n\nAnswer:")
+            ]
 
             accumulated = None
             first_token_time = None
-            async for chunk in llm.astream(formatted_prompt):
+            async for chunk in llm.astream(messages):
                 if first_token_time is None:
                     first_token_time = time.time()
                     print(f"⏱️ Time To First Token (TTFT): {first_token_time - start_time:.2f}s (Total time since request started)")
@@ -267,17 +276,12 @@ class LLMService:
         try:
             llm = self._create_llm(streaming=False)
             
-            final_prompt_text = BASE_PROMPT
-            if prompt_extend:
-                final_prompt_text = f"Additional Instructions: {prompt_extend}\n" + final_prompt_text
+            messages = [
+                SystemMessage(content=BASE_PROMPT.split("data_input:")[0].strip()),
+                HumanMessage(content=f"Context:\n{context_text}\n\nChat History:\n{history_text}\n\nQuestion: {message}\n\nAnswer:")
+            ]
             
-            formatted_prompt = final_prompt_text.format(
-                context=context_text,
-                question=message,
-                chat_history=history_text
-            )
-            
-            response = await llm.ainvoke(formatted_prompt)
+            response = await llm.ainvoke(messages)
             bot_ans = response.content
             
             # Extract token usage

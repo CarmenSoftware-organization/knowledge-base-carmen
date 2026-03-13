@@ -13,18 +13,19 @@ carmen-chatbot/
 │   ├── core/
 │   │   ├── config.py           # Environment & settings
 │   │   ├── database.py         # SQLAlchemy engine (PostgreSQL)
+│   │   ├── path_rules.yaml     # RAG path boosting rules
+│   │   ├── prompts.yaml        # Externalized LLM prompts
 │   │   └── schemas.py          # Pydantic request/response models
-│   └── llm/
+│   └── llm/                    # LLM-related services & RAG components
 │       ├── chat_history.py     # Memory cache & chat management
 │       ├── chat_service.py     # Main AI chat orchestration logic
-│       ├── prompt.py           # System prompts
-│       └── retrieval.py        # RAG search (pgvector embeddings)
-├── carmen-chatbot-widget/      # Embeddable frontend widget (Vite)
-│   ├── src/                    # Widget source code
-│   ├── dist/                   # Built widget (carmen-widget.js)
-│   └── README.md               # Widget documentation & usage
+│       ├── prompt.py           # Prompt loader (loads from yaml/json)
+│       ├── retrieval.py        # RAG search (pgvector embeddings)
+│       └── rerank.py           # Cross-Encoder Reranker (FlashRank)
+├── images/                     # Local static images served by backend
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Example environment variables
+├── start_server.py             # Interactive LLM configurator & launcher
 └── .gitignore
 ```
 
@@ -33,9 +34,9 @@ carmen-chatbot/
 ### Prerequisites
 
 - **Python 3.10+**
-- **Node.js 18+** (for widget development only)
-- **PostgreSQL** with pgvector extension (shared database)
-- **Ollama** running locally (for embeddings)
+- **Node.js 18+** (for widget development)
+- **PostgreSQL** with `pgvector` extension
+- **Ollama** running locally (optional, for local embeddings/chat)
 
 ### 1. Setup Backend
 
@@ -53,73 +54,61 @@ pip install -r requirements.txt
 
 ### 2. Configure Environment
 
-Copy `.env.example` to `.env` in the **project root (`carmen-chatbot`)** and update the values:
+Copy `.env.example` to `.env` and configure your credentials:
 
 ```bash
 cp .env.example .env
 ```
 
-Your `.env` should include:
+### 3. Run and Configure Interactively
 
-```env
-# API Keys
-GOOGLE_API_KEY=your_google_api_key_here
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-
-# Ollama settings (for embeddings)
-OLLAMA_URL=http://localhost:11434
-OLLAMA_EMBED_MODEL=nomic-embed-text:latest
-OLLAMA_CHAT_MODEL=gemma3:1b
-
-# PostgreSQL (pgvector)
-DB_HOST=your-db-host
-DB_PORT=5432
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-DB_NAME=your-db-name
-DB_SSLMODE=require
-```
-
-### 3. Run the Server
+The easiest way to start the server and configure your LLM provider is using the interactive script:
 
 ```bash
-# From the carmen-chatbot directory
 python start_server.py
 ```
 
-The API will be available at `http://localhost:8000`
+This script allows you to choose between **OpenRouter**, **Ollama**, or **Z.ai**, select models with fuzzy search, and perform a health check before the server starts.
 
-### 4. Widget Development (Optional)
+---
 
-```bash
-cd carmen-chatbot-widget
-npm install
-npm run dev     # Dev server
-npm run build   # Build carmen-widget.js
-```
+## ⚙️ Configuration (.env)
+
+Key variables in `.env`:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `ACTIVE_LLM_PROVIDER` | `openrouter`, `ollama`, or `zai` | `openrouter` |
+| `OPENROUTER_API_KEY` | Your OpenRouter API Key | `sk-or-v1-...` |
+| `OLLAMA_URL` | Local Ollama endpoint | `http://localhost:11434` |
+| `OLLAMA_EMBED_MODEL` | Model for vector embeddings | `qwen3-embedding:8b` |
+| `DB_HOST` | PostgreSQL Host | `localhost` |
+| `VECTOR_DIMENSION` | Dimensions for your embeddings | `1536` |
+| `DB_SCHEMA` | Search path schemas | `carmen,public` |
+| `WIKI_CONTENT_PATH` | Path to source markdown/images | `../carmen_cloud` |
 
 ## 📡 API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/chat/stream` | Stream chat response (SSE/NDJSON) |
-| `POST` | `/api/chat/` | Standard chat response (invoke) |
+| `POST` | `/api/chat/stream` | Stream chat response (SSE/NDJSON) — **Recommended** |
+| `POST` | `/api/chat/` | Standard chat response (Invoke) |
 | `DELETE` | `/api/chat/clear/{room_id}` | Clear in-memory chat history |
-| `GET` | `/health` | Health check |
+| `GET` | `/api/health` | Health check |
+| `GET` | `/images/{path}` | Serve images from Wiki or Local directory |
 
-## 🤖 Widget Usage
+## 🧠 RAG Pipeline
 
-See [carmen-chatbot-widget/README.md](carmen-chatbot-widget/README.md) for full widget documentation.
+1.  **Query Rewriting:** Converts follow-up questions (e.g., "how to fix it?") into standalone search queries using conversation context.
+2.  **Vector Search:** Semantic search using `pgvector` and configurable embedding models.
+3.  **Path Boosting:** Prioritizes results based on folder paths defined in `core/path_rules.yaml`.
+4.  **Reranking (FlashRank):** Scores the top 10 candidates using a Cross-Encoder to ensure maximum relevance.
+5.  **Externalized Prompts:** System instructions are managed in `core/prompts.yaml` for easy updates without code changes.
 
-Quick start:
+## 📸 Image Support
 
-```html
-<script src="carmen-widget.js"></script>
-<script>
-  new CarmenBot({
-    apiBase: "http://localhost:8000",
-    bu: "your-business-unit",
-    user: "username"
-  });
-</script>
-```
+The system automatically scans the `WIKI_CONTENT_PATH` for images and builds a cache. When the LLM references an image (by filename or path), the frontend can serve it via the `/images/` endpoint, which performs recursive lookups and instant caching.
+
+## 🛡️ Rate Limiting
+
+API protection is handled by `slowapi`. You can configure the limit via `RATE_LIMIT_PER_MINUTE` in your `.env` (default is `20/minute`).
