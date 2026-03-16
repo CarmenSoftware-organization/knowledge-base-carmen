@@ -67,8 +67,8 @@ func main() {
 	fmt.Printf("\nRow counts: documents=%d, document_chunks=%d\n", docCount, chunkCount)
 
 	if docCount > 0 && chunkCount == 0 {
-		fmt.Println("\n⚠️  documents มีข้อมูล แต่ document_chunks ว่าง")
+		fmt.Println("⚠️  documents มีข้อมูล แต่ document_chunks ว่าง")
 		fmt.Println("   รัน reindex: go run cmd/server/main.go reindex carmen")
 	}
-	fmt.Println("\n=== End ===")
+	fmt.Println("=== End ===")
 }

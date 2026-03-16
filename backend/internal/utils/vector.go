@@ -6,8 +6,8 @@ import (
 )
 
 // EmbeddingDim is the expected dimension for document_chunks and chat_history.
-// Set to 1536 for qwen3-embedding (truncate from 4096). pgvector IVFFlat limit is 2000.
-const EmbeddingDim = 1536
+// Set to 2000 for qwen3-embedding (truncate from 4096). pgvector IVFFlat limit is 2000.
+const EmbeddingDim = 2000
 
 // TruncateEmbedding normalizes embedding to exactly EmbeddingDim for PostgreSQL VECTOR.
 // - If model returns > EmbeddingDim: truncate to first N dims.
