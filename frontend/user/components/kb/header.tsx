@@ -90,6 +90,9 @@ export function KBHeader() {
                 <Link href="/categories">หมวดหมู่</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
+                <Link href="/faq">FAQ</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
               </Button>
             </nav>
@@ -136,6 +139,9 @@ export function KBHeader() {
                 </Button>
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/categories">หมวดหมู่</Link>
+                </Button>
+                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/faq">FAQ</Link>
                 </Button>
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/activity">สำหรับเจ้าหน้าที่</Link>

@@ -25,12 +25,22 @@ func SetupRoutes(app *fiber.App) {
 	RegisterHealth(app)
 	RegisterPublicSystem(app)
 	RegisterWiki(app)
+	RegisterFAQ(app)
 	RegisterWebhook(app)
 	RegisterIndexing(app)
 	RegisterDocuments(app)
 	RegisterPublicChat(app)
 	RegisterActivity(app)
 	RegisterBusinessUnits(app)
+}
+
+func RegisterFAQ(app *fiber.App) {
+	h := api.NewFAQHandler()
+	g := app.Group("/api/faq")
+	g.Get("/modules", h.ListModules)
+	g.Get("/entry/:id", h.GetEntry)
+	g.Get("/:module", h.GetModuleDetail)
+	g.Get("/:module/:sub/:category", h.ListByCategory)
 }
 
 func RegisterBusinessUnits(app *fiber.App) {
