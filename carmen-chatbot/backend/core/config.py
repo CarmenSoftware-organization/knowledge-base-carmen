@@ -50,7 +50,6 @@ class Settings:
         
         # --- Path Setup ---
         self.BASE_DIR: Path = BASE_DIR
-        self.FRONTEND_DIR: Path = BASE_DIR / "frontend"
         self.IMAGES_DIR: Path = BASE_DIR / "images"
         
         wiki_path = os.getenv("WIKI_CONTENT_PATH", "")
