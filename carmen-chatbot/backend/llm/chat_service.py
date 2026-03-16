@@ -13,6 +13,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from ..core.config import settings
 from .retrieval import retrieval_service
 from .prompt import BASE_PROMPT, REWRITE_PROMPT
+from fastapi import Request
 from . import chat_history
 
 
@@ -118,10 +119,30 @@ class LLMService:
     # ==========================================
     # 💬 CHAT METHODS
     # ==========================================
-    async def stream_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None, db_schema: str = "carmen"):
+    async def stream_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None, db_schema: str = "carmen", lang: str = "th", request: Request = None):
         start_time = time.time()
         model_config = self.get_active_model(model_name)
         
+        # Localized strings for backend status and prompt injection
+        LOCALES = {
+            "th": {
+                "status_analyzing": "กำลังวิเคราะห์คำถาม...",
+                "status_searching": "กำลังค้นหาและคัดกรองข้อมูล...",
+                "status_composing": "กำลังเรียบเรียงคำตอบ...",
+                "preface": "จากข้อมูลในคู่มือ",
+                "instruction": "Always respond in Thai language."
+            },
+            "en": {
+                "status_analyzing": "Analyzing your question...",
+                "status_searching": "Searching and filtering data...",
+                "status_composing": "Composing response...",
+                "preface": "Based on the manual",
+                "instruction": "Always respond in English language. If the provided manual (คู่มือ) is in Thai, you MUST translate the relevant information into natural English. Do NOT quote Thai text directly; provide the English translation of the information instead."
+            }
+        }
+        
+        l = LOCALES.get(lang or "th", LOCALES["th"])
+
         # Restore history from frontend if present and backend memory is empty
         if history:
             chat_history.restore_history(room_id, history)
@@ -133,7 +154,10 @@ class LLMService:
         rewrite_input_tokens = 0
         rewrite_output_tokens = 0
         if chat_history.has_history(room_id):
-            yield json.dumps({"type": "status", "data": "กำลังวิเคราะห์คำถาม..."}) + "\n"
+            if request and await request.is_disconnected():
+                print("🛑 Client disconnected before rewrite. stopping...")
+                return
+            yield json.dumps({"type": "status", "data": l["status_analyzing"]}) + "\n"
             await asyncio.sleep(0)
             t0 = time.time()
             search_query, rewrite_input_tokens, rewrite_output_tokens = await self._rewrite_query(message, history_text)
@@ -141,7 +165,10 @@ class LLMService:
             print(f"🔄 Query Rewrite: \"{message}\" → \"{search_query}\"")
 
         # Retrieval — use rewritten query for better search results
-        yield json.dumps({"type": "status", "data": "กำลังค้นหาและคัดกรองข้อมูล..."}) + "\n"
+        if request and await request.is_disconnected():
+            print("🛑 Client disconnected before retrieval. stopping...")
+            return
+        yield json.dumps({"type": "status", "data": l["status_searching"]}) + "\n"
         await asyncio.sleep(0)
         t1 = time.time()
         passed_docs, source_debug = await retrieval_service.search(search_query, db_schema)
@@ -160,7 +187,10 @@ class LLMService:
         print(f"{'='*60}\n")
 
         yield json.dumps({"type": "sources", "data": source_debug}) + "\n"
-        yield json.dumps({"type": "status", "data": "กำลังเรียบเรียงคำตอบ..."}) + "\n"
+        if request and await request.is_disconnected():
+            print("🛑 Client disconnected before composing answer. stopping...")
+            return
+        yield json.dumps({"type": "status", "data": l["status_composing"]}) + "\n"
         await asyncio.sleep(0)
 
         # LLM Logic — send full context with images, let frontend handle rendering
@@ -170,19 +200,27 @@ class LLMService:
             llm = self._create_llm(streaming=True)
             
             # Format prompt as structured messages
-            # Split BASE_PROMPT into system and human components if possible, 
-            # but for now we'll put the instruction in SystemMessage and context/query in HumanMessage
+            # Inject dynamic language instructions and preface
+            system_base = BASE_PROMPT.split("data_input:")[0].strip()
+            # Replace placeholder description in prompt with actual preface phrase
+            system_content = system_base.replace("the designated preface phrase", f"'{l['preface']}'")
+            # Overwrite language instruction if needed (already generalized in prompts.yaml)
+            system_content = system_content.replace("the requested language", lang or "Thai")
             
-            # The current BASE_PROMPT has everything in one string. 
-            # We'll split it or wrap it.
+            # Extra safeguard for language
+            lang_instruction = f"\n\nIMPORTANT: {l['instruction']}"
+            
             messages = [
-                SystemMessage(content=BASE_PROMPT.split("data_input:")[0].strip()),
-                HumanMessage(content=f"Context:\n{context_text}\n\nChat History:\n{history_text}\n\nQuestion: {message}\n\nAnswer:")
+                SystemMessage(content=system_content + lang_instruction),
+                HumanMessage(content=f"คู่มือ:\n{context_text}\n\nChat History:\n{history_text}\n\nQuestion: {message}\n\nAnswer:")
             ]
 
             accumulated = None
             first_token_time = None
             async for chunk in llm.astream(messages):
+                if request and await request.is_disconnected():
+                    print("🛑 Client disconnected during streaming. stopping...")
+                    return
                 if first_token_time is None:
                     first_token_time = time.time()
                     print(f"⏱️ Time To First Token (TTFT): {first_token_time - start_time:.2f}s (Total time since request started)")
@@ -196,7 +234,7 @@ class LLMService:
         except Exception as e:
             error_msg = str(e)
             print(f"❌ LLM Error: {error_msg}")
-            fallback_response = f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {error_msg}"
+            fallback_response = f"Error processing request: {error_msg}" if lang == "en" else f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {error_msg}"
             yield json.dumps({"type": "chunk", "data": fallback_response}) + "\n"
             yield json.dumps({"type": "done", "id": 0}) + "\n"
             return
@@ -253,10 +291,17 @@ class LLMService:
         })
         yield json.dumps({"type": "done", "id": log_id}) + "\n"
 
-    async def invoke_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None, db_schema: str = "carmen"):
+    async def invoke_chat(self, message: str, bu: str, room_id: str, username: str, model_name: str = None, prompt_extend: str = "", history: list[dict] = None, db_schema: str = "carmen", lang: str = "th"):
         start_time = time.time()
         model_config = self.get_active_model(model_name)
         
+        # Localized instructions
+        LOCALES = {
+            "th": { "preface": "จากข้อมูลในคู่มือ", "instruction": "Always respond in Thai language." },
+            "en": { "preface": "Based on the manual", "instruction": "Always respond in English language. If the manual is in Thai, translate relevant parts into English. No direct Thai quotes." }
+        }
+        l = LOCALES.get(lang or "th", LOCALES["th"])
+
         # Restore history from frontend if present and backend memory is empty
         if history:
             chat_history.restore_history(room_id, history)
@@ -276,9 +321,15 @@ class LLMService:
         try:
             llm = self._create_llm(streaming=False)
             
+            # Format prompt with dynamic language injection
+            system_base = BASE_PROMPT.split("data_input:")[0].strip()
+            system_content = system_base.replace("the designated preface phrase", f"'{l['preface']}'")
+            system_content = system_content.replace("the requested language", lang or "Thai")
+            lang_instruction = f"\n\nIMPORTANT: {l['instruction']}"
+
             messages = [
-                SystemMessage(content=BASE_PROMPT.split("data_input:")[0].strip()),
-                HumanMessage(content=f"Context:\n{context_text}\n\nChat History:\n{history_text}\n\nQuestion: {message}\n\nAnswer:")
+                SystemMessage(content=system_content + lang_instruction),
+                HumanMessage(content=f"คู่มือ:\n{context_text}\n\nChat History:\n{history_text}\n\nQuestion: {message}\n\nAnswer:")
             ]
             
             response = await llm.ainvoke(messages)

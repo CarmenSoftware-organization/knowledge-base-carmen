@@ -15,10 +15,11 @@ interface MessageListProps {
     retryMessage: (text: string) => void;
     theme: string;
     isResizing: boolean;
+    t: any;
 }
 
 export const MessageList = React.memo(({
-    bodyRef, messages, showSuggestions, suggestions, sendMessage, sendFeedback, retryMessage, theme, isResizing
+    bodyRef, messages, showSuggestions, suggestions, sendMessage, sendFeedback, retryMessage, theme, isResizing, t
 }: MessageListProps) => {
     return (
         <div
@@ -38,6 +39,7 @@ export const MessageList = React.memo(({
                             suggestions={suggestions}
                             onSelect={(text: string) => sendMessage(text)}
                             theme={theme}
+                            t={t}
                         />
                     </motion.div>
                 ) : (
@@ -56,7 +58,7 @@ export const MessageList = React.memo(({
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ type: "spring", stiffness: 420, damping: 30 }}
                                 >
-                                    <CarmenMessage msg={msg} onFeedback={sendFeedback} onRetry={retryMessage} theme={theme} />
+                                    <CarmenMessage msg={msg} onFeedback={sendFeedback} onRetry={retryMessage} theme={theme} t={t} />
                                 </motion.div>
                             ))}
                         </AnimatePresence>

@@ -14,3 +14,4 @@ class ChatRequest(BaseModel):
     room_id: str 
     history: Optional[list[dict]] = None
     db_schema: Optional[str] = "carmen"
+    lang: Optional[str] = "th"

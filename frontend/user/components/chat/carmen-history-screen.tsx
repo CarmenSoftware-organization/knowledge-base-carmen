@@ -13,6 +13,7 @@ interface Props {
     onDelete: (roomId: string) => void;
     isProcessing?: boolean;
     theme?: string;
+    t: any;
 }
 
 export default function CarmenHistoryScreen({
@@ -24,7 +25,8 @@ export default function CarmenHistoryScreen({
     onSelect,
     onDelete,
     isProcessing = false,
-    theme = "#34558b"
+    theme = "#34558b",
+    t
 }: Props) {
     // Utility to convert hex to rgb for shadow effects
     const hexToRgb = (hex: string) => {
@@ -38,7 +40,7 @@ export default function CarmenHistoryScreen({
         if (!dateStr) return "";
         try {
             const date = new Date(dateStr);
-            return new Intl.DateTimeFormat("th-TH", {
+            return new Intl.DateTimeFormat(t.chat.placeholder === "Type your message here..." ? "en-US" : "th-TH", {
                 day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit"
             }).format(date);
         } catch {
@@ -65,18 +67,18 @@ export default function CarmenHistoryScreen({
                     <div className="px-5 py-4 flex items-center gap-4 border-b border-black/5 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl z-20">
                         <button
                             onClick={onClose}
-                            title="กลับไปที่แชท"
+                            title={t.header.history}
                             className="w-10 h-10 flex items-center justify-center rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all text-slate-600 dark:text-slate-300 active:scale-90"
                         >
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M19 12H5M12 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <h2 className="flex-1 m-0 text-[17px] font-bold tracking-tight text-slate-800 dark:text-white">ประวัติการสนทนา</h2>
+                        <h2 className="flex-1 m-0 text-[17px] font-bold tracking-tight text-slate-800 dark:text-white">{t.header.history}</h2>
                         <button
                             onClick={onNewChat}
                             disabled={isProcessing}
-                            title={isProcessing ? "ระบบกำลังประมวลผล" : "เริ่มแชทใหม่"}
+                            title={isProcessing ? t.chat.status_processing : t.welcome.new_chat}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-[14px] font-bold transition-all shadow-lg 
                                 bg-[linear-gradient(135deg,var(--carmen-theme),var(--carmen-theme-fade))] text-white
                                 ${isProcessing ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95 hover:shadow-[0_8px_20px_-4px_rgba(var(--carmen-theme-rgb),0.5)]"}`}
@@ -84,7 +86,7 @@ export default function CarmenHistoryScreen({
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round">
                                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
-                            <span>แชทใหม่</span>
+                            <span>{t.welcome.new_chat}</span>
                         </button>
                     </div>
 
@@ -98,7 +100,7 @@ export default function CarmenHistoryScreen({
                                         <polyline points="12 6 12 12 16 14"></polyline>
                                     </svg>
                                 </div>
-                                <p>ยังไม่มีประวัติการสนทนา</p>
+                                <p>{t.chat.placeholder === "Type your message here..." ? "No history yet" : "ยังไม่มีประวัติการสนทนา"}</p>
                                 <button
                                     onClick={onNewChat}
                                     disabled={isProcessing}
@@ -108,7 +110,7 @@ export default function CarmenHistoryScreen({
                                 >
                                     {/* Shine overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full hover:animate-[shine_1.5s_infinite] pointer-events-none" />
-                                    <span>เริ่มบทสนทนาแรก</span>
+                                    <span>{t.welcome.title}</span>
                                 </button>
                             </div>
                         ) : (
@@ -123,7 +125,7 @@ export default function CarmenHistoryScreen({
                                 >
                                     <div className="flex-1 min-w-0 flex flex-col gap-2.5">
                                         <span className="font-bold text-[16px] sm:text-[19px] text-slate-900 dark:text-white leading-snug break-words">
-                                            {room.title || "บทสนทนาใหม่"}
+                                            {room.title || (t.chat.placeholder === "Type your message here..." ? "New Conversation" : "บทสนทนาใหม่")}
                                         </span>
                                         {room.lastMessage && (
                                             <span className="text-[13.5px] sm:text-[15px] text-slate-500 dark:text-white/45 leading-relaxed font-['Sarabun',_sans-serif] line-clamp-3 sm:line-clamp-4 break-words opacity-80">
@@ -140,7 +142,7 @@ export default function CarmenHistoryScreen({
                                             if (!isProcessing) onDelete(room.room_id);
                                         }}
                                         disabled={isProcessing}
-                                        title={isProcessing ? "ระบบกำลังประมวลผล" : "ลบ"}
+                                        title={isProcessing ? t.chat.status_processing : t.modal.delete_confirm}
                                         className={`w-10 h-10 mt-1 rounded-xl bg-black/5 dark:bg-white/5 text-slate-400 dark:text-white/20 flex-shrink-0 flex items-center justify-center transition-all ${isProcessing ? "opacity-50 cursor-not-allowed" : "hover:bg-red-500/10 hover:text-red-500 hover:scale-110"
                                             }`}
                                     >

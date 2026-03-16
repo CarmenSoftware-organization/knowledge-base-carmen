@@ -59,7 +59,7 @@ function processImages(text: string, apiBase: string): string {
       }
       const after = u.split("/images/");
       if (after.length > 1) return `${apiBase}/images/${after[1]}`;
-      
+
       const pathOnly = u.replace(/^https?:\/\/[^/]+/, "").replace(/^\/+/, "");
       return `${apiBase}/images/${pathOnly}`;
     }
@@ -68,7 +68,7 @@ function processImages(text: string, apiBase: string): string {
     if (cleanU.startsWith("images/")) {
       return `${apiBase}/${cleanU}`;
     }
-    
+
     return `${apiBase}/images/${cleanU}`;
   };
 
@@ -188,7 +188,7 @@ function processInlineMarkdown(text: string): string {
   // We should NOT call escapeHtml here because the text might already contain protected placeholders 
   // or injected HTML tags like <a> or <img> from previous steps.
   // Instead, the escaping should happen in the structural phase (processMarkdownStructure).
-  
+
   text = text.replace(/`([^`]+)`/g, (_, c) => `<code class="carmen-inline-code">${c}</code>`);
   text = text.replace(/\*\*\*(.*?)\*\*\*/g, (_, c) => `<b><i>${c}</i></b>`);
   text = text.replace(/\*\*(.*?)\*\*/g, (_, c) => `<b>${c}</b>`);
@@ -204,7 +204,7 @@ export function formatCarmenMessage(text: string, apiBase: string): string {
   // This prevents accidental protection of text like "Amount < 100"
   const protections: string[] = [];
   const tagRegex = /<(img|span|br|p|div|a|b|i|code)(\s+[^>]*?)?\/?>|<\/(span|p|div|a|b|i|code)>/gi;
-  
+
   t = t.replace(tagRegex, (match) => {
     const placeholder = `__HTML_TAG_PROTECTED_${protections.length}__`;
     protections.push(match);

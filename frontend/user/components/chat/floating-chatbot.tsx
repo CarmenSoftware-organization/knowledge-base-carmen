@@ -45,6 +45,7 @@ export default function FloatingChatBot({
     apiBase: resolvedApiBase,
     theme,
     title,
+    locale: "th",
     promptExtend,
     showClear,
     showAttach,
@@ -52,16 +53,16 @@ export default function FloatingChatBot({
     proactiveMessages: [
       {
         pathPattern: "/settings", // match path exactly or partially
-        delayMs: 60000, 
+        delayMs: 60000,
         message: "สับสนการตั้งค่าระบบหรือเปล่าคะ?",
         subMessage: "สอบถาม Carmen ได้เลยนะ!",
         timeoutMs: 15000,
       },
       {
-         pathPattern: "/", // Catch all / Home page
-         delayMs: 180000, // 3 minutes engagement
-         message: "กำลังค้นหาคู่มือเรื่องอะไรอยู่หรือเปล่าคะ?",
-         timeoutMs: 15000,
+        pathPattern: "/", // Catch all / Home page
+        delayMs: 180000, // 3 minutes engagement
+        message: "กำลังค้นหาคู่มือเรื่องอะไรอยู่หรือเปล่าคะ?",
+        timeoutMs: 15000,
       }
     ],
     onTypingFrame: () => {

@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from "react";
 import { formatCarmenMessage } from "@/lib/carmen-formatter";
 import { CarmenApi, CarmenRoom, createCarmenApi } from "./use-carmen-api";
+import { locales, LocaleKey, LocaleStrings } from "@/configs/locales";
 
 export interface DisplayMessage {
   id: string;
@@ -28,6 +29,7 @@ export interface CarmenChatConfig {
   showClear?: boolean;
   showAttach?: boolean;
   suggestedQuestions?: string[];
+  locale?: LocaleKey;
   proactiveMessages?: { pathPattern: RegExp | string; delayMs: number; message: string; subMessage?: string; timeoutMs?: number }[];
   onTypingFrame?: () => void;
 }
@@ -66,6 +68,7 @@ export interface UseCarmenChatReturn {
   suggestions: string[];
   config: CarmenChatConfig;
   api: CarmenApi;
+  t: LocaleStrings;
   setInputValue: (val: string) => void;
   setImageBase64: (val: string | null) => void;
   setShowRoomDropdown: (val: boolean) => void;
@@ -93,9 +96,13 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const [rooms, setRooms] = useState<CarmenRoom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingStatus, setTypingStatus] = useState("กำลังคิด...");
+  const [typingStatus, setTypingStatus] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
+  
+  const locale = config.locale || "th";
+  const t = locales[locale];
+  
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showRoomDropdown, setShowRoomDropdown] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{
@@ -116,8 +123,8 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   });
   const [tooltipData, setTooltipData] = useState<{ visible: boolean; message: string; subMessage?: string }>({
     visible: false,
-    message: "ผู้ช่วย AI พร้อมให้คำแนะนำ",
-    subMessage: "สอบถามข้อมูลคู่มือได้ทันที!",
+    message: t.header.status_online,
+    subMessage: t.welcome.desc,
   });
   const [position, setPosition] = useState<{
     bottom: string | number;
@@ -132,7 +139,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const isUserStopRef = useRef(false);
   const isProcessingRef = useRef(false);
   const statusTimers = useRef<NodeJS.Timeout[]>([]);
-  const suggestions = config.suggestedQuestions ?? DEFAULT_SUGGESTIONS;
+  const suggestions = config.suggestedQuestions ?? t.welcome.default_suggestions;
 
   useEffect(() => {
     const wasOpen = localStorage.getItem(`carmen_open_${config.bu}`) === "true";
@@ -285,7 +292,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   async function createNewChat() {
     if (isProcessingRef.current || messageQueue.current.length > 0) {
-      alert("ไม่สามารถสร้างห้องใหม่ได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่");
+      alert(t.chat.new_chat_block);
       return;
     }
     if (abortController.current) {
@@ -311,7 +318,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   async function switchRoom(roomId: string) {
     if (isProcessingRef.current || messageQueue.current.length > 0) {
-      alert("ไม่สามารถเปลี่ยนห้องได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่");
+      alert(t.chat.switch_room_block);
       return;
     }
     if (currentRoomId === roomId) return;
@@ -335,7 +342,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   async function confirmDeleteRoom() {
     if (isProcessingRef.current || messageQueue.current.length > 0) {
-      alert("ไม่สามารถลบห้องได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่");
+      alert(t.chat.delete_room_block);
       setDeleteModal({ open: false, roomId: null });
       return;
     }
@@ -380,7 +387,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           role: "bot",
           html: "",
           isQueued: true,
-          statusText: "รอคิว...",
+          statusText: t.chat.status_waiting,
         },
       ]);
 
@@ -431,14 +438,14 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           return { ...msg, isQueued: false };
         }
         if (msg.id === botMsgId) {
-          return { ...msg, isQueued: false, statusText: "กำลังค้นหาเอกสารที่เกี่ยวข้อง" };
+          return { ...msg, isQueued: false, statusText: t.chat.status_searching };
         }
         return msg;
       })
     );
 
     setIsTyping(true);
-    setTypingStatus("กำลังค้นหาเอกสารที่เกี่ยวข้อง");
+    setTypingStatus(t.chat.status_searching);
 
     // Clear any existing status timers
     statusTimers.current.forEach(clearTimeout);
@@ -446,9 +453,9 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
     // Legacy status rotation logic
     const statusMessages = [
-      { delay: 8000, text: "กำลังวิเคราะห์ข้อมูล" },
-      { delay: 20000, text: "กำลังเรียบเรียงคำตอบ" },
-      { delay: 45000, text: "ใกล้เสร็จแล้ว กรุณารอสักครู่" },
+      { delay: 8000, text: t.chat.status_analyzing },
+      { delay: 20000, text: t.chat.status_composing },
+      { delay: 45000, text: t.chat.status_processing },
     ];
 
     statusMessages.forEach(st => {
@@ -481,6 +488,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           room_id: processingRoomId,
           prompt_extend: config.promptExtend,
           history: history.messages.filter((m: any) => m.id !== botMsgId && m.id !== userMsgId),
+          lang: locale,
         }),
         signal,
       });
@@ -602,7 +610,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     } catch (e: any) {
       if (e.name === "AbortError") {
         if (isUserStopRef.current) {
-          const finalHtml = formatCarmenMessage(accumulated + "\n\n**[หยุดการสร้างคำตอบแล้ว]**", api.baseUrl);
+          const finalHtml = formatCarmenMessage(accumulated + `\n\n**${t.chat.status_stopped}**`, api.baseUrl);
           setMessages((prev) =>
             prev.map((m) => (m.id === botMsgId ? { ...m, html: finalHtml } : m))
           );
@@ -620,7 +628,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
             if (m.id === botMsgId) {
               return {
                 ...m,
-                html: "⚠️ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+                html: "⚠️ Error occurred, please try again",
                 isError: true,
                 errorText: msgText,
               };
@@ -643,7 +651,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     }
 
     if (accumulated && processingRoomId && (!signal.aborted || isUserStopRef.current)) {
-      const stopNote = signal.aborted ? "\n\n**[หยุดการสร้างคำตอบแล้ว]**" : "";
+      const stopNote = signal.aborted ? `\n\n**${t.chat.status_stopped}**` : "";
       await api.saveMessage(processingRoomId, {
         id: finalMsgId || botMsgId,
         sender: "bot",
@@ -666,6 +674,10 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     const msgText = text ?? inputValue.trim();
     if (!msgText && !imageBase64) return;
 
+    const img = imageBase64;
+    setInputValue("");
+    setImageBase64(null);
+
     let roomId = currentRoomId;
     if (!roomId) {
       const title =
@@ -676,10 +688,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       localStorage.setItem(`carmen_current_room_${config.bu}`, roomId);
       await loadRoomList();
     }
-
-    const img = imageBase64;
-    setInputValue("");
-    setImageBase64(null);
 
     const willBeQueued = isProcessingRef.current || messageQueue.current.length > 0;
 
@@ -702,7 +710,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       role: "bot",
       html: "",
       isQueued: true,
-      statusText: "รอคิว...",
+      statusText: t.chat.status_waiting,
     };
 
     setMessages((prev) => [...prev, userMsg, botPlaceholder]);
@@ -792,6 +800,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     suggestions,
     config,
     api,
+    t,
     setInputValue,
     setImageBase64,
     setShowRoomDropdown,

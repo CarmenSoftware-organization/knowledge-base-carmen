@@ -19,10 +19,11 @@ interface ChatInputProps {
     isProcessing?: boolean;
     stopGeneration?: () => void;
     forceScrollToBottom?: () => void;
+    t: any;
 }
 
 export const ChatInput = React.memo(({
-    isResizing, config, fileInputRef, handleFileChange, inputRef, inputValue, handleInput, handleKeyDown, setIsInputFocused, sendMessage, theme, imageBase64, setImageBase64, isProcessing, stopGeneration, forceScrollToBottom
+    isResizing, config, fileInputRef, handleFileChange, inputRef, inputValue, handleInput, handleKeyDown, setIsInputFocused, sendMessage, theme, imageBase64, setImageBase64, isProcessing, stopGeneration, forceScrollToBottom, t
 }: ChatInputProps) => {
     return (
         <>
@@ -39,7 +40,7 @@ export const ChatInput = React.memo(({
                             <img src={imageBase64} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-white dark:border-slate-700 shadow-md" />
                             <button onClick={() => setImageBase64(null)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-[10px] hover:bg-red-200 shadow">×</button>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">รูปที่แนบ</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{t.tools.attach}</span>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -47,13 +48,13 @@ export const ChatInput = React.memo(({
             <div className={`flex items-center gap-3 px-6 pt-5 pb-6 flex-shrink-0 border-t border-slate-100/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 transition-all duration-300 ${isResizing ? "opacity-10 blur-sm pointer-events-none" : "opacity-100 blur-0"}`}>
                 {config.showAttach && (
                     <>
-                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} title="แนบรูปภาพ" aria-label="แนบรูปภาพ" />
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} title={t.tools.attach} aria-label={t.tools.attach} />
                         <motion.button
                             onClick={() => fileInputRef.current?.click()}
                             className="w-12 h-12 rounded-[14px] flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors flex-shrink-0"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            title="แนบรูป"
+                            title={t.tools.attach}
                         >
                             <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
                                 <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" />
@@ -68,7 +69,7 @@ export const ChatInput = React.memo(({
                     onChange={handleInput}
                     onKeyDown={handleKeyDown}
                     rows={1}
-                    placeholder="พิมพ์ข้อความที่นี่..."
+                    placeholder={t.chat.placeholder}
                     className="flex-1 px-5 py-[14px] rounded-[16px] border outline-none resize-none transition-all bg-white/60 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-600/50 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 min-h-[50px] max-h-[120px] font-['Sarabun',_sans-serif] text-[15px] leading-[1.5] border-[color:var(--input-border-color,transparent)] [box-shadow:var(--input-focus-shadow,none)] backdrop-blur-md"
                     onFocus={() => setIsInputFocused(true)}
                     onBlur={() => setIsInputFocused(false)}
@@ -87,7 +88,7 @@ export const ChatInput = React.memo(({
                                 className="absolute inset-0 group rounded-[14px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 flex items-center justify-center shadow-sm bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors font-medium"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                title="หยุดการสร้างคำตอบ"
+                                title={t.chat.stop_generation}
                             >
                                 <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" className="transform group-hover:scale-110 transition-transform">
                                     <rect x="7" y="7" width="10" height="10" rx="2" ry="2" />
@@ -104,7 +105,7 @@ export const ChatInput = React.memo(({
                                 className="absolute inset-0 rounded-[14px] text-white flex items-center justify-center shadow-lg bg-[#0f172a] hover:bg-[var(--chat-theme)]"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                title="ส่งข้อความ"
+                                title={t.tools.send}
                             >
                                 <svg viewBox="0 0 24 24" fill="white" width="24" height="24">
                                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />

@@ -9,9 +9,10 @@ interface Props {
   onFeedback?: (msgId: string, score: number) => void;
   onRetry?: (errorText: string) => void;
   theme?: string;
+  t: any;
 }
 
-const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, theme = "#34558b" }: Props) {
+const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, theme = "#34558b", t }: Props) {
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const isBot = msg.role === "bot";
@@ -82,7 +83,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
     if (!ts) return "";
     try {
       const d = new Date(ts);
-      return d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleTimeString(t.chat.placeholder === "Type your message here..." ? "en-US" : "th-TH", { hour: "2-digit", minute: "2-digit" });
     } catch { return ""; }
   };
 
@@ -109,7 +110,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
-              เกิดข้อผิดพลาดในการเชื่อมต่อ
+              {t.chat.error_title}
             </div>
             {onRetry && msg.errorText && (
               <button
@@ -120,7 +121,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                   <path d="M3 3v5h5"></path>
                 </svg>
-                ลองอีกครั้ง
+                {t.chat.error_retry}
               </button>
             )}
           </div>
@@ -129,7 +130,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
             {!msg.html && isBot && !msg.isQueued ? (
               <div className="flex items-center gap-2 py-1">
                 <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">
-                  {msg.statusText || "กำลังค้นหาเอกสารที่เกี่ยวข้อง"}
+                  {msg.statusText || t.chat.status_searching}
                 </span>
                 <div className="flex gap-1 items-center">
                   {[0, 1, 2].map((i) => (
@@ -150,7 +151,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
             {msg.isQueued && !isBot && (
               <div className="text-[10px] text-white/60 font-medium uppercase tracking-widest mt-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full border border-white/30 border-t-white animate-spin" />
-                🕐 รอคิว
+                🕐 {t.chat.status_waiting}
               </div>
             )}
           </div>
@@ -171,7 +172,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
             <button
               onClick={handleCopy}
               className="p-1 text-slate-400 dark:text-slate-500 transition-colors hover:text-blue-500"
-              title={copied ? "คัดลอกแล้ว!" : "คัดลอกข้อมูล"}
+              title={copied ? t.tools.copied : t.tools.copy}
             >
               {copied ? (
                 <span className="text-[12px] font-bold text-green-600 leading-none">✓</span>
@@ -196,7 +197,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                         ? "opacity-30 grayscale scale-95"
                         : "text-slate-400 hover:text-emerald-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:scale-110"
                       }`}
-                    title="มีประโยชน์"
+                    title={t.tools.helpful}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
@@ -212,7 +213,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                         ? "opacity-30 grayscale scale-95"
                         : "text-slate-400 hover:text-red-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:scale-110"
                       }`}
-                    title="ไม่ถูกต้อง"
+                    title={t.tools.incorrect}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
