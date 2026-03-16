@@ -93,11 +93,10 @@ export function KBHeader() {
                 <Link href="/categories">{t("categories")}</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/activity">{t("forStaff")}</Link>
                 <Link href="/faq">FAQ</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
+                <Link href="/activity">{t("forStaff")}</Link>
               </Button>
             </nav>
 
@@ -147,12 +146,11 @@ export function KBHeader() {
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/categories">{t("categories")}</Link>
                 </Button>
-                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
-                  <Link href="/activity">{t("forStaff")}</Link>
-                  <Link href="/faq">FAQ</Link>
+                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild>
+                  <Link href="/faq" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
                 </Button>
-                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
-                  <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
+                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild>
+                  <Link href="/activity" onClick={() => setMobileMenuOpen(false)}>{t("forStaff")}</Link>
                 </Button>
                 <div className="px-3 py-1">
                   <LanguageSwitcher />
