@@ -94,10 +94,9 @@ export function KBHeader() {
               </Button>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/activity">{t("forStaff")}</Link>
-                <Link href="/faq">FAQ</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
+                <Link href="/faq">FAQ</Link>
               </Button>
             </nav>
 
@@ -149,10 +148,9 @@ export function KBHeader() {
                 </Button>
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/activity">{t("forStaff")}</Link>
-                  <Link href="/faq">FAQ</Link>
                 </Button>
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
-                  <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
+                  <Link href="/faq">FAQ</Link>
                 </Button>
                 <div className="px-3 py-1">
                   <LanguageSwitcher />
