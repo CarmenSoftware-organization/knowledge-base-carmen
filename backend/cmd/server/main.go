@@ -4,8 +4,10 @@ import (
 	"context"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/router"
@@ -14,8 +16,21 @@ import (
 )
 
 func main() {
+	// Load backend/.env by absolute path so it works when binary runs from backend/tmp/
+	if execPath, err := os.Executable(); err == nil {
+		backendDir := filepath.Dir(filepath.Dir(execPath))
+		envPath := filepath.Join(backendDir, ".env")
+		if _, err := os.Stat(envPath); err == nil {
+			_ = godotenv.Load(envPath)
+		}
+	}
 	if err := config.Load(); err != nil {
 		log.Fatal("Failed to load config:", err)
+	}
+	if config.AppConfig != nil && config.AppConfig.Translation.APIKey != "" {
+		log.Println("Translation: enabled (GOOGLE_TRANSLATE_API_KEY set)")
+	} else {
+		log.Println("Translation: disabled (GOOGLE_TRANSLATE_API_KEY not set or empty)")
 	}
 	if err := database.Connect(); err != nil {
 		log.Fatal("Failed to connect database:", err)

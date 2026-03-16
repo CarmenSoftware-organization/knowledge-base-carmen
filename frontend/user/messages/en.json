@@ -1,0 +1,51 @@
+{
+  "common": {
+    "categories": "Categories",
+    "categoriesAll": "All Categories",
+    "home": "Home",
+    "forStaff": "For Staff",
+    "viewCategory": "View Category",
+    "articles": "articles",
+    "search": "Search"
+  },
+  "hero": {
+    "badge": "Knowledge Base",
+    "title": "Knowledge Hub",
+    "titleFor": "for {buName}",
+    "subtitle": "Search guides, articles, and answers for every question about using {buName} accounting management system",
+    "popular": "Popular:"
+  },
+  "search": {
+    "placeholderHeader": "Search guides...",
+    "placeholderHero": "Search guide name or content...",
+    "placeholderMobile": "Search guides or content...",
+    "searchButton": "Search",
+    "results": "Search Results",
+    "navigate": "↑↓ to navigate"
+  },
+  "category": {
+    "selectTitle": "Select Category",
+    "selectDescription": "Choose the category you want to learn",
+    "articlesCount": "{count} articles",
+    "documents": "Document Categories",
+    "articlesInCategory": "Articles in this category",
+    "allArticlesInCategory": "All articles in this category"
+  },
+  "errors": {
+    "loadFailed": "Unable to load data",
+    "systemError": "Temporary system error. Please try again later."
+  },
+  "activity": {
+    "title": "Activity Logs",
+    "description": "Usage and search history within the system (Business Unit: {bu})"
+  },
+  "chat": {
+    "thinking": "Thinking...",
+    "searchingDocs": "Searching for relevant documents",
+    "analyzing": "Analyzing data",
+    "composing": "Composing answer",
+    "almostDone": "Almost done, please wait",
+    "retry": "Try again",
+    "waitingQueue": "Waiting in queue"
+  }
+}

@@ -212,7 +212,12 @@ export async function findBestArticleForQuery(query: string, bu?: string): Promi
  ========================= */
 
 // GET /api/wiki/content/*
-export async function getContent(path: string, bu?: string): Promise<{
+// locale: "th" | "en" — when "en", backend translates content via Google Translate (if enabled)
+export async function getContent(
+  path: string,
+  bu?: string,
+  locale?: string
+): Promise<{
   path: string;
   title: string;
   description?: string;
@@ -225,8 +230,10 @@ export async function getContent(path: string, bu?: string): Promise<{
   publishedAt?: string;
 }> {
   const selectedBU = bu || getSelectedBUClient();
+  const params = new URLSearchParams({ bu: selectedBU });
+  if (locale) params.set("locale", locale);
   const res = await fetch(
-    `${API_BASE}/api/wiki/content/${path}?bu=${selectedBU}`,
+    `${API_BASE}/api/wiki/content/${path}?${params.toString()}`,
     { cache: "no-store" }
   );
 

@@ -2,9 +2,12 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { getLocale } from 'next-intl/server'
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
 import './globals.css'
 import FloatingChatBot from "@/components/chat/floating-chatbot"
-import { ThemeProvider } from "@/components/theme-provider"   // 👈 เพิ่มบรรทัดนี้
+import { ThemeProvider } from "@/components/theme-provider"
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -21,22 +24,23 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className="font-sans antialiased">
-
-        {/* 👇 ครอบตรงนี้ */}
-        <ThemeProvider>
-          {children}
-          <FloatingChatBot />
-          <Analytics />
-        </ThemeProvider>
-
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider>
+            {children}
+            <FloatingChatBot />
+            <Analytics />
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

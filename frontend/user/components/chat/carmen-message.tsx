@@ -3,6 +3,7 @@ import { DisplayMessage } from "@/hooks/use-carmen-chat";
 import React, { useState, useMemo, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import DOMPurify from "dompurify";
+import { useTranslations } from "next-intl";
 
 interface Props {
   msg: DisplayMessage;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, theme = "#34558b" }: Props) {
+  const t = useTranslations("chat");
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const isBot = msg.role === "bot";
@@ -121,7 +123,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                   <path d="M3 3v5h5"></path>
                 </svg>
-                ลองอีกครั้ง
+                {t("retry")}
               </button>
             )}
           </div>
@@ -130,7 +132,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
             {!msg.html && isBot && !msg.isQueued ? (
               <div className="flex items-center gap-2 py-1">
                 <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">
-                  {msg.statusText || "กำลังค้นหาเอกสารที่เกี่ยวข้อง"}
+                  {msg.statusText || t("searchingDocs")}
                 </span>
                 <div className="flex gap-1 items-center">
                   {[0, 1, 2].map((i) => (
@@ -151,7 +153,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
             {msg.isQueued && !isBot && (
               <div className="text-[10px] text-white/60 font-medium uppercase tracking-widest mt-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full border border-white/30 border-t-white animate-spin" />
-                🕐 รอคิว
+                🕐 {t("waitingQueue")}
               </div>
             )}
           </div>

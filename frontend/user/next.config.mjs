@@ -1,3 +1,7 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -9,7 +13,9 @@ const nextConfig = {
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
 
-    // Note: In dev, Next may require eval for HMR.
+    // Production: strict script-src — no 'unsafe-inline' / 'unsafe-eval' (blocks inline script injection).
+    // If you add inline scripts later, use CSP nonce or hash instead of opening unsafe-inline.
+    // Dev: allow unsafe-eval/unsafe-inline for Next HMR.
     const scriptSrc = isDev
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com"
       : "script-src 'self' https://va.vercel-scripts.com";
@@ -57,4 +63,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig);

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -21,6 +20,13 @@ type Config struct {
 	Chat        ChatConfig
 	OpenClaw    OpenClawConfig
 	Make        MakeConfig
+	Translation TranslationConfig
+}
+
+// TranslationConfig holds config for Google Cloud Translation API (wiki content).
+type TranslationConfig struct {
+	APIKey  string // GOOGLE_TRANSLATE_API_KEY
+	Enabled bool   // TRANSLATION_ENABLED
 }
 
 type ServerConfig struct {
@@ -121,10 +127,16 @@ func DefaultRepoPath() string { return defaultRepoPath }
 func DefaultGitSyncBranch() string { return defaultGitSyncBranch }
 
 func Load() error {
-	if err := godotenv.Load(".env"); err != nil {
-		if err2 := godotenv.Load("../.env"); err2 != nil {
-			log.Println("No .env file found, using environment variables")
-		}
+	cwd, _ := os.Getwd()
+	_ = godotenv.Overload(filepath.Join(cwd, ".env"))
+	// Try multiple paths so .env is found whether running from repo root, backend/, or backend/tmp/
+	_ = godotenv.Load(".env")
+	_ = godotenv.Load("../.env")
+	_ = godotenv.Load("backend/.env")
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		_ = godotenv.Load(filepath.Join(execDir, ".env"))
+		_ = godotenv.Load(filepath.Join(execDir, "..", ".env"))
 	}
 
 	AppConfig = &Config{
@@ -195,6 +207,10 @@ func Load() error {
 			WebhookURL:           getEnv("MAKE_WEBHOOK_URL", ""),
 			WebhookAPIKey:        getEnv("MAKE_WEBHOOK_API_KEY", ""),
 			UseForQuestionRouter: getEnvAsBool("MAKE_USE_FOR_ROUTER", false),
+		},
+		Translation: TranslationConfig{
+			APIKey:  getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
+			Enabled: getEnvAsBool("TRANSLATION_ENABLED", true),
 		},
 	}
 

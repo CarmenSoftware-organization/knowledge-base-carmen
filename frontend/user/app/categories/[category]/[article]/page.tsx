@@ -11,6 +11,7 @@ import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 
 type Props = {
   params: Promise<{
@@ -28,13 +29,14 @@ export default async function ArticlePage({ params }: Props) {
 
   const cookieStore = await cookies();
   const bu = cookieStore.get("selected_bu")?.value || "carmen";
+  const locale = cookieStore.get("NEXT_LOCALE")?.value || "th";
 
   const path = `${category}/${article}.md`;
 
   let raw;
 
   try {
-    raw = await getContent(path, bu);
+    raw = await getContent(path, bu, locale);
   } catch {
     notFound();
   }
@@ -69,8 +71,9 @@ export default async function ArticlePage({ params }: Props) {
       ? frontmatter.date
       : raw.publishedAt;
 
+  const dateLocale = locale === "en" ? "en-US" : "th-TH";
   const formattedDate = publishedAt
-    ? new Date(publishedAt).toLocaleDateString("th-TH", {
+    ? new Date(publishedAt).toLocaleDateString(dateLocale, {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -79,6 +82,8 @@ export default async function ArticlePage({ params }: Props) {
 
   const contentString = content.toString();
   const fixedContent = contentString.replace(/\n##/g, "\n\n##");
+
+  const t = await getTranslations();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -100,7 +105,7 @@ export default async function ArticlePage({ params }: Props) {
             {/* Breadcrumb */}
             <Breadcrumb
               items={[
-                { label: "หมวดหมู่", href: "/categories" },
+                { label: t("common.categories"), href: "/categories" },
                 {
                   label: formatCategoryName(category),
                   href: `/categories/${category}`,

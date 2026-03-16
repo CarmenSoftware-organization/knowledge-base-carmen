@@ -2,6 +2,7 @@
 // frontend/user/hooks/useCarmenChat.ts
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { formatCarmenMessage } from "@/lib/carmen-formatter";
 import { CarmenApi, CarmenRoom, createCarmenApi } from "./use-carmen-api";
 
@@ -86,13 +87,14 @@ export interface UseCarmenChatReturn {
 }
 
 export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
+  const t = useTranslations("chat");
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [rooms, setRooms] = useState<CarmenRoom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingStatus, setTypingStatus] = useState("กำลังคิด...");
+  const [typingStatus, setTypingStatus] = useState(t("thinking"));
   const [inputValue, setInputValue] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -330,7 +332,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           role: "bot",
           html: "",
           isQueued: true,
-          statusText: "รอคิว...",
+          statusText: t("waitingQueue") + "...",
         },
       ]);
 
@@ -381,14 +383,14 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           return { ...msg, isQueued: false };
         }
         if (msg.id === botMsgId) {
-          return { ...msg, isQueued: false, statusText: "กำลังค้นหาเอกสารที่เกี่ยวข้อง" };
+          return { ...msg, isQueued: false, statusText: t("searchingDocs") };
         }
         return msg;
       })
     );
 
     setIsTyping(true);
-    setTypingStatus("กำลังค้นหาเอกสารที่เกี่ยวข้อง");
+    setTypingStatus(t("searchingDocs"));
 
     // Clear any existing status timers
     statusTimers.current.forEach(clearTimeout);
@@ -396,9 +398,9 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
     // Legacy status rotation logic
     const statusMessages = [
-      { delay: 8000, text: "กำลังวิเคราะห์ข้อมูล" },
-      { delay: 20000, text: "กำลังเรียบเรียงคำตอบ" },
-      { delay: 45000, text: "ใกล้เสร็จแล้ว กรุณารอสักครู่" },
+      { delay: 8000, text: t("analyzing") },
+      { delay: 20000, text: t("composing") },
+      { delay: 45000, text: t("almostDone") },
     ];
 
     statusMessages.forEach(st => {
@@ -637,7 +639,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       role: "bot",
       html: "",
       isQueued: true,
-      statusText: "รอคิว...",
+      statusText: t("waitingQueue") + "...",
     };
 
     setMessages((prev) => [...prev, userMsg, botPlaceholder]);

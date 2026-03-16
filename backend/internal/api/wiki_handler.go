@@ -1,14 +1,29 @@
 package api
 
 import (
+	"context"
 	"errors"
+	"log"
 	"os"
+	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/middleware"
 	"github.com/new-carmen/backend/internal/services"
 )
 
+var (
+	translationSvc   *services.TranslationService
+	translationCache *services.WikiTranslationCache
+	translationOnce  sync.Once
+)
+
+func initTranslation() {
+	translationOnce.Do(func() {
+		translationSvc = services.NewTranslationService()
+		translationCache = services.NewWikiTranslationCache()
+	})
+}
 
 type WikiHandler struct {
 	wikiService *services.WikiService
@@ -73,18 +88,39 @@ func (h *WikiHandler) GetCategory(c *fiber.Ctx) error {
 }
 
 // GetContent returns the rendered content of a markdown file. GET /api/wiki/content/*
+// Query param: locale (e.g. "th", "en") — when not "th", translates content via Google Translate (if enabled).
 func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	pathParam := c.Params("*")
 	if pathParam == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "path is required"})
 	}
 	bu := middleware.GetBU(c)
+	locale := services.NormalizeLocale(c.Query("locale"))
+
 	content, err := h.wikiService.GetContent(bu, pathParam)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Translate if locale is not Thai (source) and translation is enabled
+	sourceLang := "th"
+	initTranslation()
+	shouldTranslate := locale != "" && locale != sourceLang
+	enabled := translationSvc.IsEnabled()
+	if shouldTranslate && !enabled {
+		log.Printf("[wiki] translation skipped: locale=%q but translation disabled or GOOGLE_TRANSLATE_API_KEY not set", locale)
+	}
+	if shouldTranslate && enabled {
+		ctx := context.Background()
+		translated, err := translationCache.GetOrTranslate(ctx, bu, pathParam, locale, sourceLang, content, translationSvc)
+		if err != nil {
+			log.Printf("[wiki] translation failed for %s: %v", pathParam, err)
+		} else {
+			content = translated
+		}
 	}
 
 	// Log view

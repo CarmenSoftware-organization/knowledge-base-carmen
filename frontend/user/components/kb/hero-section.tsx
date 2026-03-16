@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import { GlobalSearch } from "@/components/search/global-search";
 import { getBusinessUnits, getSelectedBUClient } from "@/lib/wiki-api";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const popularSearches = [
   "AP Invoice", "Input VAT Reconciliation", "AR Receipt",
@@ -26,7 +27,7 @@ const fadeUp: Variants = {
 };
 
 export function HeroSection() {
-
+  const t = useTranslations("hero");
   const [searchQuery, setSearchQuery] = useState("");
   const [buName, setBuName] = useState("Carmen Cloud");
 
@@ -72,22 +73,22 @@ export function HeroSection() {
           className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary mb-6"
         >
           <Sparkles className="h-4 w-4" />
-          <span>Knowledge Base</span>
+          <span>{t("badge")}</span>
         </motion.div>
 
         <motion.h1
           variants={fadeUp}
           className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground text-balance"
         >
-          ศูนย์รวมความรู้
-          <span className="block text-primary mt-3">สำหรับ {buName}</span>
+          {t("title")}
+          <span className="block text-primary mt-3">{t("titleFor", { buName })}</span>
         </motion.h1>
 
         <motion.p
           variants={fadeUp}
           className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
         >
-          ค้นหาคู่มือ บทความ และคำตอบสำหรับทุกคำถามเกี่ยวกับการใช้งาน {buName} ระบบบริหารจัดการบัญชี
+          {t("subtitle", { buName })}
         </motion.p>
 
         <motion.div variants={fadeUp} className="mt-10 max-w-xl mx-auto relative">
@@ -95,7 +96,7 @@ export function HeroSection() {
           <GlobalSearch variant="hero" defaultValue={searchQuery} />
 
           <div className="mt-6 flex flex-wrap justify-center gap-x-3 gap-y-2">
-            <span className="text-sm text-muted-foreground">ยอดนิยม:</span>
+            <span className="text-sm text-muted-foreground">{t("popular")}</span>
             {popularSearches.map((term) => (
               <button
                 key={term}
