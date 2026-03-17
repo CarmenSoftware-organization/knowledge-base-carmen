@@ -94,6 +94,7 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		if len(emb) > config.AppConfig.Ollama.VectorDimension {
 			emb = emb[:config.AppConfig.Ollama.VectorDimension]
 		}
+		emb = utils.TruncateEmbedding(emb) // DB uses VECTOR(1536); qwen3-embedding returns 4096
 		sqlChunk := fmt.Sprintf("INSERT INTO %s.document_chunks (document_id, chunk_index, content, embedding, created_at) VALUES (?, ?, ?, ?::vector, now())", bu)
 		if err := database.DB.Exec(sqlChunk, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)

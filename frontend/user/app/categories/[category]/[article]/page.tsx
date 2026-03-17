@@ -11,6 +11,7 @@ import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 
 type Props = {
   params: Promise<{
@@ -28,13 +29,14 @@ export default async function ArticlePage({ params }: Props) {
 
   const cookieStore = await cookies();
   const bu = cookieStore.get("selected_bu")?.value || "carmen";
+  const locale = cookieStore.get("NEXT_LOCALE")?.value || "th";
 
   const path = `${category}/${article}.md`;
 
   let raw;
 
   try {
-    raw = await getContent(path, bu);
+    raw = await getContent(path, bu, locale);
   } catch {
     notFound();
   }
@@ -69,8 +71,9 @@ export default async function ArticlePage({ params }: Props) {
       ? frontmatter.date
       : raw.publishedAt;
 
+  const dateLocale = locale === "en" ? "en-US" : "th-TH";
   const formattedDate = publishedAt
-    ? new Date(publishedAt).toLocaleDateString("th-TH", {
+    ? new Date(publishedAt).toLocaleDateString(dateLocale, {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -80,56 +83,71 @@ export default async function ArticlePage({ params }: Props) {
   const contentString = content.toString();
   const fixedContent = contentString.replace(/\n##/g, "\n\n##");
 
-return (
-  <div className="min-h-screen flex flex-col bg-background">
-    <KBHeader />
-    <MobileSidebar />
+  const t = await getTranslations();
 
-    <main className="flex-1">
-      <div className="max-w-7xl mx-auto px-6 py-10 flex gap-10 items-start">
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <KBHeader />
+      {/* MobileSidebar shows only on mobile/tablet via its own internal logic */}
+      <MobileSidebar />
 
-        <KBSidebar />
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex gap-10 items-start">
 
-        <div className="flex-1 max-w-4xl">
+          {/* Desktop Sidebar — hidden on mobile & tablet, visible on xl+ */}
+          <div className="hidden xl:block shrink-0">
+            <KBSidebar />
+          </div>
 
-          {/* Breadcrumb */}
-          <Breadcrumb
-            items={[
-              { label: "หมวดหมู่", href: "/categories" },
-              {
-                label: formatCategoryName(category),
-                href: `/categories/${category}`,
-              },
-              { label: title },
-            ]}
-          />
+          {/* Main Article Content */}
+          <div className="flex-1 min-w-0 w-full max-w-4xl">
 
-          {/* Title Content */}
-          <ArticleHeaderInfo
-            title={title}
-            description={description}
-            formattedDate={formattedDate}
-            tags={tags}
-            editor={editor}
-          />
+            {/* Breadcrumb */}
+            <Breadcrumb
+              items={[
+                { label: t("common.categories"), href: "/categories" },
+                {
+                  label: formatCategoryName(category),
+                  href: `/categories/${category}`,
+                },
+                { label: title },
+              ]}
+            />
 
-          {/* Divider */}
-          <div className="border-b border-border mb-8"></div>
+            {/* Title Content */}
+            <ArticleHeaderInfo
+              title={title}
+              description={description}
+              formattedDate={formattedDate}
+              tags={tags}
+              editor={editor}
+            />
 
-          {/* Markdown Render */}
-          <MarkdownRender
-            content={fixedContent}
-            category={category}
-          />
+            {/* Divider */}
+            <div className="border-b border-border mb-8"></div>
+
+            {/* Table of Contents inline — shown only on mobile & tablet (below xl) */}
+            <div className="block xl:hidden mb-8">
+              <TableOfContents />
+            </div>
+
+            {/* Markdown Render */}
+            <MarkdownRender
+              content={fixedContent}
+              category={category}
+            />
+
+          </div>
+
+          {/* Desktop Table of Contents — hidden on mobile & tablet, visible on xl+ */}
+          <div className="hidden xl:block shrink-0">
+            <TableOfContents />
+          </div>
 
         </div>
+      </main>
 
-        <TableOfContents />
-
-      </div>
-    </main>
-
-    <KBFooter />
-  </div>
-);
+      <KBFooter />
+    </div>
+  );
 }

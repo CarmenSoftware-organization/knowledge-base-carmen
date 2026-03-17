@@ -12,6 +12,8 @@ import Image from "next/image";
 import { ThemeToggle } from "./theme-toggle";
 import { useTheme } from "next-themes";
 import { BUSwitcher } from "./bu-switcher";
+import { LanguageSwitcher } from "./language-switcher";
+import { useTranslations } from "next-intl";
 
 const headerVariants: Variants = {
   hidden: { y: -60, opacity: 0 },
@@ -37,6 +39,7 @@ const mobileMenuVariants: Variants = {
 };
 
 export function KBHeader() {
+  const t = useTranslations("common");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === "/";
@@ -84,16 +87,22 @@ export function KBHeader() {
             {/* Desktop nav — lg ขึ้นไปเท่านั้น */}
             <nav className="hidden lg:flex items-center gap-1 mr-2">
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/">หน้าหลัก</Link>
+                <Link href="/">{t("home")}</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/categories">หมวดหมู่</Link>
+                <Link href="/categories">{t("categories")}</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
+                <Link href="/faq">FAQ</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/activity">{t("forStaff")}</Link>
               </Button>
             </nav>
 
+            <div className="hidden lg:block">
+              <LanguageSwitcher />
+            </div>
             <div className="hidden lg:block">
               <BUSwitcher />
             </div>
@@ -127,19 +136,25 @@ export function KBHeader() {
               {/* Search เฉพาะ mobile เท่านั้น เพราะ sm ขึ้นไปแสดงใน header แล้ว */}
               {!isHome && (
                 <div className="pb-2 sm:hidden">
-                  <GlobalSearch variant="header" placeholder="ค้นหาคู่มือหรือเนื้อหา..." />
+                  <GlobalSearch variant="header" />
                 </div>
               )}
               <nav className="flex flex-col gap-1">
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
-                  <Link href="/">หน้าหลัก</Link>
+                  <Link href="/">{t("home")}</Link>
                 </Button>
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
-                  <Link href="/categories">หมวดหมู่</Link>
+                  <Link href="/categories">{t("categories")}</Link>
                 </Button>
-                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
-                  <Link href="/activity">สำหรับเจ้าหน้าที่</Link>
+                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild>
+                  <Link href="/faq" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
                 </Button>
+                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild>
+                  <Link href="/activity" onClick={() => setMobileMenuOpen(false)}>{t("forStaff")}</Link>
+                </Button>
+                <div className="px-3 py-1">
+                  <LanguageSwitcher />
+                </div>
                 <div className="px-3 py-1">
                   <BUSwitcher />
                 </div>

@@ -2,6 +2,7 @@
 // frontend/user/hooks/useCarmenChat.ts
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { formatCarmenMessage } from "@/lib/carmen-formatter";
 import { CarmenApi, CarmenRoom, createCarmenApi } from "./use-carmen-api";
 import { locales, LocaleKey, LocaleStrings } from "@/configs/locales";
@@ -91,13 +92,14 @@ export interface UseCarmenChatReturn {
 }
 
 export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
+  const t = useTranslations("chat");
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [rooms, setRooms] = useState<CarmenRoom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingStatus, setTypingStatus] = useState("");
+  const [typingStatus, setTypingStatus] = useState(t("thinking"));
   const [inputValue, setInputValue] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   
@@ -388,7 +390,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           role: "bot",
           html: "",
           isQueued: true,
-          statusText: t.chat.status_waiting,
+          statusText: t("waitingQueue") + "...",
         },
       ]);
 
@@ -439,14 +441,14 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           return { ...msg, isQueued: false };
         }
         if (msg.id === botMsgId) {
-          return { ...msg, isQueued: false, statusText: t.chat.status_searching };
+          return { ...msg, isQueued: false, statusText: t("searchingDocs") };
         }
         return msg;
       })
     );
 
     setIsTyping(true);
-    setTypingStatus(t.chat.status_searching);
+    setTypingStatus(t("searchingDocs"));
 
     // Clear any existing status timers
     statusTimers.current.forEach(clearTimeout);
@@ -454,9 +456,9 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
     // Legacy status rotation logic
     const statusMessages = [
-      { delay: 8000, text: t.chat.status_analyzing },
-      { delay: 20000, text: t.chat.status_composing },
-      { delay: 45000, text: t.chat.status_processing },
+      { delay: 8000, text: t("analyzing") },
+      { delay: 20000, text: t("composing") },
+      { delay: 45000, text: t("almostDone") },
     ];
 
     statusMessages.forEach(st => {
@@ -724,7 +726,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       role: "bot",
       html: "",
       isQueued: true,
-      statusText: t.chat.status_waiting,
+      statusText: t("waitingQueue") + "...",
     };
 
     setMessages((prev) => [...prev, userMsg, botPlaceholder]);

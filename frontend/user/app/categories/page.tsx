@@ -6,8 +6,10 @@ import { getCategories } from "@/lib/wiki-api";
 import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { CategoryGrid } from "@/components/kb/category-grid";
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 
 export default async function CategoriesPage() {
+  const t = await getTranslations();
   const cookieStore = await cookies();
   const bu = cookieStore.get("selected_bu")?.value || "carmen";
 
@@ -23,11 +25,11 @@ export default async function CategoriesPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
             <aside className="hidden md:block w-64 shrink-0"><KBSidebar /></aside>
             <div className="flex-1">
-              <Breadcrumb items={[{ label: "หมวดหมู่ทั้งหมด" }]} />
+              <Breadcrumb items={[{ label: t("common.categoriesAll") }]} />
               <div className="mt-8 p-12 border border-dashed rounded-[2rem] flex flex-col items-center text-center bg-slate-50/50">
-                <h2 className="text-xl font-bold text-slate-900">ไม่สามารถโหลดข้อมูลได้</h2>
+                <h2 className="text-xl font-bold text-slate-900">{t("errors.loadFailed")}</h2>
                 <p className="text-muted-foreground mt-2 max-w-xs">
-                  ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลัง
+                  {t("errors.systemError")}
                 </p>
               </div>
             </div>
@@ -55,11 +57,11 @@ export default async function CategoriesPage() {
 
           {/* Main Content Area */}
           <div className="flex-1 w-full">
-            <Breadcrumb items={[{ label: "หมวดหมู่ทั้งหมด" }]} />
+            <Breadcrumb items={[{ label: t("common.categoriesAll") }]} />
 
             <div className="mt-6 mb-10">
               <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-                หมวดหมู่เอกสาร
+                {t("category.documents")}
               </h1>
             </div>
 

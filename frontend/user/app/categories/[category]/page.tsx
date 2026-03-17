@@ -11,6 +11,7 @@ import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import matter from "gray-matter";
 import { ArticleGridTransition } from "@/components/kb/article-grid-client";
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 
 export default async function CategoryPage({
   params,
@@ -44,6 +45,8 @@ export default async function CategoryPage({
   const categoryName =
     categoryDisplayMap[data.category] || data.category.toUpperCase();
 
+  const t = await getTranslations();
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <KBHeader />
@@ -60,7 +63,7 @@ export default async function CategoryPage({
           <div className="flex-1 min-w-0">
             <Breadcrumb
               items={[
-                { label: "หมวดหมู่", href: "/categories" },
+                { label: t("common.categories"), href: "/categories" },
                 { label: categoryName },
               ]}
             />
@@ -101,7 +104,7 @@ export default async function CategoryPage({
                   </div>
                   <div className="relative flex justify-center">
                     <span className="bg-background px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                      รายการบทความในหมวดนี้
+                      {t("category.articlesInCategory")}
                     </span>
                   </div>
                 </div>
@@ -114,7 +117,7 @@ export default async function CategoryPage({
                   {categoryName}
                 </h1>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  รวมบทความทั้งหมดในหมวดนี้
+                  {t("category.allArticlesInCategory")}
                 </p>
               </div>
             )}

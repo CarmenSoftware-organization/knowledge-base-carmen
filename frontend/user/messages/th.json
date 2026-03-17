@@ -1,0 +1,51 @@
+{
+  "common": {
+    "categories": "หมวดหมู่",
+    "categoriesAll": "หมวดหมู่ทั้งหมด",
+    "home": "หน้าหลัก",
+    "forStaff": "สำหรับเจ้าหน้าที่",
+    "viewCategory": "ดูหมวดหมู่",
+    "articles": "บทความ",
+    "search": "ค้นหา"
+  },
+  "hero": {
+    "badge": "Knowledge Base",
+    "title": "ศูนย์รวมความรู้",
+    "titleFor": "สำหรับ {buName}",
+    "subtitle": "ค้นหาคู่มือ บทความ และคำตอบสำหรับทุกคำถามเกี่ยวกับการใช้งาน {buName} ระบบบริหารจัดการบัญชี",
+    "popular": "ยอดนิยม:"
+  },
+  "search": {
+    "placeholderHeader": "ค้นหาคู่มือ...",
+    "placeholderHero": "ค้นหาชื่อคู่มือ หรือเนื้อหาภายใน...",
+    "placeholderMobile": "ค้นหาคู่มือหรือเนื้อหา...",
+    "searchButton": "ค้นหา",
+    "results": "ผลการค้นหา",
+    "navigate": "↑↓ เลือก"
+  },
+  "category": {
+    "selectTitle": "เลือกหมวดหมู่",
+    "selectDescription": "เลือกหมวดหมู่ที่คุณต้องการเรียนรู้",
+    "articlesCount": "{count} บทความ",
+    "documents": "หมวดหมู่เอกสาร",
+    "articlesInCategory": "รายการบทความในหมวดนี้",
+    "allArticlesInCategory": "รวมบทความทั้งหมดในหมวดนี้"
+  },
+  "errors": {
+    "loadFailed": "ไม่สามารถโหลดข้อมูลได้",
+    "systemError": "ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลัง"
+  },
+  "activity": {
+    "title": "Activity Logs",
+    "description": "ประวัติการใช้งานและค้นหาข้อมูลภายในระบบ (หน่วยธุรกิจ: {bu})"
+  },
+  "chat": {
+    "thinking": "กำลังคิด...",
+    "searchingDocs": "กำลังค้นหาเอกสารที่เกี่ยวข้อง",
+    "analyzing": "กำลังวิเคราะห์ข้อมูล",
+    "composing": "กำลังเรียบเรียงคำตอบ",
+    "almostDone": "ใกล้เสร็จแล้ว กรุณารอสักครู่",
+    "retry": "ลองอีกครั้ง",
+    "waitingQueue": "รอคิว"
+  }
+}

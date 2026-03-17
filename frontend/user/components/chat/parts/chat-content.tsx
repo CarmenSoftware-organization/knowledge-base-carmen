@@ -8,6 +8,7 @@ import { ChatHeader } from "./chat-header";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
 import ImageLightbox from "./image-lightbox";
+import DOMPurify from "dompurify";
 
 type ChatState = ReturnType<typeof useCarmenChat>;
 interface ContentProps {
@@ -39,6 +40,14 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
     const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const lastProgrammaticScrollTime = useRef(0);
+
+    const safeHtmlToText = (html: string) => {
+        // For the sticky queue UI we only need a safe, plain-text snippet.
+        const cleaned = DOMPurify.sanitize(html, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+        const tmp = document.createElement("div");
+        tmp.innerHTML = cleaned;
+        return (tmp.textContent || tmp.innerText || "").trim();
+    };
 
     // Image lightbox: delegate click on images with data-lightbox attribute
     useEffect(() => {
@@ -276,7 +285,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                                     className="bg-slate-800/80 backdrop-blur-md text-white text-[13px] px-3 py-2 rounded-2xl rounded-br-sm shadow-lg max-w-[70%] truncate pointer-events-auto border border-white/10 flex items-center gap-2"
                                 >
                                     <div className="w-3 h-3 rounded-full border-[1.5px] border-white/30 border-t-white animate-spin flex-shrink-0" />
-                                    <span className="truncate" dangerouslySetInnerHTML={{ __html: msg.html }} />
+                                    <span className="truncate">{safeHtmlToText(msg.html)}</span>
                                 </motion.div>
                             ))}
                         </motion.div>

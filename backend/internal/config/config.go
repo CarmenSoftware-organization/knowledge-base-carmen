@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -21,6 +20,13 @@ type Config struct {
 	Chat        ChatConfig
 	OpenClaw    OpenClawConfig
 	Make        MakeConfig
+	Translation TranslationConfig
+}
+
+// TranslationConfig holds config for Google Cloud Translation API (wiki content).
+type TranslationConfig struct {
+	APIKey  string // GOOGLE_TRANSLATE_API_KEY
+	Enabled bool   // TRANSLATION_ENABLED
 }
 
 type ServerConfig struct {
@@ -77,11 +83,15 @@ type GitHubConfig struct {
 }
 
 type GitConfig struct {
-	RepoPath     string
-	RepoURL      string
-	ContentPath  string
-	ChunkSize    int
-	ChunkOverlap int
+	RepoPath          string
+	RepoURL           string
+	ContentPath       string
+	ChunkSize         int
+	ChunkOverlap      int
+	SyncBranch        string   // branch สำหรับ wiki sync (GIT_SYNC_BRANCH)
+	DefaultBU         string   // BU เมื่อ schema ไม่ valid (WIKI_DEFAULT_BU)
+	CarmenContentDirs []string // paths ที่ลองสำหรับ carmen (WIKI_CARMEN_PATHS)
+	CarmenGitPath     string   // prefix ใน GitHub สำหรับ carmen (WIKI_CARMEN_GIT_PATH)
 }
 
 // WikiSearchConfig holds configurable values for wiki search (avoids hardcoding).
@@ -93,18 +103,41 @@ type WikiSearchConfig struct {
 
 // ChatConfig holds configurable values for chat context (avoids hardcoding).
 type ChatConfig struct {
-	ContextLimit      int // CHAT_CONTEXT_LIMIT
-	MaxContextChars   int // CHAT_MAX_CONTEXT_CHARS
-	MaxChunkContent   int // CHAT_MAX_CHUNK_CONTENT
+	ContextLimit               int     // CHAT_CONTEXT_LIMIT
+	MaxContextChars            int     // CHAT_MAX_CONTEXT_CHARS
+	MaxChunkContent            int     // CHAT_MAX_CHUNK_CONTENT
+	HistoryEnabled             bool    // CHAT_HISTORY_ENABLED
+	HistorySimilarityThreshold float64 // CHAT_HISTORY_SIMILARITY_THRESHOLD
 }
 
 var AppConfig *Config
 
+// Default values (ใช้เมื่อ env ไม่ได้ตั้ง — แก้ได้ผ่าน env)
+const (
+	defaultRepoPath      = "./wiki-content"
+	defaultBU            = "carmen"
+	defaultCarmenPaths   = "../carmen_cloud,./carmen_cloud"
+	defaultCarmenGitPath = "carmen_cloud"
+	defaultGitSyncBranch = "wiki-content"
+)
+
+// DefaultRepoPath returns the default wiki repo path when config is empty.
+func DefaultRepoPath() string { return defaultRepoPath }
+
+// DefaultGitSyncBranch returns the default branch for wiki sync.
+func DefaultGitSyncBranch() string { return defaultGitSyncBranch }
+
 func Load() error {
-	if err := godotenv.Load(".env"); err != nil {
-		if err2 := godotenv.Load("../.env"); err2 != nil {
-			log.Println("No .env file found, using environment variables")
-		}
+	cwd, _ := os.Getwd()
+	_ = godotenv.Overload(filepath.Join(cwd, ".env"))
+	// Try multiple paths so .env is found whether running from repo root, backend/, or backend/tmp/
+	_ = godotenv.Load(".env")
+	_ = godotenv.Load("../.env")
+	_ = godotenv.Load("backend/.env")
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		_ = godotenv.Load(filepath.Join(execDir, ".env"))
+		_ = godotenv.Load(filepath.Join(execDir, "..", ".env"))
 	}
 
 	AppConfig = &Config{
@@ -144,11 +177,15 @@ func Load() error {
 			WebhookBranch: getEnv("GITHUB_WEBHOOK_BRANCH", getEnv("GITHUB_BRANCH", "main")),
 		},
 		Git: GitConfig{
-			RepoPath:     getEnv("GIT_REPO_PATH", "./wiki-content"),
-			RepoURL:      getEnv("GIT_REPO_URL", ""),
-			ContentPath:  getEnv("WIKI_CONTENT_PATH", ""),
-			ChunkSize:    getEnvAsInt("WIKI_CHUNK_SIZE", 500),
-			ChunkOverlap: getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
+			RepoPath:          getEnv("GIT_REPO_PATH", defaultRepoPath),
+			RepoURL:           getEnv("GIT_REPO_URL", ""),
+			ContentPath:       getEnv("WIKI_CONTENT_PATH", ""),
+			ChunkSize:         getEnvAsInt("WIKI_CHUNK_SIZE", 500),
+			ChunkOverlap:      getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
+			SyncBranch:        getEnv("GIT_SYNC_BRANCH", getEnv("GITHUB_BRANCH", defaultGitSyncBranch)),
+			DefaultBU:         getEnv("WIKI_DEFAULT_BU", defaultBU),
+			CarmenContentDirs: getEnvAsStringSlice("WIKI_CARMEN_PATHS", defaultCarmenPaths),
+			CarmenGitPath:     getEnv("WIKI_CARMEN_GIT_PATH", defaultCarmenGitPath),
 		},
 		WikiSearch: WikiSearchConfig{
 			SearchLimit:       getEnvAsInt("WIKI_SEARCH_LIMIT", 20),
@@ -156,9 +193,11 @@ func Load() error {
 			SnippetMaxLen:     getEnvAsInt("WIKI_SNIPPET_MAX_LEN", 200),
 		},
 		Chat: ChatConfig{
-			ContextLimit:    getEnvAsInt("CHAT_CONTEXT_LIMIT", 10),
-			MaxContextChars: getEnvAsInt("CHAT_MAX_CONTEXT_CHARS", 8000),
-			MaxChunkContent: getEnvAsInt("CHAT_MAX_CHUNK_CONTENT", 2000),
+			ContextLimit:               getEnvAsInt("CHAT_CONTEXT_LIMIT", 10),
+			MaxContextChars:            getEnvAsInt("CHAT_MAX_CONTEXT_CHARS", 8000),
+			MaxChunkContent:            getEnvAsInt("CHAT_MAX_CHUNK_CONTENT", 2000),
+			HistoryEnabled:             getEnvAsBool("CHAT_HISTORY_ENABLED", true),
+			HistorySimilarityThreshold: getEnvAsFloat("CHAT_HISTORY_SIMILARITY_THRESHOLD", 0.15),
 		},
 		OpenClaw: OpenClawConfig{
 			URL:     getEnv("OPENCLAW_URL", ""),
@@ -170,6 +209,10 @@ func Load() error {
 			WebhookURL:           getEnv("MAKE_WEBHOOK_URL", ""),
 			WebhookAPIKey:        getEnv("MAKE_WEBHOOK_API_KEY", ""),
 			UseForQuestionRouter: getEnvAsBool("MAKE_USE_FOR_ROUTER", false),
+		},
+		Translation: TranslationConfig{
+			APIKey:  getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
+			Enabled: getEnvAsBool("TRANSLATION_ENABLED", true),
 		},
 	}
 
@@ -193,7 +236,7 @@ func GetWikiContentPath() string {
 // NormalizePath cleans and normalizes a path (used for wiki content paths).
 func NormalizePath(path string) string {
 	if path == "" {
-		return "./wiki-content"
+		return defaultRepoPath
 	}
 	if filepath.IsAbs(path) {
 		return filepath.Clean(path)
@@ -231,4 +274,18 @@ func getEnvAsFloat(key string, defaultValue float64) float64 {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsStringSlice(key, defaultCSV string) []string {
+	val := getEnv(key, defaultCSV)
+	if val == "" {
+		val = defaultCSV
+	}
+	var out []string
+	for _, s := range strings.Split(val, ",") {
+		if t := strings.TrimSpace(s); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }

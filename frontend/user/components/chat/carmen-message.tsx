@@ -3,6 +3,7 @@ import { DisplayMessage } from "@/hooks/use-carmen-chat";
 import React, { useState, useMemo, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import DOMPurify from "dompurify";
+import { useTranslations } from "next-intl";
 
 interface Props {
   msg: DisplayMessage;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, onSelect, theme = "#34558b", t }: Props) {
+  const t = useTranslations("chat");
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const isBot = msg.role === "bot";
@@ -22,7 +24,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
 
   function handleCopy() {
     const el = document.createElement("div");
-    el.innerHTML = msg.html;
+    // Use sanitized content to avoid injecting attacker-controlled HTML into the DOM.
+    el.innerHTML = processedContent;
     const text = el.innerText || el.textContent || "";
 
     const onSuccess = () => {
@@ -122,6 +125,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                   <path d="M3 3v5h5"></path>
                 </svg>
+                {t("retry")}
                 {t.chat.error_retry}
               </button>
             )}
@@ -131,6 +135,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
             {!msg.html && isBot && !msg.isQueued ? (
               <div className="flex items-center gap-2 py-1">
                 <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">
+                  {msg.statusText || t("searchingDocs")}
                   {msg.statusText || t.chat.status_searching}
                 </span>
                 <div className="flex gap-1 items-center">
@@ -152,6 +157,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
             {msg.isQueued && !isBot && (
               <div className="text-[10px] text-white/60 font-medium uppercase tracking-widest mt-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full border border-white/30 border-t-white animate-spin" />
+                🕐 {t("waitingQueue")}
                 🕐 {t.chat.status_waiting}
               </div>
             )}

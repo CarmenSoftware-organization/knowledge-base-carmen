@@ -5,6 +5,7 @@ import (
 
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/models"
+	"gorm.io/gorm"
 )
 
 type ActivityLogService struct{}
@@ -37,16 +38,57 @@ func (s *ActivityLogService) Log(buSlug string, userID string, action string, ca
 	return database.DB.Create(&logEntry).Error
 }
 
-func (s *ActivityLogService) GetLogs(buSlug string, limit int, offset int) ([]models.ActivityLog, error) {
-	var logs []models.ActivityLog
-	query := database.DB.Model(&models.ActivityLog{}).Preload("BusinessUnit").Order("activity_logs.timestamp DESC")
+// Admin actions (same as frontend) - for source filter
+var adminActions = []string{
+	"ซิงค์ Wiki (จาก GitHub)",
+	"เริ่มดึงข้อมูล ( Re-indexing )",
+	"ดึงข้อมูลไม่สำเร็จ",
+	"ดึงข้อมูลถูกขัดจังหวะ",
+	"เสร็จสิ้นดึงข้อมูล",
+	"สร้างไฟล์วิกิใหม่",
+	"อัปเดตไฟล์วิกิ",
+	"ลบไฟล์วิกิ",
+}
 
-	if buSlug != "" {
-		query = query.Joins("JOIN public.business_units bu ON bu.id = activity_logs.bu_id").Where("bu.slug = ?", buSlug)
+func (s *ActivityLogService) GetLogs(buSlug string, limit int, offset int) ([]models.ActivityLog, error) {
+	logs, _, err := s.GetLogsWithFilter(buSlug, "all", limit, offset)
+	return logs, err
+}
+
+// GetLogsWithFilter returns logs with optional source filter (all|user|admin) and total count
+func (s *ActivityLogService) GetLogsWithFilter(buSlug string, source string, limit int, offset int) ([]models.ActivityLog, int64, error) {
+	var logs []models.ActivityLog
+
+	buildQuery := func() *gorm.DB {
+		q := database.DB.Model(&models.ActivityLog{})
+		if buSlug != "" {
+			q = q.Joins("JOIN public.business_units bu ON bu.id = activity_logs.bu_id").Where("bu.slug = ?", buSlug)
+		}
+		switch source {
+		case "admin":
+			q = q.Where("activity_logs.user_id = ? OR activity_logs.action IN ?", "system", adminActions)
+		case "user":
+			q = q.Where("activity_logs.user_id != ? AND activity_logs.action NOT IN ?", "system", adminActions)
+		}
+		return q
 	}
 
-	err := query.Select("activity_logs.*").Limit(limit).Offset(offset).Find(&logs).Error
-	return logs, err
+	// Count total
+	var total int64
+	if err := buildQuery().Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Fetch page
+	query := buildQuery().Preload("BusinessUnit").Order("activity_logs.timestamp DESC").Select("activity_logs.*")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+	err := query.Find(&logs).Error
+	return logs, total, err
 }
 
 // SummaryEntry represents a summary of activities for a specific period

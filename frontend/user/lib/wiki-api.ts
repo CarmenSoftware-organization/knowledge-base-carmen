@@ -39,13 +39,21 @@ export async function getBusinessUnits(): Promise<{ items: BusinessUnit[] }> {
 export function getSelectedBUClient(): string {
   if (typeof window === "undefined") return "carmen";
   const match = document.cookie.match(/(^| )selected_bu=([^;]+)/);
-  if (match) return match[2];
+  if (match) {
+    try {
+      return decodeURIComponent(match[2]);
+    } catch {
+      return match[2];
+    }
+  }
   return "carmen";
 }
 
 export function setSelectedBU(slug: string) {
   if (typeof window !== "undefined") {
-    document.cookie = `selected_bu=${slug}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    const maxAge = 60 * 60 * 24 * 30;
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `selected_bu=${encodeURIComponent(slug)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
     window.dispatchEvent(new Event("bu-changed"));
   }
 }
@@ -115,20 +123,24 @@ export async function getAllArticles(bu?: string): Promise<WikiListItem[]> {
 // แปลง path จาก wiki → route ของหน้า content
 export function wikiPathToRoute(path: string): string {
   const normalizedPath = path.replace(/\\/g, "/");
-  const parts = normalizedPath.split("/").filter(Boolean);
+  const parts = normalizedPath
+    .split(/[?#]/)[0]
+    .split("/")
+    .filter(Boolean)
+    .filter((p) => p !== "." && p !== "..");
 
   if (parts.length === 0) return "/";
 
   // Root level index.md
   if (parts.length === 1) {
-    const slug = parts[0].replace(/\.md$/i, "");
+    const slug = encodeURIComponent(parts[0].replace(/\.md$/i, ""));
     if (slug === "index") return "/";
     return `/categories/root/${slug}`;
   }
 
-  const category = parts[0];
+  const category = encodeURIComponent(parts[0]);
   const file = parts[parts.length - 1];
-  const slug = file.replace(/\.md$/i, "");
+  const slug = encodeURIComponent(file.replace(/\.md$/i, ""));
 
   if (slug === "index") {
     return `/categories/${category}`;
@@ -200,7 +212,12 @@ export async function findBestArticleForQuery(query: string, bu?: string): Promi
  ========================= */
 
 // GET /api/wiki/content/*
-export async function getContent(path: string, bu?: string): Promise<{
+// locale: "th" | "en" — when "en", backend translates content via Google Translate (if enabled)
+export async function getContent(
+  path: string,
+  bu?: string,
+  locale?: string
+): Promise<{
   path: string;
   title: string;
   description?: string;
@@ -213,8 +230,10 @@ export async function getContent(path: string, bu?: string): Promise<{
   publishedAt?: string;
 }> {
   const selectedBU = bu || getSelectedBUClient();
+  const params = new URLSearchParams({ bu: selectedBU });
+  if (locale) params.set("locale", locale);
   const res = await fetch(
-    `${API_BASE}/api/wiki/content/${path}?bu=${selectedBU}`,
+    `${API_BASE}/api/wiki/content/${path}?${params.toString()}`,
     { cache: "no-store" }
   );
 
@@ -310,19 +329,31 @@ export async function searchWiki(query: string, bu?: string): Promise<SearchResu
 
 export type ActivityLog = {
   id: number;
-  bu_slug: string;
+  bu_slug?: string;
   user_id?: string | null;
   action: string;
-  details?: string | null;
+  details?: Record<string, unknown> | string | null;
   ip_address?: string | null;
   user_agent?: string | null;
-  created_at: string;
+  created_at?: string;
+  timestamp?: string;
 };
 
 // GET /api/activity/list
-export async function getActivityLogs(bu?: string, limit: number = 50, offset: number = 0): Promise<{ items: ActivityLog[] }> {
+export async function getActivityLogs(
+  bu?: string,
+  limit: number = 20,
+  offset: number = 0,
+  source: "all" | "user" | "admin" = "all"
+): Promise<{ items: ActivityLog[]; total: number; limit: number; offset: number }> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(`${API_BASE}/api/activity/list?bu=${selectedBU}&limit=${limit}&offset=${offset}`, {
+  const params = new URLSearchParams({
+    bu: selectedBU,
+    limit: String(limit),
+    offset: String(offset),
+    source,
+  });
+  const res = await fetch(`${API_BASE}/api/activity/list?${params}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch activity logs");

@@ -3,6 +3,7 @@ import { CarmenChatConfig, useCarmenChat } from "@/hooks/use-carmen-chat";
 import { AnimatePresence, motion } from "framer-motion";
 import CarmenChatWindow from "./carmen-chat-window";
 import { API_BASE } from "@/lib/config";
+import { getOrCreateClientId } from "@/lib/carmen-client-id";
 import { getSelectedBUClient } from "@/lib/wiki-api";
 import { useEffect, useState } from "react";
 
@@ -13,7 +14,7 @@ interface Props extends Partial<CarmenChatConfig> {
 
 export default function FloatingChatBot({
   bu: initialBU,
-  username = "Guest",
+  username: usernameProp,
   apiBase,
   theme = "#34558b",
   title = "Carmen AI Specialist",
@@ -23,10 +24,16 @@ export default function FloatingChatBot({
   suggestedQuestions,
 }: Props) {
   const [currentBU, setCurrentBU] = useState(initialBU || getSelectedBUClient());
-  const [currentPath, setCurrentPath] = useState("/");
+  const [clientId, setClientId] = useState<string | null>(null);
+
+  // เมื่อไม่มีการล็อกอิน ใช้ Client ID แทน (แยกผู้ใช้แต่ละ browser/device)
+  const username =
+    usernameProp && usernameProp !== "Guest"
+      ? usernameProp
+      : clientId ?? "Guest";
 
   useEffect(() => {
-    setCurrentPath(window.location.pathname);
+    setClientId(getOrCreateClientId());
   }, []);
 
   useEffect(() => {

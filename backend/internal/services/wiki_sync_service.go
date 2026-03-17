@@ -22,15 +22,15 @@ func NewWikiSyncService() *WikiSyncService {
 	cfg := config.AppConfig
 	repoPath := filepath.Clean(cfg.Git.RepoPath)
 	if repoPath == "" || repoPath == "." {
-		repoPath = "./wiki-content"
+		repoPath = config.DefaultRepoPath()
 	}
 	repoURL := cfg.Git.RepoURL
 	if repoURL == "" && cfg.GitHub.Owner != "" && cfg.GitHub.Repo != "" {
 		repoURL = fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Owner, cfg.GitHub.Repo)
 	}
-	branch := cfg.GitHub.Branch
+	branch := cfg.Git.SyncBranch
 	if branch == "" {
-		branch = "wiki-content"
+		branch = config.DefaultGitSyncBranch()
 	}
 	return &WikiSyncService{
 		repoPath:   repoPath,

@@ -17,19 +17,30 @@ func NewActivityHandler() *ActivityHandler {
 	}
 }
 
-// List returns a list of activity logs. GET /api/activity/list?bu=...&limit=...&offset=...
+// List returns a list of activity logs. GET /api/activity/list?bu=...&limit=20&offset=0&source=all|user|admin
 func (h *ActivityHandler) List(c *fiber.Ctx) error {
 	buSlug := c.Query("bu")
+	source := c.Query("source", "all")
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
 	offset, _ := strconv.Atoi(c.Query("offset", "0"))
 
-	logs, err := h.service.GetLogs(buSlug, limit, offset)
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	logs, total, err := h.service.GetLogsWithFilter(buSlug, source, limit, offset)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.JSON(fiber.Map{
-		"items": logs,
+		"items":  logs,
+		"total":  total,
+		"limit":  limit,
+		"offset": offset,
 	})
 }
 
