@@ -70,7 +70,7 @@ export interface UseCarmenChatReturn {
   suggestions: string[];
   config: CarmenChatConfig;
   api: CarmenApi;
-  t: LocaleStrings;
+  t: any;
   setInputValue: (val: string) => void;
   setImageBase64: (val: string | null) => void;
   setShowRoomDropdown: (val: boolean) => void;
@@ -92,19 +92,19 @@ export interface UseCarmenChatReturn {
 }
 
 export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
-  const t = useTranslations("chat");
+  const t = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [rooms, setRooms] = useState<CarmenRoom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingStatus, setTypingStatus] = useState(t("thinking"));
+  const [typingStatus, setTypingStatus] = useState(t("chat.status_thinking"));
   const [inputValue, setInputValue] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   
   const locale = config.locale || "th";
-  const t = locales[locale];
+  const localT = locales[locale];
   
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showRoomDropdown, setShowRoomDropdown] = useState(false);
@@ -126,8 +126,8 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   });
   const [tooltipData, setTooltipData] = useState<{ visible: boolean; message: string; subMessage?: string }>({
     visible: false,
-    message: t.header.status_online,
-    subMessage: t.welcome.desc,
+    message: localT.header.status_online,
+    subMessage: localT.welcome.desc,
   });
   const [position, setPosition] = useState<{
     bottom: string | number;
@@ -142,7 +142,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const isUserStopRef = useRef(false);
   const isProcessingRef = useRef(false);
   const statusTimers = useRef<NodeJS.Timeout[]>([]);
-  const suggestions = config.suggestedQuestions ?? t.welcome.default_suggestions;
+  const suggestions = config.suggestedQuestions ?? localT.welcome.default_suggestions;
 
   useEffect(() => {
     const wasOpen = localStorage.getItem(`carmen_open_${config.bu}`) === "true";
@@ -295,7 +295,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   async function createNewChat() {
     if (isProcessingRef.current || messageQueue.current.length > 0) {
-      alert(t.chat.new_chat_block);
+      alert(t("chat.new_chat_block"));
       return;
     }
     if (abortController.current) {
@@ -321,7 +321,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   async function switchRoom(roomId: string) {
     if (isProcessingRef.current || messageQueue.current.length > 0) {
-      alert(t.chat.switch_room_block);
+      alert(t("chat.switch_room_block"));
       return;
     }
     if (currentRoomId === roomId) return;
@@ -345,7 +345,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   async function confirmDeleteRoom() {
     if (isProcessingRef.current || messageQueue.current.length > 0) {
-      alert(t.chat.delete_room_block);
+      alert(t("chat.delete_room_block"));
       setDeleteModal({ open: false, roomId: null });
       return;
     }
@@ -390,7 +390,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           role: "bot",
           html: "",
           isQueued: true,
-          statusText: t("waitingQueue") + "...",
+          statusText: t("chat.status_waiting") + "...",
         },
       ]);
 
@@ -441,14 +441,14 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           return { ...msg, isQueued: false };
         }
         if (msg.id === botMsgId) {
-          return { ...msg, isQueued: false, statusText: t("searchingDocs") };
+          return { ...msg, isQueued: false, statusText: t("chat.status_searching") };
         }
         return msg;
       })
     );
 
     setIsTyping(true);
-    setTypingStatus(t("searchingDocs"));
+    setTypingStatus(t("chat.status_searching"));
 
     // Clear any existing status timers
     statusTimers.current.forEach(clearTimeout);
@@ -456,9 +456,9 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
     // Legacy status rotation logic
     const statusMessages = [
-      { delay: 8000, text: t("analyzing") },
-      { delay: 20000, text: t("composing") },
-      { delay: 45000, text: t("almostDone") },
+      { delay: 8000, text: t("chat.status_analyzing") },
+      { delay: 20000, text: t("chat.status_composing") },
+      { delay: 45000, text: t("chat.status_processing") },
     ];
 
     statusMessages.forEach(st => {
@@ -623,7 +623,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     } catch (e: any) {
       if (e.name === "AbortError") {
         if (isUserStopRef.current) {
-          const finalHtml = formatCarmenMessage(accumulated + `\n\n**${t.chat.status_stopped}**`, api.baseUrl);
+          const finalHtml = formatCarmenMessage(accumulated + `\n\n**${t("chat.status_stopped")}**`, api.baseUrl);
           setMessages((prev) =>
             prev.map((m) => (m.id === botMsgId ? { ...m, html: finalHtml } : m))
           );
@@ -664,7 +664,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     }
 
     if (accumulated && processingRoomId && (!signal.aborted || isUserStopRef.current)) {
-      const stopNote = signal.aborted ? `\n\n**${t.chat.status_stopped}**` : "";
+      const stopNote = signal.aborted ? `\n\n**${t("chat.status_stopped")}**` : "";
       await api.saveMessage(processingRoomId, {
         id: finalMsgId || botMsgId,
         sender: "bot",

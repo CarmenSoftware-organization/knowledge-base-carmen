@@ -351,7 +351,7 @@ class LLMService:
         print(f"⏱️ Response time: {duration:.1f}s\n")
 
         # Log
-        log_id = chat_history.save_chat_logs({
+        log_id = await chat_history.save_chat_logs({
             "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": full_response,
             "model_name": model_config['name'], "input_rate": model_config['input_rate'], "output_rate": model_config['output_rate'],
             "sources": source_debug, "timestamp": datetime.now(), "duration": duration,
@@ -423,7 +423,7 @@ class LLMService:
         total_input_tokens = input_tokens + rewrite_input_tokens
         total_output_tokens = output_tokens + rewrite_output_tokens
 
-        log_id = chat_history.save_chat_logs({
+        log_id = await chat_history.save_chat_logs({
             "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": bot_ans,
             "model_name": model_config['name'], 
             "input_tokens": total_input_tokens, 
