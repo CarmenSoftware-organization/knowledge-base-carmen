@@ -547,9 +547,23 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         } else {
           // Final clean update to render all tokens (tokens processed in CarmenMessage)
           const finalHtml = formatCarmenMessage(displayedText, api.baseUrl);
-          setMessages((prev) =>
-            prev.map((m) => (m.id === botMsgId ? { ...m, html: finalHtml, suggestions: bufferedSuggestions || m.suggestions } : m))
-          );
+          setMessages((prev) => {
+            // Only apply suggestions if this botMsgId is the LATEST bot message in the entire list.
+            // This prevents race conditions where an old message finishes typing after a new user message is sent.
+            const botMessages = prev.filter(m => m.role === 'bot');
+            const isLastBot = botMessages.length > 0 && botMessages[botMessages.length - 1].id === botMsgId;
+            
+            return prev.map((m) => {
+              if (m.id === botMsgId) {
+                return { 
+                  ...m, 
+                  html: finalHtml, 
+                  suggestions: isLastBot ? (bufferedSuggestions || m.suggestions) : [] 
+                };
+              }
+              return m;
+            });
+          });
           
           // Trigger scroll after bot finishes and suggestions appear
           window.dispatchEvent(new CustomEvent("carmen-scroll-smooth"));
