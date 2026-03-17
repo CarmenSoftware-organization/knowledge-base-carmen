@@ -227,49 +227,74 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
         )}
       </div>
 
-      {isBot && msg.suggestions && msg.suggestions.length > 0 && (
-        <motion.div 
-          key={`suggestions-${msg.id}-${msg.suggestions.length}`}
-          initial="hidden"
-          animate="visible"
-          variants={{
-            hidden: { opacity: 0 },
-            visible: {
-              opacity: 1,
-              transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.3,
-              }
-            }
-          }}
-          className="flex flex-wrap items-start justify-start gap-2 mt-3 mb-1 overflow-visible"
-        >
-          {msg.suggestions.map((s, i) => (
-            <motion.button
-              key={`${msg.id}-sugg-${i}`}
-              variants={{
-                hidden: { opacity: 0, y: 15, scale: 0.9 },
-                visible: { 
-                  opacity: 1, 
-                  y: 0, 
-                  scale: 1,
-                  transition: { 
-                    type: "spring", 
-                    stiffness: 300, 
-                    damping: 20 
-                  }
+      <AnimatePresence>
+        {isBot && msg.suggestions && msg.suggestions.length > 0 && (
+          <motion.div 
+            key={`suggestions-${msg.id}-${msg.suggestions.length}`}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={{
+              hidden: { opacity: 0, height: 0, marginTop: 0 },
+              visible: {
+                opacity: 1,
+                height: "auto",
+                marginTop: 12,
+                transition: {
+                  staggerChildren: 0.08,
+                  delayChildren: 0.1,
+                  duration: 0.3,
+                  ease: "easeOut"
                 }
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onSelect?.(s, msg.id)}
-              className="text-[13px] px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-medium transition-all shadow-sm hover:shadow-md outline-none cursor-pointer text-left w-fit"
-            >
-              {s}
-            </motion.button>
-          ))}
-        </motion.div>
-      )}
+              },
+              exit: {
+                opacity: 0,
+                height: 0,
+                marginTop: 0,
+                transition: {
+                  opacity: { duration: 0.2 },
+                  height: { duration: 0.3, delay: 0.1 },
+                  marginTop: { duration: 0.3, delay: 0.1 },
+                  staggerChildren: 0.05,
+                  staggerDirection: -1
+                }
+              }
+            }}
+            className="flex flex-wrap items-start justify-start gap-2 mb-1 overflow-hidden"
+          >
+            {msg.suggestions.map((s, i) => (
+              <motion.button
+                key={`${msg.id}-sugg-${i}`}
+                variants={{
+                  hidden: { opacity: 0, y: 15, scale: 0.9 },
+                  visible: { 
+                    opacity: 1, 
+                    y: 0, 
+                    scale: 1,
+                    transition: { 
+                      type: "spring", 
+                      stiffness: 300, 
+                      damping: 25 
+                    }
+                  },
+                  exit: {
+                    opacity: 0,
+                    scale: 0.8,
+                    y: 10,
+                    transition: { duration: 0.2 }
+                  }
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onSelect?.(s, msg.id)}
+                className="text-[13px] px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-medium transition-all shadow-sm hover:shadow-md outline-none cursor-pointer text-left w-fit"
+              >
+                {s}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 });

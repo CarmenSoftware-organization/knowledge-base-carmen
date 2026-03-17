@@ -65,8 +65,15 @@ class LLMService:
                 openai_api_key=self.api_key or settings.OPENROUTER_API_KEY,
                 openai_api_base=self.api_base,
                 temperature=0.3,
-                max_tokens=4096,
+                max_tokens=8192,
                 streaming=streaming,
+                extra_body={
+                    "include_reasoning": False,
+                    "provider": {
+                        "allow_fallbacks": False,
+                        "require_parameters": True,
+                    }
+                },
                 **({"stream_usage": True} if streaming else {})
             )
 
@@ -218,6 +225,8 @@ class LLMService:
             accumulated = None
             first_token_time = None
             yielded_text_len = 0
+            tag = "[SUGGESTIONS]"
+            
             async for chunk in llm.astream(messages):
                 if request and await request.is_disconnected():
                     print("🛑 Client disconnected during streaming. stopping...")
@@ -226,24 +235,20 @@ class LLMService:
                     first_token_time = time.time()
                     print(f"⏱️ Time To First Token (TTFT): {first_token_time - start_time:.2f}s (Total time since request started)")
                     
-                # Accumulate chunks (merges metadata across all chunks)
+                # Accumulate chunks
                 accumulated = chunk if accumulated is None else accumulated + chunk
                 if chunk.content:
                     full_response += chunk.content
                     
-                    # Robust yielding logic to handle [SUGGESTIONS] tag
-                    tag = "[SUGGESTIONS]"
+                    # If tag is already found, we stop yielding chunks to the user
                     if tag in full_response:
-                        # Extract the part before the tag that hasn't been yielded yet
                         tag_index = full_response.find(tag)
-                        to_yield = full_response[yielded_text_len:tag_index]
-                        if to_yield:
+                        if yielded_text_len < tag_index:
+                            to_yield = full_response[yielded_text_len:tag_index]
                             yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
-                            yielded_text_len += len(to_yield)
-                        # We stop yielding any more chunks after the tag is detected
+                            yielded_text_len = tag_index
                     else:
-                        # Check if the end of full_response looks like the start of the tag
-                        # to avoid leakage of partial tag during streaming
+                        # Yield everything except the part that might be the start of the tag
                         potential_limit = len(full_response)
                         for i in range(len(tag), 0, -1):
                             prefix = tag[:i]
@@ -255,18 +260,41 @@ class LLMService:
                         if to_yield:
                             yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
                             yielded_text_len += len(to_yield)
+
+            # Yield any remaining text if the tag was NOT found at all
+            if tag not in full_response and yielded_text_len < len(full_response):
+                remaining = full_response[yielded_text_len:]
+                yield json.dumps({"type": "chunk", "data": remaining}) + "\n"
+                yielded_text_len += len(remaining)
+
             last_chunk = accumulated
 
             # Extract suggestions and clean up full_response for logging/storage
             suggestions = []
-            if tag in full_response:
+            import re
+            
+            # Robust extraction using regex to find [SUGGESTIONS] [...]
+            suggestion_match = re.search(r'\[SUGGESTIONS\]\s*(\{.*\}|\[.*\])', full_response, re.DOTALL)
+            
+            if suggestion_match:
+                tag_start_index = full_response.find(tag)
+                raw_suggestions_content = suggestion_match.group(1)
+                # Important: for storage, keep only the text BEFORE the tag
+                full_response = full_response[:tag_start_index].strip()
+                
+                try:
+                    clean_json = raw_suggestions_content.replace("```json", "").replace("```", "").strip()
+                    suggestions = json.loads(clean_json)
+                except Exception as e:
+                    print(f"⚠️ Failed to parse suggestions regex match: {e}")
+            elif tag in full_response:
                 parts = full_response.split(tag)
                 full_response = parts[0].strip()
                 try:
                     suggestions_json = parts[1].replace("```json", "").replace("```", "").strip()
                     suggestions = json.loads(suggestions_json)
                 except Exception as e:
-                    print(f"⚠️ Failed to parse suggestions: {e}")
+                    print(f"⚠️ Failed to parse suggestions fallback: {e}")
             
             if suggestions:
                 yield json.dumps({"type": "suggestions", "data": suggestions}) + "\n"

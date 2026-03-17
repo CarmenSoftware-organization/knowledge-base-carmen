@@ -20,7 +20,7 @@ BASE_PROMPT: |
     - "2. Search the provided คู่มือ (Manual) for relevant sections, menus, and steps."
     - "3. If information is found, verify if there are any specific UI elements (icons/images) to mention."
     - "4. If information is missing or the query is out of scope, politely inform the user and ask for clarification."
-    - "5. Format the response clearly using the designated rules."
+    - "5. Format the response clearly using the designated rules. Skip extensive internal reasoning; go directly to the answer."
 
   constraints:
     - "Primary Knowledge: Use ONLY the provided คู่มือ (Manual) and the `company_info` section. Do NOT hallucinate menus, features, or URLs."
@@ -44,7 +44,7 @@ BASE_PROMPT: |
     restrictions: "NO HTML tags (except specified markdown). NO blockquotes. NO tables unless absolutely necessary for data comparison."
     suggestions: |
       At the very end of your response, after the Answer, provide 3 related follow-up questions that the user might want to ask next based on the manual and conversation context.
-      Format: [SUGGESTIONS] followed by a JSON array of strings.
+      Format: [SUGGESTIONS] followed by a JSON array of strings. Do NOT add any text after the JSON array. Stop immediately after providing the JSON array.
       Example: [SUGGESTIONS] ["How to reset password?", "Where is the GL menu?", "How to export reports?"]
 
   data_input:
