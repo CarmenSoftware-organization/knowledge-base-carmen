@@ -31,6 +31,18 @@ class RetrievalService:
         except Exception as e:
             logger.error(f"❌ Error Initializing AI Brain: {e}")
 
+    async def get_embedding(self, query: str) -> list[float]:
+        """Generate an embedding and truncate it to settings.VECTOR_DIMENSION."""
+        if not self.embeddings:
+            raise ValueError("Embeddings not initialized")
+        
+        # Generate embedding in a thread-safe way for LangChain
+        vector = await asyncio.to_thread(self.embeddings.embed_query, query)
+        
+        # Truncate to match DB schema (Matryoshka Truncation)
+        dim = settings.VECTOR_DIMENSION
+        return vector[:dim]
+
     def format_pgvector(self, vector_list: list[float]) -> str:
         return "[" + ",".join(str(v) for v in vector_list) + "]"
 
@@ -74,11 +86,8 @@ class RetrievalService:
             return passed_docs, source_debug
 
         try:
-            # Generate embedding in a thread-safe way for LangChain
-            query_embedding = await asyncio.to_thread(self.embeddings.embed_query, query)
-            # Truncate to match DB schema (Matryoshka Truncation)
-            dim = settings.VECTOR_DIMENSION
-            query_embedding = query_embedding[:dim]
+            # Generate and truncate embedding centralizing logic
+            query_embedding = await self.get_embedding(query)
             emb_str = self.format_pgvector(query_embedding)
 
             boost_patterns = self.get_path_boost_patterns(query)

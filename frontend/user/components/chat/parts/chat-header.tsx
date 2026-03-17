@@ -48,7 +48,7 @@ export const ChatHeader = React.memo(({
                             animate={{ opacity: [1, 0.3, 1] }}
                             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                         />
-                        {t.header.status_online}
+                        {t("header.status_online")}
                     </div>
                 </div>
             </div>
@@ -57,14 +57,14 @@ export const ChatHeader = React.memo(({
                 <button
                     onClick={() => {
                         if (isProcessing()) {
-                            alert(t.chat.switch_room_block);
+                            alert(t("chat.switch_room_block"));
                             return;
                         }
                         setShowRoomDropdown(!showRoomDropdown);
                     }}
                     disabled={isProcessing()}
                     className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${isProcessing() ? "bg-white/5 opacity-50 cursor-not-allowed" : "bg-white/15 hover:bg-white/25"}`}
-                    title={isProcessing() ? t.chat.status_processing : t.header.history}
+                    title={isProcessing() ? t("chat.status_processing") : t("header.history")}
                 >
                     <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
                         <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7 7.07 7.07 0 0 1-6-3.18l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
@@ -74,7 +74,7 @@ export const ChatHeader = React.memo(({
                 <button
                     onClick={toggleExpand}
                     className="w-8 h-8 rounded-xl items-center justify-center bg-white/15 hover:bg-white/25 transition-colors hidden sm:flex"
-                    title={isExpanded ? t.header.collapse : t.header.expand}
+                    title={isExpanded ? t("header.collapse") : t("header.expand")}
                 >
                     {isExpanded ? (
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="16" height="16">
@@ -91,14 +91,14 @@ export const ChatHeader = React.memo(({
                     <button
                         onClick={() => {
                             if (isProcessing()) {
-                                alert(t.chat.clear_history_block);
+                                alert(t("chat.clear_history_block"));
                                 return;
                             }
                             setClearModal(true);
                         }}
                         disabled={isProcessing()}
                         className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${isProcessing() ? "bg-white/5 opacity-50 cursor-not-allowed" : "bg-white/15 hover:bg-white/25"}`}
-                        title={isProcessing() ? t.chat.status_processing : t.header.clear}
+                        title={isProcessing() ? t("chat.status_processing") : t("header.clear")}
                     >
                         <svg viewBox="0 0 24 24" fill="white" width="16" height="16">
                             <path d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z" />
@@ -109,7 +109,7 @@ export const ChatHeader = React.memo(({
                 <button
                     onClick={toggleOpen}
                     className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/15 hover:bg-white/25 transition-colors"
-                    title={t.header.close}
+                    title={t("header.close")}
                 >
                     <svg viewBox="0 0 24 24" fill="white" width="18" height="18">
                         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />

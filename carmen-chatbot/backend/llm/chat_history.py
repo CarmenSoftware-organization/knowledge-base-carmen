@@ -108,7 +108,7 @@ async def _save_to_db_direct(data: dict) -> bool:
             emb_str = None
             if retrieval_service.embeddings:
                 try:
-                    emb = retrieval_service.embeddings.embed_query(user_query)
+                    emb = await retrieval_service.get_embedding(user_query)
                     emb_str = retrieval_service.format_pgvector(emb)
                 except Exception as e:
                     print(f"[chat_history] embedding failed: {e}")

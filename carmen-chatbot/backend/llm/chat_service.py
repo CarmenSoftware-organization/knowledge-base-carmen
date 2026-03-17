@@ -211,8 +211,10 @@ class LLMService:
             system_base = BASE_PROMPT.split("data_input:")[0].strip()
             # Replace placeholder description in prompt with actual preface phrase
             system_content = system_base.replace("the designated preface phrase", f"'{l['preface']}'")
-            # Overwrite language instruction if needed (already generalized in prompts.yaml)
-            system_content = system_content.replace("the requested language", lang or "Thai")
+            # Map "en"/"th" to full names for better prompt clarity
+            lang_map = {"th": "Thai", "en": "English"}
+            target_lang = lang_map.get(lang, "Thai")
+            system_content = system_content.replace("the requested language", target_lang)
             
             # Extra safeguard for language
             lang_instruction = f"\n\nIMPORTANT: {l['instruction']}"
@@ -391,7 +393,9 @@ class LLMService:
             # Format prompt with dynamic language injection
             system_base = BASE_PROMPT.split("data_input:")[0].strip()
             system_content = system_base.replace("the designated preface phrase", f"'{l['preface']}'")
-            system_content = system_content.replace("the requested language", lang or "Thai")
+            lang_map = {"th": "Thai", "en": "English"}
+            target_lang = lang_map.get(lang, "Thai")
+            system_content = system_content.replace("the requested language", target_lang)
             lang_instruction = f"\n\nIMPORTANT: {l['instruction']}"
 
             messages = [
@@ -415,7 +419,8 @@ class LLMService:
                     output_tokens = usage.get('output_tokens', 0)
 
         except Exception as e:
-            bot_ans = f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {str(e)}"
+            error_msg = str(e)
+            bot_ans = f"Error processing request: {error_msg}" if lang == "en" else f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {error_msg}"
             input_tokens = 0
             output_tokens = 0
 

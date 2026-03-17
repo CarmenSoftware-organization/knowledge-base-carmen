@@ -3,7 +3,6 @@ import { DisplayMessage } from "@/hooks/use-carmen-chat";
 import React, { useState, useMemo, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import DOMPurify from "dompurify";
-import { useTranslations } from "next-intl";
 
 interface Props {
   msg: DisplayMessage;
@@ -14,8 +13,7 @@ interface Props {
   t: any;
 }
 
-const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, onSelect, theme = "#34558b" }: Props) {
-  const t = useTranslations();
+const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, onSelect, theme = "#34558b", t }: Props) {
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const isBot = msg.role === "bot";
@@ -242,7 +240,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
               visible: {
                 opacity: 1,
                 height: "auto",
-                marginTop: 12,
+                marginTop: 8,
                 transition: {
                   staggerChildren: 0.08,
                   delayChildren: 0.1,
@@ -263,7 +261,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                 }
               }
             }}
-            className="flex flex-wrap items-start justify-start gap-2 mb-1 overflow-hidden"
+            className="flex flex-wrap items-start justify-start gap-2 mb-1 overflow-hidden p-1 -ml-1"
           >
             {msg.suggestions.map((s, i) => (
               <motion.button
@@ -287,8 +285,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                     transition: { duration: 0.2 }
                   }
                 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => onSelect?.(s, msg.id)}
                 className="text-[13px] px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-medium transition-all shadow-sm hover:shadow-md outline-none cursor-pointer text-left w-fit"
               >

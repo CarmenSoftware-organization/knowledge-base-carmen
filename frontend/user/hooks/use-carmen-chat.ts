@@ -126,8 +126,8 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   });
   const [tooltipData, setTooltipData] = useState<{ visible: boolean; message: string; subMessage?: string }>({
     visible: false,
-    message: localT.header.status_online,
-    subMessage: localT.welcome.desc,
+    message: t("header.status_online"),
+    subMessage: t("welcome.desc"),
   });
   const [position, setPosition] = useState<{
     bottom: string | number;
@@ -142,7 +142,22 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const isUserStopRef = useRef(false);
   const isProcessingRef = useRef(false);
   const statusTimers = useRef<NodeJS.Timeout[]>([]);
-  const suggestions = config.suggestedQuestions ?? localT.welcome.default_suggestions;
+  const suggestions = config.suggestedQuestions ?? locales[locale].welcome.default_suggestions;
+
+  // Locale-aware translator that respects config.locale
+  const translator = (path: string) => {
+    const parts = path.split(".");
+    let current: any = locales[locale];
+    for (const part of parts) {
+      if (current && typeof current === "object" && part in current) {
+        current = current[part];
+      } else {
+        // Fallback to next-intl if key missing in hardcoded locales
+        try { return t(path); } catch (e) { return path; }
+      }
+    }
+    return typeof current === "string" ? current : path;
+  };
 
   useEffect(() => {
     const wasOpen = localStorage.getItem(`carmen_open_${config.bu}`) === "true";
@@ -684,9 +699,8 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   }
 
   async function sendMessage(text?: string, sourceMsgId?: string) {
-    if (sourceMsgId) {
-      setMessages((prev) => prev.map((m) => m.id === sourceMsgId ? { ...m, suggestions: [] } : m));
-    }
+    // Clear ALL suggestions from previous messages when user sends a new one (manual or chip)
+    setMessages((prev) => prev.map((m) => m.suggestions && m.suggestions.length > 0 ? { ...m, suggestions: [] } : m));
     const msgText = text ?? inputValue.trim();
     if (!msgText && !imageBase64) return;
 
@@ -726,10 +740,13 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       role: "bot",
       html: "",
       isQueued: true,
-      statusText: t("waitingQueue") + "...",
+      statusText: t("chat.status_waiting") + "...",
     };
 
-    setMessages((prev) => [...prev, userMsg, botPlaceholder]);
+    setMessages((prev) => {
+      const cleared = prev.map((m) => m.suggestions && m.suggestions.length > 0 ? { ...m, suggestions: [] } : m);
+      return [...cleared, userMsg, botPlaceholder];
+    });
     setShowSuggestions(false);
 
     await api.saveMessage(roomId, {
@@ -816,7 +833,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     suggestions,
     config,
     api,
-    t,
+    t: translator,
     setInputValue,
     setImageBase64,
     setShowRoomDropdown,

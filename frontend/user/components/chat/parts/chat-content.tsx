@@ -170,7 +170,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
     function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { alert(t.chat.placeholder === "Type your message here..." ? "File too large. Max 5MB." : "ไฟล์ใหญ่เกินไป ไม่เกิน 5MB"); return; }
+        if (file.size > 5 * 1024 * 1024) { alert(t("chat.placeholder") === "Type your message here..." ? "File too large. Max 5MB." : "ไฟล์ใหญ่เกินไป ไม่เกิน 5MB"); return; }
         const reader = new FileReader();
         reader.onload = (ev) => setImageBase64(ev.target?.result as string);
         reader.readAsDataURL(file);
@@ -181,9 +181,9 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             <AnimatePresence>
                 {deleteModal.open && deleteModal.roomId && (
                     <CarmenModal
-                        title={t.modal.delete_title}
-                        description={t.modal.delete_desc}
-                        confirmText={t.modal.delete_confirm} cancelText={t.modal.cancel}
+                        title={t("modal.delete_title")}
+                        description={t("modal.delete_desc")}
+                        confirmText={t("modal.delete_confirm")} cancelText={t("modal.cancel")}
                         onConfirm={confirmDeleteRoom}
                         onCancel={() => setDeleteModal({ open: false, roomId: null })}
                     />
@@ -192,9 +192,9 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             <AnimatePresence>
                 {clearModal && (
                     <CarmenModal
-                        title={t.modal.clear_title}
-                        description={t.modal.clear_desc}
-                        confirmText={t.modal.clear_confirm} cancelText={t.modal.cancel}
+                        title={t("modal.clear_title")}
+                        description={t("modal.clear_desc")}
+                        confirmText={t("modal.clear_confirm")} cancelText={t("modal.cancel")}
                         onConfirm={confirmClearHistory}
                         onCancel={() => setClearModal(false)}
                     />
@@ -270,7 +270,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                                         exit={{ opacity: 0, scale: 0.8 }}
                                         className="bg-slate-700/60 backdrop-blur-sm text-white/80 text-[11px] font-medium px-2 py-1 rounded-lg border border-white/5 mb-1"
                                     >
-                                        {t.chat.remaining_queue(remainingCount)}
+                                        {t("chat.remaining_queue", { count: remainingCount })}
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -301,7 +301,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                         onClick={() => scrollToBottom(true, false)}
                         className="absolute bottom-[110px] left-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg z-50 transition-transform hover:scale-110 active:scale-95"
                         style={{ background: `linear-gradient(135deg, ${theme}, ${theme}dd)` }}
-                        title={t.tools.scroll_down}
+                        title={t("tools.scroll_down")}
                     >
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                             <path d="M11 4v12.59l-3.3-3.29L6.29 14.7l5 5 .09.08.09.06.06.03.11.04h.12.12l.11-.04.06-.03.09-.06.09-.08 5-5-1.42-1.41-3.3 3.29V4h-2z" />
@@ -336,8 +336,8 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                         title={alertModal.title}
                         description={alertModal.description}
                         variant={alertModal.variant}
-                        confirmText={t.modal.ok}
-                        cancelText={t.header.close}
+                        confirmText={t("modal.ok")}
+                        cancelText={t("header.close")}
                         onConfirm={() => setAlertModal({ ...alertModal, open: false })}
                         onCancel={() => setAlertModal({ ...alertModal, open: false })}
                     />

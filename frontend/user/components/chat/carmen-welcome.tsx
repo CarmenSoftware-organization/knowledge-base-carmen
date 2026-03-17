@@ -9,8 +9,8 @@ interface Props {
 }
 
 export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b", t }: Props) {
-  const WELCOME_TITLE = t.welcome.title;
-  const WELCOME_DESC = t.welcome.desc;
+  const WELCOME_TITLE = t("welcome.title");
+  const WELCOME_DESC = t("welcome.desc");
   const [typedTitle, setTypedTitle] = useState("");
   const [showDesc, setShowDesc] = useState(false);
   const [showChips, setShowChips] = useState(false);

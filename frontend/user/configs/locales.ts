@@ -28,6 +28,7 @@ export interface LocaleStrings {
     delete_room_block: string;
     clear_history_block: string;
     remaining_queue: (count: number) => string;
+    stop_generation: string;
   };
   header: {
     history: string;
@@ -91,6 +92,7 @@ export const locales: Record<LocaleKey, LocaleStrings> = {
       delete_room_block: "ไม่สามารถลบห้องได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่",
       clear_history_block: "ไม่สามารถล้างแชทได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่",
       remaining_queue: (count) => `+ อีก ${count} ข้อความในคิว`,
+      stop_generation: "หยุดการสร้างคำตอบ"
     },
     header: {
       history: "ประวัติการสนทนา",
@@ -152,6 +154,7 @@ export const locales: Record<LocaleKey, LocaleStrings> = {
       delete_room_block: "Cannot delete rooms while processing. Please wait.",
       clear_history_block: "Cannot clear chat while processing. Please wait.",
       remaining_queue: (count) => `+ ${count} more in queue`,
+      stop_generation: "Stop generation"
     },
     header: {
       history: "Chat History",
