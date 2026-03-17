@@ -120,11 +120,18 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             }
         };
 
+        const handleSmoothScroll = () => {
+            if (!userHasScrolledUp && el) {
+                scrollToBottom(false, false); // smooth
+            }
+        };
+
         el.addEventListener("scroll", handleScroll, { passive: true });
         el.addEventListener("wheel", userInteractionHandler, { passive: true });
         el.addEventListener("touchstart", userInteractionHandler, { passive: true });
         el.addEventListener("touchmove", userInteractionHandler, { passive: true });
         window.addEventListener("carmen-typing-frame", handleTypingFrame);
+        window.addEventListener("carmen-scroll-smooth", handleSmoothScroll);
 
         return () => {
             el.removeEventListener("scroll", handleScroll);
@@ -132,6 +139,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             el.removeEventListener("touchstart", userInteractionHandler);
             el.removeEventListener("touchmove", userInteractionHandler);
             window.removeEventListener("carmen-typing-frame", handleTypingFrame);
+            window.removeEventListener("carmen-scroll-smooth", handleSmoothScroll);
         };
     }, [userHasScrolledUp]);
 

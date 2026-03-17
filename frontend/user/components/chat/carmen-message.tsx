@@ -8,11 +8,12 @@ interface Props {
   msg: DisplayMessage;
   onFeedback?: (msgId: string, score: number) => void;
   onRetry?: (errorText: string) => void;
+  onSelect?: (text: string, sourceMsgId?: string) => void;
   theme?: string;
   t: any;
 }
 
-const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, theme = "#34558b", t }: Props) {
+const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, onSelect, theme = "#34558b", t }: Props) {
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const isBot = msg.role === "bot";
@@ -225,6 +226,50 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
           </div>
         )}
       </div>
+
+      {isBot && msg.suggestions && msg.suggestions.length > 0 && (
+        <motion.div 
+          key={`suggestions-${msg.id}-${msg.suggestions.length}`}
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.3,
+              }
+            }
+          }}
+          className="flex flex-wrap items-start justify-start gap-2 mt-3 mb-1 overflow-visible"
+        >
+          {msg.suggestions.map((s, i) => (
+            <motion.button
+              key={`${msg.id}-sugg-${i}`}
+              variants={{
+                hidden: { opacity: 0, y: 15, scale: 0.9 },
+                visible: { 
+                  opacity: 1, 
+                  y: 0, 
+                  scale: 1,
+                  transition: { 
+                    type: "spring", 
+                    stiffness: 300, 
+                    damping: 20 
+                  }
+                }
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onSelect?.(s, msg.id)}
+              className="text-[13px] px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-medium transition-all shadow-sm hover:shadow-md outline-none cursor-pointer text-left w-fit"
+            >
+              {s}
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
     </div>
   );
 });

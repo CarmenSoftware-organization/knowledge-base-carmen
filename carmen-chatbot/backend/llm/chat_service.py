@@ -54,7 +54,7 @@ class LLMService:
                 openai_api_key=self.api_key,
                 openai_api_base=self.api_base,
                 temperature=1.0,
-                max_tokens=2048,
+                max_tokens=4096,
                 streaming=streaming,
                 extra_body={"thinking": {"type": "disabled"}},
                 **({"stream_usage": True} if streaming else {})
@@ -65,7 +65,7 @@ class LLMService:
                 openai_api_key=self.api_key or settings.OPENROUTER_API_KEY,
                 openai_api_base=self.api_base,
                 temperature=0.3,
-                max_tokens=2048,
+                max_tokens=4096,
                 streaming=streaming,
                 **({"stream_usage": True} if streaming else {})
             )
@@ -217,6 +217,7 @@ class LLMService:
 
             accumulated = None
             first_token_time = None
+            yielded_text_len = 0
             async for chunk in llm.astream(messages):
                 if request and await request.is_disconnected():
                     print("🛑 Client disconnected during streaming. stopping...")
@@ -229,8 +230,46 @@ class LLMService:
                 accumulated = chunk if accumulated is None else accumulated + chunk
                 if chunk.content:
                     full_response += chunk.content
-                    yield json.dumps({"type": "chunk", "data": chunk.content}) + "\n"
+                    
+                    # Robust yielding logic to handle [SUGGESTIONS] tag
+                    tag = "[SUGGESTIONS]"
+                    if tag in full_response:
+                        # Extract the part before the tag that hasn't been yielded yet
+                        tag_index = full_response.find(tag)
+                        to_yield = full_response[yielded_text_len:tag_index]
+                        if to_yield:
+                            yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
+                            yielded_text_len += len(to_yield)
+                        # We stop yielding any more chunks after the tag is detected
+                    else:
+                        # Check if the end of full_response looks like the start of the tag
+                        # to avoid leakage of partial tag during streaming
+                        potential_limit = len(full_response)
+                        for i in range(len(tag), 0, -1):
+                            prefix = tag[:i]
+                            if full_response.endswith(prefix):
+                                potential_limit = len(full_response) - i
+                                break
+                        
+                        to_yield = full_response[yielded_text_len:potential_limit]
+                        if to_yield:
+                            yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
+                            yielded_text_len += len(to_yield)
             last_chunk = accumulated
+
+            # Extract suggestions and clean up full_response for logging/storage
+            suggestions = []
+            if tag in full_response:
+                parts = full_response.split(tag)
+                full_response = parts[0].strip()
+                try:
+                    suggestions_json = parts[1].replace("```json", "").replace("```", "").strip()
+                    suggestions = json.loads(suggestions_json)
+                except Exception as e:
+                    print(f"⚠️ Failed to parse suggestions: {e}")
+            
+            if suggestions:
+                yield json.dumps({"type": "suggestions", "data": suggestions}) + "\n"
         except Exception as e:
             error_msg = str(e)
             print(f"❌ LLM Error: {error_msg}")

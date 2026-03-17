@@ -17,6 +17,7 @@ export interface DisplayMessage {
   errorText?: string;
   statusText?: string;
   timestamp?: string;
+  suggestions?: string[];
 }
 
 export interface CarmenChatConfig {
@@ -79,7 +80,7 @@ export interface UseCarmenChatReturn {
   toggleExpand: () => void;
   createNewChat: () => void;
   switchRoom: (roomId: string) => void;
-  sendMessage: (text?: string) => void;
+  sendMessage: (text?: string, sourceMsgId?: string) => void;
   retryMessage: (errorText: string) => void;
   sendFeedback: (msgId: string, score: number) => void;
   confirmDeleteRoom: () => void;
@@ -501,14 +502,13 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       let typingBuffer = "";
       let displayedText = "";
       let isStreamingActive = true;
+      let bufferedSuggestions: string[] | null = null;
 
       // Concurrent typing animation loop
       const processTyping = () => {
         if (signal.aborted) return; // Stop animation immediately if room changed
         if (typingBuffer.length > 0) {
           // Truly Smooth Typewriter: 60fps Native refresh rate
-          // 1 char per frame (~60 chars/sec) is generally fast enough and ultra-smooth.
-          // We only take 2 if the stream is rushing way ahead. Never chunk >2 to avoid blockiness.
           const charsToTake = typingBuffer.length > 40 ? 2 : 1;
           displayedText += typingBuffer.substring(0, charsToTake);
           typingBuffer = typingBuffer.substring(charsToTake);
@@ -531,8 +531,14 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           // Final clean update to render all tokens (tokens processed in CarmenMessage)
           const finalHtml = formatCarmenMessage(displayedText, api.baseUrl);
           setMessages((prev) =>
-            prev.map((m) => (m.id === botMsgId ? { ...m, html: finalHtml } : m))
+            prev.map((m) => (m.id === botMsgId ? { ...m, html: finalHtml, suggestions: bufferedSuggestions || m.suggestions } : m))
           );
+          
+          // Trigger scroll after bot finishes and suggestions appear
+          window.dispatchEvent(new CustomEvent("carmen-scroll-smooth"));
+          // Wait for staggered animation to start/complete and scroll again
+          setTimeout(() => window.dispatchEvent(new CustomEvent("carmen-scroll-smooth")), 300);
+          setTimeout(() => window.dispatchEvent(new CustomEvent("carmen-scroll-smooth")), 800);
         }
       };
 
@@ -566,6 +572,9 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
               setMessages((prev) =>
                 prev.map((m) => (m.id === botMsgId ? { ...m, sources: src } : m))
               );
+            } else if (parsed.type === "suggestions") {
+              // Buffer suggestions instead of applying immediately
+              bufferedSuggestions = parsed.data;
             } else if (parsed.type === "done") {
               finalMsgId = parsed.id;
               const finalSources = parsed.sources || null;
@@ -590,6 +599,8 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
             accumulated += parsed.data;
           } else if (parsed.type === "done" && !finalMsgId) {
              finalMsgId = parsed.id;
+          } else if (parsed.type === "suggestions") {
+             bufferedSuggestions = parsed.data;
           }
         } catch (e) {
           console.warn("Final lineBuffer parse error:", e);
@@ -602,7 +613,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       // Wait for the typing buffer to fully drain before saving the final message
       await new Promise<void>((resolve) => {
         const checkDone = () => {
-          if (typingBuffer.length === 0 || signal.aborted) resolve();
+          if ((typingBuffer.length === 0 && !isStreamingActive) || signal.aborted) resolve();
           else setTimeout(checkDone, 20); // Faster check-in for final completion
         };
         checkDone();
@@ -670,7 +681,10 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     isUserStopRef.current = false;
   }
 
-  async function sendMessage(text?: string) {
+  async function sendMessage(text?: string, sourceMsgId?: string) {
+    if (sourceMsgId) {
+      setMessages((prev) => prev.map((m) => m.id === sourceMsgId ? { ...m, suggestions: [] } : m));
+    }
     const msgText = text ?? inputValue.trim();
     if (!msgText && !imageBase64) return;
 
@@ -768,7 +782,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     switchRoomRef.current = switchRoom;
   });
 
-  const stableSendMessage = useState(() => (text?: string) => sendMessageRef.current(text))[0];
+  const stableSendMessage = useState(() => (text?: string, sourceMsgId?: string) => sendMessageRef.current(text, sourceMsgId))[0];
   const stableRetryMessage = useState(() => (errorText: string) => retryMessageRef.current(errorText))[0];
   const stableSendFeedback = useState(() => (msgId: string, score: number) => sendFeedbackRef.current(msgId, score))[0];
   
