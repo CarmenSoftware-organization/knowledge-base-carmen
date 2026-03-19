@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,7 @@ import { useTheme } from "next-themes";
 import { BUSwitcher } from "./bu-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { useTranslations } from "next-intl";
+import { getCategory } from "@/lib/wiki-api";
 
 const headerVariants: Variants = {
   hidden: { y: -60, opacity: 0 },
@@ -41,6 +42,8 @@ const mobileMenuVariants: Variants = {
 export function KBHeader() {
   const t = useTranslations("common");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
+  const [changelogItems, setChangelogItems] = useState<{ slug: string; title: string }[]>([]);
   const pathname = usePathname();
   const isHome = pathname === "/";
 
@@ -48,6 +51,34 @@ export function KBHeader() {
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const changelogTitleMap: Record<string, string> = {
+    mar2026: "March 2026 Release Information",
+    feb2026: "February 2026 Release Information",
+    nov2025: "November 2025 Release Information",
+    sep2025: "September 2025 Release Information",
+    jul2025: "July 2025 Release Information",
+    may2025: "May 2025 Release Information",
+    apr2025: "April 2025 Release Information",
+    mar2025: "March 2025 Release Information",
+    jan2025: "January 2025 Release Information",
+    nov2024: "November 2024 Release Information",
+    aug2024: "August 2024 Release Information",
+    june2024: "June 2024 Release Information",
+    may2024: "May 2024 Release Information",
+  };
+
+  useEffect(() => {
+    if (!changelogOpen || changelogItems.length > 0) return;
+    // โหลด changelog จากหมวด changelog (ถ้าไม่มี จะเงียบ ๆ)
+    getCategory("changelog")
+      .then((data) => {
+        setChangelogItems(data.items || []);
+      })
+      .catch(() => {
+        setChangelogItems([]);
+      });
+  }, [changelogOpen, changelogItems.length]);
 
   const logoSrc = mounted && resolvedTheme === "dark"
     ? "/carmen-logo-light.png"
@@ -92,11 +123,59 @@ export function KBHeader() {
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/categories">{t("categories")}</Link>
               </Button>
+
+              {/* Changelog dropdown */}
+              <div
+                className="relative"
+                onMouseEnter={() => setChangelogOpen(true)}
+                onMouseLeave={() => setChangelogOpen(false)}
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <span>Changelog</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+
+                <AnimatePresence>
+                  {changelogOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-1 w-72 rounded-xl border bg-popover shadow-lg z-50 py-2"
+                    >
+                      {changelogItems.length === 0 && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground">
+                          ยังไม่มีรายการ Changelog
+                        </div>
+                      )}
+                      {changelogItems.map((item) => {
+                        const slug = item.slug;
+                        const label =
+                          changelogTitleMap[slug] ||
+                          item.title ||
+                          slug;
+                        return (
+                          <Link
+                            key={slug}
+                            href={`/categories/changelog/${encodeURIComponent(slug)}`}
+                            className="block px-3 py-2 text-xs text-left hover:bg-muted transition-colors"
+                          >
+                            {label}
+                          </Link>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/faq">FAQ</Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/activity">{t("forStaff")}</Link>
               </Button>
             </nav>
 
@@ -146,11 +225,28 @@ export function KBHeader() {
                 <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/categories">{t("categories")}</Link>
                 </Button>
-                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild>
-                  <Link href="/faq" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
-                </Button>
-                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild>
-                  <Link href="/activity" onClick={() => setMobileMenuOpen(false)}>{t("forStaff")}</Link>
+                {changelogItems.map((item) => {
+                  const slug = item.slug;
+                  const label =
+                    changelogTitleMap[slug] ||
+                    item.title ||
+                    slug;
+                  return (
+                    <Button
+                      key={slug}
+                      variant="ghost"
+                      className="justify-start h-12 rounded-xl"
+                      asChild
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Link href={`/categories/changelog/${encodeURIComponent(slug)}`}>
+                        {label}
+                      </Link>
+                    </Button>
+                  );
+                })}
+                <Button variant="ghost" className="justify-start h-12 rounded-xl" asChild onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/faq">FAQ</Link>
                 </Button>
                 <div className="px-3 py-1">
                   <LanguageSwitcher />

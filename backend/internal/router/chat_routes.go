@@ -26,5 +26,5 @@ func RegisterPublicChat(app *fiber.App) {
 	app.Post("/api/chat/feedback/:message_id", chatHandler.Proxy)
 
 	// Image routing (Forwarded to Python Chatbot)
-	app.Get("/images/*", chatHandler.Proxy)
+	app.Get("/images/*", chatHandler.Image)
 }

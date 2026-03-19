@@ -29,7 +29,10 @@ export default async function ArticlePage({ params }: Props) {
 
   const cookieStore = await cookies();
   const bu = cookieStore.get("selected_bu")?.value || "carmen";
-  const locale = cookieStore.get("NEXT_LOCALE")?.value || "th";
+  const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
+
+  // changelog ใช้ภาษาอังกฤษตรง ๆ (ไม่ผ่าน translate)
+  const locale = category.toLowerCase() === "changelog" ? "en" : cookieLocale;
 
   const path = `${category}/${article}.md`;
 

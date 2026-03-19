@@ -92,7 +92,6 @@ export function HeroSection() {
         </motion.p>
 
         <motion.div variants={fadeUp} className="mt-10 max-w-xl mx-auto relative">
-         
           <GlobalSearch variant="hero" defaultValue={searchQuery} />
 
           <div className="mt-6 flex flex-wrap justify-center gap-x-3 gap-y-2">
