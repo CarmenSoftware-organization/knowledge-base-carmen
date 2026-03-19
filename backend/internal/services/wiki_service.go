@@ -368,7 +368,7 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
                 END AS text_boost
             FROM %s.document_chunks dc
             JOIN %s.documents d ON dc.document_id = d.id
-            WHERE (dc.embedding <-> ?::vector) < ?
+            WHERE (dc.embedding <=> ?::vector) < ?
         )
         SELECT path, title, snippet,
                (vector_dist - text_boost) AS final_score

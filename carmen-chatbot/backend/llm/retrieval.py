@@ -4,6 +4,7 @@ import re
 import asyncio
 from sqlalchemy import text
 from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
 from ..core.config import settings
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class RetrievalService:
     TOP_K = 4
-    MAX_DISTANCE = 0.6
+    MAX_DISTANCE = 0.75
     PATH_BOOST = 0.08
     FETCH_K = 20  
 
@@ -23,25 +24,67 @@ class RetrievalService:
 
     def initialize_brain(self):
         try:
-            self.embeddings = OllamaEmbeddings(
-                model=settings.OLLAMA_EMBED_MODEL,
-                base_url=settings.OLLAMA_URL,
-                client_kwargs={"timeout": 60.0}
-            )
+            provider = settings.ACTIVE_LLM_PROVIDER.lower()
+            if provider == "openrouter":
+                logger.info(f"🧠 Initializing AI Brain (OpenRouter) using {settings.OPENROUTER_EMBED_MODEL}")
+                self.embeddings = OpenAIEmbeddings(
+                    model=settings.OPENROUTER_EMBED_MODEL,
+                    openai_api_key=settings.OPENROUTER_API_KEY,
+                    openai_api_base="https://openrouter.ai/api/v1",
+                )
+            else:
+                logger.info(f"🧠 Initializing AI Brain (Ollama) using {settings.OLLAMA_EMBED_MODEL}")
+                self.embeddings = OllamaEmbeddings(
+                    model=settings.OLLAMA_EMBED_MODEL,
+                    base_url=settings.OLLAMA_URL,
+                    client_kwargs={"timeout": 60.0}
+                )
         except Exception as e:
             logger.error(f"❌ Error Initializing AI Brain: {e}")
 
     async def get_embedding(self, query: str) -> list[float]:
-        """Generate an embedding and truncate it to settings.VECTOR_DIMENSION."""
-        if not self.embeddings:
-            raise ValueError("Embeddings not initialized")
-        
-        # Generate embedding in a thread-safe way for LangChain
-        vector = await asyncio.to_thread(self.embeddings.embed_query, query)
-        
-        # Truncate to match DB schema (Matryoshka Truncation)
-        dim = settings.VECTOR_DIMENSION
-        return vector[:dim]
+        """Generate an embedding via raw OpenRouter API and truncate/normalize it."""
+        try:
+            url = "https://openrouter.ai/api/v1/embeddings"
+            headers = {
+                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://github.com/new-carmen",
+                "X-Title": "Carmen Chatbot"
+            }
+            data = {
+                "model": settings.OPENROUTER_EMBED_MODEL,
+                "input": [query]
+            }
+            
+            # Use requests in a thread for sync-to-async compatibility
+            import requests
+            import numpy as np
+            
+            def call_api():
+                resp = requests.post(url, headers=headers, json=data, timeout=30)
+                resp.raise_for_status()
+                return resp.json()
+                
+            res_json = await asyncio.to_thread(call_api)
+            
+            if "data" not in res_json or not res_json["data"]:
+                raise ValueError(f"OpenRouter embedding failed: {res_json}")
+                
+            vector = res_json["data"][0]["embedding"]
+            
+            # Truncate and Normalize for Matryoshka
+            dim = settings.VECTOR_DIMENSION
+            truncated = vector[:dim]
+            
+            norm = np.linalg.norm(truncated)
+            if norm > 1e-9:
+                truncated = (np.array(truncated) / norm).tolist()
+                
+            return truncated
+        except Exception as e:
+            logger.error(f"❌ Raw Embedding Error: {e}")
+            raise
 
     def format_pgvector(self, vector_list: list[float]) -> str:
         return "[" + ",".join(str(v) for v in vector_list) + "]"
@@ -71,14 +114,17 @@ class RetrievalService:
             
         return all_patterns
 
-    SAFE_SCHEMA_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+    # Stricter pattern: allow only lowercase alphanumeric and underscores, 
+    # and limit length to prevent DoS/overflow (e.g., 63 chars for PG identifiers).
+    SAFE_SCHEMA_PATTERN = re.compile(r'^[a-z][a-z0-9_]{1,62}$')
 
     async def search(self, query: str, db_schema: str = "carmen"):
         passed_docs = []
         source_debug = []
 
-        if not self.SAFE_SCHEMA_PATTERN.match(db_schema):
-            logger.warning(f"Invalid schema name: {db_schema}")
+        # Validate schema name strictly
+        if not db_schema or not self.SAFE_SCHEMA_PATTERN.match(db_schema):
+            logger.warning(f"🛡️ Security: Invalid or suspicious schema name blocked: '{db_schema}'")
             return passed_docs, source_debug
         
         if not self.embeddings:

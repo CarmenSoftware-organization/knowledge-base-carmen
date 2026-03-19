@@ -1,4 +1,5 @@
 import json
+import re
 import time
 import asyncio
 import logging
@@ -88,6 +89,48 @@ class LLMService:
         model_name = override_model or self.default_model
         return {"name": model_name, "input_rate": 0, "output_rate": 0}
 
+    def _sanitize_input(self, text: str) -> str:
+        """Strip XML-like tags to prevent prompt injection tag breakout."""
+        if not text: return ""
+        return re.sub(r'</?(user_input|context|history|chat_history|manual|system_instruction)[^>]*>', '', text, flags=re.IGNORECASE)
+
+    def _format_error(self, e: Exception, lang: str = "th") -> str:
+        """Format raw LLM errors into user-friendly messages, stripping technical metadata/HTML."""
+        error_str = str(e)
+        
+        # 🛡️ Detect Security Blocks (e.g. 405 from StepFun/OpenRouter)
+        if "405" in error_str or "security" in error_str.lower() or "blocked" in error_str.lower():
+            return (
+                "Security Policy: This request was blocked due to potentially unsafe content." 
+                if lang == "en" else 
+                "นโยบายความปลอดภัย: คำขอถูกระงับเนื่องจากตรวจพบบางอย่างที่ไม่เหมาะสม"
+            )
+            
+        # 🕒 Detect Rate Limits (429)
+        if "429" in error_str or "rate limit" in error_str.lower():
+            return (
+                "Too many requests. Please slow down and try again in a moment." 
+                if lang == "en" else 
+                "มีการเรียกใช้งานมากเกินไป กรุณาลองใหม่ในภายหลัง"
+            )
+
+        # 🚧 Detect Provider Downtime (5xx)
+        if any(code in error_str for code in ["500", "502", "503"]):
+             return (
+                "The AI service is currently unavailable. Please try again later." 
+                if lang == "en" else 
+                "บริการ AI ขัดข้องชั่วคราว กรุณาลองใหม่ในภายหลัง"
+            )
+
+        # 🧹 Clean up raw HTML if present (some providers return HTML on 4xx/5xx)
+        if "<!doctype" in error_str.lower() or "<html" in error_str.lower():
+             # Strip HTML parts to keep only the error code if possible
+             match = re.search(r"Error code: (\d+)", error_str)
+             code = match.group(1) if match else "Unknown"
+             return f"AI Service Error ({code}). Please try again." if lang == "en" else f"เกิดข้อผิดพลาดจากบริการ AI ({code}) กรุณาลองใหม่"
+
+        return error_str
+
     # ==========================================
     # 🔄 QUERY REWRITING (for follow-up questions)
     # ==========================================
@@ -106,7 +149,8 @@ class LLMService:
             
             # Split into system instructions and user data
             system_part = REWRITE_PROMPT.split("Conversation:")[0].strip()
-            human_part = f"Conversation:\n{history_text}\n\nLatest message: {message}\n\nStandalone Query:"
+            sanitized_message = self._sanitize_input(message)
+            human_part = f"Conversation:\n<history>{history_text}</history>\n\nLatest message: <user_input>{sanitized_message}</user_input>\n\nStandalone Query:"
             
             messages = [
                 SystemMessage(content=system_part),
@@ -276,9 +320,10 @@ class LLMService:
             # Extra safeguard for language
             lang_instruction = f"\n\nIMPORTANT: {l['instruction']}"
             
+            sanitized_message = self._sanitize_input(message)
             messages = [
                 SystemMessage(content=system_content + lang_instruction),
-                HumanMessage(content=f"คู่มือ:\n{context_text}\n\nChat History:\n{history_text}\n\nQuestion: {message}\n\nAnswer:")
+                HumanMessage(content=f"คู่มือ:\n<context>{context_text}</context>\n\nChat History:\n<chat_history>{history_text}</chat_history>\n\nQuestion: <user_input>{sanitized_message}</user_input>\n\nAnswer:")
             ]
 
             accumulated = None
@@ -359,8 +404,8 @@ class LLMService:
             if suggestions:
                 yield json.dumps({"type": "suggestions", "data": suggestions}) + "\n"
         except Exception as e:
-            error_msg = str(e)
-            print(f"❌ LLM Error: {error_msg}")
+            error_msg = self._format_error(e, lang)
+            print(f"❌ LLM Error: {e}") # Log full error to console
             fallback_response = f"Error processing request: {error_msg}" if lang == "en" else f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {error_msg}"
             yield json.dumps({"type": "chunk", "data": fallback_response}) + "\n"
             yield json.dumps({"type": "done", "id": 0}) + "\n"
@@ -491,11 +536,13 @@ class LLMService:
             lang_map = {"th": "Thai", "en": "English"}
             target_lang = lang_map.get(lang, "Thai")
             system_content = system_content.replace("the requested language", target_lang)
+            # Extra safeguard for language
             lang_instruction = f"\n\nIMPORTANT: {l['instruction']}"
-
+            
+            sanitized_message = self._sanitize_input(message)
             messages = [
                 SystemMessage(content=system_content + lang_instruction),
-                HumanMessage(content=f"คู่มือ:\n{context_text}\n\nChat History:\n{history_text}\n\nQuestion: {message}\n\nAnswer:")
+                HumanMessage(content=f"คู่มือ:\n<context>{context_text}</context>\n\nChat History:\n<chat_history>{history_text}</chat_history>\n\nQuestion: <user_input>{sanitized_message}</user_input>\n\nAnswer:")
             ]
             
             response = await llm.ainvoke(messages)
@@ -514,7 +561,8 @@ class LLMService:
                     output_tokens = usage.get('output_tokens', 0)
 
         except Exception as e:
-            error_msg = str(e)
+            error_msg = self._format_error(e, lang)
+            print(f"❌ LLM Error: {e}") # Log full error to console
             bot_ans = f"Error processing request: {error_msg}" if lang == "en" else f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {error_msg}"
             input_tokens = 0
             output_tokens = 0

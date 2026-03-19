@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 
 from ..core.schemas import ChatRequest
 from ..llm.chat_service import chat_service
+from slowapi.errors import RateLimitExceeded
 from ..core.rate_limit import limiter
 from ..core.config import settings
 
@@ -48,7 +49,8 @@ async def chat_endpoint(request: Request, req: ChatRequest):
 # 🧹 3. CLEAR CHAT HISTORY (In-Memory)
 # ==========================================
 @router.delete("/clear/{room_id}", summary="Clear in-memory chat history for a room")
-async def clear_chat_history(room_id: str):
+@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
+async def clear_chat_history(request: Request, room_id: str):
     chat_service.clear_history(room_id)
     return {"status": "ok", "room_id": room_id}
 

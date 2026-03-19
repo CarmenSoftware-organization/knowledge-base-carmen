@@ -7,13 +7,12 @@ setup_logging()
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from pathlib import Path
 from functools import lru_cache
 
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from .core.rate_limit import limiter
@@ -42,15 +41,38 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Carmen Chatbot System", lifespan=lifespan)
 
+from slowapi.middleware import SlowAPIMiddleware
+
 # Initialize Rate Limiter
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# Some versions of slowapi require explicit init_app or it might not bind to routers correctly
+if hasattr(limiter, "init_app"):
+    limiter.init_app(app)
+app.add_middleware(SlowAPIMiddleware)
 
-# CORS
+@app.exception_handler(RateLimitExceeded)
+async def custom_rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    """Custom handler for RateLimitExceeded to provide a clearer user message."""
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": "Too Many Requests. Please slow down.",
+            "error_code": "RATE_LIMIT_EXCEEDED",
+            "message": "You have exceeded the rate limit. Please try again in a moment."
+        },
+        headers={"Retry-After": str(exc.detail)}
+    )
+
+# CORS - Hardened for Production readiness
+cors_origins = settings.CORS_ORIGINS
+# Security Warning: If Origins is *, allow_credentials must be False to be standard-compliant in some cases
+# but more importantly, it should be restricted to known domains.
+is_wildcard = "*" in cors_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=not is_wildcard, # Safer default: disable credentials on wildcard
     allow_methods=["*"],
     allow_headers=["*"]
 )
@@ -95,7 +117,8 @@ def find_image_path(filename: str) -> Path | None:
     return None
 
 @app.get("/images/{filename:path}")
-async def get_image(filename: str):
+@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
+async def get_image(filename: str, request: Request):
     # ⚡ Pass the full filename (path) to find_image_path instead of just the basename
     # ⚡ Use LRU Cache to find the resolved path instantly
     resolved_path = find_image_path(filename)

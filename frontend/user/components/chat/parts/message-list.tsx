@@ -51,7 +51,7 @@ export const MessageList = React.memo(({
                         className="flex flex-col gap-4"
                     >
                         <AnimatePresence initial={false}>
-                            {messages.filter((m: any) => !m.isQueued || m.role === "bot").map((msg: any) => (
+                            {messages.map((msg: any) => (
                                 <motion.div
                                     key={msg.id}
                                     initial={{ opacity: 0, y: 14, scale: 0.96 }}

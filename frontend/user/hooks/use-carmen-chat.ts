@@ -13,7 +13,6 @@ export interface DisplayMessage {
   html: string;
   msgId?: string;
   sources?: (string | { source: string; title?: string; score?: number })[] | null;
-  isQueued?: boolean;
   isError?: boolean;
   errorText?: string;
   statusText?: string;
@@ -136,8 +135,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   const api = useRef(createCarmenApi(config.apiBase)).current;
 
-  // Added references for queue processing and aborting streams
-  const messageQueue = useRef<{ text: string; roomId: string; botMsgId: string; userMsgId: string }[]>([]);
   const abortController = useRef<AbortController | null>(null);
   const isUserStopRef = useRef(false);
   const isProcessingRef = useRef(false);
@@ -309,7 +306,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   }
 
   async function createNewChat() {
-    if (isProcessingRef.current || messageQueue.current.length > 0) {
+    if (isProcessingRef.current) {
       alert(t("chat.new_chat_block"));
       return;
     }
@@ -317,7 +314,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       abortController.current.abort();
       abortController.current = null;
     }
-    messageQueue.current = [];
     isProcessingRef.current = false;
     statusTimers.current.forEach(clearTimeout);
     statusTimers.current = [];
@@ -335,7 +331,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   }
 
   async function switchRoom(roomId: string) {
-    if (isProcessingRef.current || messageQueue.current.length > 0) {
+    if (isProcessingRef.current) {
       alert(t("chat.switch_room_block"));
       return;
     }
@@ -345,7 +341,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       abortController.current.abort();
       abortController.current = null;
     }
-    messageQueue.current = [];
     isProcessingRef.current = false;
     statusTimers.current.forEach(clearTimeout);
     statusTimers.current = [];
@@ -359,7 +354,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   }
 
   async function confirmDeleteRoom() {
-    if (isProcessingRef.current || messageQueue.current.length > 0) {
+    if (isProcessingRef.current) {
       alert(t("chat.delete_room_block"));
       setDeleteModal({ open: false, roomId: null });
       return;
@@ -383,6 +378,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   }
 
   async function retryMessage(errorText: string) {
+    if (isProcessingRef.current) return;
     setMessages((prev) => prev.filter((m) => !(m.isError && m.errorText === errorText)));
     if (currentRoomId) {
       const userMsgId = `user-${Math.random().toString(36).substring(2, 11)}`;
@@ -397,14 +393,12 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           id: userMsgId,
           role: "user",
           html: formatCarmenMessage(errorText, api.baseUrl),
-          isQueued: true,
           timestamp: userTimestamp,
         },
         {
           id: botMsgId,
           role: "bot",
           html: "",
-          isQueued: true,
           statusText: t("chat.status_waiting") + "...",
         },
       ]);
@@ -424,39 +418,19 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         timestamp: botTimestamp,
       });
 
-      messageQueue.current.push({ text: errorText, roomId: currentRoomId, botMsgId, userMsgId });
-      processQueue();
+      executeStream(errorText, currentRoomId, botMsgId, userMsgId);
     }
   }
 
-  async function processQueue() {
-    // Synchronous lock using Ref to prevent race conditions
-    if (isProcessingRef.current || messageQueue.current.length === 0) return;
-
+  async function executeStream(msgText: string, processingRoomId: string, botMsgId: string, userMsgId: string) {
+    if (isProcessingRef.current) return;
     isProcessingRef.current = true;
-    const currentTask = messageQueue.current.shift();
-    if (!currentTask) {
-      isProcessingRef.current = false;
-      return;
-    }
 
-    const msgText = currentTask.text;
-    const processingRoomId = currentTask.roomId;
-
-    // From this point onward, it acts similar to the lower part of sendMessage
-    // finding the matching queued message, setting it to streaming, and fetching.
-
-    const botMsgId = currentTask.botMsgId;
-    const userMsgId = currentTask.userMsgId;
-
-    // Clear "isQueued" for both the user message and the specific bot placeholder
+    // Update messages to show searching status
     setMessages((prev) =>
       prev.map((msg) => {
-        if (msg.id === userMsgId) {
-          return { ...msg, isQueued: false };
-        }
         if (msg.id === botMsgId) {
-          return { ...msg, isQueued: false, statusText: t("chat.status_searching") };
+          return { ...msg, statusText: t("chat.status_searching") };
         }
         return msg;
       })
@@ -492,7 +466,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     let finalMsgId: string | null = null;
     let didSave = false;
 
-    // ... [Stream fetching logic] Same as the inner block of sendMessage ...
     try {
       const history = await api.getRoomHistory(processingRoomId!);
 
@@ -515,41 +488,30 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       const decoder = new TextDecoder("utf-8");
       let lineBuffer = "";
 
-      // Legacy-style typing animation state
       let typingBuffer = "";
       let displayedText = "";
       let isStreamingActive = true;
       let bufferedSuggestions: string[] | null = null;
 
-      // Concurrent typing animation loop
       const processTyping = () => {
-        if (signal.aborted) return; // Stop animation immediately if room changed
+        if (signal.aborted) return;
         if (typingBuffer.length > 0) {
-          // Truly Smooth Typewriter: 60fps Native refresh rate
           const charsToTake = typingBuffer.length > 40 ? 2 : 1;
           displayedText += typingBuffer.substring(0, charsToTake);
           typingBuffer = typingBuffer.substring(charsToTake);
 
-          // Format text (may include HTML media tags)
           const html = formatCarmenMessage(displayedText, api.baseUrl);
-
           setMessages((prev) =>
             prev.map((m) => (m.id === botMsgId ? { ...m, html } : m))
           );
-
-          // Optimization: Trigger frame callback for auto-scroll sync
           config.onTypingFrame?.();
         }
 
         if (isStreamingActive || typingBuffer.length > 0) {
-          // Fire on the exact monitor refresh cycle (~16.6ms) for zero-jitter animation.
           requestAnimationFrame(processTyping);
         } else {
-          // Final clean update to render all tokens (tokens processed in CarmenMessage)
           const finalHtml = formatCarmenMessage(displayedText, api.baseUrl);
           setMessages((prev) => {
-            // Only apply suggestions if this botMsgId is the LATEST bot message in the entire list.
-            // This prevents race conditions where an old message finishes typing after a new user message is sent.
             const botMessages = prev.filter(m => m.role === 'bot');
             const isLastBot = botMessages.length > 0 && botMessages[botMessages.length - 1].id === botMsgId;
             
@@ -565,28 +527,22 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
             });
           });
           
-          // Trigger scroll after bot finishes and suggestions appear
           window.dispatchEvent(new CustomEvent("carmen-scroll-smooth"));
-          // Wait for staggered animation to start/complete and scroll again
           setTimeout(() => window.dispatchEvent(new CustomEvent("carmen-scroll-smooth")), 300);
           setTimeout(() => window.dispatchEvent(new CustomEvent("carmen-scroll-smooth")), 800);
         }
       };
 
-      // Start the visual streaming animation
       processTyping();
 
       for (; ;) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        // Abort check: if room changed during streaming
         if (signal.aborted) break;
 
-        // Accumulate and resolve partial JSON lines
         lineBuffer += decoder.decode(value, { stream: true });
         const lines = lineBuffer.split("\n");
-        lineBuffer = lines.pop() || ""; // Keep the last incomplete line for the next chunk
+        lineBuffer = lines.pop() || "";
 
         for (const line of lines) {
           const trimmed = line.trim();
@@ -604,7 +560,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
                 prev.map((m) => (m.id === botMsgId ? { ...m, sources: src } : m))
               );
             } else if (parsed.type === "suggestions") {
-              // Buffer suggestions instead of applying immediately
               bufferedSuggestions = parsed.data;
             } else if (parsed.type === "done") {
               finalMsgId = parsed.id;
@@ -621,7 +576,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         }
       }
 
-      // Process any remaining content in lineBuffer after stream ends
       if (lineBuffer.trim()) {
         try {
           const parsed = JSON.parse(lineBuffer.trim());
@@ -638,14 +592,12 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         }
       }
 
-      // Signal that network streaming is done, but typing might still be catching up
       isStreamingActive = false;
 
-      // Wait for the typing buffer to fully drain before saving the final message
       await new Promise<void>((resolve) => {
         const checkDone = () => {
           if ((typingBuffer.length === 0 && !isStreamingActive) || signal.aborted) resolve();
-          else setTimeout(checkDone, 20); // Faster check-in for final completion
+          else setTimeout(checkDone, 20);
         };
         checkDone();
       });
@@ -662,7 +614,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         }
       } else {
         console.warn("Stream Error:", e.message || e);
-        // Only show error and clear timers if we are still in the same room context
         if (abortController.current === controller) {
           statusTimers.current.forEach(clearTimeout);
           statusTimers.current = [];
@@ -680,15 +631,13 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         }
       }
     } finally {
-      // Only run cleanup if this specific process wasn't aborted by a room switch
       if (abortController.current === controller || isUserStopRef.current) {
         statusTimers.current.forEach(clearTimeout);
         statusTimers.current = [];
 
         setIsTyping(false);
-        isProcessingRef.current = false; // Release lock
+        isProcessingRef.current = false;
         abortController.current = null;
-        processQueue();
       }
     }
 
@@ -705,7 +654,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     }
     
     if (!didSave && processingRoomId) {
-      // Clean up the placeholder if we didn't save a final message
       await api.deleteMessage(processingRoomId, botMsgId);
     }
     
@@ -713,7 +661,9 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   }
 
   async function sendMessage(text?: string, sourceMsgId?: string) {
-    // Clear ALL suggestions from previous messages when user sends a new one (manual or chip)
+    if (isProcessingRef.current) return;
+
+    // Clear ALL suggestions from previous messages
     setMessages((prev) => prev.map((m) => m.suggestions && m.suggestions.length > 0 ? { ...m, suggestions: [] } : m));
     const msgText = text ?? inputValue.trim();
     if (!msgText && !imageBase64) return;
@@ -733,8 +683,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       await loadRoomList();
     }
 
-    const willBeQueued = isProcessingRef.current || messageQueue.current.length > 0;
-
     const userHtml = img
       ? `<img src="${img}" style="max-width:100%;border-radius:8px;margin-bottom:5px;" /><br>${msgText}`
       : formatCarmenMessage(msgText, api.baseUrl);
@@ -744,7 +692,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       id: userMsgId,
       role: "user",
       html: userHtml,
-      isQueued: willBeQueued,
       timestamp: new Date().toISOString(),
     };
 
@@ -753,7 +700,6 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       id: botMsgId,
       role: "bot",
       html: "",
-      isQueued: true,
       statusText: t("chat.status_waiting") + "...",
     };
 
@@ -771,17 +717,14 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       timestamp: userMsg.timestamp || new Date().toISOString(),
     });
 
-    // Save a placeholder for the bot message to maintain chronological order in localStorage
     await api.saveMessage(roomId, {
       id: botMsgId,
       sender: "bot",
       message: "",
-      timestamp: new Date(Date.now() + 1).toISOString(), // slightly after the user message
+      timestamp: new Date(Date.now() + 1).toISOString(),
     });
 
-    // Pass the actual roomId (local variable) to the queue
-    messageQueue.current.push({ text: msgText, roomId, botMsgId, userMsgId });
-    processQueue();
+    executeStream(msgText, roomId, botMsgId, userMsgId);
   }
 
   async function sendFeedback(msgId: string, score: number) {
@@ -800,7 +743,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     }
   }
 
-  // Use refs to keep stable function identities for child components (avoids re-rendering MessageList on every keystroke)
+  // Use refs to keep stable function identities
   const sendMessageRef = useRef(sendMessage);
   const retryMessageRef = useRef(retryMessage);
   const sendFeedbackRef = useRef(sendFeedback);
@@ -833,7 +776,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     rooms,
     currentRoomId,
     isTyping,
-    isProcessing: () => isProcessingRef.current || messageQueue.current.length > 0,
+    isProcessing: () => isProcessingRef.current,
     typingStatus,
     inputValue,
     imageBase64,

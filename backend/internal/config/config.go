@@ -21,6 +21,12 @@ type Config struct {
 	OpenClaw    OpenClawConfig
 	Make        MakeConfig
 	Translation TranslationConfig
+	OpenRouter  OpenRouterConfig
+}
+
+type OpenRouterConfig struct {
+	APIKey     string
+	EmbedModel string
 }
 
 // TranslationConfig holds config for Google Cloud Translation API (wiki content).
@@ -213,6 +219,10 @@ func Load() error {
 		Translation: TranslationConfig{
 			APIKey:  getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
 			Enabled: getEnvAsBool("TRANSLATION_ENABLED", true),
+		},
+		OpenRouter: OpenRouterConfig{
+			APIKey:     getEnv("OPENROUTER_API_KEY", ""),
+			EmbedModel: getEnv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b"),
 		},
 	}
 

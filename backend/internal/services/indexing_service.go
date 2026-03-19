@@ -11,20 +11,35 @@ import (
 	"github.com/new-carmen/backend/internal/security"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/ollama"
+	"github.com/new-carmen/backend/pkg/openrouter"
 )
 
 // indexing_service.go constants have been moved to AppConfig.Git (WIKI_CHUNK_SIZE/WIKI_CHUNK_OVERLAP)
 
+// Embedder interface for different LLM providers
+type Embedder interface {
+	Embedding(text string) ([]float32, error)
+}
+
 type IndexingService struct {
 	wiki       *WikiService
-	llm        *ollama.Client
+	llm        Embedder
 	logService *ActivityLogService
 }
 
 func NewIndexingService() *IndexingService {
+	var llm Embedder
+	if config.AppConfig.OpenRouter.APIKey != "" {
+		log.Println("[indexing] Using OpenRouter Embeddings")
+		llm = openrouter.NewClient()
+	} else {
+		log.Println("[indexing] Using Ollama Embeddings")
+		llm = ollama.NewEmbedClient()
+	}
+
 	return &IndexingService{
 		wiki:       NewWikiService(),
-		llm:        ollama.NewEmbedClient(),
+		llm:        llm,
 		logService: NewActivityLogService(),
 	}
 }
@@ -82,8 +97,7 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		if strings.TrimSpace(chunkText) == "" {
 			continue
 		}
-		enrichedChunk := fmt.Sprintf("เรื่อง: %s\n\n%s", content.Title, chunkText)
-		emb, err := s.llm.Embedding(enrichedChunk)
+		emb, err := s.llm.Embedding(chunkText)
 		if err != nil {
 			return fmt.Errorf("embedding chunk %d: %w", i, err)
 		}
@@ -91,10 +105,13 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 			log.Printf("[indexing] skip %s chunk %d: empty embedding", path, i)
 			continue
 		}
-		if len(emb) > config.AppConfig.Ollama.VectorDimension {
-			emb = emb[:config.AppConfig.Ollama.VectorDimension]
-		}
-		emb = utils.TruncateEmbedding(emb) // DB uses VECTOR(1536); qwen3-embedding returns 4096
+		
+		// 1. Truncate to target dimension (2000)
+		emb = utils.TruncateEmbedding(emb)
+		
+		// 2. Normalize to 1.0 magnitude for accurate Cosine Distance
+		emb = utils.NormalizeEmbedding(emb)
+		
 		sqlChunk := fmt.Sprintf("INSERT INTO %s.document_chunks (document_id, chunk_index, content, embedding, created_at) VALUES (?, ?, ?, ?::vector, now())", bu)
 		if err := database.DB.Exec(sqlChunk, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)

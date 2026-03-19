@@ -32,6 +32,7 @@ class Settings:
         self.OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
         self.OLLAMA_EMBED_MODEL: str = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text:latest")
         self.OLLAMA_CHAT_MODEL: str = os.getenv("OLLAMA_CHAT_MODEL", "gemma3:1b")
+        self.OPENROUTER_EMBED_MODEL: str = os.getenv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b")
         
         # --- Database Settings ---
         self.DB_HOST: str = os.getenv("DB_HOST")

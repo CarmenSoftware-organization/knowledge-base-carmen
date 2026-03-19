@@ -74,13 +74,13 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     return text.replace(/<[a-z]*[^>]*$/i, "");
   };
 
-  const processedContent = useMemo(() => {
+    const processedContent = useMemo(() => {
     const cleaned = stripIncompleteTags(rawContent);
     // Sanitize HTML to prevent XSS from LLM prompt injection
     if (typeof window !== "undefined") {
       return DOMPurify.sanitize(cleaned, {
-        ADD_TAGS: ["iframe"],
-        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "data-lightbox", "target", "rel"],
+        USE_PROFILES: { html: true }, // Use standard HTML profile
+        ADD_ATTR: ["data-lightbox", "target", "rel"],
         ALLOWED_URI_REGEXP: /^(?:(?:https?|data):|\/|images\/)/i,
       });
     }
@@ -96,9 +96,6 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     } catch { return ""; }
   };
 
-  if (isBot && msg.isQueued) {
-    return null;
-  }
 
   return (
     <div
@@ -139,7 +136,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
           </div>
         ) : (
           <div className="flex flex-col gap-1">
-            {!msg.html && isBot && !msg.isQueued ? (
+            {!msg.html && isBot ? (
               <div className="flex items-center gap-2 py-1">
                 <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">
                   {msg.statusText || t("chat.status_searching")}
@@ -157,12 +154,6 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
             ) : (
               <StaticHtmlContent content={processedContent} />
             )}
-            {msg.isQueued && !isBot && (
-              <div className="text-[10px] text-white/60 font-medium uppercase tracking-widest mt-1 flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full border border-white/30 border-t-white animate-spin" />
-                🕐 {t("chat.status_waiting")}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -170,13 +161,13 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
 
       {/* Tools Row (timestamp + tools) */}
       <div className="flex items-center justify-between mt-1 gap-2 min-h-[16px]">
-        {msg.timestamp && !msg.isQueued && (
+        {msg.timestamp && (
           <div className={`text-[10px] font-medium uppercase tracking-wider opacity-40 ${isBot ? "text-slate-500" : "text-white"}`}>
             {formatTime(msg.timestamp)}
           </div>
         )}
 
-        {isBot && !msg.isError && !msg.isQueued && (
+        {isBot && !msg.isError && (
           <div className="flex items-center gap-2 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={handleCopy}
