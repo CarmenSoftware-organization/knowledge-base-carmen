@@ -4,6 +4,7 @@ package api
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -146,6 +147,29 @@ func (h *ChatHandler) Proxy(c *fiber.Ctx) error {
 	}
 
 	return nil
+}
+
+// Image serves wiki assets from local repo first; falls back to Python chatbot proxy.
+// GET /images/*?bu=...
+func (h *ChatHandler) Image(c *fiber.Ctx) error {
+	bu := strings.TrimSpace(c.Query("bu"))
+	if bu == "" {
+		bu = "carmen"
+	}
+
+	relPath := c.Params("*")
+	if relPath == "" {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	// 1) Try serving from local wiki assets (same storage as /wiki-assets/*)
+	fullPath := h.wiki.GetLocalAssetPath(bu, relPath)
+	if st, err := os.Stat(fullPath); err == nil && !st.IsDir() {
+		return c.SendFile(fullPath)
+	}
+
+	// 2) Fallback: proxy to Python chatbot (backwards compatible)
+	return h.Proxy(c)
 }
 
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {

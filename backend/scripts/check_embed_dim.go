@@ -20,7 +20,7 @@ func main() {
 	}
 	defer database.Close()
 
-	fmt.Println("=== Embedding Dimension Check ===\n")
+	fmt.Println("=== Embedding Dimension Check ===")
 
 	// 1. Expected (code constant)
 	fmt.Printf("Code EmbeddingDim (utils): %d\n", utils.EmbeddingDim)
