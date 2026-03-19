@@ -10,7 +10,7 @@ import urllib.error
 
 from cachetools import LRUCache
 from ..core.config import settings
-from ..core.database import SessionLocal
+from ..core.database import AsyncSessionLocal
 
 # Temporary per-request cache (populated from frontend history each request)
 # Limit to 20 rooms to prevent memory leaks
@@ -77,7 +77,7 @@ def restore_history(room_id: str, frontend_history: list[dict] = None):
         _request_history[room_id] = _request_history[room_id][-50:]
 
 
-def _save_to_db_direct(data: dict) -> bool:
+async def _save_to_db_direct(data: dict) -> bool:
     """Save Q&A directly to public.chat_history. Returns True on success."""
     from sqlalchemy import text
     from .retrieval import retrieval_service
@@ -91,78 +91,77 @@ def _save_to_db_direct(data: dict) -> bool:
     if not user_query or not bot_response:
         return False
 
-    db = SessionLocal()
-    try:
-        # Get bu_id from business_units
-        row = db.execute(
-            text("SELECT id FROM public.business_units WHERE slug = :slug LIMIT 1"),
-            {"slug": bu},
-        ).fetchone()
-        if not row:
-            print(f"[chat_history] bu '{bu}' not found in business_units")
+    async with AsyncSessionLocal() as db:
+        try:
+            # Get bu_id from business_units
+            result = await db.execute(
+                text("SELECT id FROM public.business_units WHERE slug = :slug LIMIT 1"),
+                {"slug": bu},
+            )
+            row = result.fetchone()
+            if not row:
+                print(f"[chat_history] bu '{bu}' not found in business_units")
+                return False
+            bu_id = row[0]
+
+            # Create embedding if available
+            emb_str = None
+            if retrieval_service.embeddings:
+                try:
+                    emb = await retrieval_service.get_embedding(user_query)
+                    emb_str = retrieval_service.format_pgvector(emb)
+                except Exception as e:
+                    print(f"[chat_history] embedding failed: {e}")
+
+            # Map sources to jsonb format
+            sources_list = [
+                {"articleId": s.get("source", ""), "title": s.get("title", "")}
+                for s in sources_raw
+                if isinstance(s, dict)
+            ]
+            sources_json = json.dumps(sources_list)
+
+            if emb_str:
+                await db.execute(
+                    text("""
+                        INSERT INTO public.chat_history
+                        (bu_id, user_id, question, answer, sources, question_embedding, created_at)
+                        VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb), CAST(:emb_str AS vector), now())
+                    """),
+                    {
+                        "bu_id": bu_id,
+                        "user_id": username,
+                        "question": user_query,
+                        "answer": bot_response,
+                        "sources_json": sources_json,
+                        "emb_str": emb_str,
+                    },
+                )
+            else:
+                await db.execute(
+                    text("""
+                        INSERT INTO public.chat_history
+                        (bu_id, user_id, question, answer, sources, created_at)
+                        VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb), now())
+                    """),
+                    {
+                        "bu_id": bu_id,
+                        "user_id": username,
+                        "question": user_query,
+                        "answer": bot_response,
+                        "sources_json": sources_json,
+                    },
+                )
+            await db.commit()
+            print(f"[chat_history] Saved to DB (bu={bu}, user={username})")
+            return True
+        except Exception as e:
+            await db.rollback()
+            print(f"[chat_history] Save failed: {e}")
             return False
-        bu_id = row[0]
-
-        # Create embedding if available (optional - can save without for cache-by-similarity)
-        emb_str = None
-        if retrieval_service.embeddings:
-            try:
-                emb = retrieval_service.embeddings.embed_query(user_query)
-                emb_str = retrieval_service.format_pgvector(emb)
-            except Exception as e:
-                print(f"[chat_history] embedding failed: {e}")
-
-        # Map sources to jsonb format
-        sources_list = [
-            {"articleId": s.get("source", ""), "title": s.get("title", "")}
-            for s in sources_raw
-            if isinstance(s, dict)
-        ]
-        sources_json = json.dumps(sources_list)
-
-        if emb_str:
-            db.execute(
-                text("""
-                    INSERT INTO public.chat_history
-                    (bu_id, user_id, question, answer, sources, question_embedding, created_at)
-                    VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb), CAST(:emb_str AS vector), now())
-                """),
-                {
-                    "bu_id": bu_id,
-                    "user_id": username,
-                    "question": user_query,
-                    "answer": bot_response,
-                    "sources_json": sources_json,
-                    "emb_str": emb_str,
-                },
-            )
-        else:
-            db.execute(
-                text("""
-                    INSERT INTO public.chat_history
-                    (bu_id, user_id, question, answer, sources, created_at)
-                    VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb), now())
-                """),
-                {
-                    "bu_id": bu_id,
-                    "user_id": username,
-                    "question": user_query,
-                    "answer": bot_response,
-                    "sources_json": sources_json,
-                },
-            )
-        db.commit()
-        print(f"[chat_history] Saved to DB (bu={bu}, user={username})")
-        return True
-    except Exception as e:
-        db.rollback()
-        print(f"[chat_history] Save failed: {e}")
-        return False
-    finally:
-        db.close()
 
 
-def save_chat_logs(data: dict) -> int:
+async def save_chat_logs(data: dict) -> int:
     """Save Q&A to DB. Tries: 1) Go backend (if GO_BACKEND_URL set), 2) Direct DB insert."""
     ts = int(time.time())
     bu = data.get("bu", "carmen")
@@ -207,7 +206,7 @@ def save_chat_logs(data: dict) -> int:
             print(f"[chat_history] Go backend error: {e}, using direct DB")
 
     # 2) Fallback: save directly to DB (works when running carmen-chatbot standalone)
-    if _save_to_db_direct(data):
+    if await _save_to_db_direct(data):
         pass  # saved
     return ts
 

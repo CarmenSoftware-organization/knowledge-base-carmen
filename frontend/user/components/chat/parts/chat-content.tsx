@@ -25,7 +25,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
         isExpanded, messages, rooms, currentRoomId,
         isProcessing, inputValue, imageBase64,
         showSuggestions, showRoomDropdown, deleteModal, clearModal,
-        suggestions, config,
+        suggestions, config, t,
         setInputValue, setImageBase64, setShowRoomDropdown,
         setDeleteModal, setClearModal, toggleOpen, toggleExpand,
         createNewChat, switchRoom, sendMessage, retryMessage, sendFeedback,
@@ -49,21 +49,38 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
         return (tmp.textContent || tmp.innerText || "").trim();
     };
 
-    // Image lightbox: delegate click on images with data-lightbox attribute
+    // Delegation for images and links
     useEffect(() => {
         const el = bodyRef.current;
         if (!el) return;
-        const handleImageClick = (e: MouseEvent) => {
-            const img = (e.target as HTMLElement).closest('[data-lightbox]') as HTMLElement | null;
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+
+            // 1. Handle image lightbox
+            const img = target.closest('[data-lightbox]') as HTMLElement | null;
             if (img) {
                 e.preventDefault();
                 e.stopPropagation();
                 const src = img.getAttribute('data-lightbox') || img.getAttribute('src');
                 if (src) setLightboxSrc(src);
+                return;
+            }
+
+            // 2. Handle link tab behavior
+            const anchor = target.closest('a') as HTMLAnchorElement | null;
+            if (anchor && anchor.href) {
+                const href = anchor.getAttribute('href') || "";
+                // If it's intended to open in a new tab (markdown formatter adds target="_blank") 
+                // or if it looks external, force it with window.open to bypass any internal navigation logic.
+                if (anchor.target === "_blank" || href.startsWith("http") || href.startsWith("//")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(anchor.href, '_blank', 'noopener,noreferrer');
+                }
             }
         };
-        el.addEventListener('click', handleImageClick);
-        return () => el.removeEventListener('click', handleImageClick);
+        el.addEventListener('click', handleClick);
+        return () => el.removeEventListener('click', handleClick);
     }, []);
 
     const scrollToBottom = (force = false, instant = false) => {
@@ -129,11 +146,18 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             }
         };
 
+        const handleSmoothScroll = () => {
+            if (!userHasScrolledUp && el) {
+                scrollToBottom(false, false); // smooth
+            }
+        };
+
         el.addEventListener("scroll", handleScroll, { passive: true });
         el.addEventListener("wheel", userInteractionHandler, { passive: true });
         el.addEventListener("touchstart", userInteractionHandler, { passive: true });
         el.addEventListener("touchmove", userInteractionHandler, { passive: true });
         window.addEventListener("carmen-typing-frame", handleTypingFrame);
+        window.addEventListener("carmen-scroll-smooth", handleSmoothScroll);
 
         return () => {
             el.removeEventListener("scroll", handleScroll);
@@ -141,6 +165,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             el.removeEventListener("touchstart", userInteractionHandler);
             el.removeEventListener("touchmove", userInteractionHandler);
             window.removeEventListener("carmen-typing-frame", handleTypingFrame);
+            window.removeEventListener("carmen-scroll-smooth", handleSmoothScroll);
         };
     }, [userHasScrolledUp]);
 
@@ -162,7 +187,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
     function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { alert("ไฟล์ใหญ่เกินไป ไม่เกิน 5MB"); return; }
+        if (file.size > 5 * 1024 * 1024) { alert(t("chat.placeholder") === "Type your message here..." ? "File too large. Max 5MB." : "ไฟล์ใหญ่เกินไป ไม่เกิน 5MB"); return; }
         const reader = new FileReader();
         reader.onload = (ev) => setImageBase64(ev.target?.result as string);
         reader.readAsDataURL(file);
@@ -173,9 +198,9 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             <AnimatePresence>
                 {deleteModal.open && deleteModal.roomId && (
                     <CarmenModal
-                        title="ยืนยันลบห้องแชท?"
-                        description="บทสนทนาที่เลือกจะถูกลบถาวร และไม่สามารถกู้คืนได้"
-                        confirmText="ลบทิ้ง" cancelText="ยกเลิก"
+                        title={t("modal.delete_title")}
+                        description={t("modal.delete_desc")}
+                        confirmText={t("modal.delete_confirm")} cancelText={t("modal.cancel")}
                         onConfirm={confirmDeleteRoom}
                         onCancel={() => setDeleteModal({ open: false, roomId: null })}
                     />
@@ -184,9 +209,9 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
             <AnimatePresence>
                 {clearModal && (
                     <CarmenModal
-                        title="ล้างประวัติห้องนี้?"
-                        description="ข้อความในห้องนี้จะถูกลบทั้งหมด"
-                        confirmText="ลบเลย" cancelText="ยกเลิก"
+                        title={t("modal.clear_title")}
+                        description={t("modal.clear_desc")}
+                        confirmText={t("modal.clear_confirm")} cancelText={t("modal.cancel")}
                         onConfirm={confirmClearHistory}
                         onCancel={() => setClearModal(false)}
                     />
@@ -203,6 +228,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 onDelete={(rid) => setDeleteModal({ open: true, roomId: rid })}
                 isProcessing={isProcessing()}
                 theme={theme}
+                t={t}
             />
 
             <ChatHeader
@@ -216,6 +242,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 config={config}
                 currentRoomId={currentRoomId}
                 setClearModal={setClearModal}
+                t={t}
             />
 
             <MessageList
@@ -228,38 +255,59 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 retryMessage={retryMessage}
                 theme={theme}
                 isResizing={isResizing}
+                t={t}
             />
 
             <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
 
-            <AnimatePresence>
-                {(() => {
-                    const queuedUserMessages = messages.filter(m => m.isQueued && m.role === "user");
-                    if (queuedUserMessages.length === 0) return null;
-                    return (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
-                            className="absolute bottom-[90px] left-0 right-0 px-4 z-40 flex flex-col items-end gap-2 pointer-events-none"
-                        >
-                            {queuedUserMessages.map(msg => (
+            {(() => {
+                const queuedUserMessages = messages.filter(m => m.isQueued && m.role === "user");
+                if (queuedUserMessages.length === 0) return null;
+
+                // Show at most 3 items to prevent overflow
+                const maxDisplay = 3;
+                const shownMessages = queuedUserMessages.slice(0, maxDisplay);
+                const remainingCount = queuedUserMessages.length - maxDisplay;
+
+                return (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="absolute bottom-[90px] left-0 right-0 px-4 z-40 flex flex-col items-end gap-2 pointer-events-none"
+                    >
+                        {/* Summary indicator for hidden queue items */}
+                        <AnimatePresence>
+                            {remainingCount > 0 && (
                                 <motion.div
-                                    key={`sticky-${msg.id}`}
+                                    key="queue-summary"
                                     layout
-                                    initial={{ opacity: 0, scale: 0.9, x: 20 }}
-                                    animate={{ opacity: 0.9, scale: 1, x: 0 }}
-                                    exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
-                                    className="bg-slate-800/80 backdrop-blur-md text-white text-[13px] px-3 py-2 rounded-2xl rounded-br-sm shadow-lg max-w-[70%] truncate pointer-events-auto border border-white/10 flex items-center gap-2"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    className="bg-slate-700/60 backdrop-blur-sm text-white/80 text-[11px] font-medium px-2 py-1 rounded-lg border border-white/5 mb-1"
                                 >
-                                    <div className="w-3 h-3 rounded-full border-[1.5px] border-white/30 border-t-white animate-spin flex-shrink-0" />
-                                    <span className="truncate">{safeHtmlToText(msg.html)}</span>
+                                    {t("chat.remaining_queue", { count: remainingCount })}
                                 </motion.div>
-                            ))}
-                        </motion.div>
-                    );
-                })()}
-            </AnimatePresence>
+                            )}
+                        </AnimatePresence>
+
+                        {shownMessages.map(msg => (
+                            <motion.div
+                                key={`sticky-${msg.id}`}
+                                layout
+                                initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                                animate={{ opacity: 0.9, scale: 1, x: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+                                className="bg-slate-800/80 backdrop-blur-md text-white text-[13px] px-3 py-2 rounded-2xl rounded-br-sm shadow-lg max-w-[70%] truncate pointer-events-auto border border-white/10 flex items-center gap-2"
+                            >
+                                <div className="w-3 h-3 rounded-full border-[1.5px] border-white/30 border-t-white animate-spin flex-shrink-0" />
+                                <span className="truncate">{safeHtmlToText(msg.html)}</span>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                );
+            })()}
 
             <AnimatePresence>
                 {userHasScrolledUp && (
@@ -270,7 +318,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                         onClick={() => scrollToBottom(true, false)}
                         className="absolute bottom-[110px] left-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg z-50 transition-transform hover:scale-110 active:scale-95"
                         style={{ background: `linear-gradient(135deg, ${theme}, ${theme}dd)` }}
-                        title="เลื่อนลงล่างสุด"
+                        title={t("tools.scroll_down")}
                     >
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                             <path d="M11 4v12.59l-3.3-3.29L6.29 14.7l5 5 .09.08.09.06.06.03.11.04h.12.12l.11-.04.06-.03.09-.06.09-.08 5-5-1.42-1.41-3.3 3.29V4h-2z" />
@@ -296,6 +344,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 isProcessing={isProcessing()}
                 stopGeneration={stopGeneration}
                 forceScrollToBottom={() => { setUserHasScrolledUp(false); scrollToBottom(true, false); }}
+                t={t}
             />
 
             <AnimatePresence>
@@ -304,8 +353,8 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                         title={alertModal.title}
                         description={alertModal.description}
                         variant={alertModal.variant}
-                        confirmText="ตกลง"
-                        cancelText="ปิด"
+                        confirmText={t("modal.ok")}
+                        cancelText={t("header.close")}
                         onConfirm={() => setAlertModal({ ...alertModal, open: false })}
                         onCancel={() => setAlertModal({ ...alertModal, open: false })}
                     />

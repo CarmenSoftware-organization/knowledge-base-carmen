@@ -1,19 +1,19 @@
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
-from .config import DATABASE_URL, DB_POOL_SIZE, DB_MAX_OVERFLOW
+from .config import settings
 
-import os
-db_host = os.getenv("DB_HOST", "Unknown")
-db_name = os.getenv("DB_NAME", "Unknown")
-print(f"Connecting to Database: {db_name} @ {db_host}")
+import logging
+logger = logging.getLogger(__name__)
 
-engine = create_engine(
-    DATABASE_URL, 
+logger.info(f"Connecting to Database: {settings.DB_NAME} @ {settings.DB_HOST}")
+
+engine = create_async_engine(
+    settings.ASYNC_DATABASE_URL, 
     pool_pre_ping=True,
-    pool_size=DB_POOL_SIZE,
-    max_overflow=DB_MAX_OVERFLOW
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
 
 Base = declarative_base()

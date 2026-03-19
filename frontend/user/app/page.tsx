@@ -12,7 +12,7 @@ export default async function HomePage() {
 
   // ดึงหมวดจริงจาก backend
   const { items: categories } = await getCategories(bu);
-
+  console.log(categories)
   //  ดึงจำนวนบทความแต่ละหมวด
   const categoriesWithCount = await Promise.all(
     categories.map(async (cat) => {

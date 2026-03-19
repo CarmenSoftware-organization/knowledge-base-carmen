@@ -219,32 +219,36 @@ export default function CarmenChatWindow({ state }: Props) {
           border-radius: var(--chat-radius);
           background: linear-gradient(
             135deg,
-            rgba(255, 255, 255, 0.97) 0%,
-            rgba(248, 250, 252, 0.97) 50%,
-            rgba(255, 255, 255, 0.97) 100%
+            rgba(255, 255, 255, 0.98) 0%,
+            rgba(252, 253, 255, 0.98) 50%,
+            rgba(255, 255, 255, 0.98) 100%
           ) !important;
-          backdrop-filter: blur(40px) saturate(1.5) !important;
-          -webkit-backdrop-filter: blur(40px) saturate(1.5) !important;
+          background-size: 200% 200%;
+          animation: mesh-gradient 20s ease infinite;
+          backdrop-filter: blur(50px) saturate(1.8) !important;
+          -webkit-backdrop-filter: blur(50px) saturate(1.8) !important;
           box-shadow:
-            0 20px 60px rgba(0, 0, 0, 0.15),
-            0 8px 24px rgba(0, 0, 0, 0.1),
-            0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+            0 24px 80px -12px rgba(0, 0, 0, 0.18),
+            0 8px 32px -8px rgba(0, 0, 0, 0.12),
+            0 0 0 1px rgba(0, 0, 0, 0.04) !important;
         }
 
         :global(.dark) .carmen-chat-box {
           background: linear-gradient(
             135deg,
-            rgba(15, 23, 42, 0.96) 0%,
-            rgba(30, 41, 59, 0.96) 50%,
-            rgba(15, 23, 42, 0.96) 100%
+            rgba(15, 23, 42, 0.97) 0%,
+            rgba(30, 41, 59, 0.97) 50%,
+            rgba(15, 23, 42, 0.97) 100%
           ) !important;
-          backdrop-filter: blur(40px) saturate(1.5) !important;
-          -webkit-backdrop-filter: blur(40px) saturate(1.5) !important;
+          background-size: 200% 200%;
+          animation: mesh-gradient 20s ease infinite;
+          backdrop-filter: blur(50px) saturate(1.8) !important;
+          -webkit-backdrop-filter: blur(50px) saturate(1.8) !important;
           box-shadow:
-            0 20px 60px rgba(0, 0, 0, 0.45),
-            0 8px 24px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-          border-color: rgba(255, 255, 255, 0.1) !important;
+            0 24px 80px -12px rgba(0, 0, 0, 0.5),
+            0 8px 32px -8px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
         }
 
         .carmen-chat-box {
@@ -300,6 +304,24 @@ export default function CarmenChatWindow({ state }: Props) {
           color: #1e293b;
         }
         .dark .carmen-heading-3 {
+          color: #e2e8f0;
+        }
+        .carmen-heading-4 {
+          font-weight: 700;
+          font-size: 14.5px;
+          margin: 10px 0 5px 0;
+          color: #1e293b;
+        }
+        .dark .carmen-heading-4 {
+          color: #e2e8f0;
+        }
+        .carmen-heading-5 {
+          font-weight: 700;
+          font-size: 14px;
+          margin: 8px 0 4px 0;
+          color: #1e293b;
+        }
+        .dark .carmen-heading-5 {
           color: #e2e8f0;
         }
         .carmen-numbered-item {

@@ -5,12 +5,12 @@ interface Props {
   suggestions: string[];
   onSelect: (text: string) => void;
   theme?: string;
+  t: any;
 }
 
-const WELCOME_TITLE = "สวัสดีค่ะ Carmen พร้อมช่วย!";
-const WELCOME_DESC = "สอบถามข้อมูลจากคู่มือบริษัท หรือเริ่มบทสนทนาใหม่ได้ทันทีด้านล่างนี้ค่ะ";
-
-export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b" }: Props) {
+export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b", t }: Props) {
+  const WELCOME_TITLE = t("welcome.title");
+  const WELCOME_DESC = t("welcome.desc");
   const [typedTitle, setTypedTitle] = useState("");
   const [showDesc, setShowDesc] = useState(false);
   const [showChips, setShowChips] = useState(false);

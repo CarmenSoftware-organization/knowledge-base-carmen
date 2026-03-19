@@ -543,8 +543,67 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 		entries = append(entries, entry)
 		return nil
 	})
-	if err != nil {
-		return nil, err
+	// If BU-specific path not found and BU is not carmen, fallback to carmen_cloud
+	if err != nil || len(entries) == 0 {
+		if bu != "" && bu != "carmen" {
+			carmenRoot := s.getRepoPath("carmen")
+			if !filepath.IsAbs(carmenRoot) {
+				absRoot, errAbs := filepath.Abs(carmenRoot)
+				if errAbs == nil {
+					carmenRoot = absRoot
+				}
+			}
+			carmenRoot = filepath.Clean(carmenRoot)
+
+			carmenErr := filepath.Walk(carmenRoot, func(path string, info os.FileInfo, errWalk error) error {
+				if errWalk != nil {
+					if os.IsNotExist(errWalk) {
+						return nil
+					}
+					return errWalk
+				}
+				if info.IsDir() || strings.ToLower(filepath.Ext(info.Name())) != ".md" {
+					return nil
+				}
+
+				rel, errRel := filepath.Rel(carmenRoot, path)
+				if errRel != nil {
+					return nil
+				}
+				rel = filepath.ToSlash(rel)
+				entry := WikiEntry{Path: rel, Title: slugToTitle(info.Name()), Weight: 999}
+
+				data, errRead := os.ReadFile(path)
+				if errRead == nil && len(data) > 0 {
+					if len(data) > maxFrontmatterRead {
+						data = data[:maxFrontmatterRead]
+					}
+					meta, _ := parseFrontmatter(data)
+					if t := meta["title"]; t != "" {
+						entry.Title = t
+					}
+					entry.Description = meta["description"]
+					entry.Published = metaBool(meta, "published")
+					entry.Date = meta["date"]
+					entry.DateCreated = meta["dateCreated"]
+					entry.Editor = meta["editor"]
+					entry.Tags = metaToTags(meta)
+					entry.Weight = parseWeight(meta, data)
+					if entry.Date != "" {
+						entry.PublishedAt = entry.Date
+					} else if entry.DateCreated != "" {
+						entry.PublishedAt = entry.DateCreated
+					}
+				}
+				entries = append(entries, entry)
+				return nil
+			})
+			if carmenErr != nil {
+				return nil, carmenErr
+			}
+		} else if err != nil {
+			return nil, err
+		}
 	}
 
 	sort.Slice(entries, func(i, j int) bool {

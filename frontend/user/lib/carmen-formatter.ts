@@ -50,22 +50,33 @@ function processImages(text: string, apiBase: string): string {
         u.includes("127.0.0.1") ||
         u.includes("localhost") ||
         (apiBase && u.startsWith(apiBase))
-      )
-        return u.includes("/images/")
-          ? u
-          : `${apiBase}/images/${u.split("/").pop()}`;
+      ) {
+        if (u.includes("/images/")) return u;
+        // Fix: preserve the path after the domain/port instead of just the pop()
+        const urlObj = new URL(u);
+        const pathPart = urlObj.pathname.startsWith("/") ? urlObj.pathname.slice(1) : urlObj.pathname;
+        return `${apiBase}/images/${pathPart}`;
+      }
       const after = u.split("/images/");
       if (after.length > 1) return `${apiBase}/images/${after[1]}`;
-      return `${apiBase}/images/${u
-        .replace(/^https?:\/\/[^/]+/, "")
-        .replace(/^\/+/, "")}`;
+
+      const pathOnly = u.replace(/^https?:\/\/[^/]+/, "").replace(/^\/+/, "");
+      return `${apiBase}/images/${pathOnly}`;
     }
-    u = u.replace(/^carmen_cloud\//, "").replace(/^\/+/, "");
-    return `${apiBase}/images/${u}`;
+    // Check if it already starts with images/ (with or without leading slash)
+    const cleanU = u.replace(/^\/+/, "");
+    if (cleanU.startsWith("images/")) {
+      return `${apiBase}/${cleanU}`;
+    }
+
+    return `${apiBase}/images/${cleanU}`;
   };
 
-  text = text.replace(/!\[(.*?)\]\((.*?)\)/g, (_m, alt, src) => {
+  text = text.replace(/(!)?\[(.*?)\]\((.*?)\)/g, (_m, hasExclamation, alt, src) => {
     if (src.includes("youtube")) return _m;
+    const isLocalImage = src.includes("/images/") || src.startsWith("images/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(src);
+    if (!hasExclamation && !isLocalImage) return _m;
+
     const url = resolveUrl(src);
     return `<br><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" data-lightbox="${escapeHtml(url)}" class="carmen-lightbox-img" style="max-width:100%;border-radius:12px;margin:8px 0;cursor:zoom-in;" /><br>`;
   });
@@ -94,7 +105,7 @@ function processLinks(text: string): string {
   const mdLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
   text = text.replace(mdLinkRegex, (match, label, url) => {
     if (url.includes("youtube.com") || url.includes("youtu.be")) return match;
-    return `<a href="${escapeHtml(url)}" target="_blank" class="carmen-link">${escapeHtml(label)}</a>`;
+    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="carmen-link">${escapeHtml(label)}</a>`;
   });
 
   const urlRegex = /(https?:\/\/(?!(?:www\.)?(?:youtube\.com|youtu\.be))[^\s<)"']+)/g;
@@ -104,7 +115,7 @@ function processLinks(text: string): string {
     const lastAngle = prefix.lastIndexOf("<");
     const lastClose = prefix.lastIndexOf(">");
     if (lastAngle > lastClose) return match;
-    return `<a href="${escapeHtml(match)}" target="_blank" class="carmen-link">${escapeHtml(match)}</a>`;
+    return `<a href="${escapeHtml(match)}" target="_blank" rel="noopener noreferrer" class="carmen-link">${escapeHtml(match)}</a>`;
   });
 
   return text;
@@ -124,6 +135,16 @@ function processMarkdownStructure(text: string): string {
       out.push('<hr class="carmen-hr" />');
       continue;
     }
+    if (/^##### (.+)$/.test(line)) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      out.push(`<div class="carmen-heading-5">${escapeHtml(line.replace(/^##### /, ""))}</div>`);
+      continue;
+    }
+    if (/^#### (.+)$/.test(line)) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      out.push(`<div class="carmen-heading-4">${escapeHtml(line.replace(/^#### /, ""))}</div>`);
+      continue;
+    }
     if (/^### (.+)$/.test(line)) {
       if (inList) { out.push("</ul>"); inList = false; }
       out.push(`<div class="carmen-heading-3">${escapeHtml(line.replace(/^### /, ""))}</div>`);
@@ -140,12 +161,12 @@ function processMarkdownStructure(text: string): string {
       blankCount = 0;
       continue;
     }
-    const numbered = line.match(/^(\d+)\.\s+(.+)$/);
+    const numbered = line.match(/^(\d+)\.(?:\s+(.*))?$/);
     if (numbered) {
       if (inList) { out.push("</ul>"); inList = false; }
       out.push(`<div class="carmen-numbered-item">
         <b class="carmen-number">${escapeHtml(numbered[1])}.</b>
-        <span>${escapeHtml(numbered[2])}</span>
+        <span>${escapeHtml(numbered[2] || "")}</span>
       </div>`);
       blankCount = 0;
       continue;
@@ -166,10 +187,15 @@ function processMarkdownStructure(text: string): string {
 }
 
 function processInlineMarkdown(text: string): string {
-  text = text.replace(/`([^`]+)`/g, (_, c) => `<code class="carmen-inline-code">${escapeHtml(c)}</code>`);
-  text = text.replace(/\*\*\*(.*?)\*\*\*/g, (_, c) => `<b><i>${escapeHtml(c)}</i></b>`);
-  text = text.replace(/\*\*(.*?)\*\*/g, (_, c) => `<b>${escapeHtml(c)}</b>`);
-  text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, (_, c) => `<i>${escapeHtml(c)}</i>`);
+  // We process bold/italic/code tags. 
+  // We should NOT call escapeHtml here because the text might already contain protected placeholders 
+  // or injected HTML tags like <a> or <img> from previous steps.
+  // Instead, the escaping should happen in the structural phase (processMarkdownStructure).
+
+  text = text.replace(/`([^`]+)`/g, (_, c) => `<code class="carmen-inline-code">${c}</code>`);
+  text = text.replace(/\*\*\*(.*?)\*\*\*/g, (_, c) => `<b><i>${c}</i></b>`);
+  text = text.replace(/\*\*(.*?)\*\*/g, (_, c) => `<b>${c}</b>`);
+  text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, (_, c) => `<i>${c}</i>`);
   return text;
 }
 
@@ -177,11 +203,28 @@ export function formatCarmenMessage(text: string, apiBase: string): string {
   if (!text) return "";
   let t = String(text);
 
-  t = processYoutube(t);
-  t = processImages(t, apiBase);
-  t = processLinks(t);
-  t = processMarkdownStructure(t);
+  // 1. Only protect specific HTML tags that are legitimate from Context
+  // This prevents accidental protection of text like "Amount < 100"
+  const protections: string[] = [];
+  const tagRegex = /<(img|span|br|p|div|a|b|i|code)(\s+[^>]*?)?\/?>|<\/(span|p|div|a|b|i|code)>/gi;
+
+  t = t.replace(tagRegex, (match) => {
+    const placeholder = `__HTML_TAG_PROTECTED_${protections.length}__`;
+    protections.push(match);
+    return placeholder;
+  });
+
+  t = processMarkdownStructure(t); // 2. Put structure first, now safe because tags are protected
+
+  // 3. Restore protected tags
+  protections.forEach((tag, i) => {
+    t = t.split(`__HTML_TAG_PROTECTED_${i}__`).join(tag);
+  });
+
+  t = processYoutube(t);           // 4. Inject Video tags
+  t = processImages(t, apiBase);    // 5. Inject Image tags (handles URL resolution)
+  t = processLinks(t);             // 6. Inject Link tags
   t = t.replace(/(<br>){3,}/g, "<br><br>");
-  t = processInlineMarkdown(t);
+  t = processInlineMarkdown(t);    // 7. Final bold/italic/code
   return t;
 }
