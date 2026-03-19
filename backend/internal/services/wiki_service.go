@@ -639,6 +639,9 @@ func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, err
 	meta, body := parseFrontmatter(data)
 	if len(meta) > 0 {
 		applyMeta(out, meta, body)
+	} else {
+		// Files without frontmatter (e.g. external changelog imports) still need content.
+		out.Content = stripWeightLines(body)
 	}
 	return out, nil
 }

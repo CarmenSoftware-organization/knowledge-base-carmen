@@ -1,18 +1,9 @@
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { ActivityControls } from "@/components/activity/activity-controls";
 import { ActivityLogTable } from "@/components/activity/activity-log-table";
 import { getTranslations } from "next-intl/server";
 
 export default async function ActivityPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const c = await cookies();
   const buCookie = c.get("selected_bu")?.value || "carmen";
   const t = await getTranslations("activity");

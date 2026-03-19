@@ -28,7 +28,6 @@ func main() {
 		log.Fatal("Failed to load config:", err)
 	}
 	if config.AppConfig != nil && config.AppConfig.Translation.APIKey != "" {
-		log.Println("Translation: enabled (GOOGLE_TRANSLATE_API_KEY set)")
 	} else {
 		log.Println("Translation: disabled (GOOGLE_TRANSLATE_API_KEY not set or empty)")
 	}
