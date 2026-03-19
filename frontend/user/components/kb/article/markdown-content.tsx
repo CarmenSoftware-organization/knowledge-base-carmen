@@ -6,21 +6,17 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkEmoji from "remark-emoji";
 import { useEffect, useRef } from "react";
+import { API_BASE, DEFAULT_BU } from "@/lib/config";
+import { extractYoutubeId } from "@/lib/utils";
 import { getSelectedBUClient } from "@/lib/wiki-api";
+import DOMPurify from "dompurify";
 
 interface MarkdownRenderProps {
   content: string;
   category: string;
-}
-
-function extractYoutubeId(url?: string) {
-  if (!url) return null;
-  const match = url.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-  );
-  return match ? match[1] : null;
 }
 
 function MermaidDiagram({ chart }: { chart: string }) {
@@ -34,7 +30,8 @@ function MermaidDiagram({ chart }: { chart: string }) {
       const isDark = document.documentElement.classList.contains("dark");
       mermaid.initialize({
         startOnLoad: false,
-       theme: isDark ? "dark" : "default",
+        theme: isDark ? "dark" : "default",
+        securityLevel: "strict",
       });
 
       if (!ref.current || cancelled) return;
@@ -44,11 +41,24 @@ function MermaidDiagram({ chart }: { chart: string }) {
       try {
         const { svg } = await mermaid.render(id, chart);
         if (!cancelled && ref.current) {
-          ref.current.innerHTML = svg;
+          const sanitized = DOMPurify.sanitize(svg, {
+            USE_PROFILES: { svg: true },
+            ADD_TAGS: ["tspan", "textPath", "foreignObject"],
+            ADD_ATTR: [
+              "x", "y", "dx", "dy", "text-anchor", "lengthAdjust", "textLength",
+              "font-family", "font-size", "font-weight", "style", "class",
+              "transform", "viewBox", "xmlns", "xmlns:xlink",
+            ],
+          });
+          ref.current.innerHTML = sanitized;
         }
       } catch {
         if (!cancelled && ref.current) {
-          ref.current.innerHTML = `<pre>${chart}</pre>`;
+          const escaped = chart
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;");
+          ref.current.innerHTML = `<pre>${escaped}</pre>`;
         }
       }
     }
@@ -85,7 +95,41 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks, remarkEmoji]}
-        rehypePlugins={[rehypeRaw, rehypeSlug, rehypeHighlight]}
+        rehypePlugins={[
+          rehypeRaw,
+          [
+            rehypeSanitize,
+            {
+              ...defaultSchema,
+              attributes: {
+                ...defaultSchema.attributes,
+                code: [
+                  ...(defaultSchema.attributes?.code || []),
+                  ["className"],
+                ],
+                span: [
+                  ...(defaultSchema.attributes?.span || []),
+                  ["className"],
+                ],
+                img: [
+                  ...(defaultSchema.attributes?.img || []),
+                  "src",
+                  "alt",
+                  "title",
+                  "width",
+                  "height",
+                  ["className"],
+                ],
+              },
+              protocols: {
+                ...defaultSchema.protocols,
+                src: ["http", "https", "data"],
+              },
+            },
+          ],
+          rehypeSlug,
+          rehypeHighlight,
+        ]}
         components={{
 
           code: ({ className, children }) => {
@@ -124,13 +168,9 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
               "props" in (children[0] as any)
             ) {
               const child: any = children[0];
-              const href = child?.props?.href;
-              const youtubeMatch = href?.match(
-                /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-              );
+              const videoId = extractYoutubeId(child?.props?.href ?? "");
 
-              if (youtubeMatch) {
-                const videoId = youtubeMatch[1];
+              if (videoId) {
 
                 return (
                   <div className="my-6 aspect-video w-full">
@@ -190,11 +230,11 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
           img: ({ src, alt = "", ...props }) => {
             if (!src || typeof src !== "string") return null;
             const cleanSrc = src.replace("./", "");
-            const bu = getSelectedBUClient() || "carmen";
+            const bu = getSelectedBUClient() || DEFAULT_BU;
             return (
               <img
                 {...props}
-                src={`http://localhost:8080/wiki-assets/${category}/${cleanSrc}?bu=${bu}`}
+                src={`${API_BASE}/wiki-assets/${category}/${cleanSrc}?bu=${bu}`}
                 alt={alt}
                 className="block rounded-xl my-6 shadow-md max-w-full"
               />

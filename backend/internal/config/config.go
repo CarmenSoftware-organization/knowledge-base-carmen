@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -11,21 +10,31 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
-	Ollama   OllamaConfig
-	GitHub   GitHubConfig
-	Git      GitConfig
-	OpenClaw OpenClawConfig
-	Make     MakeConfig
+	Server      ServerConfig
+	Database    DatabaseConfig
+	JWT         JWTConfig
+	Ollama      OllamaConfig
+	GitHub      GitHubConfig
+	Git         GitConfig
+	WikiSearch  WikiSearchConfig
+	Chat        ChatConfig
+	OpenClaw    OpenClawConfig
+	Make        MakeConfig
+	Translation TranslationConfig
+}
+
+// TranslationConfig holds config for Google Cloud Translation API (wiki content).
+type TranslationConfig struct {
+	APIKey  string // GOOGLE_TRANSLATE_API_KEY
+	Enabled bool   // TRANSLATION_ENABLED
 }
 
 type ServerConfig struct {
-	Port        string
-	Host        string
-	ChatbotURL  string
-	Environment string
+	Port         string
+	Host         string
+	ChatbotURL   string
+	Environment  string
+	CORSOrigins  string
 }
 
 type DatabaseConfig struct {
@@ -44,34 +53,24 @@ type JWTConfig struct {
 }
 
 type OllamaConfig struct {
-	URL                  string
-	ChatModel            string
-	EmbedModel           string
-	InsecureSkipVerify   bool // true = ยอมรับ TLS certificate ไม่ตรง (ใช้กับ VM ที่ใช้ self-signed)
+	URL                string
+	ChatModel          string
+	EmbedModel         string
+	VectorDimension    int
+	InsecureSkipVerify bool
 }
 
-// OpenClawConfig ใช้สำหรับเชื่อมกับ OpenClaw Gateway (OpenAI-compatible HTTP)
 type OpenClawConfig struct {
-	URL   string // HTTP base URL เช่น http://127.0.0.1:18789
-	Token string // Gateway token
-	Model string // ชื่อ model ที่ Gateway map ไว้สำหรับ routing (เช่น openrouter/gpt-4o-mini)
-	// Enabled ไว้เผื่ออนาคตอยากปิดใช้ OpenClaw ชั่วคราว
+	URL     string
+	Token   string
+	Model   string
 	Enabled bool
 }
 
-// MakeConfig ใช้เมื่อต้องการให้ขั้นตอน "แยกประเภทคำถาม" ไปรันบน Make (webhook)
 type MakeConfig struct {
-	WebhookURL           string // URL ของ Make Custom Webhook (ต้องเป็นแบบ Request–Response ถ้าต้องการรอผล)
-	WebhookAPIKey        string // ถ้าตั้งใน Make ให้ส่งใน header x-make-apikey
-	UseForQuestionRouter bool   // true = ใช้ Make แทน OpenClaw สำหรับ RouteQuestion
-}
-
-type ChromaDBConfig struct {
-	URL        string
-	Collection string
-	APIKey     string
-	Tenant     string
-	Database   string
+	WebhookURL           string
+	WebhookAPIKey        string
+	UseForQuestionRouter bool
 }
 
 type GitHubConfig struct {
@@ -84,29 +83,70 @@ type GitHubConfig struct {
 }
 
 type GitConfig struct {
-	RepoPath     string
-	RepoURL      string
-	ContentPath  string
-	ChunkSize    int
-	ChunkOverlap int
+	RepoPath          string
+	RepoURL           string
+	ContentPath       string
+	ChunkSize         int
+	ChunkOverlap      int
+	SyncBranch        string   // branch สำหรับ wiki sync (GIT_SYNC_BRANCH)
+	DefaultBU         string   // BU เมื่อ schema ไม่ valid (WIKI_DEFAULT_BU)
+	CarmenContentDirs []string // paths ที่ลองสำหรับ carmen (WIKI_CARMEN_PATHS)
+	CarmenGitPath     string   // prefix ใน GitHub สำหรับ carmen (WIKI_CARMEN_GIT_PATH)
+}
+
+// WikiSearchConfig holds configurable values for wiki search (avoids hardcoding).
+type WikiSearchConfig struct {
+	SearchLimit       int     // WIKI_SEARCH_LIMIT
+	VectorDistanceMax float64 // WIKI_VECTOR_DISTANCE_MAX
+	SnippetMaxLen     int     // WIKI_SNIPPET_MAX_LEN
+}
+
+// ChatConfig holds configurable values for chat context (avoids hardcoding).
+type ChatConfig struct {
+	ContextLimit               int     // CHAT_CONTEXT_LIMIT
+	MaxContextChars            int     // CHAT_MAX_CONTEXT_CHARS
+	MaxChunkContent            int     // CHAT_MAX_CHUNK_CONTENT
+	HistoryEnabled             bool    // CHAT_HISTORY_ENABLED
+	HistorySimilarityThreshold float64 // CHAT_HISTORY_SIMILARITY_THRESHOLD
 }
 
 var AppConfig *Config
 
+// Default values (ใช้เมื่อ env ไม่ได้ตั้ง — แก้ได้ผ่าน env)
+const (
+	defaultRepoPath      = "./wiki-content"
+	defaultBU            = "carmen"
+	defaultCarmenPaths   = "../carmen_cloud,./carmen_cloud"
+	defaultCarmenGitPath = "carmen_cloud"
+	defaultGitSyncBranch = "wiki-content"
+)
+
+// DefaultRepoPath returns the default wiki repo path when config is empty.
+func DefaultRepoPath() string { return defaultRepoPath }
+
+// DefaultGitSyncBranch returns the default branch for wiki sync.
+func DefaultGitSyncBranch() string { return defaultGitSyncBranch }
+
 func Load() error {
-	// Load .env: ลองจาก cwd ก่อน แล้วลอง backend/.env ถ้ารันจาก repo root
-	if err := godotenv.Load(".env"); err != nil {
-		if err2 := godotenv.Load("../.env"); err2 != nil {
-			log.Println("No .env file found, using environment variables")
-		}
+	cwd, _ := os.Getwd()
+	_ = godotenv.Overload(filepath.Join(cwd, ".env"))
+	// Try multiple paths so .env is found whether running from repo root, backend/, or backend/tmp/
+	_ = godotenv.Load(".env")
+	_ = godotenv.Load("../.env")
+	_ = godotenv.Load("backend/.env")
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		_ = godotenv.Load(filepath.Join(execDir, ".env"))
+		_ = godotenv.Load(filepath.Join(execDir, "..", ".env"))
 	}
 
 	AppConfig = &Config{
 		Server: ServerConfig{
-			Port:        getEnv("SERVER_PORT", "8080"),
-			Host:        getEnv("SERVER_HOST", "localhost"),
-			ChatbotURL:  getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
-			Environment: getEnv("ENVIRONMENT", "development"),
+			Port:         getEnv("SERVER_PORT", "8080"),
+			Host:         getEnv("SERVER_HOST", "localhost"),
+			ChatbotURL:   getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
+			Environment:  getEnv("ENVIRONMENT", "development"),
+			CORSOrigins:  getEnv("CORS_ORIGINS", "*"),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -125,6 +165,7 @@ func Load() error {
 			URL:                getEnv("OLLAMA_URL", "http://localhost:11434"),
 			ChatModel:          getEnv("OLLAMA_CHAT_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
 			EmbedModel:         getEnv("OLLAMA_EMBED_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
+			VectorDimension:    getEnvAsInt("VECTOR_DIMENSION", 1536),
 			InsecureSkipVerify: getEnvAsBool("OLLAMA_INSECURE_SKIP_VERIFY", false),
 		},
 		GitHub: GitHubConfig{
@@ -136,11 +177,27 @@ func Load() error {
 			WebhookBranch: getEnv("GITHUB_WEBHOOK_BRANCH", getEnv("GITHUB_BRANCH", "main")),
 		},
 		Git: GitConfig{
-			RepoPath:     getEnv("GIT_REPO_PATH", "./wiki-content"),
-			RepoURL:      getEnv("GIT_REPO_URL", ""),
-			ContentPath:  getEnv("WIKI_CONTENT_PATH", ""),
-			ChunkSize:    getEnvAsInt("WIKI_CHUNK_SIZE", 500),
-			ChunkOverlap: getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
+			RepoPath:          getEnv("GIT_REPO_PATH", defaultRepoPath),
+			RepoURL:           getEnv("GIT_REPO_URL", ""),
+			ContentPath:       getEnv("WIKI_CONTENT_PATH", ""),
+			ChunkSize:         getEnvAsInt("WIKI_CHUNK_SIZE", 500),
+			ChunkOverlap:      getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
+			SyncBranch:        getEnv("GIT_SYNC_BRANCH", getEnv("GITHUB_BRANCH", defaultGitSyncBranch)),
+			DefaultBU:         getEnv("WIKI_DEFAULT_BU", defaultBU),
+			CarmenContentDirs: getEnvAsStringSlice("WIKI_CARMEN_PATHS", defaultCarmenPaths),
+			CarmenGitPath:     getEnv("WIKI_CARMEN_GIT_PATH", defaultCarmenGitPath),
+		},
+		WikiSearch: WikiSearchConfig{
+			SearchLimit:       getEnvAsInt("WIKI_SEARCH_LIMIT", 20),
+			VectorDistanceMax: getEnvAsFloat("WIKI_VECTOR_DISTANCE_MAX", 0.3),
+			SnippetMaxLen:     getEnvAsInt("WIKI_SNIPPET_MAX_LEN", 200),
+		},
+		Chat: ChatConfig{
+			ContextLimit:               getEnvAsInt("CHAT_CONTEXT_LIMIT", 10),
+			MaxContextChars:            getEnvAsInt("CHAT_MAX_CONTEXT_CHARS", 8000),
+			MaxChunkContent:            getEnvAsInt("CHAT_MAX_CHUNK_CONTENT", 2000),
+			HistoryEnabled:             getEnvAsBool("CHAT_HISTORY_ENABLED", true),
+			HistorySimilarityThreshold: getEnvAsFloat("CHAT_HISTORY_SIMILARITY_THRESHOLD", 0.15),
 		},
 		OpenClaw: OpenClawConfig{
 			URL:     getEnv("OPENCLAW_URL", ""),
@@ -153,6 +210,10 @@ func Load() error {
 			WebhookAPIKey:        getEnv("MAKE_WEBHOOK_API_KEY", ""),
 			UseForQuestionRouter: getEnvAsBool("MAKE_USE_FOR_ROUTER", false),
 		},
+		Translation: TranslationConfig{
+			APIKey:  getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
+			Enabled: getEnvAsBool("TRANSLATION_ENABLED", true),
+		},
 	}
 
 	return nil
@@ -161,34 +222,29 @@ func Load() error {
 func GetWikiContentPath() string {
 	c := AppConfig.Git
 	var basePath string
-	
+
 	if c.ContentPath != "" {
-		return normalizePath(c.ContentPath)
+		return NormalizePath(c.ContentPath)
 	}
 	if c.RepoPath != "" {
-		return normalizePath(c.RepoPath)
+		return NormalizePath(c.RepoPath)
 	}
-	
-	return normalizePath(basePath)
+
+	return NormalizePath(basePath)
 }
 
-// normalizePath cleans and ensures relative paths are prefixed with "./".
-func normalizePath(path string) string {
+// NormalizePath cleans and normalizes a path (used for wiki content paths).
+func NormalizePath(path string) string {
 	if path == "" {
-		return "./wiki-content"
+		return defaultRepoPath
 	}
-	
-	// ถ้าเป็น absolute path (เริ่มด้วย / หรือ drive letter) คืนเลย
 	if filepath.IsAbs(path) {
 		return filepath.Clean(path)
 	}
-	
-	// ถ้าเป็น relative path แต่ไม่มี ./ หรือ ../ นำหน้า ให้เพิ่ม ./
 	clean := filepath.Clean(path)
 	if !strings.HasPrefix(clean, ".") {
 		return "./" + clean
 	}
-	
 	return clean
 }
 
@@ -211,4 +267,25 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsFloat(key string, defaultValue float64) float64 {
+	if value, err := strconv.ParseFloat(getEnv(key, ""), 64); err == nil {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvAsStringSlice(key, defaultCSV string) []string {
+	val := getEnv(key, defaultCSV)
+	if val == "" {
+		val = defaultCSV
+	}
+	var out []string
+	for _, s := range strings.Split(val, ",") {
+		if t := strings.TrimSpace(s); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }

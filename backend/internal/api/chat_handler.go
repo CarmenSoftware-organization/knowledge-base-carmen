@@ -1,8 +1,10 @@
-// ใช้ดึง context จาก pgvector + ส่งให้ Ollama ตอบ → ใช้ทำ chatbot
+
 package api
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -18,21 +20,92 @@ import (
 )
 
 type ChatHandler struct {
-	llm        *ollama.Client
-	embedLLM   *ollama.Client
-	router     *services.QuestionRouterService
-	wiki       *services.WikiService
-	logService *services.ActivityLogService
+	llm            *ollama.Client
+	embedLLM       *ollama.Client
+	router         *services.QuestionRouterService
+	wiki           *services.WikiService
+	logService     *services.ActivityLogService
+	historyService *services.ChatHistoryService
 }
 
 func NewChatHandler() *ChatHandler {
 	return &ChatHandler{
-		llm:        ollama.NewClient(),      // ใช้ ChatModel
-		embedLLM:   ollama.NewEmbedClient(), // ใช้ EmbedModel
-		router:     services.NewQuestionRouterService(),
-		wiki:       services.NewWikiService(),
-		logService: services.NewActivityLogService(),
+		llm:            ollama.NewClient(),
+		embedLLM:       ollama.NewEmbedClient(),
+		router:         services.NewQuestionRouterService(),
+		wiki:           services.NewWikiService(),
+		logService:     services.NewActivityLogService(),
+		historyService: services.NewChatHistoryService(),
 	}
+}
+
+// RecordHistory accepts Q&A from Python chatbot and saves to chat_history (with embedding).
+// Called by carmen-chatbot after stream completes. POST /api/chat/record-history
+func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
+	var req models.RecordHistoryRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	bu := strings.TrimSpace(req.BU)
+	q := strings.TrimSpace(req.Question)
+	a := strings.TrimSpace(req.Answer)
+	if bu == "" || q == "" || a == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bu, question, answer required"})
+	}
+
+	if !config.AppConfig.Chat.HistoryEnabled {
+		return c.JSON(fiber.Map{"ok": true, "skipped": "history disabled"})
+	}
+
+	buID, err := h.historyService.GetBUIDFromSlug(bu)
+	if err != nil || buID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu: " + bu})
+	}
+
+	emb, err := h.embedLLM.Embedding(q)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "embedding failed: " + err.Error()})
+	}
+
+	userID := req.UserID
+	if userID == "" {
+		userID = "anonymous"
+	}
+
+	sources := req.Sources
+	if sources == nil {
+		sources = []models.ChatSource{}
+	}
+
+	if err := h.historyService.Save(buID, userID, q, a, sources, emb); err != nil {
+		log.Printf("[chat] record-history save failed: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"ok": true})
+}
+
+// ListHistory returns chat history for verification. GET /api/chat/history/list?bu=carmen&limit=10&offset=0
+func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {
+	bu := middleware.GetBU(c)
+	buID, err := h.historyService.GetBUIDFromSlug(bu)
+	if err != nil || buID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu"})
+	}
+	limit, _ := strconv.Atoi(c.Query("limit", "20"))
+	offset, _ := strconv.Atoi(c.Query("offset", "0"))
+	if limit > 100 {
+		limit = 100
+	}
+	entries, total, err := h.historyService.List(buID, limit, offset)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{
+		"items":  entries,
+		"total":  total,
+		"limit":  limit,
+		"offset": offset,
+	})
 }
 
 // RouteOnly ใช้เทส OpenClaw question routing โดยไม่ยิง vector DB / LLM
@@ -60,11 +133,8 @@ func (h *ChatHandler) RouteOnly(c *fiber.Ctx) error {
 func (h *ChatHandler) Proxy(c *fiber.Ctx) error {
 	chatbotURL := config.AppConfig.Server.ChatbotURL
 
-	// สร้าง target URL โดยใช้ OriginalURL เพื่อรวม query parameters ด้วย
 	target := chatbotURL + c.OriginalURL()
 
-	// proxy.Do จะเขียนทับ response headers ทั้งหมดด้วย headers จาก upstream
-	// ดังนั้นต้องตั้งค่า CORS headers หลังจาก proxy.Do เสร็จ
 	if err := proxy.Do(c, target); err != nil {
 		return err
 	}
@@ -77,6 +147,29 @@ func (h *ChatHandler) Proxy(c *fiber.Ctx) error {
 	}
 
 	return nil
+}
+
+// Image serves wiki assets from local repo first; falls back to Python chatbot proxy.
+// GET /images/*?bu=...
+func (h *ChatHandler) Image(c *fiber.Ctx) error {
+	bu := strings.TrimSpace(c.Query("bu"))
+	if bu == "" {
+		bu = "carmen"
+	}
+
+	relPath := c.Params("*")
+	if relPath == "" {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	// 1) Try serving from local wiki assets (same storage as /wiki-assets/*)
+	fullPath := h.wiki.GetLocalAssetPath(bu, relPath)
+	if st, err := os.Stat(fullPath); err == nil && !st.IsDir() {
+		return c.SendFile(fullPath)
+	}
+
+	// 2) Fallback: proxy to Python chatbot (backwards compatible)
+	return h.Proxy(c)
 }
 
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {
@@ -98,9 +191,27 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 			"sources": []models.ChatSource{},
 		})
 	}
-
+	emb = utils.TruncateEmbedding(emb) // DB uses VECTOR(1536); qwen3-embedding returns 4096
 	embStr := utils.Float32SliceToPgVector(emb)
 	bu := middleware.GetBU(c)
+	chatCfg := config.AppConfig.Chat
+
+	// 1.5) ถ้าเปิด chat history — ค้นหาประวัติก่อน
+	if chatCfg.HistoryEnabled {
+		if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
+			if cached, ok := h.historyService.FindSimilar(buID, emb, chatCfg.HistorySimilarityThreshold); ok {
+				userID := c.Get("X-User-ID", "anonymous")
+				h.logService.Log(bu, userID, "ถาม Chat AI (จาก cache)", "wiki", map[string]interface{}{
+					"status": "cached",
+					"sources": len(cached.Sources),
+				}, c.Get("User-Agent"))
+				return c.JSON(models.ChatAskResponse{
+					Answer:  cached.Answer,
+					Sources: cached.Sources,
+				})
+			}
+		}
+	}
 
 	// 2.a กรณีมี OpenClaw หรือ Make (แยกประเภทคำถาม) ให้ลองใช้ routing + wiki โดยตรงก่อน (ไม่พึ่ง DB)
 	useRouter := config.AppConfig.OpenClaw.Enabled || (config.AppConfig.Make.UseForQuestionRouter && config.AppConfig.Make.WebhookURL != "")
@@ -125,6 +236,13 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 							"answer":  "",
 							"sources": sources,
 						})
+					}
+					if chatCfg.HistoryEnabled {
+						if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
+							if err := h.historyService.Save(buID, c.Get("X-User-ID", "anonymous"), q, answer, sources, emb); err != nil {
+								log.Printf("[chat] save history failed: %v", err)
+							}
+						}
 					}
 					return c.JSON(models.ChatAskResponse{
 						Answer:  answer,
@@ -192,6 +310,13 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 						"sources": sources,
 					})
 				}
+				if chatCfg.HistoryEnabled {
+					if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
+						if err := h.historyService.Save(buID, c.Get("X-User-ID", "anonymous"), q, answer, sources, emb); err != nil {
+							log.Printf("[chat] save history failed: %v", err)
+						}
+					}
+				}
 				return c.JSON(models.ChatAskResponse{
 					Answer:  answer,
 					Sources: sources,
@@ -206,38 +331,47 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 		Title   string
 		Content string
 	}
-	pathFilter := buildPathFilterFromQuestion(q)
+	pathWhere, pathArgs := buildPathFilterFromQuestion(q)
 
 	// ถ้าเปิดใช้ routing (OpenClaw หรือ Make) ให้ลอง route question → ได้ path ที่โฟกัสมากขึ้น
 	if useRouter {
 		if res, err := h.router.RouteQuestion(q); err == nil && len(res.Candidates) > 0 {
-			var conds []string
+			var paths []string
 			for _, cnd := range res.Candidates {
 				p := strings.TrimSpace(cnd.Path)
-				if p == "" {
-					continue
+				if p != "" {
+					paths = append(paths, p)
 				}
-				// ป้องกัน quote แตก
-				escaped := strings.ReplaceAll(p, "'", "''")
-				conds = append(conds, "d.path = '"+escaped+"'")
 			}
-			if len(conds) > 0 {
-				pathFilter = "WHERE (" + strings.Join(conds, " OR ") + ")"
+			if len(paths) > 0 {
+				placeholders := make([]string, len(paths))
+				for i := range paths {
+					placeholders[i] = "d.path = ?"
+				}
+				pathWhere = "WHERE (" + strings.Join(placeholders, " OR ") + ")"
+				pathArgs = make([]interface{}, len(paths))
+				for i, p := range paths {
+					pathArgs[i] = p
+				}
 			}
 		}
 	}
 
-	// 3) ดึง context จาก Postgres/pgvector
+	// 3) ดึง context จาก Postgres/pgvector (parameterized เพื่อป้องกัน SQL injection)
 	query := fmt.Sprintf(`
 SELECT d.path, d.title, dc.content
 FROM %s.document_chunks dc
 JOIN %s.documents d ON dc.document_id = d.id
-`, bu, bu) + pathFilter + `
+`, bu, bu) + pathWhere + `
 ORDER BY dc.embedding <-> ?::vector
-LIMIT 10
+LIMIT ?
 `
+	args := make([]interface{}, 0, len(pathArgs)+2)
+	args = append(args, pathArgs...)
+	args = append(args, embStr, chatCfg.ContextLimit)
+
 	var rows []chunkRow
-	if err := database.DB.Raw(query, embStr).Scan(&rows).Error; err != nil {
+	if err := database.DB.Raw(query, args...).Scan(&rows).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "failed to query vector index: " + err.Error(),
 			"answer":  "",
@@ -248,12 +382,13 @@ LIMIT 10
 	// 3) รวม context เป็นข้อความยาวให้ LLM ใช้ตอบ
 	var contextBuilder strings.Builder
 	sources := make([]models.ChatSource, 0)
-	const maxContextChars = 8000 // กัน prompt ยาวเกินจน Ollama / proxy timeout
+	maxContextChars := chatCfg.MaxContextChars
+	maxChunkContent := chatCfg.MaxChunkContent
 	for i, row := range rows {
 		// ตัดเนื้อหาให้สั้นลงต่อชิ้น
 		content := row.Content
-		if len(content) > 2000 {
-			content = content[:2000]
+		if len(content) > maxChunkContent {
+			content = content[:maxChunkContent]
 		}
 
 		if contextBuilder.Len() >= maxContextChars {
@@ -294,16 +429,25 @@ LIMIT 10
 		"sources": len(sources),
 	}, c.Get("User-Agent"))
 
+	// บันทึกลง chat history
+	if chatCfg.HistoryEnabled {
+		if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
+			if err := h.historyService.Save(buID, userID, q, answer, sources, emb); err != nil {
+				log.Printf("[chat] save history failed: %v", err)
+			}
+		}
+	}
+
 	return c.JSON(models.ChatAskResponse{
 		Answer:  answer,
 		Sources: sources,
 	})
 }
 
-// topicPathRule กำหนดว่าเมื่อคำถามมีคำใน keywords ใดคำหนึ่ง ให้กรอง path ตาม patterns (ILIKE)
+
 type topicPathRule struct {
-	Keywords []string // มีคำใดคำหนึ่งในคำถาม (lowercase สำหรับอังกฤษ)
-	Patterns []string // d.path ILIKE pattern อย่างน้อยหนึ่งอัน (ใช้ OR)
+	Keywords []string 
+	Patterns []string 
 }
 
 var topicPathRules = []topicPathRule{
@@ -318,18 +462,23 @@ var topicPathRules = []topicPathRule{
 	{Keywords: []string{"comment", "activity log", "document management", "ไฟล์แนบ", "รูปภาพแนบ", "ประวัติเอกสาร", "คอมเมนต์", "ความคิดเห็น"}, Patterns: []string{"%comment%", "%CM-%"}},
 }
 
-func buildPathFilterFromQuestion(question string) string {
+// buildPathFilterFromQuestion returns (whereClause, args) for parameterized query.
+func buildPathFilterFromQuestion(question string) (string, []interface{}) {
 	qLower := strings.ToLower(question)
 	for _, rule := range topicPathRules {
 		for _, kw := range rule.Keywords {
 			if strings.Contains(qLower, strings.ToLower(kw)) || strings.Contains(question, kw) {
-				parts := make([]string, len(rule.Patterns))
-				for i, p := range rule.Patterns {
-					parts[i] = "d.path ILIKE '" + strings.ReplaceAll(p, "'", "''") + "'"
+				placeholders := make([]string, len(rule.Patterns))
+				for i := range rule.Patterns {
+					placeholders[i] = "d.path ILIKE ?"
 				}
-				return "WHERE (" + strings.Join(parts, " OR ") + ")"
+				args := make([]interface{}, len(rule.Patterns))
+				for i, p := range rule.Patterns {
+					args[i] = p
+				}
+				return "WHERE (" + strings.Join(placeholders, " OR ") + ")", args
 			}
 		}
 	}
-	return ""
+	return "", nil
 }

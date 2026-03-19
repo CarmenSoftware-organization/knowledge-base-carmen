@@ -5,6 +5,29 @@ import (
 	"strings"
 )
 
+// EmbeddingDim is the expected dimension for document_chunks and chat_history.
+// Set to 2000 for qwen3-embedding (truncate from 4096). pgvector IVFFlat limit is 2000.
+const EmbeddingDim = 2000
+
+// TruncateEmbedding normalizes embedding to exactly EmbeddingDim for PostgreSQL VECTOR.
+// - If model returns > EmbeddingDim: truncate to first N dims.
+// - If model returns < EmbeddingDim: pad with zeros.
+// - Otherwise: return as-is.
+func TruncateEmbedding(vec []float32) []float32 {
+	if len(vec) == 0 {
+		return make([]float32, EmbeddingDim)
+	}
+	if len(vec) == EmbeddingDim {
+		return vec
+	}
+	if len(vec) > EmbeddingDim {
+		return vec[:EmbeddingDim]
+	}
+	// Pad with zeros when model returns fewer dimensions
+	out := make([]float32, EmbeddingDim)
+	copy(out, vec)
+	return out
+}
 
 func Float32SliceToPgVector(vec []float32) string {
 	if len(vec) == 0 {

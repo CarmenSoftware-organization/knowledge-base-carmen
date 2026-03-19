@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, Loader2, FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -37,9 +38,14 @@ function cleanSnippet(text: string) {
 }
 
 /* --- 2. Component Highlight Search --- */
+function escapeRegExp(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
-  const parts = text.split(new RegExp(`(${query})`, "gi"));
+  const safeQuery = escapeRegExp(query);
+  const parts = text.split(new RegExp(`(${safeQuery})`, "gi"));
   return (
     <>
       {parts.map((part, i) =>
@@ -74,6 +80,7 @@ interface GlobalSearchProps {
 }
 
 export function GlobalSearch({ variant = "hero", placeholder, className, defaultValue = "" }: GlobalSearchProps) {
+  const t = useTranslations("search");
   const [searchQuery, setSearchQuery] = useState(defaultValue);
   const [isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchResultItem[]>([]);
@@ -203,7 +210,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
           </div>
           <Input
             type="search"
-            placeholder={placeholder || (isHeader ? "ค้นหาคู่มือ..." : "ค้นหาชื่อคู่มือ หรือเนื้อหาภายใน...")}
+            placeholder={placeholder || (isHeader ? t("placeholderHeader") : t("placeholderHero"))}
             className={`transition-all ${isHeader
               ? "h-10 pl-9 pr-4 text-sm bg-muted/50 focus:bg-card"
               : "h-14 pl-12 pr-24 text-base shadow-xl rounded-2xl"
@@ -220,7 +227,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
           />
           {!isHeader && (
             <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-5 py-1.5 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">
-              ค้นหา
+              {t("searchButton")}
             </button>
           )}
         </div>
@@ -268,8 +275,8 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
               })}
             </div>
             <div className="bg-muted/50 px-3 py-1.5 border-t border-border/50 flex justify-between items-center">
-              <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">Search Results</span>
-              <span className="text-[10px] text-muted-foreground">↑↓ to navigate</span>
+              <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">{t("results")}</span>
+              <span className="text-[10px] text-muted-foreground">{t("navigate")}</span>
             </div>
           </motion.div>
         )}

@@ -3,19 +3,26 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
+rich
+
 # LLM & AI
 langchain
 langchain-core
 langchain-community
 langchain-openai
 langchain-ollama
+numpy
 
 # Embeddings & Vector Search (via pgvector)
 sqlalchemy
+asyncpg
 psycopg2-binary
+PyYAML
 
-# HTTP
+# CLI & HTTP
 requests
 InquirerPy
+
+# Utilities & Performance
 slowapi
 cachetools

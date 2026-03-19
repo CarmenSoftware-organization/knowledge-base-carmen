@@ -13,6 +13,8 @@ import (
 
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/nlp"
+	"github.com/new-carmen/backend/internal/security"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/github"
 	"github.com/new-carmen/backend/pkg/ollama"
@@ -85,12 +87,42 @@ func NewWikiService() *WikiService {
 	}
 }
 
+// getRepoPath returns the filesystem path for a BU's wiki content.
 func (s *WikiService) getRepoPath(bu string) string {
-	repoBase := config.AppConfig.Git.RepoPath
-	if bu == "carmen" {
-		return filepath.Join(repoBase, "carmen_cloud")
+	cfg := config.AppConfig.Git
+	if !security.ValidateSchema(bu) {
+		bu = cfg.DefaultBU
 	}
-	return filepath.Join(repoBase, bu)
+	if bu == cfg.DefaultBU {
+		// WIKI_CONTENT_PATH override ได้ถ้าต้องการ
+		if cfg.ContentPath != "" {
+			p := config.NormalizePath(cfg.ContentPath)
+			if abs, err := filepath.Abs(p); err == nil {
+				if info, err := os.Stat(abs); err == nil && info.IsDir() {
+					return abs
+				}
+			}
+		}
+		dirs := cfg.CarmenContentDirs
+		for _, p := range dirs {
+			if abs, err := filepath.Abs(p); err == nil {
+				if info, err := os.Stat(abs); err == nil && info.IsDir() {
+					return abs
+				}
+			}
+		}
+		fallback := "."
+		if len(dirs) > 0 {
+			fallback = dirs[0]
+		}
+		abs, _ := filepath.Abs(fallback)
+		return abs
+	}
+	repoBase := cfg.RepoPath
+	if repoBase == "" || repoBase == "." {
+		repoBase = config.DefaultRepoPath()
+	}
+	return filepath.Join(filepath.Clean(repoBase), bu)
 }
 
 // ─── Frontmatter Helpers ─────────────────────────────────────────────────────
@@ -297,9 +329,10 @@ func (s *WikiService) GetContent(bu, relPath string) (*WikiContent, error) {
 		return content, nil
 	}
 
+	cfg := config.AppConfig.Git
 	gitPath := relPath
-	if bu == "carmen" {
-		gitPath = "carmen_cloud/" + relPath
+	if bu == cfg.DefaultBU && cfg.CarmenGitPath != "" {
+		gitPath = strings.TrimSuffix(cfg.CarmenGitPath, "/") + "/" + relPath
 	} else if bu != "" {
 		gitPath = bu + "/" + relPath
 	}
@@ -317,8 +350,10 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 	if err != nil {
 		return nil, fmt.Errorf("create embedding: %w", err)
 	}
+	emb = utils.TruncateEmbedding(emb)
 	embStr := utils.Float32SliceToPgVector(emb)
 
+	cfg := config.AppConfig.WikiSearch
 	sql := fmt.Sprintf(`
         WITH vector_results AS (
             SELECT
@@ -333,13 +368,13 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
                 END AS text_boost
             FROM %s.document_chunks dc
             JOIN %s.documents d ON dc.document_id = d.id
-            WHERE dc.embedding <-> ?::vector < 0.3
+            WHERE (dc.embedding <-> ?::vector) < ?
         )
         SELECT path, title, snippet,
                (vector_dist - text_boost) AS final_score
         FROM vector_results
         ORDER BY final_score ASC
-        LIMIT 20
+        LIMIT ?
     `, bu, bu)
 
 	query = removeDots(query)
@@ -353,10 +388,12 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 		FinalScore float64
 	}
 	if err := database.DB.Raw(sql,
-		embStr,    // vector compare
+		embStr,    // vector compare (SELECT)
 		likeQuery, // title boost
 		likeQuery, // content boost
-		embStr,    // WHERE filter
+		embStr,    // WHERE vector compare
+		cfg.VectorDistanceMax,
+		cfg.SearchLimit,
 	).Scan(&rows).Error; err != nil {
 		return nil, fmt.Errorf("hybrid search: %w", err)
 	}
@@ -369,7 +406,63 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 		}
 		seen[r.Path] = true
 		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
-		snippet = smartTrim(snippet, 200)
+		snippet = smartTrim(snippet, config.AppConfig.WikiSearch.SnippetMaxLen)
+		results = append(results, SearchResult{
+			WikiEntry: WikiEntry{Path: r.Path, Title: r.Title},
+			Snippet:   snippet,
+		})
+	}
+	return results, nil
+}
+
+// SearchByKeyword performs keyword search (ILIKE) with NLP-expanded terms.
+// Used alongside semantic search to improve recall for domain terms.
+func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) {
+	if !security.ValidateSchema(bu) {
+		return nil, fmt.Errorf("invalid schema/bu: %q", bu)
+	}
+	terms := nlp.ExpandQuery(query)
+	if len(terms) == 0 {
+		return nil, nil
+	}
+
+	// Build (d.title ILIKE ? OR dc.content ILIKE ?) OR ... for each term
+	var conditions []string
+	var args []interface{}
+	for _, t := range terms {
+		pattern := "%" + t + "%"
+		conditions = append(conditions, "(d.title ILIKE ? OR dc.content ILIKE ?)")
+		args = append(args, pattern, pattern)
+	}
+	whereClause := "(" + strings.Join(conditions, " OR ") + ")"
+
+	searchLimit := config.AppConfig.WikiSearch.SearchLimit
+	sql := fmt.Sprintf(`
+		SELECT DISTINCT ON (d.path) d.path, d.title, dc.content AS snippet
+		FROM %s.document_chunks dc
+		JOIN %s.documents d ON dc.document_id = d.id
+		WHERE %s
+		ORDER BY d.path, CASE WHEN d.title ILIKE ? THEN 0 ELSE 1 END
+		LIMIT ?
+	`, bu, bu, whereClause)
+
+	// Add primary term for ORDER BY (use first term) and limit
+	args = append(args, "%"+terms[0]+"%", searchLimit)
+
+	var rows []struct {
+		Path    string
+		Title   string
+		Snippet string
+	}
+	if err := database.DB.Raw(sql, args...).Scan(&rows).Error; err != nil {
+		return nil, fmt.Errorf("keyword search: %w", err)
+	}
+
+	var results []SearchResult
+	snippetMaxLen := config.AppConfig.WikiSearch.SnippetMaxLen
+	for _, r := range rows {
+		snippet := strings.ReplaceAll(r.Snippet, "\n", " ")
+		snippet = smartTrim(snippet, snippetMaxLen)
 		results = append(results, SearchResult{
 			WikiEntry: WikiEntry{Path: r.Path, Title: r.Title},
 			Snippet:   snippet,
@@ -450,8 +543,67 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 		entries = append(entries, entry)
 		return nil
 	})
-	if err != nil {
-		return nil, err
+	// If BU-specific path not found and BU is not carmen, fallback to carmen_cloud
+	if err != nil || len(entries) == 0 {
+		if bu != "" && bu != "carmen" {
+			carmenRoot := s.getRepoPath("carmen")
+			if !filepath.IsAbs(carmenRoot) {
+				absRoot, errAbs := filepath.Abs(carmenRoot)
+				if errAbs == nil {
+					carmenRoot = absRoot
+				}
+			}
+			carmenRoot = filepath.Clean(carmenRoot)
+
+			carmenErr := filepath.Walk(carmenRoot, func(path string, info os.FileInfo, errWalk error) error {
+				if errWalk != nil {
+					if os.IsNotExist(errWalk) {
+						return nil
+					}
+					return errWalk
+				}
+				if info.IsDir() || strings.ToLower(filepath.Ext(info.Name())) != ".md" {
+					return nil
+				}
+
+				rel, errRel := filepath.Rel(carmenRoot, path)
+				if errRel != nil {
+					return nil
+				}
+				rel = filepath.ToSlash(rel)
+				entry := WikiEntry{Path: rel, Title: slugToTitle(info.Name()), Weight: 999}
+
+				data, errRead := os.ReadFile(path)
+				if errRead == nil && len(data) > 0 {
+					if len(data) > maxFrontmatterRead {
+						data = data[:maxFrontmatterRead]
+					}
+					meta, _ := parseFrontmatter(data)
+					if t := meta["title"]; t != "" {
+						entry.Title = t
+					}
+					entry.Description = meta["description"]
+					entry.Published = metaBool(meta, "published")
+					entry.Date = meta["date"]
+					entry.DateCreated = meta["dateCreated"]
+					entry.Editor = meta["editor"]
+					entry.Tags = metaToTags(meta)
+					entry.Weight = parseWeight(meta, data)
+					if entry.Date != "" {
+						entry.PublishedAt = entry.Date
+					} else if entry.DateCreated != "" {
+						entry.PublishedAt = entry.DateCreated
+					}
+				}
+				entries = append(entries, entry)
+				return nil
+			})
+			if carmenErr != nil {
+				return nil, carmenErr
+			}
+		} else if err != nil {
+			return nil, err
+		}
 	}
 
 	sort.Slice(entries, func(i, j int) bool {
@@ -487,6 +639,9 @@ func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, err
 	meta, body := parseFrontmatter(data)
 	if len(meta) > 0 {
 		applyMeta(out, meta, body)
+	} else {
+		// Files without frontmatter (e.g. external changelog imports) still need content.
+		out.Content = stripWeightLines(body)
 	}
 	return out, nil
 }

@@ -1,11 +1,16 @@
 import re
 import time
+import json
+import urllib.request
+import urllib.error
 
 # ==========================================
 # 💬 CHAT HISTORY (Frontend-Only / Stateless)
 # ==========================================
 
 from cachetools import LRUCache
+from ..core.config import settings
+from ..core.database import AsyncSessionLocal
 
 # Temporary per-request cache (populated from frontend history each request)
 # Limit to 20 rooms to prevent memory leaks
@@ -72,7 +77,136 @@ def restore_history(room_id: str, frontend_history: list[dict] = None):
         _request_history[room_id] = _request_history[room_id][-50:]
 
 
-def save_chat_logs(data: dict) -> int:
-    """No-op for stateless mode. Frontend handles persistence via localStorage."""
-    return int(time.time())
+async def _save_to_db_direct(data: dict) -> bool:
+    """Save Q&A directly to public.chat_history. Returns True on success."""
+    from sqlalchemy import text
+    from .retrieval import retrieval_service
+
+    bu = data.get("bu", "carmen")
+    username = data.get("username", "anonymous")
+    user_query = (data.get("user_query") or "").strip()
+    bot_response = (data.get("bot_response") or "").strip()
+    sources_raw = data.get("sources") or []
+
+    if not user_query or not bot_response:
+        return False
+
+    async with AsyncSessionLocal() as db:
+        try:
+            # Get bu_id from business_units
+            result = await db.execute(
+                text("SELECT id FROM public.business_units WHERE slug = :slug LIMIT 1"),
+                {"slug": bu},
+            )
+            row = result.fetchone()
+            if not row:
+                print(f"[chat_history] bu '{bu}' not found in business_units")
+                return False
+            bu_id = row[0]
+
+            # Create embedding if available
+            emb_str = None
+            if retrieval_service.embeddings:
+                try:
+                    emb = await retrieval_service.get_embedding(user_query)
+                    emb_str = retrieval_service.format_pgvector(emb)
+                except Exception as e:
+                    print(f"[chat_history] embedding failed: {e}")
+
+            # Map sources to jsonb format
+            sources_list = [
+                {"articleId": s.get("source", ""), "title": s.get("title", "")}
+                for s in sources_raw
+                if isinstance(s, dict)
+            ]
+            sources_json = json.dumps(sources_list)
+
+            if emb_str:
+                await db.execute(
+                    text("""
+                        INSERT INTO public.chat_history
+                        (bu_id, user_id, question, answer, sources, question_embedding, created_at)
+                        VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb), CAST(:emb_str AS vector), now())
+                    """),
+                    {
+                        "bu_id": bu_id,
+                        "user_id": username,
+                        "question": user_query,
+                        "answer": bot_response,
+                        "sources_json": sources_json,
+                        "emb_str": emb_str,
+                    },
+                )
+            else:
+                await db.execute(
+                    text("""
+                        INSERT INTO public.chat_history
+                        (bu_id, user_id, question, answer, sources, created_at)
+                        VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb), now())
+                    """),
+                    {
+                        "bu_id": bu_id,
+                        "user_id": username,
+                        "question": user_query,
+                        "answer": bot_response,
+                        "sources_json": sources_json,
+                    },
+                )
+            await db.commit()
+            print(f"[chat_history] Saved to DB (bu={bu}, user={username})")
+            return True
+        except Exception as e:
+            await db.rollback()
+            print(f"[chat_history] Save failed: {e}")
+            return False
+
+
+async def save_chat_logs(data: dict) -> int:
+    """Save Q&A to DB. Tries: 1) Go backend (if GO_BACKEND_URL set), 2) Direct DB insert."""
+    ts = int(time.time())
+    bu = data.get("bu", "carmen")
+    username = data.get("username", "anonymous")
+    user_query = (data.get("user_query") or "").strip()
+    bot_response = (data.get("bot_response") or "").strip()
+    sources_raw = data.get("sources") or []
+
+    if not user_query or not bot_response:
+        return ts
+
+    print(f"[chat_history] Saving (bu={bu}, user={username}, q_len={len(user_query)})")
+
+    # 1) Try Go backend first (when Go is running)
+    go_url = getattr(settings, "GO_BACKEND_URL", "") or ""
+    if go_url:
+        sources = [
+            {"articleId": s.get("source", ""), "title": s.get("title", "")}
+            for s in sources_raw
+            if isinstance(s, dict)
+        ]
+        payload = json.dumps({
+            "bu": bu,
+            "user_id": username,
+            "question": user_query,
+            "answer": bot_response,
+            "sources": sources,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            f"{go_url}/api/chat/record-history",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                if resp.status in (200, 201):
+                    return ts  # success
+        except urllib.error.HTTPError as e:
+            print(f"[chat_history] Go backend failed: {e.code}, using direct DB")
+        except Exception as e:
+            print(f"[chat_history] Go backend error: {e}, using direct DB")
+
+    # 2) Fallback: save directly to DB (works when running carmen-chatbot standalone)
+    if await _save_to_db_direct(data):
+        pass  # saved
+    return ts
 

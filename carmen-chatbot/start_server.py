@@ -3,21 +3,30 @@ import sys
 import json
 import requests
 import uvicorn
+import time
 from pathlib import Path
 from dotenv import set_key, load_dotenv
 
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.live import Live
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent
 ENV_PATH = BASE_DIR / ".env"
 
+# Initialize Rich Console
+console = Console()
+
 # Load current env context
 load_dotenv(ENV_PATH)
 
 def fetch_openrouter_models():
-    print("Fetching OpenRouter models...")
+    console.print("[yellow]Fetching OpenRouter models...[/yellow]")
     try:
         base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
         resp = requests.get(f"{base_url}/api/v1/models", timeout=10)
@@ -26,11 +35,11 @@ def fetch_openrouter_models():
         models = data.get("data", [])
         return [Choice(value=m["id"], name=f"{m['id']} ({m.get('name', 'N/A')})") for m in models]
     except Exception as e:
-        print(f"Error fetching OpenRouter models: {e}")
+        console.print(f"[red]Error fetching OpenRouter models: {e}[/red]")
         return []
 
 def fetch_ollama_models():
-    print("Fetching local Ollama models...")
+    console.print("[yellow]Fetching local Ollama models...[/yellow]")
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
     try:
         resp = requests.get(f"{ollama_url}/api/tags", timeout=5)
@@ -39,16 +48,16 @@ def fetch_ollama_models():
         models = data.get("models", [])
         return [Choice(value=m["name"], name=m["name"]) for m in models]
     except Exception as e:
-        print(f"Error fetching Ollama models at {ollama_url}: {e}")
+        console.print(f"[red]Error fetching Ollama models at {ollama_url}: {e}[/red]")
         return []
 
 def fetch_zai_models():
-    print("Fetching Z.ai models...")
+    console.print("[yellow]Fetching Z.ai models...[/yellow]")
     try:
         base_url = os.environ.get("ZAI_API_BASE", "https://api.z.ai/api/coding/paas/v4")
         api_key = os.environ.get("ZAI_API_KEY")
         if not api_key:
-            print("⚠️ ZAI_API_KEY not found in .env, cannot fetch models.")
+            console.print("⚠️ [bold yellow]ZAI_API_KEY not found in .env, cannot fetch models.[/bold yellow]")
             return []
             
         headers = {"Authorization": f"Bearer {api_key}"}
@@ -59,16 +68,16 @@ def fetch_zai_models():
         models = data.get("data", [])
         return [Choice(value=m["id"], name=m["id"]) for m in models]
     except Exception as e:
-        print(f"Error fetching Z.ai models: {e}")
+        console.print(f"[red]Error fetching Z.ai models: {e}[/red]")
         return []
 
-def check_llm_health(provider: str, model: str) -> bool:
-    print(f"\n🩺 Performing health check for {provider.upper()} model '{model}'...")
+def check_llm_health(label: str, provider: str, model: str) -> bool:
+    console.print(f"🩺 Checking [bold cyan]{label}[/bold cyan] ({provider}/{model})...", end=" ")
     try:
         if provider == "openrouter":
             api_key = os.environ.get("OPENROUTER_API_KEY")
             if not api_key:
-                print("❌ ERROR: OPENROUTER_API_KEY is not set in .env")
+                console.print("[red]FAILED (Missing API Key)[/red]")
                 return False
             
             headers = {
@@ -82,57 +91,45 @@ def check_llm_health(provider: str, model: str) -> bool:
                 "max_tokens": 5
             }
             base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
-            resp = requests.post(f"{base_url}/api/v1/chat/completions", headers=headers, json=data, timeout=10)
+            resp = requests.post(f"{base_url}/api/v1/chat/completions", headers=headers, json=data, timeout=15)
             if resp.status_code == 200:
-                print("✅ Health check passed! Model responded successfully.")
+                console.print("[green]PASSED[/green]")
                 return True
             else:
-                print(f"❌ Health check failed with HTTP {resp.status_code}: {resp.text}")
+                console.print(f"[red]FAILED (HTTP {resp.status_code})[/red]")
                 return False
                 
         elif provider == "zai":
             api_key = os.environ.get("ZAI_API_KEY")
             if not api_key:
-                print("❌ ERROR: ZAI_API_KEY is not set in .env")
+                console.print("[red]FAILED (Missing API Key)[/red]")
                 return False
             
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "model": model,
-                "messages": [{"role": "user", "content": "Hello"}],
-                "max_tokens": 5
-            }
+            headers = { "Authorization": f"Bearer {api_key}", "Content-Type": "application/json" }
+            data = { "model": model, "messages": [{"role": "user", "content": "Hello"}], "max_tokens": 5 }
             base_url = os.environ.get("ZAI_API_BASE", "https://api.z.ai/api/coding/paas/v4")
             endpoint = f"{base_url.rstrip('/')}/chat/completions"
-            resp = requests.post(endpoint, headers=headers, json=data, timeout=10)
+            resp = requests.post(endpoint, headers=headers, json=data, timeout=15)
             if resp.status_code == 200:
-                print("✅ Health check passed! Model responded successfully.")
+                console.print("[green]PASSED[/green]")
                 return True
             else:
-                print(f"❌ Health check failed with HTTP {resp.status_code}: {resp.text}")
+                console.print(f"[red]FAILED (HTTP {resp.status_code})[/red]")
                 return False
                 
         elif provider == "ollama":
             ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-            data = {
-                "model": model,
-                "prompt": "Hello",
-                "stream": False,
-                "options": {"num_predict": 5}
-            }
+            data = { "model": model, "prompt": "Hello", "stream": False, "options": {"num_predict": 5} }
             resp = requests.post(f"{ollama_url}/api/generate", json=data, timeout=15)
             if resp.status_code == 200:
-                print("✅ Health check passed! Model responded successfully.")
+                console.print("[green]PASSED[/green]")
                 return True
             else:
-                print(f"❌ Health check failed with HTTP {resp.status_code}: {resp.text}")
+                console.print(f"[red]FAILED (HTTP {resp.status_code})[/red]")
                 return False
                 
     except Exception as e:
-        print(f"❌ Health check exception: {e}")
+        console.print(f"[red]ERROR ({e})[/red]")
         return False
         
     return False
@@ -141,137 +138,68 @@ def main():
     # 🌟 Check Environment Mode
     env_mode = os.environ.get("ENVIRONMENT", "development").lower()
     
+    console.print(Panel.fit(
+        "[bold cyan]CARMEN CHATBOT - SYSTEM STARTUP[/bold cyan]",
+        subtitle=f"[dim]Mode: {env_mode.upper()}[/dim]",
+        border_style="cyan"
+    ))
+
     if env_mode == "production":
-        print("\n🚀 [PRODUCTION MODE] Skipping Interactive Prompts 🚀\n")
         provider = os.environ.get("ACTIVE_LLM_PROVIDER", "openrouter")
-        
-        if provider == "openrouter":
-            model = os.environ.get("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
-        elif provider == "zai":
-            model = os.environ.get("ZAI_CHAT_MODEL", "gpt-4o")
-        else:
-            provider = "ollama" # fallback
-            model = os.environ.get("OLLAMA_CHAT_MODEL", "gemma3:1b")
-            
-        print(f"📌 Using Provider: {provider.upper()}")
-        print(f"📌 Using Model: {model}\n")
-        
-        # Pre-Flight Health Check (Non-blocking in Production)
-        print("⏳ Running pre-flight health check...")
-        is_healthy = check_llm_health(provider, model)
-        if not is_healthy:
-            print("⚠️ WARNING: Health check failed, but forcing start in PRODUCTION mode...")
-            
+        chat_model = os.environ.get("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
+        intent_model = os.environ.get("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")
     else:
-        # 💻 Development Mode (Interactive)
-        print("\n🤖 Welcome to Carmen LLM Configurator (Development Mode) 🤖\n")
-        
+        # Development Mode (Interactive)
+        provider = inquirer.select(
+            message="Which LLM Provider?",
+            choices=[Choice("openrouter", "OpenRouter"), Choice("ollama", "Ollama"), Choice("zai", "Z.ai")],
+            default=os.environ.get("ACTIVE_LLM_PROVIDER", "openrouter")
+        ).execute()
+
         while True:
-            provider = inquirer.select(
-                message="Which LLM Provider would you like to use today?",
-                choices=[
-                    Choice(value="openrouter", name="OpenRouter (Cloud API)"),
-                    Choice(value="ollama", name="Ollama (Local Server)"),
-                    Choice(value="zai", name="Z.ai (Cloud API)")
-                ],
-                default=os.environ.get("ACTIVE_LLM_PROVIDER", "openrouter")
-            ).execute()
-        
             if provider == "openrouter":
-                choices = fetch_openrouter_models()
-                if not choices:
-                    print("Failed to load models. Exiting.")
-                    sys.exit(1)
-                    
-                model = inquirer.fuzzy(
-                    message="Search and select an OpenRouter model:",
-                    choices=choices,
-                    match_exact=True,
-                ).execute()
-                
+                p_models = fetch_openrouter_models()
+                chat_model = inquirer.fuzzy(message="Select Chat Model (RAG):", choices=p_models, default=os.environ.get("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")).execute()
+                intent_model = inquirer.fuzzy(message="Select Intent Model (Small):", choices=p_models, default=os.environ.get("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")).execute()
             elif provider == "zai":
-                choices = fetch_zai_models()
-                if not choices:
-                    model = inquirer.text(
-                        message="Enter the Z.ai model name (failed to fetch list):",
-                        default=os.environ.get("ZAI_CHAT_MODEL", "gpt-4o")
-                    ).execute()
-                else:
-                    model = inquirer.fuzzy(
-                        message="Search and select a Z.ai model:",
-                        choices=choices,
-                        match_exact=True,
-                    ).execute()
-                
-            elif provider == "ollama":
-                choices = fetch_ollama_models()
-                if not choices:
-                    print("No models found. Please ensure Ollama is running and models are pulled.")
-                    sys.exit(1)
-                    
-                model = inquirer.fuzzy(
-                    message="Search and select a local Ollama model:",
-                    choices=choices,
-                    match_exact=True,
-                ).execute()
-                
-            save_env = inquirer.confirm(
-                message="Do you want to save this configuration to .env as the new default?",
-                default=True
-            ).execute()
-            
-            # Apply configurations ONLY in memory for this run session
-            os.environ["ACTIVE_LLM_PROVIDER"] = provider
-            if save_env:
-                set_key(ENV_PATH, "ACTIVE_LLM_PROVIDER", provider)
-            
-            if provider == "openrouter":
-                os.environ["OPENROUTER_CHAT_MODEL"] = model
-                if save_env:
-                    set_key(ENV_PATH, "OPENROUTER_CHAT_MODEL", model)
-            elif provider == "zai":
-                os.environ["ZAI_CHAT_MODEL"] = model
-                if save_env:
-                    set_key(ENV_PATH, "ZAI_CHAT_MODEL", model)
+                p_models = fetch_zai_models() or [Choice("gpt-4o", "gpt-4o")]
+                chat_model = inquirer.fuzzy(message="Select Z.ai Model:", choices=p_models).execute()
+                intent_model = chat_model # Z.ai usually uses same for now
             else:
-                os.environ["OLLAMA_CHAT_MODEL"] = model
-                if save_env:
-                    set_key(ENV_PATH, "OLLAMA_CHAT_MODEL", model)
-                
-            # Pre-Flight Health Check
-            is_healthy = check_llm_health(provider, model)
-            if not is_healthy:
-                action = inquirer.select(
-                    message="⚠️ The selected model failed the health check or is unreachable. What would you like to do?",
-                    choices=[
-                        Choice(value="retry", name="Select a different model"),
-                        Choice(value="force", name="Force start the server anyway"),
-                        Choice(value="abort", name="Abort and exit")
-                    ],
-                    default="retry"
-                ).execute()
-                
-                if action == "retry":
-                    print("\nRestarting selection process...\n")
-                    continue
-                elif action == "abort":
-                    print("\n🛑 Server startup aborted by user.")
-                    sys.exit(1)
-                # if "force", it just breaks out of the loop and starts
-                
-            break # Exit loop if healthy or if user chose "force"
-        
-    print(f"\n🚀 Starting Backend Server with [{provider.upper()}] -> [{model}]...\n")
-    
+                p_models = fetch_ollama_models()
+                chat_model = inquirer.fuzzy(message="Select Ollama Model:", choices=p_models).execute()
+                intent_model = chat_model
+
+            # Health Check
+            chat_ok = check_llm_health("Chat Model", provider, chat_model)
+            intent_ok = check_llm_health("Intent Model", provider, intent_model) if provider == "openrouter" else True
+            
+            if not chat_ok or not intent_ok:
+                ans = inquirer.select(message="Health checks failed. Continue?", choices=[Choice("retry", "Select different models"), Choice("force", "Force start anyway"), Choice("abort", "Exit")], default="retry").execute()
+                if ans == "retry": continue
+                if ans == "abort": sys.exit(1)
+            break
+
+        save = inquirer.confirm(message="Save to .env?", default=True).execute()
+        if save:
+            set_key(ENV_PATH, "ACTIVE_LLM_PROVIDER", provider)
+            if provider == "openrouter":
+                set_key(ENV_PATH, "OPENROUTER_CHAT_MODEL", chat_model)
+                set_key(ENV_PATH, "OPENROUTER_INTENT_MODEL", intent_model)
+            elif provider == "zai": set_key(ENV_PATH, "ZAI_CHAT_MODEL", chat_model)
+            else: set_key(ENV_PATH, "OLLAMA_CHAT_MODEL", chat_model)
+
+    # Final Summary Table
+    table = Table(title="[bold green]Active Configuration[/bold green]", show_header=True, header_style="bold green")
+    table.add_column("Key", style="dim")
+    table.add_column("Value", style="bold white")
+    table.add_row("Provider", provider.upper())
+    table.add_row("Chat Model", chat_model)
+    table.add_row("Intent Model", intent_model if provider == "openrouter" else "N/A (Provider Default)")
+    console.print(table)
+
     # Start Uvicorn
-    # Use reload=True only in development mode
-    should_reload = (env_mode != "production")
-    if should_reload:
-        print("🔄 Hot-reload is ENABLED (Development Mode)")
-        uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
-    else:
-        print("⏩ Hot-reload is DISABLED, starting with multiple workers (Production Mode)")
-        uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=False, workers=4)
+    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=(env_mode != "production"))
 
 if __name__ == "__main__":
     main()

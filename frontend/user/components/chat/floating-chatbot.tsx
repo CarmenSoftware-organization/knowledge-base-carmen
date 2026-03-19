@@ -2,8 +2,11 @@
 import { CarmenChatConfig, useCarmenChat } from "@/hooks/use-carmen-chat";
 import { AnimatePresence, motion } from "framer-motion";
 import CarmenChatWindow from "./carmen-chat-window";
+import { API_BASE } from "@/lib/config";
+import { getOrCreateClientId } from "@/lib/carmen-client-id";
 import { getSelectedBUClient } from "@/lib/wiki-api";
 import { useEffect, useState } from "react";
+import { useLocale } from "next-intl";
 
 interface Props extends Partial<CarmenChatConfig> {
   bu?: string;
@@ -12,7 +15,7 @@ interface Props extends Partial<CarmenChatConfig> {
 
 export default function FloatingChatBot({
   bu: initialBU,
-  username = "Guest",
+  username: usernameProp,
   apiBase,
   theme = "#34558b",
   title = "Carmen AI Specialist",
@@ -21,7 +24,19 @@ export default function FloatingChatBot({
   showAttach = false,
   suggestedQuestions,
 }: Props) {
+  const locale = useLocale();
   const [currentBU, setCurrentBU] = useState(initialBU || getSelectedBUClient());
+  const [clientId, setClientId] = useState<string | null>(null);
+
+  // เมื่อไม่มีการล็อกอิน ใช้ Client ID แทน (แยกผู้ใช้แต่ละ browser/device)
+  const username =
+    usernameProp && usernameProp !== "Guest"
+      ? usernameProp
+      : clientId ?? "Guest";
+
+  useEffect(() => {
+    setClientId(getOrCreateClientId());
+  }, []);
 
   useEffect(() => {
     if (!initialBU) {
@@ -31,8 +46,7 @@ export default function FloatingChatBot({
     }
   }, [initialBU]);
 
-  const resolvedApiBase =
-    apiBase ?? process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
+  const resolvedApiBase = apiBase ?? API_BASE;
 
   const state = useCarmenChat({
     bu: currentBU,
@@ -40,17 +54,33 @@ export default function FloatingChatBot({
     apiBase: resolvedApiBase,
     theme,
     title,
+    locale: locale as any,
     promptExtend,
     showClear,
     showAttach,
     suggestedQuestions,
+    proactiveMessages: [
+      {
+        pathPattern: "/settings", // match path exactly or partially
+        delayMs: 60000,
+        message: "สับสนการตั้งค่าระบบหรือเปล่าคะ?",
+        subMessage: "สอบถาม Carmen ได้เลยนะ!",
+        timeoutMs: 15000,
+      },
+      {
+        pathPattern: "/", // Catch all / Home page
+        delayMs: 180000, // 3 minutes engagement
+        message: "กำลังค้นหาคู่มือเรื่องอะไรอยู่หรือเปล่าคะ?",
+        timeoutMs: 15000,
+      }
+    ],
     onTypingFrame: () => {
       // Dispatch a custom event to sync auto-scroll with typing frames
       window.dispatchEvent(new CustomEvent("carmen-typing-frame"));
     }
   });
 
-  const { isOpen, tooltipVisible, toggleOpen, dismissTooltip } = state;
+  const { isOpen, tooltipData, toggleOpen, dismissTooltip } = state;
 
   return (
     <>
@@ -83,7 +113,7 @@ export default function FloatingChatBot({
 
         {/* Tooltip */}
         <AnimatePresence>
-          {tooltipVisible && !isOpen && (
+          {tooltipData?.visible && !isOpen && (
             <motion.div
               className="absolute bottom-[80px] right-0 flex items-center gap-3
                 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl
@@ -105,12 +135,12 @@ export default function FloatingChatBot({
               </div>
 
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[12px] font-bold tracking-wide carmen-theme-text">
-                  ผู้ช่วย AI พร้อมให้คำแนะนำ
+                <span className="text-[12px] font-bold tracking-wide carmen-theme-text line-clamp-2">
+                  {tooltipData.message || "ผู้ช่วย AI พร้อมให้คำแนะนำ"}
                 </span>
                 <span className="text-[12px] font-medium text-slate-600 dark:text-slate-400
-                leading-tight">
-                  สอบถามข้อมูลคู่มือได้ทันที!
+                leading-tight line-clamp-1">
+                  {tooltipData.subMessage || "สอบถามข้อมูลคู่มือได้ทันที!"}
                 </span>
               </div>
 

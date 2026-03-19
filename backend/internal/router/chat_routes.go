@@ -11,6 +11,8 @@ func RegisterPublicChat(app *fiber.App) {
 
 	// Direct routes (Go Backend handles these)
 	app.Post("/api/chat/ask", chatHandler.Ask)
+	app.Post("/api/chat/record-history", chatHandler.RecordHistory)
+	app.Get("/api/chat/history/list", chatHandler.ListHistory)
 	app.Post("/api/chat/route-test", chatHandler.RouteOnly)
 
 	// Proxy routes (Forwarded to Python Chatbot)
@@ -24,5 +26,5 @@ func RegisterPublicChat(app *fiber.App) {
 	app.Post("/api/chat/feedback/:message_id", chatHandler.Proxy)
 
 	// Image routing (Forwarded to Python Chatbot)
-	app.Get("/images/*", chatHandler.Proxy)
+	app.Get("/images/*", chatHandler.Image)
 }

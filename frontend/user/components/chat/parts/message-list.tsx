@@ -15,15 +15,16 @@ interface MessageListProps {
     retryMessage: (text: string) => void;
     theme: string;
     isResizing: boolean;
+    t: any;
 }
 
 export const MessageList = React.memo(({
-    bodyRef, messages, showSuggestions, suggestions, sendMessage, sendFeedback, retryMessage, theme, isResizing
+    bodyRef, messages, showSuggestions, suggestions, sendMessage, sendFeedback, retryMessage, theme, isResizing, t
 }: MessageListProps) => {
     return (
         <div
             ref={bodyRef}
-            className={`flex-1 overflow-y-auto flex flex-col gap-4 p-4 sm:p-5 overscroll-contain transition-all duration-300 ${isResizing ? "opacity-10 blur-md pointer-events-none" : "opacity-100 blur-0"}`}
+            className={`flex-1 overflow-y-auto flex flex-col gap-4 p-4 sm:p-5 pb-8 overscroll-contain transition-all duration-300 ${isResizing ? "opacity-10 blur-md pointer-events-none" : "opacity-100 blur-0"}`}
         >
             <AnimatePresence mode="wait">
                 {messages.length === 0 && showSuggestions ? (
@@ -38,6 +39,7 @@ export const MessageList = React.memo(({
                             suggestions={suggestions}
                             onSelect={(text: string) => sendMessage(text)}
                             theme={theme}
+                            t={t}
                         />
                     </motion.div>
                 ) : (
@@ -56,7 +58,7 @@ export const MessageList = React.memo(({
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ type: "spring", stiffness: 420, damping: 30 }}
                                 >
-                                    <CarmenMessage msg={msg} onFeedback={sendFeedback} onRetry={retryMessage} theme={theme} />
+                                    <CarmenMessage msg={msg} onFeedback={sendFeedback} onRetry={retryMessage} onSelect={sendMessage} theme={theme} t={t} />
                                 </motion.div>
                             ))}
                         </AnimatePresence>

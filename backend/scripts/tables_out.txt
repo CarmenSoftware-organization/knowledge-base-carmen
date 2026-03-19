@@ -1,7 +1,0 @@
-carmen.activity_logs
-inventory.documents
-inventory.document_chunks
-public.business_units
-public.activity_logs
-carmen.documents
-carmen.document_chunks

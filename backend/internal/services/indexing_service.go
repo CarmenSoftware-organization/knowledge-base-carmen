@@ -8,6 +8,7 @@ import (
 
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/security"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/ollama"
 )
@@ -29,6 +30,9 @@ func NewIndexingService() *IndexingService {
 }
 
 func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
+	if !security.ValidateSchema(bu) {
+		return fmt.Errorf("invalid schema/bu: %q", bu)
+	}
 	s.logService.Log(bu, "system", "เริ่มดึงข้อมูล ( Re-indexing )", "system", map[string]interface{}{"status": "started"}, "")
 	
 	entries, err := s.wiki.ListMarkdown(bu)
@@ -87,6 +91,10 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 			log.Printf("[indexing] skip %s chunk %d: empty embedding", path, i)
 			continue
 		}
+		if len(emb) > config.AppConfig.Ollama.VectorDimension {
+			emb = emb[:config.AppConfig.Ollama.VectorDimension]
+		}
+		emb = utils.TruncateEmbedding(emb) // DB uses VECTOR(1536); qwen3-embedding returns 4096
 		sqlChunk := fmt.Sprintf("INSERT INTO %s.document_chunks (document_id, chunk_index, content, embedding, created_at) VALUES (?, ?, ?, ?::vector, now())", bu)
 		if err := database.DB.Exec(sqlChunk, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)

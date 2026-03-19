@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import { categoryDisplayMap } from "@/configs/sidebar-map";
 import { motion, Variants } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 type Props = {
   categories: {
@@ -37,6 +38,8 @@ const itemVariants: Variants = {
 };
 
 export function CategoryCards({ categories }: Props) {
+  const t = useTranslations("category");
+  const tCommon = useTranslations("common");
   return (
     <section className="py-16 bg-background overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -49,10 +52,10 @@ export function CategoryCards({ categories }: Props) {
           className="text-center mb-12"
         >
           <h2 className="text-3xl font-bold text-foreground">
-            เลือกหมวดหมู่
+            {t("selectTitle")}
           </h2>
           <p className="mt-3 text-muted-foreground">
-            เลือกหมวดหมู่ที่คุณต้องการเรียนรู้
+            {t("selectDescription")}
           </p>
         </motion.div>
 
@@ -110,11 +113,11 @@ export function CategoryCards({ categories }: Props) {
                       {/* Meta */}
                       <div className="mt-6 flex items-center justify-between">
                         <span className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-                          {category.articleCount} บทความ
+                          {t("articlesCount", { count: category.articleCount })}
                         </span>
 
                         <div className="flex items-center gap-2 text-primary opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
-                          <span className="text-xs font-bold uppercase tracking-wider">ดูหมวดหมู่</span>
+                          <span className="text-xs font-bold uppercase tracking-wider">{tCommon("viewCategory")}</span>
                           <ArrowRight className="h-4 w-4" />
                         </div>
                       </div>

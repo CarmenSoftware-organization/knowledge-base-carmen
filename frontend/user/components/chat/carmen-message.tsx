@@ -4,14 +4,23 @@ import React, { useState, useMemo, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import DOMPurify from "dompurify";
 
+const StaticHtmlContent = memo(({ content }: { content: string }) => (
+  <div
+    className="carmen-content break-words leading-relaxed"
+    dangerouslySetInnerHTML={{ __html: content }}
+  />
+));
+
 interface Props {
   msg: DisplayMessage;
   onFeedback?: (msgId: string, score: number) => void;
   onRetry?: (errorText: string) => void;
+  onSelect?: (text: string, sourceMsgId?: string) => void;
   theme?: string;
+  t: any;
 }
 
-const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, theme = "#34558b" }: Props) {
+const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, onSelect, theme = "#34558b", t }: Props) {
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const isBot = msg.role === "bot";
@@ -20,7 +29,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
 
   function handleCopy() {
     const el = document.createElement("div");
-    el.innerHTML = msg.html;
+    // Use sanitized content to avoid injecting attacker-controlled HTML into the DOM.
+    el.innerHTML = processedContent;
     const text = el.innerText || el.textContent || "";
 
     const onSuccess = () => {
@@ -70,7 +80,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
     if (typeof window !== "undefined") {
       return DOMPurify.sanitize(cleaned, {
         ADD_TAGS: ["iframe"],
-        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "data-lightbox"],
+        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "data-lightbox", "target", "rel"],
         ALLOWED_URI_REGEXP: /^(?:(?:https?|data):|\/|images\/)/i,
       });
     }
@@ -82,7 +92,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
     if (!ts) return "";
     try {
       const d = new Date(ts);
-      return d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleTimeString(t("chat.placeholder") === "Type your message here..." ? "en-US" : "th-TH", { hour: "2-digit", minute: "2-digit" });
     } catch { return ""; }
   };
 
@@ -92,12 +102,15 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
 
   return (
     <div
-      className={`group relative w-fit max-w-[88%] text-[15px] font-['Sarabun',_sans-serif] flex flex-col ${isBot
-        ? "self-start mr-auto rounded-[20px] rounded-bl-[4px] bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 pt-[14px] px-[20px] pb-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
-        : "self-end ml-auto rounded-[20px] rounded-br-[4px] text-white py-[14px] px-[20px] pb-[10px] shadow-[0_4px_12px_rgba(15,23,42,0.15)]"
+      className={`group relative w-fit max-w-[88%] text-[15px] font-['Sarabun',_sans-serif] flex flex-col transition-shadow duration-300 ${isBot
+        ? "self-start mr-auto rounded-[24px] rounded-bl-[4px] carmen-premium-glass pt-[16px] px-[22px] pb-[14px] shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
+        : "self-end ml-auto rounded-[24px] rounded-br-[4px] text-white py-[16px] px-[22px] pb-[12px] shadow-[0_12px_24px_rgba(15,23,42,0.2)]"
         }`}
       style={{
-        backgroundColor: isBot ? undefined : theme,
+        background: isBot 
+          ? undefined 
+          : `linear-gradient(135deg, ${theme} 0%, ${theme}dd 100%)`,
+        border: isBot ? undefined : "1px solid rgba(255,255,255,0.1)",
       }}
     >
       <div className={`prose prose-sm max-w-none mb-1 ${isBot ? "text-slate-800 dark:text-slate-100 dark:prose-invert" : "text-white"}`}>
@@ -109,7 +122,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
-              เกิดข้อผิดพลาดในการเชื่อมต่อ
+              {t("chat.error_title")}
             </div>
             {onRetry && msg.errorText && (
               <button
@@ -120,7 +133,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                   <path d="M3 3v5h5"></path>
                 </svg>
-                ลองอีกครั้ง
+                {t("chat.error_retry")}
               </button>
             )}
           </div>
@@ -129,7 +142,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
             {!msg.html && isBot && !msg.isQueued ? (
               <div className="flex items-center gap-2 py-1">
                 <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">
-                  {msg.statusText || "กำลังค้นหาเอกสารที่เกี่ยวข้อง"}
+                  {msg.statusText || t("chat.status_searching")}
                 </span>
                 <div className="flex gap-1 items-center">
                   {[0, 1, 2].map((i) => (
@@ -142,15 +155,12 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                 </div>
               </div>
             ) : (
-              <div
-                className="carmen-content break-words leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: processedContent }}
-              />
+              <StaticHtmlContent content={processedContent} />
             )}
             {msg.isQueued && !isBot && (
               <div className="text-[10px] text-white/60 font-medium uppercase tracking-widest mt-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full border border-white/30 border-t-white animate-spin" />
-                🕐 รอคิว
+                🕐 {t("chat.status_waiting")}
               </div>
             )}
           </div>
@@ -171,7 +181,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
             <button
               onClick={handleCopy}
               className="p-1 text-slate-400 dark:text-slate-500 transition-colors hover:text-blue-500"
-              title={copied ? "คัดลอกแล้ว!" : "คัดลอกข้อมูล"}
+              title={copied ? t("tools.copied") : t("tools.copy")}
             >
               {copied ? (
                 <span className="text-[12px] font-bold text-green-600 leading-none">✓</span>
@@ -196,7 +206,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                         ? "opacity-30 grayscale scale-95"
                         : "text-slate-400 hover:text-emerald-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:scale-110"
                       }`}
-                    title="มีประโยชน์"
+                    title={t("tools.helpful")}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
@@ -212,7 +222,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
                         ? "opacity-30 grayscale scale-95"
                         : "text-slate-400 hover:text-red-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:scale-110"
                       }`}
-                    title="ไม่ถูกต้อง"
+                    title={t("tools.incorrect")}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
@@ -224,6 +234,75 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, th
           </div>
         )}
       </div>
+
+      <AnimatePresence mode="wait">
+        {isBot && msg.suggestions && msg.suggestions.length > 0 && (
+          <motion.div 
+            key={`suggestions-${msg.id}-${msg.suggestions.length}`}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={{
+              hidden: { opacity: 0, height: 0, marginTop: 0 },
+              visible: {
+                opacity: 1,
+                height: "auto",
+                marginTop: 8,
+                transition: {
+                  staggerChildren: 0.08,
+                  delayChildren: 0.1,
+                  duration: 0.3,
+                  ease: "easeOut"
+                }
+              },
+              exit: {
+                opacity: 0,
+                height: 0,
+                marginTop: 0,
+                transition: {
+                  opacity: { duration: 0.2 },
+                  height: { duration: 0.3, delay: 0.1 },
+                  marginTop: { duration: 0.3, delay: 0.1 },
+                  staggerChildren: 0.05,
+                  staggerDirection: -1
+                }
+              }
+            }}
+            className="flex flex-wrap items-start justify-start gap-2 mb-1 overflow-hidden p-1 -ml-1"
+          >
+            {msg.suggestions.map((s, i) => (
+              <motion.button
+                key={`${msg.id}-sugg-${i}`}
+                variants={{
+                  hidden: { opacity: 0, y: 15, scale: 0.9 },
+                  visible: { 
+                    opacity: 1, 
+                    y: 0, 
+                    scale: 1,
+                    transition: { 
+                      type: "spring", 
+                      stiffness: 300, 
+                      damping: 25 
+                    }
+                  },
+                  exit: {
+                    opacity: 0,
+                    scale: 0.8,
+                    y: 10,
+                    transition: { duration: 0.2 }
+                  }
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onSelect?.(s, msg.id)}
+                className="text-[13px] px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-medium transition-all shadow-sm hover:shadow-md outline-none cursor-pointer text-left w-fit"
+              >
+                {s}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 });
