@@ -23,6 +23,7 @@ class Settings:
         self.OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
         self.ACTIVE_LLM_PROVIDER: str = os.getenv("ACTIVE_LLM_PROVIDER", "openrouter")
         self.OPENROUTER_CHAT_MODEL: str = os.getenv("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
+        self.OPENROUTER_INTENT_MODEL: str = os.getenv("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")
 
         self.ZAI_API_KEY: str = os.getenv("ZAI_API_KEY", "")
         self.ZAI_API_BASE: str = os.getenv("ZAI_API_BASE", "https://api.z.ai/api/coding/paas/v4")

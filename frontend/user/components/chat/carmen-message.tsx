@@ -4,6 +4,13 @@ import React, { useState, useMemo, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import DOMPurify from "dompurify";
 
+const StaticHtmlContent = memo(({ content }: { content: string }) => (
+  <div
+    className="carmen-content break-words leading-relaxed"
+    dangerouslySetInnerHTML={{ __html: content }}
+  />
+));
+
 interface Props {
   msg: DisplayMessage;
   onFeedback?: (msgId: string, score: number) => void;
@@ -73,7 +80,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     if (typeof window !== "undefined") {
       return DOMPurify.sanitize(cleaned, {
         ADD_TAGS: ["iframe"],
-        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "data-lightbox"],
+        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "data-lightbox", "target", "rel"],
         ALLOWED_URI_REGEXP: /^(?:(?:https?|data):|\/|images\/)/i,
       });
     }
@@ -95,12 +102,15 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
 
   return (
     <div
-      className={`group relative w-fit max-w-[88%] text-[15px] font-['Sarabun',_sans-serif] flex flex-col ${isBot
-        ? "self-start mr-auto rounded-[20px] rounded-bl-[4px] bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 pt-[14px] px-[20px] pb-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
-        : "self-end ml-auto rounded-[20px] rounded-br-[4px] text-white py-[14px] px-[20px] pb-[10px] shadow-[0_4px_12px_rgba(15,23,42,0.15)]"
+      className={`group relative w-fit max-w-[88%] text-[15px] font-['Sarabun',_sans-serif] flex flex-col transition-shadow duration-300 ${isBot
+        ? "self-start mr-auto rounded-[24px] rounded-bl-[4px] carmen-premium-glass pt-[16px] px-[22px] pb-[14px] shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
+        : "self-end ml-auto rounded-[24px] rounded-br-[4px] text-white py-[16px] px-[22px] pb-[12px] shadow-[0_12px_24px_rgba(15,23,42,0.2)]"
         }`}
       style={{
-        backgroundColor: isBot ? undefined : theme,
+        background: isBot 
+          ? undefined 
+          : `linear-gradient(135deg, ${theme} 0%, ${theme}dd 100%)`,
+        border: isBot ? undefined : "1px solid rgba(255,255,255,0.1)",
       }}
     >
       <div className={`prose prose-sm max-w-none mb-1 ${isBot ? "text-slate-800 dark:text-slate-100 dark:prose-invert" : "text-white"}`}>
@@ -145,10 +155,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                 </div>
               </div>
             ) : (
-              <div
-                className="carmen-content break-words leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: processedContent }}
-              />
+              <StaticHtmlContent content={processedContent} />
             )}
             {msg.isQueued && !isBot && (
               <div className="text-[10px] text-white/60 font-medium uppercase tracking-widest mt-1 flex items-center gap-1.5">
@@ -228,7 +235,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
         )}
       </div>
 
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isBot && msg.suggestions && msg.suggestions.length > 0 && (
           <motion.div 
             key={`suggestions-${msg.id}-${msg.suggestions.length}`}

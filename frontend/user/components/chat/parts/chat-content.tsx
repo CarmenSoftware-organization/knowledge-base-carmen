@@ -49,21 +49,38 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
         return (tmp.textContent || tmp.innerText || "").trim();
     };
 
-    // Image lightbox: delegate click on images with data-lightbox attribute
+    // Delegation for images and links
     useEffect(() => {
         const el = bodyRef.current;
         if (!el) return;
-        const handleImageClick = (e: MouseEvent) => {
-            const img = (e.target as HTMLElement).closest('[data-lightbox]') as HTMLElement | null;
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+
+            // 1. Handle image lightbox
+            const img = target.closest('[data-lightbox]') as HTMLElement | null;
             if (img) {
                 e.preventDefault();
                 e.stopPropagation();
                 const src = img.getAttribute('data-lightbox') || img.getAttribute('src');
                 if (src) setLightboxSrc(src);
+                return;
+            }
+
+            // 2. Handle link tab behavior
+            const anchor = target.closest('a') as HTMLAnchorElement | null;
+            if (anchor && anchor.href) {
+                const href = anchor.getAttribute('href') || "";
+                // If it's intended to open in a new tab (markdown formatter adds target="_blank") 
+                // or if it looks external, force it with window.open to bypass any internal navigation logic.
+                if (anchor.target === "_blank" || href.startsWith("http") || href.startsWith("//")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(anchor.href, '_blank', 'noopener,noreferrer');
+                }
             }
         };
-        el.addEventListener('click', handleImageClick);
-        return () => el.removeEventListener('click', handleImageClick);
+        el.addEventListener('click', handleClick);
+        return () => el.removeEventListener('click', handleClick);
     }, []);
 
     const scrollToBottom = (force = false, instant = false) => {
@@ -243,54 +260,54 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
 
             <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
 
-                {(() => {
-                    const queuedUserMessages = messages.filter(m => m.isQueued && m.role === "user");
-                    if (queuedUserMessages.length === 0) return null;
+            {(() => {
+                const queuedUserMessages = messages.filter(m => m.isQueued && m.role === "user");
+                if (queuedUserMessages.length === 0) return null;
 
-                    // Show at most 3 items to prevent overflow
-                    const maxDisplay = 3;
-                    const shownMessages = queuedUserMessages.slice(0, maxDisplay);
-                    const remainingCount = queuedUserMessages.length - maxDisplay;
+                // Show at most 3 items to prevent overflow
+                const maxDisplay = 3;
+                const shownMessages = queuedUserMessages.slice(0, maxDisplay);
+                const remainingCount = queuedUserMessages.length - maxDisplay;
 
-                    return (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
-                            className="absolute bottom-[90px] left-0 right-0 px-4 z-40 flex flex-col items-end gap-2 pointer-events-none"
-                        >
-                            {/* Summary indicator for hidden queue items */}
-                            <AnimatePresence>
-                                {remainingCount > 0 && (
-                                    <motion.div
-                                        key="queue-summary"
-                                        layout
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.8 }}
-                                        className="bg-slate-700/60 backdrop-blur-sm text-white/80 text-[11px] font-medium px-2 py-1 rounded-lg border border-white/5 mb-1"
-                                    >
-                                        {t("chat.remaining_queue", { count: remainingCount })}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            {shownMessages.map(msg => (
+                return (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="absolute bottom-[90px] left-0 right-0 px-4 z-40 flex flex-col items-end gap-2 pointer-events-none"
+                    >
+                        {/* Summary indicator for hidden queue items */}
+                        <AnimatePresence>
+                            {remainingCount > 0 && (
                                 <motion.div
-                                    key={`sticky-${msg.id}`}
+                                    key="queue-summary"
                                     layout
-                                    initial={{ opacity: 0, scale: 0.9, x: 20 }}
-                                    animate={{ opacity: 0.9, scale: 1, x: 0 }}
-                                    exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
-                                    className="bg-slate-800/80 backdrop-blur-md text-white text-[13px] px-3 py-2 rounded-2xl rounded-br-sm shadow-lg max-w-[70%] truncate pointer-events-auto border border-white/10 flex items-center gap-2"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    className="bg-slate-700/60 backdrop-blur-sm text-white/80 text-[11px] font-medium px-2 py-1 rounded-lg border border-white/5 mb-1"
                                 >
-                                    <div className="w-3 h-3 rounded-full border-[1.5px] border-white/30 border-t-white animate-spin flex-shrink-0" />
-                                    <span className="truncate">{safeHtmlToText(msg.html)}</span>
+                                    {t("chat.remaining_queue", { count: remainingCount })}
                                 </motion.div>
-                            ))}
-                        </motion.div>
-                    );
-                })()}
+                            )}
+                        </AnimatePresence>
+
+                        {shownMessages.map(msg => (
+                            <motion.div
+                                key={`sticky-${msg.id}`}
+                                layout
+                                initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                                animate={{ opacity: 0.9, scale: 1, x: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+                                className="bg-slate-800/80 backdrop-blur-md text-white text-[13px] px-3 py-2 rounded-2xl rounded-br-sm shadow-lg max-w-[70%] truncate pointer-events-auto border border-white/10 flex items-center gap-2"
+                            >
+                                <div className="w-3 h-3 rounded-full border-[1.5px] border-white/30 border-t-white animate-spin flex-shrink-0" />
+                                <span className="truncate">{safeHtmlToText(msg.html)}</span>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                );
+            })()}
 
             <AnimatePresence>
                 {userHasScrolledUp && (

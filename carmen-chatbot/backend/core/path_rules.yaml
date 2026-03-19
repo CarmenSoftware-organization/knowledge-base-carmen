@@ -7,7 +7,7 @@
 - keywords: [" ar ", "ar-", "ar invoice", "ar receipt", "ลูกค้า", "receipt", "contract", "folio", "ใบเสร็จ", "ลูกหนี้", "ชำระหนี้", "ใบกำกับภาษี", "เงินมัดจำ", "Aging", "Settle", "Deposit"]
   patterns: ["%ar-%", "%ar\\%", "%/ar/%"]
 
-- keywords: [" ap ", "ap-", "ap invoice", "ap payment", "เจ้าหนี้", "cheque", "wht", "หัก ณ ที่จ่าย", "input tax", "ภาษีซื้อ", "rdprep", "สรรพากร", "Payment", "Withholding Tax", "Petty Cash", "ภาษีหัก ณ ที่จ่าย", "กระทบยอด", "ยันยอด", "เงินสดย่อย", "ภ.ง.ด.3", "ภ.ง.ด.53"]
+- keywords: ["ap", " ap ", "ap-", "ap invoice", "ap payment", "เจ้าหนี้", "cheque", "wht", "หัก ณ ที่จ่าย", "input tax", "ภาษีซื้อ", "rdprep", "สรรพากร", "Payment", "Withholding Tax", "Petty Cash", "ภาษีหัก ณ ที่จ่าย", "กระทบยอด", "ยันยอด", "เงินสดย่อย", "ภ.ง.ด.3", "ภ.ง.ด.53"]
   patterns: ["%ap-%", "%ap\\%", "%/ap/%"]
 
 - keywords: ["asset", "สินทรัพย์", "as-", "ทะเบียนสินทรัพย์", "asset register", "asset disposal", "ค่าเสื่อมราคา", "ตัดจำหน่าย", "โอนย้ายทรัพย์สิน", "Depreciation", "Disposal", "Salvage", "Asset Life", "Acquire Date", "Pre-Register Asset", "Barcode"]

@@ -70,7 +70,7 @@ export const ChatInput = React.memo(({
                     onKeyDown={handleKeyDown}
                     rows={1}
                     placeholder={t("chat.placeholder")}
-                    className="flex-1 px-5 py-[14px] rounded-[16px] border outline-none resize-none transition-all bg-white/60 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-600/50 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 min-h-[50px] max-h-[120px] font-['Sarabun',_sans-serif] text-[15px] leading-[1.5] border-[color:var(--input-border-color,transparent)] [box-shadow:var(--input-focus-shadow,none)] backdrop-blur-md"
+                    className="flex-1 px-6 py-[16px] rounded-[24px] border outline-none resize-none transition-all bg-white/60 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-600/50 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 min-h-[56px] max-h-[120px] font-['Sarabun',_sans-serif] text-[15px] leading-[1.5] border-[color:var(--input-border-color,transparent)] [box-shadow:var(--input-focus-shadow,none)] backdrop-blur-xl carmen-slim-scrollbar shadow-inner"
                     onFocus={() => setIsInputFocused(true)}
                     onBlur={() => setIsInputFocused(false)}
                 />
@@ -102,12 +102,12 @@ export const ChatInput = React.memo(({
                                 animate={{ opacity: 1, scale: 1, rotate: 0 }}
                                 exit={{ opacity: 0, scale: 0.5, rotate: -45 }}
                                 transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
-                                className="absolute inset-0 rounded-[14px] text-white flex items-center justify-center shadow-lg bg-[#0f172a] hover:bg-[var(--chat-theme)]"
-                                whileHover={{ scale: 1.05 }}
+                                className="absolute inset-0 rounded-2xl text-white flex items-center justify-center shadow-[0_8px_16px_rgba(15,23,42,0.25)] bg-[#0f172a] hover:bg-[var(--chat-theme)] border border-white/10 transition-colors"
+                                whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                                 title={t("tools.send")}
                             >
-                                <svg viewBox="0 0 24 24" fill="white" width="24" height="24">
+                                <svg viewBox="0 0 24 24" fill="white" width="22" height="22">
                                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                                 </svg>
                             </motion.button>

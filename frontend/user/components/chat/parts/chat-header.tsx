@@ -22,10 +22,13 @@ export const ChatHeader = React.memo(({
 }: ChatHeaderProps) => {
     return (
         <motion.div
-            className={`flex items-center justify-between px-5 py-4 text-white flex-shrink-0 select-none bg-[var(--chat-theme)] ${isExpanded ? "rounded-t-[24px]" : "rounded-t-[32px] cursor-move active:cursor-move"} transition-[border-radius] duration-[0.6s] ease-[ease]`}
+            layout
+            className={`flex items-center justify-between px-6 py-5 text-white flex-shrink-0 select-none relative overflow-hidden bg-[var(--chat-theme)] ${isExpanded ? "rounded-t-[24px]" : "rounded-t-[32px] cursor-move active:cursor-move"} transition-[border-radius] duration-[0.6s] ease-[ease]`}
             onPointerDown={onDragStart}
             whileTap={isExpanded ? {} : { cursor: "grabbing" }}
         >
+            {/* Header Glass Shine */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
             <div className="flex items-center gap-3">
                 <motion.div
                     className="w-10 h-10 rounded-2xl flex items-center justify-center border border-white/25 flex-shrink-0 bg-white/20 backdrop-blur-md"
@@ -42,10 +45,10 @@ export const ChatHeader = React.memo(({
                     <h3 className="text-[16px] font-bold tracking-tight leading-tight [text-shadow:0_1px_4px_rgba(0,0,0,0.2)]">
                         {config.title || "Carmen AI Specialist"}
                     </h3>
-                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px] font-medium opacity-80 uppercase tracking-wide">
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px] font-bold opacity-90 uppercase tracking-[0.05em]">
                         <motion.span
-                            className="w-1.5 h-1.5 bg-green-400 rounded-full"
-                            animate={{ opacity: [1, 0.3, 1] }}
+                            className="w-2 h-2 bg-green-400 rounded-full shadow-[0_0_8px_rgba(74,222,128,0.6)]"
+                            animate={{ opacity: [1, 0.4, 1], scale: [1, 1.2, 1] }}
                             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                         />
                         {t("header.status_online")}

@@ -72,8 +72,11 @@ function processImages(text: string, apiBase: string): string {
     return `${apiBase}/images/${cleanU}`;
   };
 
-  text = text.replace(/!\[(.*?)\]\((.*?)\)/g, (_m, alt, src) => {
+  text = text.replace(/(!)?\[(.*?)\]\((.*?)\)/g, (_m, hasExclamation, alt, src) => {
     if (src.includes("youtube")) return _m;
+    const isLocalImage = src.includes("/images/") || src.startsWith("images/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(src);
+    if (!hasExclamation && !isLocalImage) return _m;
+
     const url = resolveUrl(src);
     return `<br><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" data-lightbox="${escapeHtml(url)}" class="carmen-lightbox-img" style="max-width:100%;border-radius:12px;margin:8px 0;cursor:zoom-in;" /><br>`;
   });
@@ -102,7 +105,7 @@ function processLinks(text: string): string {
   const mdLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
   text = text.replace(mdLinkRegex, (match, label, url) => {
     if (url.includes("youtube.com") || url.includes("youtu.be")) return match;
-    return `<a href="${escapeHtml(url)}" target="_blank" class="carmen-link">${escapeHtml(label)}</a>`;
+    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="carmen-link">${escapeHtml(label)}</a>`;
   });
 
   const urlRegex = /(https?:\/\/(?!(?:www\.)?(?:youtube\.com|youtu\.be))[^\s<)"']+)/g;
@@ -112,7 +115,7 @@ function processLinks(text: string): string {
     const lastAngle = prefix.lastIndexOf("<");
     const lastClose = prefix.lastIndexOf(">");
     if (lastAngle > lastClose) return match;
-    return `<a href="${escapeHtml(match)}" target="_blank" class="carmen-link">${escapeHtml(match)}</a>`;
+    return `<a href="${escapeHtml(match)}" target="_blank" rel="noopener noreferrer" class="carmen-link">${escapeHtml(match)}</a>`;
   });
 
   return text;

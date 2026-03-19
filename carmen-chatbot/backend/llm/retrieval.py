@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class RetrievalService:
     TOP_K = 4
-    MAX_DISTANCE = 0.5
+    MAX_DISTANCE = 0.6
     PATH_BOOST = 0.08
     FETCH_K = 20  
 
@@ -134,7 +134,7 @@ class RetrievalService:
                     effective_dist = actual_dist - (self.PATH_BOOST if is_boosted else 0)
                     
                     if is_boosted:
-                        logger.info(f"🚀 [Path Boost Applied] -> path: {path} | Original: {actual_dist:.4f} | Boosted: {effective_dist:.4f}")
+                        logger.debug(f"🚀 [Path Boost Applied] -> path: {path} | Original: {actual_dist:.4f} | Boosted: {effective_dist:.4f}")
 
                     candidates.append({
                         "path": path,
