@@ -2,13 +2,11 @@
 title: การโอนย้ายข้อมูลใบแนบ ภ.ง.ด.3 ผ่านโปรแกรม RDPrep
 description: การโอนย้ายข้อมูลใบแนบ ภ.ง.ด.3 ผ่านโปรแกรม RDPrep
 published: true
-date: 2026-02-24T03:54:31.154Z
+date: 2026-03-19T08:37:42.432Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: 2026-02-02T06:52:29.229Z
+dateCreated: 2026-03-19T08:37:40.215Z
 ---
-
-
 
 การโอนย้ายข้อมูลใบแนบ ภ.ง.ด.3 ผ่านโปรแกรม RDPrep <img src="./image-72.png" style="display: inline-block;" />
 

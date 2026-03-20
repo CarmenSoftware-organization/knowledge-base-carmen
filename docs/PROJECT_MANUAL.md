@@ -1,3 +1,13 @@
+---
+title: PROJECT_MANUAL
+description: 
+published: true
+date: 2026-03-19T08:33:44.916Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:33:42.656Z
+---
+
 # Project Manual — New Carmen
 
 เวอร์ชัน: 1.0

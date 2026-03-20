@@ -1,3 +1,13 @@
+---
+title: architecture
+description: 
+published: true
+date: 2026-03-19T08:33:53.198Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:33:51.142Z
+---
+
 # สถาปัตยกรรมระบบ New Carmen (สรุป)
 
 ภาพรวมสั้น ๆ ของส่วนประกอบหลัก:

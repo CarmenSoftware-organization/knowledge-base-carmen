@@ -2,10 +2,10 @@
 title: Template Voucher
 description: Template Voucher
 published: true
-date: "2026-02-02T06:14:10.632Z"
+date: 2026-03-19T08:41:29.768Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.632Z"
+dateCreated: 2026-03-19T08:41:27.470Z
 ---
 
 # Template Voucher

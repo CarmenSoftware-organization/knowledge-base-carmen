@@ -2,10 +2,10 @@
 title: Contract
 description: A/R Contract
 published: true
-date: 2026-02-23T04:59:13.411Z
+date: 2026-03-19T08:38:40.607Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: 2026-02-02T06:53:28.300Z
+dateCreated: 2026-03-19T08:38:38.419Z
 ---
 
 ---

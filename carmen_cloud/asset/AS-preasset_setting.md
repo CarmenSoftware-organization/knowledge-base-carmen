@@ -2,10 +2,10 @@
 title: Pre-Register Asset Setting
 description: Pre-Register Asset Setting
 published: true
-date: "2026-02-02T06:14:10.572Z"
+date: 2026-03-19T08:35:21.183Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.572Z"
+dateCreated: 2026-02-02T06:54:11.659Z
 ---
 
 # Pre-Register Asset Setting

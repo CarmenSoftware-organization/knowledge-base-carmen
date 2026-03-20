@@ -1,3 +1,13 @@
+---
+title: api
+description: 
+published: true
+date: 2026-03-19T08:33:50.152Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:33:48.063Z
+---
+
 # คู่มือ API (สรุป)
 
 รายการ endpoints ที่พบในโค้ด (backend/internal/\*):

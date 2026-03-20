@@ -1,3 +1,13 @@
+---
+title: db
+description: 
+published: true
+date: 2026-03-19T08:33:56.269Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:33:54.168Z
+---
+
 # ฐานข้อมูล (สรุป & ข้อสังเกต)
 
 เทคโนโลยี: Neon (PostgreSQL) ตาม `PROJECT_OVERVIEW.md` — backend ใช้ GORM

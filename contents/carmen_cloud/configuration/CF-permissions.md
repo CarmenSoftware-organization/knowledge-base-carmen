@@ -2,10 +2,10 @@
 title: Permissions
 description: ขั้นตอนการกำหนด User Permission ในระบบ
 published: true
-date: 2026-02-23T04:52:59.319Z
+date: 2026-03-19T08:40:31.625Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: 2026-02-02T06:54:51.520Z
+dateCreated: 2026-03-19T08:40:29.400Z
 ---
 
 ---

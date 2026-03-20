@@ -2,10 +2,10 @@
 title: Currency Exchange Rate
 description: Currency Exchange Rate
 published: true
-date: "2026-02-02T06:14:10.584Z"
+date: 2026-03-19T08:40:18.762Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.584Z"
+dateCreated: 2026-03-19T08:40:16.557Z
 ---
 
 # Currency Exchange Rate
