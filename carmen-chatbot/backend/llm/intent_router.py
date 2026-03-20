@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 INTENTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "intents.yaml"))
 CACHE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "intents_cache.npz"))
 
+# How often to check if intents.yaml has changed (seconds)
+_MTIME_CHECK_INTERVAL = 30.0
+
 # Fast-track Regex for immediate common cases (Negative Filtering)
 DIRECT_MATCHES = {
     "greeting": [r"^(สวัสดี|hello|hi|hey|good\s?(morning|afternoon|evening)|yo|sup|ทักทาย|ทัก|เฮลโล|หวัดดี|ดี)(ครับ|ค่ะ|คร้า|คับ|นะ|จ๊ะ|จ๋า|!)?$"],
@@ -51,12 +54,57 @@ class IntentRouter:
 
         self.intents_file = INTENTS_PATH
         self.last_load_time = 0
+        self._last_mtime_check = 0.0  # time.monotonic() timestamp of last mtime check
 
-        # Initial attempt at indexing (Non-blocking if it fails)
-        self._load_and_index_intents()
+        # At init: load from cache only — no API calls, safe at import time
+        # Full (re-)indexing via async_init() called from app lifespan
+        self._bootstrap_from_cache()
 
+    # ------------------------------------------------------------------
+    # Bootstrap: cache-only load (no network) — called at import time
+    # ------------------------------------------------------------------
+    def _bootstrap_from_cache(self):
+        """Load YAML config + try disk cache. Makes no API calls."""
+        try:
+            if not os.path.exists(self.intents_file):
+                logger.warning(f"⚠️ intents.yaml not found at {self.intents_file}")
+                return
+
+            with open(self.intents_file, 'r', encoding='utf-8') as f:
+                self.intent_config = yaml.safe_load(f) or {}
+            self._load_only_canned_responses()
+
+            if not os.path.exists(CACHE_PATH):
+                logger.info("📂 No intent cache found — will index on startup.")
+                return
+
+            mtime = os.path.getmtime(self.intents_file)
+            cache_data = np.load(CACHE_PATH, allow_pickle=True)
+            cached_mtime = float(cache_data.get('mtime', 0))
+            cached_model = str(cache_data.get('model', ''))
+
+            if cached_mtime != mtime or cached_model != settings.OPENROUTER_EMBED_MODEL:
+                logger.info("📂 Intent cache is stale — will re-index on startup.")
+                return
+
+            vm = cache_data['vector_matrix']
+            if vm.shape[1] != settings.VECTOR_DIMENSION:
+                logger.warning(f"⚠️ Cache dim ({vm.shape[1]}) != {settings.VECTOR_DIMENSION} — will re-index on startup.")
+                return
+
+            self.vector_matrix = vm
+            self.vector_labels = list(cache_data['vector_labels'])
+            self.all_examples = list(cache_data.get('all_examples', []))
+            self.last_load_time = mtime
+            logger.info(f"🚀 Loaded {len(self.vector_labels)} intent embeddings from cache.")
+        except Exception as e:
+            logger.warning(f"⚠️ Bootstrap cache load failed: {e}")
+
+    # ------------------------------------------------------------------
+    # Embedding helpers
+    # ------------------------------------------------------------------
     def _raw_embed(self, texts: List[str]) -> List[List[float]]:
-        """Direct OpenRouter API call for embeddings (Bypassing LangChain)."""
+        """Direct OpenRouter API call for embeddings (bypassing LangChain)."""
         try:
             url = f"{settings.OPENROUTER_API_BASE}/embeddings"
             headers = {
@@ -93,11 +141,11 @@ class IntentRouter:
     def _embed_query(self, text: str) -> List[float]:
         return self._raw_embed([text])[0]
 
-    def _embed_documents(self, texts: List[str]) -> List[List[float]]:
-        return self._raw_embed(texts)
-
+    # ------------------------------------------------------------------
+    # Full index: batched embedding + cache save
+    # ------------------------------------------------------------------
     def _load_and_index_intents(self):
-        """Load intents from YAML and vectorize embeddings."""
+        """Load intents from YAML and vectorize all examples in a single batch API call."""
         try:
             if not os.path.exists(self.intents_file):
                 logger.warning(f"⚠️ intents.yaml not found at {self.intents_file}")
@@ -108,24 +156,24 @@ class IntentRouter:
 
             mtime = os.path.getmtime(self.intents_file)
 
-            # --- Try Loading from Cache ---
+            # --- Try loading from cache ---
             if os.path.exists(CACHE_PATH):
                 try:
                     cache_data = np.load(CACHE_PATH, allow_pickle=True)
-                    if (cache_data.get('mtime') == mtime and
-                            cache_data.get('model') == settings.OPENROUTER_EMBED_MODEL):
-
-                        self.vector_matrix = cache_data['vector_matrix']
-                        self.vector_labels = list(cache_data['vector_labels'])
-                        self.all_examples = list(cache_data.get('all_examples', []))
-                        self.last_load_time = mtime
-                        self._load_only_canned_responses()
-                        logger.info(f"🚀 Loaded {len(self.vector_labels)} intent embeddings from cache.")
-
-                        if self.vector_matrix is not None and self.vector_matrix.shape[1] != settings.VECTOR_DIMENSION:
-                            logger.warning(f"⚠️ Cache dim ({self.vector_matrix.shape[1]}) != {settings.VECTOR_DIMENSION}, forcing re-index.")
-                        else:
+                    cached_mtime = float(cache_data.get('mtime', 0))
+                    cached_model = str(cache_data.get('model', ''))
+                    if cached_mtime == mtime and cached_model == settings.OPENROUTER_EMBED_MODEL:
+                        vm = cache_data['vector_matrix']
+                        if vm.shape[1] == settings.VECTOR_DIMENSION:
+                            self.vector_matrix = vm
+                            self.vector_labels = list(cache_data['vector_labels'])
+                            self.all_examples = list(cache_data.get('all_examples', []))
+                            self.last_load_time = mtime
+                            self._load_only_canned_responses()
+                            logger.info(f"🚀 Loaded {len(self.vector_labels)} intent embeddings from cache.")
                             return
+                        else:
+                            logger.warning(f"⚠️ Cache dim ({vm.shape[1]}) != {settings.VECTOR_DIMENSION}, forcing re-index.")
                 except Exception as e:
                     logger.warning(f"⚠️ Cache load failed, re-indexing: {e}")
 
@@ -137,48 +185,53 @@ class IntentRouter:
                 self._load_only_canned_responses()
                 return
 
-            all_vectors = []
-            self.vector_labels = []
-            self.all_examples = []
+            # Collect ALL examples across ALL categories in one pass
+            all_texts: List[str] = []
+            all_cats: List[str] = []
             self.canned_responses = {}
 
-            logger.info(f"🧠 Indexing Noise Filters (Vectorized) using OpenRouter...")
             for category, data in self.intent_config.items():
                 if isinstance(data, dict):
                     self.canned_responses[category] = data.get("responses", {})
-
                     examples = data.get("examples", [])
-                    if examples:
-                        try:
-                            vectors = self._embed_documents(examples)
-                            all_vectors.extend(vectors)
-                            self.vector_labels.extend([category] * len(vectors))
-                            self.all_examples.extend(examples)
-                        except Exception as e:
-                            logger.error(f"❌ Failed to embed examples for {category}: {e}")
+                    all_texts.extend(examples)
+                    all_cats.extend([category] * len(examples))
 
-            if all_vectors:
-                self.vector_matrix = np.array(all_vectors)
-                norms = np.linalg.norm(self.vector_matrix, axis=1, keepdims=True)
-                self.vector_matrix = self.vector_matrix / (norms + 1e-9)
+            if not all_texts:
+                logger.warning("⚠️ No examples found in intents.yaml")
+                return
 
-                try:
-                    np.savez(
-                        CACHE_PATH,
-                        vector_matrix=self.vector_matrix,
-                        vector_labels=self.vector_labels,
-                        all_examples=self.all_examples,
-                        mtime=mtime,
-                        model=settings.OPENROUTER_EMBED_MODEL
-                    )
-                    logger.info("💾 Intent embeddings saved to cache.")
-                except Exception as e:
-                    logger.warning(f"⚠️ Failed to save cache: {e}")
+            # Single batch API call instead of one call per category
+            logger.info(f"🧠 Embedding {len(all_texts)} examples across {len(self.canned_responses)} categories (single batch)...")
+            try:
+                all_vectors = self._raw_embed(all_texts)
+            except Exception as e:
+                logger.error(f"❌ Failed to embed intent examples: {e}")
+                return
+
+            self.vector_matrix = np.array(all_vectors)
+            norms = np.linalg.norm(self.vector_matrix, axis=1, keepdims=True)
+            self.vector_matrix = self.vector_matrix / (norms + 1e-9)
+            self.vector_labels = all_cats
+            self.all_examples = all_texts
+
+            try:
+                np.savez(
+                    CACHE_PATH,
+                    vector_matrix=self.vector_matrix,
+                    vector_labels=self.vector_labels,
+                    all_examples=self.all_examples,
+                    mtime=mtime,
+                    model=settings.OPENROUTER_EMBED_MODEL
+                )
+                logger.info("💾 Intent embeddings saved to cache.")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to save cache: {e}")
 
             logger.info(f"✅ Indexed {len(self.vector_labels)} examples across {len(self.canned_responses)} categories.")
 
         except Exception as e:
-            logger.error(f"❌ Failed to load/index noise filters: {e}")
+            logger.error(f"❌ Failed to load/index intents: {e}")
 
     def _load_only_canned_responses(self):
         """Helper to load responses even if embedding fails/is skipped."""
@@ -187,27 +240,46 @@ class IntentRouter:
             if isinstance(data, dict):
                 self.canned_responses[category] = data.get("responses", {})
 
+    # ------------------------------------------------------------------
+    # Async init — called from app lifespan (non-blocking startup)
+    # ------------------------------------------------------------------
+    async def async_init(self):
+        """Trigger full intent indexing in a thread. Call once from app lifespan."""
+        if self.vector_matrix is None and settings.OPENROUTER_API_KEY:
+            logger.info("🔄 IntentRouter: starting async full index...")
+            await asyncio.to_thread(self._load_and_index_intents)
+
+    # ------------------------------------------------------------------
+    # Input sanitization
+    # ------------------------------------------------------------------
     def _sanitize_input(self, text: str) -> str:
         """Strip XML-like tags to prevent prompt injection tag breakout."""
         if not text:
             return ""
         return re.sub(r'</?(user_input|context|history|chat_history|manual|system_instruction)[^>]*>', '', text, flags=re.IGNORECASE)
 
+    # ------------------------------------------------------------------
+    # Main detection pipeline
+    # ------------------------------------------------------------------
     async def detect_intent(self, message: str, lang: str = "th", have_history: bool = False) -> Tuple[str, str, Tuple[int, int]]:
         """Analyze the intent of a user message."""
-        # Check for updates to intents.yaml
-        try:
-            current_mtime = os.path.getmtime(self.intents_file)
-            if current_mtime > self.last_load_time:
-                logger.info("🔄 intents.yaml changed, reloading...")
-                self._load_and_index_intents()
-            elif self.vector_matrix is None and settings.OPENROUTER_API_KEY:
-                logger.info("🔄 OpenRouter API Key now available. Retrying intent indexing...")
-                self._load_and_index_intents()
-        except Exception as e:
-            logger.error(f"⚠️ Error checking intents.yaml mtime: {e}")
 
-        logger.info(f"🔍 Intent Routing (Negative Filter): Input='{message}' (History: {have_history})")
+        # Throttled mtime check — file I/O at most once every 30s
+        now = time.monotonic()
+        if now - self._last_mtime_check >= _MTIME_CHECK_INTERVAL:
+            self._last_mtime_check = now
+            try:
+                current_mtime = os.path.getmtime(self.intents_file)
+                if current_mtime > self.last_load_time:
+                    logger.info("🔄 intents.yaml changed, reloading...")
+                    await asyncio.to_thread(self._load_and_index_intents)
+                elif self.vector_matrix is None and settings.OPENROUTER_API_KEY:
+                    logger.info("🔄 OpenRouter API Key now available. Retrying intent indexing...")
+                    await asyncio.to_thread(self._load_and_index_intents)
+            except Exception as e:
+                logger.error(f"⚠️ Error checking intents.yaml mtime: {e}")
+
+        logger.info(f"🔍 Intent Routing: Input='{message}' (History: {have_history})")
         msg_lower = message.strip().lower()
 
         # --- 1. Regex Fast-Track ---
@@ -230,17 +302,25 @@ class IntentRouter:
                 if query_norm > 1e-9:
                     query_vector = query_vector / query_norm
                     scores = np.dot(self.vector_matrix, query_vector)
-                    best_idx = np.argmax(scores)
-                    best_score = scores[best_idx]
-                    best_intent = self.vector_labels[best_idx]
-                    matched_example = self.all_examples[best_idx] if best_idx < len(self.all_examples) else "???"
 
-                    logger.info(f"📊 Vector Match: Intent={best_intent}, Score={best_score:.4f}, Match='{matched_example}'")
+                    # Top-3 for rich debug logging
+                    top_n = min(3, len(scores))
+                    top_indices = np.argsort(scores)[-top_n:][::-1]
+                    top_info = [
+                        (self.vector_labels[i], f"{scores[i]:.4f}",
+                         self.all_examples[i] if i < len(self.all_examples) else "???")
+                        for i in top_indices
+                    ]
+                    logger.info(f"📊 Vector Top-{top_n}: {top_info}")
+
+                    best_idx = int(top_indices[0])
+                    best_score = float(scores[best_idx])
+                    best_intent = self.vector_labels[best_idx]
 
                     # Context-aware logic: confusion phrases with history = real question
                     is_confusion = best_intent == "confusion" and best_score >= self.threshold
                     if is_confusion and have_history:
-                        logger.info(f"📊 Ambiguous query detected with History. Falling through to TECH_SUPPORT.")
+                        logger.info("📊 Ambiguous query with history — fall through to TECH_SUPPORT.")
                     elif best_score >= self.threshold:
                         logger.info(f"📊 Noise Detected (Vectorized): {best_intent} (Score: {best_score:.4f})")
                         return best_intent, self.canned_responses.get(best_intent, {}).get(lang, ""), (0, 0)

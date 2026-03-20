@@ -17,6 +17,7 @@ from .core.rate_limit import limiter
 
 from .core.config import settings
 from .api import chat_routes as chat
+from .llm.intent_router import intent_router
 from urllib.parse import urlparse
 
 
@@ -46,9 +47,8 @@ def build_image_index():
 async def lifespan(app: FastAPI):
     # Startup actions
     build_image_index()
+    await intent_router.async_init()
     yield
-    # Shutdown actions
-    pass
 
 app = FastAPI(title="Carmen Chatbot System", lifespan=lifespan)
 
