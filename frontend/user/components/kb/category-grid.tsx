@@ -32,7 +32,7 @@ export function CategoryGrid({ items }: { items: any[] }) {
       animate="visible"
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full"
     >
-      {items.map((c: { slug: string }) => {
+      {items.filter((c: { slug: string }) => c.slug !== "changelog").map((c: { slug: string }) => {
         const color = getCategoryColor(c.slug);
         const displayName = categoryDisplayMap[c.slug] || c.slug.toUpperCase();
 
