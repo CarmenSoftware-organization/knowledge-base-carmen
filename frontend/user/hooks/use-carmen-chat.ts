@@ -641,23 +641,25 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       }
     }
 
-    if (accumulated && processingRoomId && (!signal.aborted || isUserStopRef.current)) {
-      const stopNote = signal.aborted ? `\n\n**${t("chat.status_stopped")}**` : "";
-      await api.saveMessage(processingRoomId, {
-        id: finalMsgId || botMsgId,
-        sender: "bot",
-        message: accumulated + stopNote,
-        timestamp: new Date().toISOString(),
-      }, botMsgId);
-      didSave = true;
-      await loadRoomList();
+    try {
+      if (accumulated && processingRoomId && (!signal.aborted || isUserStopRef.current)) {
+        const stopNote = signal.aborted ? `\n\n**${t("chat.status_stopped")}**` : "";
+        await api.saveMessage(processingRoomId, {
+          id: finalMsgId || botMsgId,
+          sender: "bot",
+          message: accumulated + stopNote,
+          timestamp: new Date().toISOString(),
+        }, botMsgId);
+        didSave = true;
+        await loadRoomList();
+      }
+
+      if (!didSave && processingRoomId) {
+        await api.deleteMessage(processingRoomId, botMsgId);
+      }
+    } finally {
+      isUserStopRef.current = false;
     }
-    
-    if (!didSave && processingRoomId) {
-      await api.deleteMessage(processingRoomId, botMsgId);
-    }
-    
-    isUserStopRef.current = false;
   }
 
   async function sendMessage(text?: string, sourceMsgId?: string) {
