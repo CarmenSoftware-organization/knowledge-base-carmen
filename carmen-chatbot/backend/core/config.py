@@ -50,6 +50,12 @@ class Settings:
         # When set, save_chat_logs will POST to /api/chat/record-history
         self.GO_BACKEND_URL: str = os.getenv("GO_BACKEND_URL", "").rstrip("/")
 
+        # --- Privacy ---
+        # HMAC secret used to hash user_id before storing/logging.
+        # Set a strong random value in .env — defaults keep the system
+        # functional but should be overridden in production.
+        self.PRIVACY_HMAC_SECRET: str = os.getenv("PRIVACY_HMAC_SECRET", "carmen-privacy-default")
+
         # Read WIKI_DIR from env, fallback to PROJECT_ROOT/carmen_cloud
         wiki_path = os.getenv("WIKI_CONTENT_PATH", "")
         if wiki_path:

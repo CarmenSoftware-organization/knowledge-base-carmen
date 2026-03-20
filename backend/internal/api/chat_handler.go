@@ -67,10 +67,11 @@ func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "embedding failed: " + err.Error()})
 	}
 
-	userID := req.UserID
-	if userID == "" {
-		userID = "anonymous"
+	rawUserID := req.UserID
+	if rawUserID == "" {
+		rawUserID = "anonymous"
 	}
+	userID := services.HashUserID(rawUserID, config.AppConfig.Server.PrivacySecret)
 
 	sources := req.Sources
 	if sources == nil {
@@ -84,8 +85,15 @@ func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"ok": true})
 }
 
-// ListHistory returns chat history for verification. GET /api/chat/history/list?bu=carmen&limit=10&offset=0
+// ListHistory returns chat history for admin verification.
+// GET /api/chat/history/list?bu=carmen&limit=10&offset=0
+// Requires X-Admin-Key header matching ADMIN_API_KEY env var.
 func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {
+	adminKey := config.AppConfig.Server.AdminAPIKey
+	if adminKey == "" || c.Get("X-Admin-Key") != adminKey {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+
 	bu := middleware.GetBU(c)
 	buID, err := h.historyService.GetBUIDFromSlug(bu)
 	if err != nil || buID == 0 {
@@ -200,7 +208,7 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	if chatCfg.HistoryEnabled {
 		if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
 			if cached, ok := h.historyService.FindSimilar(buID, emb, chatCfg.HistorySimilarityThreshold); ok {
-				userID := c.Get("X-User-ID", "anonymous")
+				userID := services.HashUserID(c.Get("X-User-ID", "anonymous"), config.AppConfig.Server.PrivacySecret)
 				h.logService.Log(bu, userID, "ถาม Chat AI (จาก cache)", "wiki", map[string]interface{}{
 					"status": "cached",
 					"sources": len(cached.Sources),
@@ -423,7 +431,7 @@ LIMIT ?
 	}
 
 	// Log chat interaction
-	userID := c.Get("X-User-ID", "anonymous")
+	userID := services.HashUserID(c.Get("X-User-ID", "anonymous"), config.AppConfig.Server.PrivacySecret)
 	h.logService.Log(bu, userID, "ถาม Chat AI", "wiki", map[string]interface{}{
 		"status":  "POST",
 		"sources": len(sources),

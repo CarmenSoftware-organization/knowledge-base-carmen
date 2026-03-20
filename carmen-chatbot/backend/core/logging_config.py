@@ -4,7 +4,7 @@ from rich.logging import RichHandler
 from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
-from datetime import datetime
+from .pii import mask_pii
 
 # Initialize Rich Console
 console = Console()
@@ -27,10 +27,10 @@ def setup_logging():
 # --- Premium Logging Helpers ---
 
 def log_query(message: str, history_count: int = 0):
-    """Log the incoming user query in a clean panel."""
+    """Log the incoming user query in a clean panel (PII masked)."""
     console.print("\n")
     console.print(Panel(
-        Text(message, style="bold white"),
+        Text(mask_pii(message), style="bold white"),
         title=f"💬 [bold steel_blue1]User Query[/bold steel_blue1] (History: {history_count})",
         border_style="steel_blue1",
         expand=False
@@ -54,12 +54,13 @@ def log_intent(intent: str, model: str, tokens: tuple[int, int] | int = 0):
     console.print(table)
 
 def log_search(query: str, results: list):
-    """Log RAG search results and scores in a table."""
+    """Log RAG search results and scores in a table (PII masked in query preview)."""
     if not results:
         console.print(Panel("⚠️ [bold red]No matching documents found in knowledge base.[/bold red]", border_style="red"))
         return
 
-    table = Table(title=f"🔍 Knowledge Retrieval (Query: {query[:40]}...)", show_header=True, header_style="bold deep_sky_blue1", border_style="deep_sky_blue1")
+    safe_query = mask_pii(query)
+    table = Table(title=f"🔍 Knowledge Retrieval (Query: {safe_query[:40]}...)", show_header=True, header_style="bold deep_sky_blue1", border_style="deep_sky_blue1")
     table.add_column("Rank", justify="center", width=4)
     table.add_column("Score", justify="right")
     table.add_column("Document Title", style="italic")

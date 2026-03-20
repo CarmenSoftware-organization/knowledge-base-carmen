@@ -12,6 +12,7 @@ import urllib.error
 from cachetools import LRUCache
 from ..core.config import settings
 from ..core.database import AsyncSessionLocal
+from ..core.pii import mask_pii, hash_user_id
 
 # Number of recent messages injected into the LLM prompt (4 messages = 2 Q&A pairs)
 HISTORY_CONTEXT_LIMIT = 4
@@ -67,7 +68,7 @@ def clear_history(room_id: str):
 
 
 def restore_history(room_id: str, frontend_history: list[dict] = None):
-    """Load chat history from frontend localStorage into temporary memory."""
+    """Load chat history from frontend localStorage into temporary memory (PII masked)."""
     if not frontend_history:
         return
 
@@ -76,7 +77,7 @@ def restore_history(room_id: str, frontend_history: list[dict] = None):
         sender = msg.get("sender", "user")
         _request_history[room_id].append({
             "sender": sender,
-            "message": clean_for_history(msg.get("message", "")),
+            "message": mask_pii(clean_for_history(msg.get("message", ""))),
             "timestamp": msg.get("timestamp", "")
         })
 
@@ -90,8 +91,8 @@ async def _save_to_db_direct(data: dict) -> bool:
     from .retrieval import retrieval_service
 
     bu = data.get("bu", "carmen")
-    username = data.get("username", "anonymous")
-    user_query = (data.get("user_query") or "").strip()
+    username = hash_user_id(data.get("username", "anonymous"), settings.PRIVACY_HMAC_SECRET)
+    user_query = mask_pii((data.get("user_query") or "").strip())
     bot_response = (data.get("bot_response") or "").strip()
     sources_raw = data.get("sources") or []
 
@@ -210,8 +211,8 @@ async def save_chat_logs(data: dict) -> int:
     """Save Q&A to DB. Tries: 1) Go backend (if GO_BACKEND_URL set), 2) Direct DB insert."""
     ts = int(time.time())
     bu = data.get("bu", "carmen")
-    username = data.get("username", "anonymous")
-    user_query = (data.get("user_query") or "").strip()
+    username = hash_user_id(data.get("username", "anonymous"), settings.PRIVACY_HMAC_SECRET)
+    user_query = mask_pii((data.get("user_query") or "").strip())
     bot_response = (data.get("bot_response") or "").strip()
     sources_raw = data.get("sources") or []
 

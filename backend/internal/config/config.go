@@ -41,6 +41,8 @@ type ServerConfig struct {
 	ChatbotURL   string
 	Environment  string
 	CORSOrigins  string
+	AdminAPIKey  string // ADMIN_API_KEY — required to access /api/chat/history/list
+	PrivacySecret string // PRIVACY_HMAC_SECRET — HMAC key for hashing user_id
 }
 
 type DatabaseConfig struct {
@@ -148,11 +150,13 @@ func Load() error {
 
 	AppConfig = &Config{
 		Server: ServerConfig{
-			Port:         getEnv("SERVER_PORT", "8080"),
-			Host:         getEnv("SERVER_HOST", "localhost"),
-			ChatbotURL:   getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
-			Environment:  getEnv("ENVIRONMENT", "development"),
-			CORSOrigins:  getEnv("CORS_ORIGINS", "*"),
+			Port:          getEnv("SERVER_PORT", "8080"),
+			Host:          getEnv("SERVER_HOST", "localhost"),
+			ChatbotURL:    getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
+			Environment:   getEnv("ENVIRONMENT", "development"),
+			CORSOrigins:   getEnv("CORS_ORIGINS", "*"),
+			AdminAPIKey:   getEnv("ADMIN_API_KEY", ""),
+			PrivacySecret: getEnv("PRIVACY_HMAC_SECRET", "carmen-privacy-default"),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
