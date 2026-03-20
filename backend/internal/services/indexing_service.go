@@ -30,10 +30,8 @@ type IndexingService struct {
 func NewIndexingService() *IndexingService {
 	var llm Embedder
 	if config.AppConfig.OpenRouter.APIKey != "" {
-		log.Println("[indexing] Using OpenRouter Embeddings")
 		llm = openrouter.NewClient()
 	} else {
-		log.Println("[indexing] Using Ollama Embeddings")
 		llm = ollama.NewEmbedClient()
 	}
 

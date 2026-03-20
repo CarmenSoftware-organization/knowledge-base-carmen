@@ -1,6 +1,7 @@
 import re
 import time
 import json
+import asyncio
 import urllib.request
 import urllib.error
 
@@ -12,9 +13,15 @@ from cachetools import LRUCache
 from ..core.config import settings
 from ..core.database import AsyncSessionLocal
 
+# Number of recent messages injected into the LLM prompt (4 messages = 2 Q&A pairs)
+HISTORY_CONTEXT_LIMIT = 4
+
+# How many messages to keep in memory per room (buffer for future limit increases)
+HISTORY_MEMORY_LIMIT = 20
+
 # Temporary per-request cache (populated from frontend history each request)
-# Limit to 20 rooms to prevent memory leaks
-_request_history = LRUCache(maxsize=20)
+# Limit to 50 rooms to prevent memory leaks
+_request_history = LRUCache(maxsize=50)
 
 def clean_for_history(text: str, max_len: int = 200) -> str:
     """Strip images, HTML, videos from text before storing in chat history."""
@@ -28,8 +35,9 @@ def clean_for_history(text: str, max_len: int = 200) -> str:
     return t
 
 
-def get_history_text(room_id: str, limit: int = 4) -> str:
-    """Get formatted chat history text for prompt injection."""
+def get_history_text(room_id: str, limit: int = HISTORY_CONTEXT_LIMIT) -> str:
+    """Get formatted chat history text for prompt injection.
+    Defaults to HISTORY_CONTEXT_LIMIT (last 4 messages = 2 Q&A pairs)."""
     if room_id not in _request_history or not _request_history[room_id]:
         return "(ไม่มีบทสนทนาก่อนหน้า)"
 
@@ -72,9 +80,8 @@ def restore_history(room_id: str, frontend_history: list[dict] = None):
             "timestamp": msg.get("timestamp", "")
         })
 
-    # Keep max 50 messages
-    if len(_request_history[room_id]) > 50:
-        _request_history[room_id] = _request_history[room_id][-50:]
+    if len(_request_history[room_id]) > HISTORY_MEMORY_LIMIT:
+        _request_history[room_id] = _request_history[room_id][-HISTORY_MEMORY_LIMIT:]
 
 
 async def _save_to_db_direct(data: dict) -> bool:
@@ -197,9 +204,13 @@ async def save_chat_logs(data: dict) -> int:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                if resp.status in (200, 201):
-                    return ts  # success
+            def _do_request():
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    return resp.status
+
+            status = await asyncio.to_thread(_do_request)
+            if status in (200, 201):
+                return ts  # success
         except urllib.error.HTTPError as e:
             print(f"[chat_history] Go backend failed: {e.code}, using direct DB")
         except Exception as e:

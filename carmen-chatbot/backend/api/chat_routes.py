@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import StreamingResponse
+import json
+
+from fastapi import APIRouter, Request
+from fastapi.responses import StreamingResponse, JSONResponse
 
 from ..core.schemas import ChatRequest
 from ..llm.chat_service import chat_service
-from slowapi.errors import RateLimitExceeded
 from ..core.rate_limit import limiter
 from ..core.config import settings
+from ..core.budget import check_and_increment
+
+_BUDGET_MSG = {
+    "th": "_(ขออภัยครับ ระบบมีการใช้งานเกินกำหนดสำหรับวันนี้ กรุณาลองใหม่ในวันพรุ่งนี้)_",
+    "en": "_(Daily request limit reached. Please try again tomorrow.)_",
+}
 
 router = APIRouter(
     prefix="/api/chat",
@@ -19,10 +26,24 @@ router = APIRouter(
 @router.post("/stream", summary="Stream chat response")
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def chat_stream_endpoint(request: Request, req: ChatRequest):
+    if not await check_and_increment(settings.DAILY_REQUEST_LIMIT):
+        lang = req.lang or "th"
+        msg = _BUDGET_MSG.get(lang, _BUDGET_MSG["th"])
+
+        async def _budget_exceeded():
+            yield json.dumps({"type": "chunk", "data": msg}) + "\n"
+            yield json.dumps({"type": "done", "id": 0}) + "\n"
+
+        return StreamingResponse(
+            _budget_exceeded(),
+            media_type="application/x-ndjson",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     return StreamingResponse(
         chat_service.stream_chat(
             message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
-            model_name=req.model, prompt_extend=req.prompt_extend, history=req.history,
+            model_name=req.model, history=req.history,
             db_schema=req.db_schema, lang=req.lang, request=request
         ),
         media_type="application/x-ndjson",
@@ -35,13 +56,20 @@ async def chat_stream_endpoint(request: Request, req: ChatRequest):
 # ==========================================
 # 💬 2. STANDARD CHAT (Legacy & General Use)
 # ==========================================
-# ✅ เพิ่มบรรทัดนี้กลับมา เพื่อแก้ Error 405 ของ /chat
 @router.post("/", summary="Standard chat response (Invoke)")
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def chat_endpoint(request: Request, req: ChatRequest):
+    if not await check_and_increment(settings.DAILY_REQUEST_LIMIT):
+        lang = req.lang or "th"
+        msg = _BUDGET_MSG.get(lang, _BUDGET_MSG["th"])
+        return JSONResponse(
+            status_code=429,
+            content={"reply": msg, "sources": [], "room_id": req.room_id, "message_id": 0}
+        )
+
     return await chat_service.invoke_chat(
         message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
-        model_name=req.model, prompt_extend=req.prompt_extend, history=req.history,
+        model_name=req.model, history=req.history,
         db_schema=req.db_schema, lang=req.lang
     )
 
@@ -53,4 +81,3 @@ async def chat_endpoint(request: Request, req: ChatRequest):
 async def clear_chat_history(request: Request, room_id: str):
     chat_service.clear_history(room_id)
     return {"status": "ok", "room_id": room_id}
-

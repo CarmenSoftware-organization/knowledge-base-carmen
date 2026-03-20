@@ -19,19 +19,11 @@ class Settings:
     VERSION: str = "1.0.0"
     
     def __init__(self):
-        # --- LLM Providers ---
+        # --- LLM Provider: OpenRouter ---
         self.OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-        self.ACTIVE_LLM_PROVIDER: str = os.getenv("ACTIVE_LLM_PROVIDER", "openrouter")
+        self.OPENROUTER_API_BASE: str = os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
         self.OPENROUTER_CHAT_MODEL: str = os.getenv("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
         self.OPENROUTER_INTENT_MODEL: str = os.getenv("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")
-
-        self.ZAI_API_KEY: str = os.getenv("ZAI_API_KEY", "")
-        self.ZAI_API_BASE: str = os.getenv("ZAI_API_BASE", "https://api.z.ai/api/coding/paas/v4")
-        self.ZAI_CHAT_MODEL: str = os.getenv("ZAI_CHAT_MODEL", "gpt-4o")
-
-        self.OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
-        self.OLLAMA_EMBED_MODEL: str = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text:latest")
-        self.OLLAMA_CHAT_MODEL: str = os.getenv("OLLAMA_CHAT_MODEL", "gemma3:1b")
         self.OPENROUTER_EMBED_MODEL: str = os.getenv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b")
         
         # --- Database Settings ---
@@ -78,6 +70,18 @@ class Settings:
         # --- Vector Settings ---
         self.VECTOR_DIMENSION: int = int(os.getenv("VECTOR_DIMENSION", "1536"))
 
+        # --- Daily Budget Cap ---
+        # Max chat requests allowed per day across all users (0 = unlimited)
+        self.DAILY_REQUEST_LIMIT: int = int(os.getenv("DAILY_REQUEST_LIMIT", "500"))
+
+        # --- LLM Reliability ---
+        # Fallback model used when primary model fails before yielding content
+        self.OPENROUTER_FALLBACK_MODEL: str = os.getenv("OPENROUTER_FALLBACK_MODEL", "")
+        # Max tokens allowed for the full prompt (system + history + context + question).
+        # For RAG customer support: system~700 + history~300 + context~2000 + question~150 ≈ 3,200 typical.
+        # 6,000 gives comfortable headroom without risking model context overflow.
+        self.MAX_PROMPT_TOKENS: int = int(os.getenv("MAX_PROMPT_TOKENS", "6000"))
+
     @property
     def DATABASE_URL(self) -> str:
         """Standard SQLAlchemy URL (Sync)."""
@@ -111,10 +115,6 @@ class Settings:
     @property
     def is_openrouter_api_ready(self) -> bool:
         return bool(self.OPENROUTER_API_KEY)
-
-    @property
-    def is_zai_api_ready(self) -> bool:
-        return bool(self.ZAI_API_KEY)
 
 # Instantiate singleton
 settings = Settings()

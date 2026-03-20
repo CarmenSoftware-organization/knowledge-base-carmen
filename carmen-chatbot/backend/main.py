@@ -6,9 +6,7 @@ setup_logging()
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from pathlib import Path
 from functools import lru_cache
@@ -19,6 +17,19 @@ from .core.rate_limit import limiter
 
 from .core.config import settings
 from .api import chat_routes as chat
+from urllib.parse import urlparse
+
+
+def _origin_allowed(source: str, allowed_origins: list[str]) -> bool:
+    """Compare netloc of request origin against allowed origins list."""
+    try:
+        source_host = urlparse(source).netloc
+        for allowed in allowed_origins:
+            if urlparse(allowed).netloc == source_host:
+                return True
+    except Exception:
+        pass
+    return False
 
 IMAGE_INDEX = {}
 
@@ -77,6 +88,29 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+# ==========================================
+# 🛡️ ORIGIN VALIDATION MIDDLEWARE
+# Blocks /api/chat requests from unknown origins
+# when specific domains are configured in CORS_ORIGINS.
+# If CORS_ORIGINS = ["*"], validation is skipped.
+# ==========================================
+@app.middleware("http")
+async def origin_validation_middleware(request: Request, call_next):
+    if request.url.path.startswith("/api/chat"):
+        allowed = settings.CORS_ORIGINS
+        if "*" not in allowed:
+            origin = request.headers.get("origin", "")
+            referer = request.headers.get("referer", "")
+            source = origin or referer
+            # Only reject when a source header is present but doesn't match.
+            # Missing Origin/Referer = same-origin page request → allow.
+            if source and not _origin_allowed(source, allowed):
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "Request origin not allowed."}
+                )
+    return await call_next(request)
+
 # Include Routers
 app.include_router(chat.router)
 
@@ -89,6 +123,10 @@ async def health_check(request: Request):
 # Static Files
 if not settings.IMAGES_DIR.exists(): os.makedirs(settings.IMAGES_DIR)
 
+# Pre-resolve base directories once at module load time for path jail checks
+_WIKI_DIR_RESOLVED = settings.WIKI_DIR.resolve()
+_IMAGES_DIR_RESOLVED = settings.IMAGES_DIR.resolve()
+
 # ⚡ Caching Image Paths to prevent recursive IO bottlenecks in Production ⚡
 @lru_cache(maxsize=1024)
 def find_image_path(filename: str) -> Path | None:
@@ -96,24 +134,29 @@ def find_image_path(filename: str) -> Path | None:
     clean_filename = filename.replace("\\", "/")
     if clean_filename.startswith("carmen_cloud/"):
         clean_filename = clean_filename[len("carmen_cloud/"):]
-        
+
     if settings.WIKI_DIR.exists():
         # First check the exact relative path in WIKI_DIR
         exact_path = settings.WIKI_DIR / clean_filename
         if exact_path.is_file():
-            return exact_path
-            
+            # 🛡️ Path jail: ensure resolved path stays inside WIKI_DIR
+            try:
+                exact_path.resolve().relative_to(_WIKI_DIR_RESOLVED)
+                return exact_path
+            except ValueError:
+                pass  # Path traversal attempt — silently block
+
         # Fallback to searching by basename in cache (Instant lookup)
         basename = os.path.basename(clean_filename)
         if basename in IMAGE_INDEX:
             return IMAGE_INDEX[basename]
-                
-    # Fallback to local images folder
+
+    # Fallback to local images folder (basename strips any directory component)
     basename = os.path.basename(clean_filename)
     local_path = settings.IMAGES_DIR / basename
     if local_path.is_file():
         return local_path
-        
+
     return None
 
 @app.get("/images/{filename:path}")
@@ -128,7 +171,6 @@ async def get_image(filename: str, request: Request):
         # This fixes issues where old code cached wrong images for generic filenames like image-12.png
         response = FileResponse(resolved_path)
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
-        response.headers["X-Resolved-From"] = str(resolved_path)  # Debug: trace which file was served
         return response
         
     raise HTTPException(status_code=404, detail="Image not found")
