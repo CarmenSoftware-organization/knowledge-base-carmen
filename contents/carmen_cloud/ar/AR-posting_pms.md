@@ -2,10 +2,10 @@
 title: AR Posting from PMS (PMS Interface)
 description: AR Posting from PMS (PMS Interface)
 published: true
-date: "2026-02-02T06:14:10.533Z"
+date: 2026-03-19T08:38:50.152Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.533Z"
+dateCreated: 2026-03-19T08:38:47.910Z
 ---
 
 # AR Posting from PMS (PMS Interface)

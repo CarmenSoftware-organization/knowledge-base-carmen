@@ -2,10 +2,10 @@
 title: Untitled
 description: Untitled
 published: true
-date: "2026-02-02T06:14:10.512Z"
+date: 2026-03-19T08:34:32.581Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.512Z"
+dateCreated: 2026-02-02T06:53:01.416Z
 ---
 
 ## การ Post ข้อมูล Receiving เข้า A/P Invoice

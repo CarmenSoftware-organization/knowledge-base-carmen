@@ -1,3 +1,13 @@
+---
+title: README
+description: 
+published: true
+date: 2026-03-19T08:33:42.564Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:00:35.495Z
+---
+
 # Carmen Chatbot
 
 AI-powered chatbot for **Carmen Enterprise Software** — uses RAG (Retrieval-Augmented Generation) with PostgreSQL/pgvector for knowledge retrieval and OpenRouter LLM API for response generation.

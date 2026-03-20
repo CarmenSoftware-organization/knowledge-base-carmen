@@ -1,3 +1,13 @@
+---
+title: README
+description: 
+published: true
+date: 2026-03-19T08:33:36.178Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:33:34.068Z
+---
+
 # New Carmen Project
 
 โปรเจค New Carmen Web - ระบบ Document Management พร้อม AI-Powered Search

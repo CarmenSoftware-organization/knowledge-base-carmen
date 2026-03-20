@@ -2,10 +2,10 @@
 title: Input Tax Reconciliation
 description: Input Tax Reconciliation
 published: true
-date: "2026-02-02T06:14:10.502Z"
+date: 2026-03-19T08:38:04.560Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.502Z"
+dateCreated: 2026-03-19T08:38:02.202Z
 ---
 
 # Input Tax Reconciliation

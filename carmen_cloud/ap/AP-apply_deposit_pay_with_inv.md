@@ -2,12 +2,11 @@
 title: Apply Deposit with Invoice
 description: Apply Deposit with Invoice
 published: true
-date: 2026-02-27T02:22:31.466Z
+date: 2026-03-19T08:34:14.688Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:52:35.758Z
 ---
-
 
 การนำ Deposit หรือเงินมัดจำมาลดยอด Invoice เมื่อได้รับสินค้าหรือบริการแล้วจะต้องมีการนำ Deposit มาใช้เพื่อลดยอดหนี้ก่อนชำระเงิน
 

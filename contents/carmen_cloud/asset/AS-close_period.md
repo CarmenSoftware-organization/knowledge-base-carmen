@@ -2,10 +2,10 @@
 title: Close Period Asset
 description: Close Period Asset
 published: true
-date: 2026-02-23T05:11:36.555Z
+date: 2026-03-19T08:39:15.885Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: 2026-02-02T06:54:05.185Z
+dateCreated: 2026-03-19T08:39:13.804Z
 ---
 
 ---

@@ -1,3 +1,13 @@
+---
+title: static_knowledge
+description: 
+published: true
+date: 2026-03-19T08:37:40.117Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:00:38.717Z
+---
+
 # ข้อมูลทั่วไป Carmen Software
 
 ## ประวัติและความเชี่ยวชาญของบริษัท

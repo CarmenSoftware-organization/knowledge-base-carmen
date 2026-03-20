@@ -2,10 +2,10 @@
 title: Apply Invoice for Advance Deposit
 description: Apply Invoice for Advance Deposit
 published: true
-date: "2026-02-02T06:14:10.521Z"
+date: 2026-03-19T08:38:34.358Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.521Z"
+dateCreated: 2026-03-19T08:38:32.200Z
 ---
 
 # Apply Invoice for Advance Deposit
