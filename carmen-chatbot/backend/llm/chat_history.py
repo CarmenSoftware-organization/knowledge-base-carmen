@@ -98,6 +98,33 @@ async def _save_to_db_direct(data: dict) -> bool:
     if not user_query or not bot_response:
         return False
 
+    # Analytics fields
+    lang = data.get("lang") or None
+    intent_type = data.get("intent_type") or None
+    model_name = data.get("model_name") or None
+    input_tokens = data.get("input_tokens") or None
+    output_tokens = data.get("output_tokens") or None
+
+    # Build metrics JSONB from optional operational fields
+    metrics: dict = {}
+    duration = data.get("duration")
+    if duration is not None:
+        metrics["duration_ms"] = round(duration * 1000)
+    ttft_ms = data.get("ttft_ms")
+    if ttft_ms is not None:
+        metrics["ttft_ms"] = ttft_ms
+    for bool_key in ("was_truncated", "had_zero_results", "was_rewritten"):
+        val = data.get(bool_key)
+        if val is not None:
+            metrics[bool_key] = val
+    retrieved_chunks = data.get("retrieved_chunks")
+    if retrieved_chunks is not None:
+        metrics["retrieved_chunks"] = retrieved_chunks
+    history_length = data.get("history_length")
+    if history_length is not None:
+        metrics["history_length"] = history_length
+    metrics_json = json.dumps(metrics) if metrics else None
+
     async with AsyncSessionLocal() as db:
         try:
             # Get bu_id from business_units
@@ -128,36 +155,47 @@ async def _save_to_db_direct(data: dict) -> bool:
             ]
             sources_json = json.dumps(sources_list)
 
+            params = {
+                "bu_id": bu_id,
+                "user_id": username,
+                "question": user_query,
+                "answer": bot_response,
+                "sources_json": sources_json,
+                "lang": lang,
+                "intent_type": intent_type,
+                "model_name": model_name,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "metrics_json": metrics_json,
+            }
+
             if emb_str:
+                params["emb_str"] = emb_str
                 await db.execute(
                     text("""
                         INSERT INTO public.chat_history
-                        (bu_id, user_id, question, answer, sources, question_embedding, created_at)
-                        VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb), CAST(:emb_str AS vector), now())
+                        (bu_id, user_id, question, answer, sources, question_embedding,
+                         lang, intent_type, model_name, input_tokens, output_tokens, metrics,
+                         created_at)
+                        VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb),
+                                CAST(:emb_str AS vector),
+                                :lang, :intent_type, :model_name, :input_tokens, :output_tokens,
+                                CAST(:metrics_json AS jsonb), now())
                     """),
-                    {
-                        "bu_id": bu_id,
-                        "user_id": username,
-                        "question": user_query,
-                        "answer": bot_response,
-                        "sources_json": sources_json,
-                        "emb_str": emb_str,
-                    },
+                    params,
                 )
             else:
                 await db.execute(
                     text("""
                         INSERT INTO public.chat_history
-                        (bu_id, user_id, question, answer, sources, created_at)
-                        VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb), now())
+                        (bu_id, user_id, question, answer, sources,
+                         lang, intent_type, model_name, input_tokens, output_tokens, metrics,
+                         created_at)
+                        VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb),
+                                :lang, :intent_type, :model_name, :input_tokens, :output_tokens,
+                                CAST(:metrics_json AS jsonb), now())
                     """),
-                    {
-                        "bu_id": bu_id,
-                        "user_id": username,
-                        "question": user_query,
-                        "answer": bot_response,
-                        "sources_json": sources_json,
-                    },
+                    params,
                 )
             await db.commit()
             print(f"[chat_history] Saved to DB (bu={bu}, user={username})")

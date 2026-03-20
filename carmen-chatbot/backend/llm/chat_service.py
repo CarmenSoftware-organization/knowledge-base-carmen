@@ -241,6 +241,9 @@ class LLMService:
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": quick_reply,
                 "model_name": settings.OPENROUTER_INTENT_MODEL, "input_tokens": intent_tokens[0], "output_tokens": intent_tokens[1],
                 "sources": [], "timestamp": datetime.now(), "duration": duration,
+                "lang": lang, "intent_type": intent_type,
+                "was_rewritten": False, "had_zero_results": False, "was_truncated": False,
+                "retrieved_chunks": 0, "history_length": history_count, "ttft_ms": 0,
             })
             yield json.dumps({"type": "done", "id": log_id}) + "\n"
             ttft = duration
@@ -255,6 +258,7 @@ class LLMService:
 
         # Query Rewriting — rewrite follow-up questions using history context
         search_query = message
+        was_rewritten = False
         if chat_history.has_history(room_id):
             if request and await request.is_disconnected():
                 logger.warning("🛑 Client disconnected before rewrite. stopping...")
@@ -263,6 +267,7 @@ class LLMService:
             await asyncio.sleep(0)
             t0 = time.time()
             search_query, rewrite_in, rewrite_out = await self._rewrite_query(message, history_text)
+            was_rewritten = search_query != message
             total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
             logger.info(f"⏱️ Rewrite Query Time: {time.time() - t0:.2f}s")
             logger.info(f"🔄 Query Rewrite: \"{message}\" → \"{search_query}\"")
@@ -275,6 +280,8 @@ class LLMService:
         passed_docs, source_debug = await retrieval_service.search(search_query, db_schema)
         log_search(search_query, passed_docs)
 
+        retrieved_chunks = len(passed_docs)
+
         if not passed_docs:
             duration = time.time() - start_time
             reply = intent_router.canned_responses["out_of_scope"].get(lang, intent_router.canned_responses["out_of_scope"]["th"])
@@ -283,6 +290,9 @@ class LLMService:
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": reply,
                 "model_name": "zero_result_safeguard", "input_tokens": 0, "output_tokens": 0,
                 "sources": [], "timestamp": datetime.now(), "duration": duration,
+                "lang": lang, "intent_type": "tech_support",
+                "was_rewritten": was_rewritten, "had_zero_results": True, "was_truncated": False,
+                "retrieved_chunks": 0, "history_length": history_count, "ttft_ms": 0,
             })
             yield json.dumps({"type": "done", "id": log_id}) + "\n"
             log_performance(total_tokens_map, 0, time.time() - start_time)
@@ -299,6 +309,7 @@ class LLMService:
 
         full_response = ""
         last_chunk = None
+        was_truncated = False
         try:
             system_base = BASE_PROMPT.split("data_input:")[0].strip()
             system_content = system_base.replace("the designated preface phrase", f"'{l['preface']}'")
@@ -364,6 +375,10 @@ class LLMService:
                                 "user_query": message, "bot_response": full_response,
                                 "model_name": current_model, "input_tokens": partial_input, "output_tokens": partial_output,
                                 "sources": source_debug, "timestamp": datetime.now(), "duration": partial_duration,
+                                "lang": lang, "intent_type": "tech_support",
+                                "was_rewritten": was_rewritten, "had_zero_results": False, "was_truncated": False,
+                                "retrieved_chunks": retrieved_chunks, "history_length": history_count,
+                                "ttft_ms": round(ttft * 1000),
                             })
                             return
                         if first_token_time is None and chunk.content:
@@ -447,6 +462,7 @@ class LLMService:
             # 🔍 Check if response was cut short by max_tokens
             # Note: OpenAI uses "length", Anthropic/some providers use "max_tokens"
             if stream_finish_reason in ("length", "max_tokens"):
+                was_truncated = True
                 truncation_notice = (
                     "\n\n_(The response was too long to complete in one reply. Try asking about a specific part of the topic instead.)_"
                     if lang == "en" else
@@ -506,6 +522,10 @@ class LLMService:
             "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": full_response,
             "model_name": model_name, "input_tokens": input_tokens, "output_tokens": output_tokens,
             "sources": source_debug, "timestamp": datetime.now(), "duration": duration,
+            "lang": lang, "intent_type": "tech_support",
+            "was_rewritten": was_rewritten, "had_zero_results": False, "was_truncated": was_truncated,
+            "retrieved_chunks": retrieved_chunks, "history_length": history_count,
+            "ttft_ms": round(ttft * 1000),
         })
         yield json.dumps({"type": "done", "id": log_id}) + "\n"
 
@@ -540,6 +560,9 @@ class LLMService:
                 "model_name": settings.OPENROUTER_INTENT_MODEL,
                 "input_tokens": intent_tokens[0], "output_tokens": intent_tokens[1],
                 "sources": [], "timestamp": datetime.now(), "duration": time.time() - start_time,
+                "lang": lang, "intent_type": intent_type,
+                "was_rewritten": False, "had_zero_results": False, "was_truncated": False,
+                "retrieved_chunks": 0, "history_length": history_count, "ttft_ms": 0,
             })
             log_performance(total_tokens_map, 0, time.time() - start_time)
             return {"reply": quick_reply, "sources": [], "room_id": room_id, "message_id": log_id}
@@ -551,11 +574,14 @@ class LLMService:
         logger.info(f"⚡ Processing as TECH_SUPPORT: '{message}'")
 
         search_query = message
+        was_rewritten = False
         if chat_history.has_history(room_id):
             search_query, rewrite_in, rewrite_out = await self._rewrite_query(message, history_text)
+            was_rewritten = search_query != message
             total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
 
         passed_docs, source_debug = await retrieval_service.search(search_query, db_schema)
+        retrieved_chunks = len(passed_docs)
 
         if not passed_docs:
             reply = intent_router.canned_responses["out_of_scope"].get(lang, intent_router.canned_responses["out_of_scope"]["th"])
@@ -563,6 +589,9 @@ class LLMService:
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": reply,
                 "model_name": "zero_result_safeguard", "input_tokens": 0, "output_tokens": 0,
                 "sources": [], "timestamp": datetime.now(), "duration": time.time() - start_time,
+                "lang": lang, "intent_type": "tech_support",
+                "was_rewritten": was_rewritten, "had_zero_results": True, "was_truncated": False,
+                "retrieved_chunks": 0, "history_length": history_count, "ttft_ms": 0,
             })
             duration = time.time() - start_time
             log_performance(total_tokens_map, duration, duration)
@@ -572,6 +601,7 @@ class LLMService:
 
         input_tokens = 0
         output_tokens = 0
+        was_truncated = False
         try:
             system_base = BASE_PROMPT.split("data_input:")[0].strip()
             system_content = system_base.replace("the designated preface phrase", f"'{l['preface']}'")
@@ -602,6 +632,7 @@ class LLMService:
             resp_meta = getattr(response, 'response_metadata', {})
             finish_reason = resp_meta.get('finish_reason') or resp_meta.get('stop_reason')
             if finish_reason in ("length", "max_tokens"):
+                was_truncated = True
                 truncation_notice = (
                     "\n\n_(The response was too long to complete in one reply. Try asking about a specific part of the topic instead.)_"
                     if lang == "en" else
@@ -635,10 +666,11 @@ class LLMService:
 
         log_id = await chat_history.save_chat_logs({
             "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": bot_ans,
-            "model_name": model_name,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
+            "model_name": model_name, "input_tokens": input_tokens, "output_tokens": output_tokens,
             "sources": source_debug, "timestamp": datetime.now(), "duration": time.time() - start_time,
+            "lang": lang, "intent_type": "tech_support",
+            "was_rewritten": was_rewritten, "had_zero_results": False, "was_truncated": was_truncated,
+            "retrieved_chunks": retrieved_chunks, "history_length": history_count, "ttft_ms": 0,
         })
         total_tokens_map["chat_input"] = input_tokens
         total_tokens_map["chat_output"] = output_tokens

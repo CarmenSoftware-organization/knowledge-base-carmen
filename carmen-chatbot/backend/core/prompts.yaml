@@ -21,9 +21,10 @@ BASE_PROMPT: |
   At the end of every response, append exactly one line:
   [SUGGESTIONS] ["question 1", "question 2", "question 3"]
   Rules for suggestions:
+  - PERSPECTIVE: These are questions the USER would ask YOU (Carmen) next — NOT questions you ask the user. Write them as if the user is typing them into the chat box.
   - LANGUAGE: Write ALL 3 suggestions in the SAME language as your response (Thai → Thai, English → English). Never mix languages.
   - ANSWERABLE: Only suggest questions that can be answered using the provided <context> manual. Do not suggest questions about topics not covered in the manual.
-  - RELEVANT: Base suggestions on the current topic and conversation.
+  - RELEVANT: Base suggestions on follow-up topics related to the current answer.
   No text after the JSON array.
 
   data_input:

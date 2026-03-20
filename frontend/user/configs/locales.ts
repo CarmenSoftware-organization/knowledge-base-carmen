@@ -128,9 +128,9 @@ export const locales: Record<LocaleKey, LocaleStrings> = {
       desc: "Ask anything about the corporate manual or start a new conversation below.",
       new_chat: "New Chat",
       default_suggestions: [
-        "How to refresh workbook data?",
-        "Can I import purchase tax invoices from Excel?",
-        "How to upload files to RDPrep?",
+        "The refresh button in workbook doesn't work, what should I do?",
+        "Can I record purchase tax invoices in Excel and then import them?",
+        "Can Carmen upload files to the Revenue Department's RDPrep program?",
         "Can I create a receipt without selecting an invoice?",
         "Can I record a JV with unbalanced debit and credit?",
       ],
