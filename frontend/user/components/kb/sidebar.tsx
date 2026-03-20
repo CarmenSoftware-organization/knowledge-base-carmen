@@ -26,7 +26,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
       try {
         const res = await getCategories(bu);
         const loaded = [];
-        for (const cat of res.items) {
+        for (const cat of res.items.filter((c: any) => c.slug !== "changelog")) {
           const catRes = await getCategory(cat.slug, bu);
           loaded.push({
             name: cat.title || categoryDisplayMap[cat.slug] || cat.slug.toUpperCase(),
@@ -57,7 +57,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
   return (
     <aside className={cn(
       "shrink-0",
-      isMobile ? "w-full" : "w-64  sticky top-28 h-fit"
+      isMobile ? "w-full" : "w-64  sticky top-28 h-fit hidden lg:block"
     )}>
       <nav className="space-y-1 pr-4 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-hide">
         {categories.map((categoryItem) => {
