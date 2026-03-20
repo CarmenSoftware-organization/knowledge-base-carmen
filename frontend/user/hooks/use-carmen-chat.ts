@@ -90,6 +90,32 @@ export interface UseCarmenChatReturn {
   stopGeneration: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// UI state helpers — consolidate all per-BU localStorage keys into one entry
+// so we minimise the fingerprint surface exposed to browser storage.
+// ---------------------------------------------------------------------------
+type UiState = {
+  open?: boolean;
+  expanded?: boolean;
+  tooltipSeen?: boolean;
+  pos?: { bottom: string | number; right: string | number };
+  currentRoom?: string | null;
+};
+
+function readUiState(bu: string): UiState {
+  try {
+    const raw = localStorage.getItem(`carmen_ui_${bu}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function writeUiState(bu: string, patch: Partial<UiState>): void {
+  try {
+    const current = readUiState(bu);
+    localStorage.setItem(`carmen_ui_${bu}`, JSON.stringify({ ...current, ...patch }));
+  } catch { /* quota or private-mode — fail silently */ }
+}
+
 export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const t = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
@@ -157,11 +183,9 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   };
 
   useEffect(() => {
-    const wasOpen = localStorage.getItem(`carmen_open_${config.bu}`) === "true";
-    const wasExpanded =
-      localStorage.getItem(`carmen_expanded_${config.bu}`) === "true";
-    if (wasOpen) setIsOpen(true);
-    if (wasExpanded) setIsExpanded(true);
+    const ui = readUiState(config.bu);
+    if (ui.open) setIsOpen(true);
+    if (ui.expanded) setIsExpanded(true);
 
     const checkProactiveMessages = () => {
       if (isOpen || !config.proactiveMessages) return;
@@ -203,25 +227,20 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       }
       
       // Default Welcome Tooltip (only if hasn't seen any tooltip)
-      const seenDefault = localStorage.getItem(`carmen_tooltip_seen_${config.bu}`);
-      if (!seenDefault) {
+      if (!ui.tooltipSeen) {
         setTimeout(() => setTooltipData(prev => ({...prev, visible: true})), 2000);
         setTimeout(() => setTooltipData(prev => ({...prev, visible: false})), 10000);
-        localStorage.setItem(`carmen_tooltip_seen_${config.bu}`, "true");
+        writeUiState(config.bu, { tooltipSeen: true });
       }
     };
     
     checkProactiveMessages();
 
-    const savedPos = localStorage.getItem(`carmen_chat_pos_${config.bu}`);
-    if (savedPos) {
-      try {
-        setPosition(JSON.parse(savedPos));
-      } catch (e) {
-        console.warn("Restore Position Error:", e);
-      }
+    if (ui.pos) {
+      setPosition(ui.pos);
     }
 
+    api.housekeep();   // ลบห้องเก่า + orphan keys ตอน mount
     loadRoomList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -284,24 +303,24 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   function toggleOpen() {
     const next = !isOpen;
     setIsOpen(next);
-    localStorage.setItem(`carmen_open_${config.bu}`, String(next));
+    writeUiState(config.bu, { open: next });
     if (!next) {
       setIsExpanded(false);
       setShowRoomDropdown(false);
-      localStorage.setItem(`carmen_expanded_${config.bu}`, "false");
+      writeUiState(config.bu, { open: next, expanded: false });
     }
     if (next) setTooltipData(prev => ({...prev, visible: false})); // Auto dismiss tooltip when opened
   }
 
   function dismissTooltip() {
     setTooltipData(prev => ({...prev, visible: false}));
-    localStorage.setItem(`carmen_tooltip_seen_${config.bu}`, "true");
+    writeUiState(config.bu, { tooltipSeen: true });
   }
 
   function toggleExpand() {
     const next = !isExpanded;
     setIsExpanded(next);
-    localStorage.setItem(`carmen_expanded_${config.bu}`, String(next));
+    writeUiState(config.bu, { expanded: next });
     if (!next) setShowRoomDropdown(false);
   }
 
@@ -323,7 +342,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       await api.clearHistory(currentRoomId);
     }
     setCurrentRoomId(null);
-    localStorage.removeItem(`carmen_current_room_${config.bu}`);
+    writeUiState(config.bu, { currentRoom: null });
     setMessages([]);
     setShowSuggestions(true);
     setShowRoomDropdown(false);
@@ -347,7 +366,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     setIsTyping(false);
 
     setCurrentRoomId(roomId);
-    localStorage.setItem(`carmen_current_room_${config.bu}`, roomId);
+    writeUiState(config.bu, { currentRoom: roomId });
     await loadHistory(roomId);
     await loadRoomList();
     setShowRoomDropdown(false);
@@ -681,7 +700,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       const room = await api.createRoom(config.bu, config.username, title);
       roomId = room.room_id;
       setCurrentRoomId(roomId);
-      localStorage.setItem(`carmen_current_room_${config.bu}`, roomId);
+      writeUiState(config.bu, { currentRoom: roomId });
       await loadRoomList();
     }
 
@@ -735,7 +754,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   function updatePosition(newPos: { bottom: string | number; right: string | number }) {
     setPosition(newPos);
-    localStorage.setItem(`carmen_chat_pos_${config.bu}`, JSON.stringify(newPos));
+    writeUiState(config.bu, { pos: newPos });
   }
 
   function stopGeneration() {

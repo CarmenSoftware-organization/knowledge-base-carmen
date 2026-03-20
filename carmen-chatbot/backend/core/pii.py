@@ -15,16 +15,23 @@ import hashlib
 _PII_PATTERNS: list[tuple[re.Pattern, str]] = [
     # Email addresses
     (re.compile(r'[\w.%+\-]+@[\w\-]+\.[\w.\-]+', re.IGNORECASE), '[email]'),
-    # Thai mobile (06x / 08x / 09x — 10 digits)
-    (re.compile(r'\b0[689]\d{8}\b'), '[phone]'),
-    # International phone with country code  e.g. +66812345678
-    (re.compile(r'\+\d{1,3}[\s\-]?\d{7,12}\b'), '[phone]'),
-    # Thai national ID with hyphens  1-2345-67890-12-3
-    (re.compile(r'\b\d{1}-\d{4}-\d{5}-\d{2}-\d{1}\b'), '[national-id]'),
-    # 13 consecutive digits (national ID without hyphens)
+    # Thai mobile (06x / 08x / 09x — 10 digits, with optional dashes/spaces)
+    # e.g. 0812345678 / 081-234-5678 / 081 234 5678
+    (re.compile(r'\b0[689]\d[\s\-]?\d{3}[\s\-]?\d{4}\b'), '[phone]'),
+    # Generic 10-digit with dashes  e.g. 955-584-4455
+    (re.compile(r'\b\d{3}[\s\-]\d{3}[\s\-]\d{4}\b'), '[phone]'),
+    # International phone with country code  e.g. +66812345678 / +66-81-234-5678
+    (re.compile(r'\+\d{1,3}[\s\-]?\d{1,4}[\s\-]?\d{3,4}[\s\-]?\d{3,4}\b'), '[phone]'),
+    # Thai national ID with hyphens or spaces  1-2345-67890-12-3 / 1 2345 67890 12 3
+    (re.compile(r'\b\d{1}[\s\-]\d{4}[\s\-]\d{5}[\s\-]\d{2}[\s\-]\d{1}\b'), '[national-id]'),
+    # 13 consecutive digits (national ID without separator)
     (re.compile(r'\b\d{13}\b'), '[national-id]'),
-    # Credit / debit card  — 15-16 digit groups separated by space or dash
-    (re.compile(r'\b\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{3,4}\b'), '[card]'),
+    # Visa/Mastercard 16 digits — groups of 4 separated by space or dash
+    (re.compile(r'\b\d{4}[\s\-]\d{4}[\s\-]\d{4}[\s\-]\d{4}\b'), '[card]'),
+    # Visa/Mastercard 16 digits — no separator
+    (re.compile(r'\b\d{16}\b'), '[card]'),
+    # Amex 15 digits — 4-6-5 format with space or dash
+    (re.compile(r'\b\d{4}[\s\-]\d{6}[\s\-]\d{5}\b'), '[card]'),
 ]
 
 

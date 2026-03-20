@@ -199,7 +199,7 @@ async def _save_to_db_direct(data: dict) -> bool:
                     params,
                 )
             await db.commit()
-            print(f"[chat_history] Saved to DB (bu={bu}, user={username})")
+            print(f"[chat_history] Saved to DB (bu={bu})")
             return True
         except Exception as e:
             await db.rollback()
@@ -219,7 +219,7 @@ async def save_chat_logs(data: dict) -> int:
     if not user_query or not bot_response:
         return ts
 
-    print(f"[chat_history] Saving (bu={bu}, user={username}, q_len={len(user_query)})")
+    print(f"[chat_history] Saving (bu={bu}, q_len={len(user_query)})")
 
     # 1) Try Go backend first (when Go is running)
     go_url = getattr(settings, "GO_BACKEND_URL", "") or ""
