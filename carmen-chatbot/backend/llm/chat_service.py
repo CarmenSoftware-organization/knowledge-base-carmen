@@ -205,7 +205,7 @@ class LLMService:
                 "status_searching": "กำลังค้นหาและคัดกรองข้อมูล...",
                 "status_composing": "กำลังเรียบเรียงคำตอบ...",
                 "preface": "จากข้อมูลในคู่มือ",
-                "instruction": "Always respond in Thai language."
+                "instruction": "Always respond in Thai language. This includes the [SUGGESTIONS] section — all 3 suggested questions MUST be written in Thai only. Never use Chinese or any other language."
             },
             "en": {
                 "status_analyzing": "Analyzing your question...",
@@ -346,6 +346,25 @@ class LLMService:
                     async for chunk in llm.astream(messages):
                         if request and await request.is_disconnected():
                             print("🛑 Client disconnected during streaming. stopping...")
+                            partial_duration = time.time() - start_time
+                            partial_input, partial_output = 0, 0
+                            if accumulated:
+                                usage = getattr(accumulated, 'usage_metadata', None)
+                                if usage and isinstance(usage, dict):
+                                    partial_input = usage.get('input_tokens', 0)
+                                    partial_output = usage.get('output_tokens', 0)
+                            if partial_input == 0 and partial_output == 0:
+                                partial_input = len((context_text + message).encode('utf-8')) // 3
+                                partial_output = len(full_response.encode('utf-8')) // 3
+                            total_tokens_map["chat_input"] = partial_input
+                            total_tokens_map["chat_output"] = partial_output
+                            log_performance(total_tokens_map, ttft, partial_duration)
+                            await chat_history.save_chat_logs({
+                                "room_id": room_id, "bu": bu, "username": username,
+                                "user_query": message, "bot_response": full_response,
+                                "model_name": current_model, "input_tokens": partial_input, "output_tokens": partial_output,
+                                "sources": source_debug, "timestamp": datetime.now(), "duration": partial_duration,
+                            })
                             return
                         if first_token_time is None and chunk.content:
                             first_token_time = time.time()
@@ -498,7 +517,7 @@ class LLMService:
         log_query(message, history_count)
 
         LOCALES = {
-            "th": {"preface": "จากข้อมูลในคู่มือ", "instruction": "Always respond in Thai language."},
+            "th": {"preface": "จากข้อมูลในคู่มือ", "instruction": "Always respond in Thai language. This includes the [SUGGESTIONS] section — all 3 suggested questions MUST be written in Thai only. Never use Chinese or any other language."},
             "en": {"preface": "Based on the manual", "instruction": "Always respond in English language. If the manual is in Thai, translate relevant parts into English. No direct Thai quotes."}
         }
         l = LOCALES.get(lang or "th", LOCALES["th"])
