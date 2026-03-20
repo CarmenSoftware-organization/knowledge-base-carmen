@@ -2,7 +2,7 @@
 title: 7.กด Approved PR ไม่ได้
 description: 
 published: true
-date: 2026-03-20T09:49:56.348Z
+date: 2026-03-20T09:51:15.971Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-20T09:49:56.348Z
