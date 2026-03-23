@@ -89,6 +89,7 @@ async def _save_to_db_direct(data: dict) -> bool:
     """Save Q&A directly to public.chat_history. Returns True on success."""
     from sqlalchemy import text
     from .retrieval import retrieval_service
+    from ..core import pricing
 
     bu = data.get("bu", "carmen")
     username = hash_user_id(data.get("username", "anonymous"), settings.PRIVACY_HMAC_SECRET)
@@ -103,8 +104,14 @@ async def _save_to_db_direct(data: dict) -> bool:
     lang = data.get("lang") or None
     intent_type = data.get("intent_type") or None
     model_name = data.get("model_name") or None
-    input_tokens = data.get("input_tokens") or None
-    output_tokens = data.get("output_tokens") or None
+    chat_input_tokens = data.get("chat_input_tokens") or 0
+    chat_output_tokens = data.get("chat_output_tokens") or 0
+    intent_input_tokens = data.get("intent_input_tokens") or 0
+    intent_output_tokens = data.get("intent_output_tokens") or 0
+    rewrite_input_tokens = data.get("rewrite_input_tokens") or 0
+    rewrite_output_tokens = data.get("rewrite_output_tokens") or 0
+    embed_model = data.get("embed_model") or settings.OPENROUTER_EMBED_MODEL
+    intent_model = data.get("intent_model") or settings.active_intent_model
 
     # Build metrics JSONB from optional operational fields
     metrics: dict = {}
@@ -139,14 +146,40 @@ async def _save_to_db_direct(data: dict) -> bool:
                 return False
             bu_id = row[0]
 
-            # Create embedding if available
+            # Create question_embedding + capture save embed tokens
             emb_str = None
+            save_embed_tokens = 0
             if retrieval_service.embeddings:
                 try:
-                    emb = await retrieval_service.get_embedding(user_query)
+                    emb, save_embed_tokens = await retrieval_service.get_embedding(user_query)
                     emb_str = retrieval_service.format_pgvector(emb)
                 except Exception as e:
                     print(f"[chat_history] embedding failed: {e}")
+
+            # รวม embed tokens ทั้งหมด (retrieval + intent + save)
+            embed_tokens = (data.get("embed_tokens") or 0) + save_embed_tokens
+
+            # คำนวณ total_tokens รวมทุก operation
+            total_tokens = (
+                embed_tokens
+                + intent_input_tokens + intent_output_tokens
+                + rewrite_input_tokens + rewrite_output_tokens
+                + chat_input_tokens + chat_output_tokens
+            )
+
+            # คำนวณ cost_usd
+            cost_usd = await pricing.calculate_request_cost(
+                embed_tokens=embed_tokens,
+                intent_input=intent_input_tokens,
+                intent_output=intent_output_tokens,
+                rewrite_input=rewrite_input_tokens,
+                rewrite_output=rewrite_output_tokens,
+                chat_input=chat_input_tokens,
+                chat_output=chat_output_tokens,
+                chat_model=model_name or "",
+                embed_model=embed_model,
+                intent_model=intent_model,
+            )
 
             # Map sources to jsonb format
             sources_list = [
@@ -165,8 +198,15 @@ async def _save_to_db_direct(data: dict) -> bool:
                 "lang": lang,
                 "intent_type": intent_type,
                 "model_name": model_name,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
+                "chat_input_tokens": chat_input_tokens or 0,
+                "chat_output_tokens": chat_output_tokens or 0,
+                "intent_input_tokens": intent_input_tokens or 0,
+                "intent_output_tokens": intent_output_tokens or 0,
+                "embed_tokens": embed_tokens or 0,
+                "rewrite_input_tokens": rewrite_input_tokens or 0,
+                "rewrite_output_tokens": rewrite_output_tokens or 0,
+                "total_tokens": total_tokens or 0,
+                "cost_usd": cost_usd,
                 "metrics_json": metrics_json,
             }
 
@@ -176,12 +216,16 @@ async def _save_to_db_direct(data: dict) -> bool:
                     text("""
                         INSERT INTO public.chat_history
                         (bu_id, user_id, question, answer, sources, question_embedding,
-                         lang, intent_type, model_name, input_tokens, output_tokens, metrics,
-                         created_at)
+                         lang, intent_type, model_name, chat_input_tokens, chat_output_tokens,
+                         intent_input_tokens, intent_output_tokens,
+                         embed_tokens, rewrite_input_tokens, rewrite_output_tokens,
+                         total_tokens, cost_usd, metrics, created_at)
                         VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb),
                                 CAST(:emb_str AS vector),
-                                :lang, :intent_type, :model_name, :input_tokens, :output_tokens,
-                                CAST(:metrics_json AS jsonb), now())
+                                :lang, :intent_type, :model_name, :chat_input_tokens, :chat_output_tokens,
+                                :intent_input_tokens, :intent_output_tokens,
+                                :embed_tokens, :rewrite_input_tokens, :rewrite_output_tokens,
+                                :total_tokens, :cost_usd, CAST(:metrics_json AS jsonb), now())
                     """),
                     params,
                 )
@@ -190,16 +234,20 @@ async def _save_to_db_direct(data: dict) -> bool:
                     text("""
                         INSERT INTO public.chat_history
                         (bu_id, user_id, question, answer, sources,
-                         lang, intent_type, model_name, input_tokens, output_tokens, metrics,
-                         created_at)
+                         lang, intent_type, model_name, chat_input_tokens, chat_output_tokens,
+                         intent_input_tokens, intent_output_tokens,
+                         embed_tokens, rewrite_input_tokens, rewrite_output_tokens,
+                         total_tokens, cost_usd, metrics, created_at)
                         VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb),
-                                :lang, :intent_type, :model_name, :input_tokens, :output_tokens,
-                                CAST(:metrics_json AS jsonb), now())
+                                :lang, :intent_type, :model_name, :chat_input_tokens, :chat_output_tokens,
+                                :intent_input_tokens, :intent_output_tokens,
+                                :embed_tokens, :rewrite_input_tokens, :rewrite_output_tokens,
+                                :total_tokens, :cost_usd, CAST(:metrics_json AS jsonb), now())
                     """),
                     params,
                 )
             await db.commit()
-            print(f"[chat_history] Saved to DB (bu={bu})")
+            print(f"[chat_history] Saved to DB (bu={bu}, total_tokens={total_tokens}, cost_usd={cost_usd})")
             return True
         except Exception as e:
             await db.rollback()

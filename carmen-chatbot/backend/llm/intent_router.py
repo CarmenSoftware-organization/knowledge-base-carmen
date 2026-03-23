@@ -103,8 +103,11 @@ class IntentRouter:
     # ------------------------------------------------------------------
     # Embedding helpers
     # ------------------------------------------------------------------
-    def _raw_embed(self, texts: List[str]) -> List[List[float]]:
-        """Direct OpenRouter API call for embeddings (bypassing LangChain)."""
+    def _raw_embed(self, texts: List[str]) -> tuple[List[List[float]], int]:
+        """Direct OpenRouter API call for embeddings (bypassing LangChain).
+
+        Returns (vectors, prompt_tokens).
+        """
         try:
             url = f"{settings.OPENROUTER_API_BASE}/embeddings"
             headers = {
@@ -121,6 +124,8 @@ class IntentRouter:
             resp.raise_for_status()
             res_json = resp.json()
 
+            embed_tokens = res_json.get("usage", {}).get("prompt_tokens", 0)
+
             if "data" not in res_json:
                 raise ValueError(f"OpenRouter response missing data: {res_json}")
 
@@ -133,13 +138,14 @@ class IntentRouter:
                 if norm > 1e-9:
                     truncated = (np.array(truncated) / norm).tolist()
                 results.append(truncated)
-            return results
+            return results, embed_tokens
         except Exception as e:
             logger.error(f"❌ IntentRouter Raw Embedding Error: {e}")
             raise
 
-    def _embed_query(self, text: str) -> List[float]:
-        return self._raw_embed([text])[0]
+    def _embed_query(self, text: str) -> tuple[List[float], int]:
+        results, tokens = self._raw_embed([text])
+        return results[0], tokens
 
     # ------------------------------------------------------------------
     # Full index: batched embedding + cache save
@@ -204,7 +210,8 @@ class IntentRouter:
             # Single batch API call instead of one call per category
             logger.info(f"🧠 Embedding {len(all_texts)} examples across {len(self.canned_responses)} categories (single batch)...")
             try:
-                all_vectors = self._raw_embed(all_texts)
+                all_vectors, index_tokens = self._raw_embed(all_texts)
+                logger.info(f"📊 Startup indexing used {index_tokens} embed tokens ({len(all_texts)} examples)")
             except Exception as e:
                 logger.error(f"❌ Failed to embed intent examples: {e}")
                 return
@@ -261,8 +268,11 @@ class IntentRouter:
     # ------------------------------------------------------------------
     # Main detection pipeline
     # ------------------------------------------------------------------
-    async def detect_intent(self, message: str, lang: str = "th", have_history: bool = False) -> Tuple[str, str, Tuple[int, int]]:
-        """Analyze the intent of a user message."""
+    async def detect_intent(self, message: str, lang: str = "th", have_history: bool = False) -> Tuple[str, str, Tuple[int, int], int]:
+        """Analyze the intent of a user message.
+
+        Returns (intent, canned_response, (llm_input_tokens, llm_output_tokens), embed_tokens)
+        """
 
         # Throttled mtime check — file I/O at most once every 30s
         now = time.monotonic()
@@ -290,12 +300,13 @@ class IntentRouter:
             for pattern in patterns:
                 if re.search(pattern, msg_lower, re.IGNORECASE):
                     logger.info(f"🎯 Noise Detected (Regex): {intent}")
-                    return intent, self.canned_responses.get(intent, {}).get(lang, ""), (0, 0)
+                    return intent, self.canned_responses.get(intent, {}).get(lang, ""), (0, 0), 0
 
         # --- 2. Vectorized Semantic Similarity ---
+        intent_embed_tokens = 0
         if self.vector_matrix is not None:
             try:
-                query_vector = await asyncio.to_thread(self._embed_query, message)
+                query_vector, intent_embed_tokens = await asyncio.to_thread(self._embed_query, message)
                 query_vector = np.array(query_vector)
                 query_norm = np.linalg.norm(query_vector)
 
@@ -323,7 +334,7 @@ class IntentRouter:
                         logger.info("📊 Ambiguous query with history — fall through to TECH_SUPPORT.")
                     elif best_score >= self.threshold:
                         logger.info(f"📊 Noise Detected (Vectorized): {best_intent} (Score: {best_score:.4f})")
-                        return best_intent, self.canned_responses.get(best_intent, {}).get(lang, ""), (0, 0)
+                        return best_intent, self.canned_responses.get(best_intent, {}).get(lang, ""), (0, 0), intent_embed_tokens
             except Exception as e:
                 logger.error(f"⚠️ Semantic matching failed: {e}")
 
@@ -369,12 +380,12 @@ Decision (ONE word only):"""
                 logger.info(f"🤖 Intent LLM: '{intent_raw}'")
             else:
                 logger.warning(f"⚠️ Could not parse LLM result: '{raw_content}'. Defaulting to TECH_SUPPORT.")
-                return "tech_support", "", tokens
+                return "tech_support", "", tokens, intent_embed_tokens
 
-            return intent_raw.lower(), self.canned_responses.get(intent_raw.lower(), {}).get(lang, ""), tokens
+            return intent_raw.lower(), self.canned_responses.get(intent_raw.lower(), {}).get(lang, ""), tokens, intent_embed_tokens
         except Exception as e:
             logger.error(f"⚠️ LLM Fallback failed: {e}")
-            return "tech_support", "", (0, 0)
+            return "tech_support", "", (0, 0), intent_embed_tokens
 
 
 # Singleton instance

@@ -229,7 +229,7 @@ class LLMService:
 
         # 🛡️ STEP 0: INTENT DETECTION
         have_history = chat_history.has_history(room_id)
-        intent_type, quick_reply, intent_tokens = await intent_router.detect_intent(message, lang, have_history=have_history)
+        intent_type, quick_reply, intent_tokens, intent_embed_tokens = await intent_router.detect_intent(message, lang, have_history=have_history)
         log_intent(intent_type, settings.active_intent_model, intent_tokens)
 
         total_tokens_map = {
@@ -244,7 +244,10 @@ class LLMService:
             yield json.dumps({"type": "chunk", "data": quick_reply}) + "\n"
             log_id = await chat_history.save_chat_logs({
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": quick_reply,
-                "model_name": settings.active_intent_model, "input_tokens": intent_tokens[0], "output_tokens": intent_tokens[1],
+                "model_name": settings.active_intent_model, "chat_input_tokens": intent_tokens[0], "chat_output_tokens": intent_tokens[1],
+                "embed_tokens": intent_embed_tokens,
+                "rewrite_input_tokens": 0, "rewrite_output_tokens": 0,
+                "embed_model": settings.OPENROUTER_EMBED_MODEL, "intent_model": settings.active_intent_model,
                 "sources": [], "timestamp": datetime.now(), "duration": duration,
                 "lang": lang, "intent_type": intent_type,
                 "was_rewritten": False, "had_zero_results": False, "was_truncated": False,
@@ -264,6 +267,7 @@ class LLMService:
         # Query Rewriting — rewrite follow-up questions using history context
         search_query = message
         was_rewritten = False
+        rewrite_in, rewrite_out = 0, 0
         if chat_history.has_history(room_id):
             if request and await request.is_disconnected():
                 logger.warning("🛑 Client disconnected before rewrite. stopping...")
@@ -282,10 +286,11 @@ class LLMService:
             return
         yield json.dumps({"type": "status", "data": l["status_searching"]}) + "\n"
         await asyncio.sleep(0)
-        passed_docs, source_debug = await retrieval_service.search(search_query, db_schema)
+        passed_docs, source_debug, retrieval_embed_tokens = await retrieval_service.search(search_query, db_schema)
         log_search(search_query, passed_docs)
 
         retrieved_chunks = len(passed_docs)
+        embed_tokens = intent_embed_tokens + retrieval_embed_tokens
 
         if not passed_docs:
             duration = time.time() - start_time
@@ -293,7 +298,10 @@ class LLMService:
             yield json.dumps({"type": "chunk", "data": reply}) + "\n"
             log_id = await chat_history.save_chat_logs({
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": reply,
-                "model_name": "zero_result_safeguard", "input_tokens": 0, "output_tokens": 0,
+                "model_name": "zero_result_safeguard", "chat_input_tokens": 0, "chat_output_tokens": 0,
+                "embed_tokens": embed_tokens,
+                "rewrite_input_tokens": rewrite_in, "rewrite_output_tokens": rewrite_out,
+                "embed_model": settings.OPENROUTER_EMBED_MODEL, "intent_model": settings.active_intent_model,
                 "sources": [], "timestamp": datetime.now(), "duration": duration,
                 "lang": lang, "intent_type": "tech_support",
                 "was_rewritten": was_rewritten, "had_zero_results": True, "was_truncated": False,
@@ -378,7 +386,11 @@ class LLMService:
                             await chat_history.save_chat_logs({
                                 "room_id": room_id, "bu": bu, "username": username,
                                 "user_query": message, "bot_response": full_response,
-                                "model_name": current_model, "input_tokens": partial_input, "output_tokens": partial_output,
+                                "model_name": current_model, "chat_input_tokens": partial_input, "chat_output_tokens": partial_output,
+                                "intent_input_tokens": intent_tokens[0], "intent_output_tokens": intent_tokens[1],
+                                "embed_tokens": embed_tokens,
+                                "rewrite_input_tokens": rewrite_in, "rewrite_output_tokens": rewrite_out,
+                                "embed_model": settings.OPENROUTER_EMBED_MODEL, "intent_model": settings.active_intent_model,
                                 "sources": source_debug, "timestamp": datetime.now(), "duration": partial_duration,
                                 "lang": lang, "intent_type": "tech_support",
                                 "was_rewritten": was_rewritten, "had_zero_results": False, "was_truncated": False,
@@ -525,7 +537,11 @@ class LLMService:
 
         log_id = await chat_history.save_chat_logs({
             "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": full_response,
-            "model_name": model_name, "input_tokens": input_tokens, "output_tokens": output_tokens,
+            "model_name": model_name, "chat_input_tokens": input_tokens, "chat_output_tokens": output_tokens,
+            "intent_input_tokens": intent_tokens[0], "intent_output_tokens": intent_tokens[1],
+            "embed_tokens": embed_tokens,
+            "rewrite_input_tokens": rewrite_in, "rewrite_output_tokens": rewrite_out,
+            "embed_model": settings.OPENROUTER_EMBED_MODEL, "intent_model": settings.active_intent_model,
             "sources": source_debug, "timestamp": datetime.now(), "duration": duration,
             "lang": lang, "intent_type": "tech_support",
             "was_rewritten": was_rewritten, "had_zero_results": False, "was_truncated": was_truncated,
@@ -549,7 +565,7 @@ class LLMService:
 
         # 🛡️ STEP 0: INTENT DETECTION
         have_history = chat_history.has_history(room_id)
-        intent_type, quick_reply, intent_tokens = await intent_router.detect_intent(message, lang, have_history=have_history)
+        intent_type, quick_reply, intent_tokens, intent_embed_tokens = await intent_router.detect_intent(message, lang, have_history=have_history)
         log_intent(intent_type, settings.active_intent_model, intent_tokens)
 
         total_tokens_map = {
@@ -563,7 +579,10 @@ class LLMService:
             log_id = await chat_history.save_chat_logs({
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": quick_reply,
                 "model_name": settings.active_intent_model,
-                "input_tokens": intent_tokens[0], "output_tokens": intent_tokens[1],
+                "chat_input_tokens": intent_tokens[0], "chat_output_tokens": intent_tokens[1],
+                "embed_tokens": intent_embed_tokens,
+                "rewrite_input_tokens": 0, "rewrite_output_tokens": 0,
+                "embed_model": settings.OPENROUTER_EMBED_MODEL, "intent_model": settings.active_intent_model,
                 "sources": [], "timestamp": datetime.now(), "duration": time.time() - start_time,
                 "lang": lang, "intent_type": intent_type,
                 "was_rewritten": False, "had_zero_results": False, "was_truncated": False,
@@ -580,19 +599,24 @@ class LLMService:
 
         search_query = message
         was_rewritten = False
+        rewrite_in, rewrite_out = 0, 0
         if chat_history.has_history(room_id):
             search_query, rewrite_in, rewrite_out = await self._rewrite_query(message, history_text)
             was_rewritten = search_query != message
             total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
 
-        passed_docs, source_debug = await retrieval_service.search(search_query, db_schema)
+        passed_docs, source_debug, retrieval_embed_tokens = await retrieval_service.search(search_query, db_schema)
         retrieved_chunks = len(passed_docs)
+        embed_tokens = intent_embed_tokens + retrieval_embed_tokens
 
         if not passed_docs:
             reply = intent_router.canned_responses["out_of_scope"].get(lang, intent_router.canned_responses["out_of_scope"]["th"])
             log_id = await chat_history.save_chat_logs({
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": reply,
-                "model_name": "zero_result_safeguard", "input_tokens": 0, "output_tokens": 0,
+                "model_name": "zero_result_safeguard", "chat_input_tokens": 0, "chat_output_tokens": 0,
+                "embed_tokens": embed_tokens,
+                "rewrite_input_tokens": rewrite_in, "rewrite_output_tokens": rewrite_out,
+                "embed_model": settings.OPENROUTER_EMBED_MODEL, "intent_model": settings.active_intent_model,
                 "sources": [], "timestamp": datetime.now(), "duration": time.time() - start_time,
                 "lang": lang, "intent_type": "tech_support",
                 "was_rewritten": was_rewritten, "had_zero_results": True, "was_truncated": False,
@@ -671,7 +695,11 @@ class LLMService:
 
         log_id = await chat_history.save_chat_logs({
             "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": bot_ans,
-            "model_name": model_name, "input_tokens": input_tokens, "output_tokens": output_tokens,
+            "model_name": model_name, "chat_input_tokens": input_tokens, "chat_output_tokens": output_tokens,
+            "intent_input_tokens": intent_tokens[0], "intent_output_tokens": intent_tokens[1],
+            "embed_tokens": embed_tokens,
+            "rewrite_input_tokens": rewrite_in, "rewrite_output_tokens": rewrite_out,
+            "embed_model": settings.OPENROUTER_EMBED_MODEL, "intent_model": settings.active_intent_model,
             "sources": source_debug, "timestamp": datetime.now(), "duration": time.time() - start_time,
             "lang": lang, "intent_type": "tech_support",
             "was_rewritten": was_rewritten, "had_zero_results": False, "was_truncated": was_truncated,

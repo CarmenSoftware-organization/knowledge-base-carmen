@@ -17,6 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from .core.rate_limit import limiter
 
 from .core.config import settings
+from .core.pricing import sync_pricing_from_openrouter
 from .api import chat_routes as chat
 from .llm.intent_router import intent_router
 from urllib.parse import urlparse
@@ -53,6 +54,15 @@ async def _image_index_refresh_loop():
         find_image_path.cache_clear()
 
 
+_PRICING_SYNC_INTERVAL = 86400  # 24 ชั่วโมง
+
+async def _pricing_sync_loop():
+    """Re-sync OpenRouter pricing every 24 hours while server is running."""
+    while True:
+        await asyncio.sleep(_PRICING_SYNC_INTERVAL)
+        await sync_pricing_from_openrouter()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup actions
@@ -64,6 +74,8 @@ async def lifespan(app: FastAPI):
     )
     build_image_index()
     await intent_router.async_init()
+    await sync_pricing_from_openrouter()
+    asyncio.create_task(_pricing_sync_loop())
     if settings.IMAGE_INDEX_REFRESH_SECONDS > 0:
         asyncio.create_task(_image_index_refresh_loop())
     yield

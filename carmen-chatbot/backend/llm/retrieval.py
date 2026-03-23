@@ -50,8 +50,11 @@ class RetrievalService:
         except Exception as e:
             logger.error(f"❌ Error Initializing AI Brain: {e}")
 
-    async def get_embedding(self, query: str) -> list[float]:
-        """Generate an embedding via OpenRouter API and truncate/normalize it."""
+    async def get_embedding(self, query: str) -> tuple[list[float], int]:
+        """Generate an embedding via OpenRouter API and truncate/normalize it.
+
+        Returns (vector, prompt_tokens).
+        """
         try:
             url = f"{settings.OPENROUTER_API_BASE}/embeddings"
             headers = {
@@ -72,6 +75,8 @@ class RetrievalService:
 
             res_json = await asyncio.to_thread(call_api)
 
+            embed_tokens = res_json.get("usage", {}).get("prompt_tokens", 0)
+
             if "data" not in res_json or not res_json["data"]:
                 raise ValueError(f"OpenRouter embedding failed: {res_json}")
 
@@ -83,7 +88,7 @@ class RetrievalService:
             if norm > 1e-9:
                 truncated = (np.array(truncated) / norm).tolist()
 
-            return truncated
+            return truncated, embed_tokens
         except Exception as e:
             logger.error(f"❌ Raw Embedding Error: {e}")
             raise
@@ -118,20 +123,21 @@ class RetrievalService:
     # Strict schema name validation: lowercase alphanumeric + underscores, 2-63 chars
     SAFE_SCHEMA_PATTERN = re.compile(r'^[a-z][a-z0-9_]{1,62}$')
 
-    async def search(self, query: str, db_schema: str = "carmen"):
+    async def search(self, query: str, db_schema: str = "carmen") -> tuple[list, list, int]:
+        """Hybrid search. Returns (docs, source_debug, embed_tokens)."""
         passed_docs = []
         source_debug = []
 
         if not db_schema or not self.SAFE_SCHEMA_PATTERN.match(db_schema):
             logger.warning(f"🛡️ Security: Invalid or suspicious schema name blocked: '{db_schema}'")
-            return passed_docs, source_debug
+            return passed_docs, source_debug, 0
 
         if not self.embeddings:
             logger.error("Embeddings not initialized")
-            return passed_docs, source_debug
+            return passed_docs, source_debug, 0
 
         try:
-            query_embedding = await self.get_embedding(query)
+            query_embedding, embed_tokens = await self.get_embedding(query)
             emb_str = self.format_pgvector(query_embedding)
             boost_patterns = self.get_path_boost_patterns(query)
 
@@ -294,8 +300,9 @@ class RetrievalService:
 
         except Exception as e:
             logger.exception(f"Search error: {e}")
+            embed_tokens = 0
 
-        return passed_docs, source_debug
+        return passed_docs, source_debug, embed_tokens
 
 
 # Singleton instance
