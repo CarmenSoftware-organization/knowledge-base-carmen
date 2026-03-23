@@ -80,7 +80,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     if (typeof window !== "undefined") {
       return DOMPurify.sanitize(cleaned, {
         USE_PROFILES: { html: true }, // Use standard HTML profile
-        ADD_ATTR: ["data-lightbox", "target", "rel"],
+        ADD_TAGS: ["iframe"],
+        ADD_ATTR: ["data-lightbox", "target", "rel", "allow", "allowfullscreen", "frameborder"],
         ALLOWED_URI_REGEXP: /^(?:(?:https?|data):|\/|images\/)/i,
       });
     }
