@@ -67,7 +67,6 @@ async def _pricing_sync_loop():
 async def lifespan(app: FastAPI):
     # Startup actions
     log_startup(
-        provider=settings.LLM_PROVIDER,
         chat_model=settings.active_chat_model,
         intent_model=settings.active_intent_model,
         embed_model=settings.OPENROUTER_EMBED_MODEL,

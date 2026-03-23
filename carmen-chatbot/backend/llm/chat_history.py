@@ -304,7 +304,6 @@ async def save_chat_logs(data: dict) -> int:
             print(f"[chat_history] Go backend error: {e}, using direct DB")
 
     # 2) Fallback: save directly to DB (works when running carmen-chatbot standalone)
-    if await _save_to_db_direct(data):
-        pass  # saved
+    await _save_to_db_direct(data)
     return ts
 

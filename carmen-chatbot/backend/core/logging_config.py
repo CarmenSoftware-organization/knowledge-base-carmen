@@ -25,18 +25,17 @@ def setup_logging():
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
-def log_startup(provider: str, chat_model: str, intent_model: str, embed_model: str):
-    """Display active provider and model configuration at startup."""
-    provider_color = "deep_sky_blue1" if provider == "openrouter" else "chartreuse3"
+def log_startup(chat_model: str, intent_model: str, embed_model: str):
+    """Display active model configuration at startup."""
     table = Table(
-        title=f"[bold {provider_color}]Carmen Chatbot — Active Config[/bold {provider_color}]",
+        title="[bold deep_sky_blue1]Carmen Chatbot — Active Config[/bold deep_sky_blue1]",
         show_header=True,
-        header_style=f"bold {provider_color}",
-        border_style=provider_color,
+        header_style="bold deep_sky_blue1",
+        border_style="deep_sky_blue1",
     )
     table.add_column("Component", style="bold")
     table.add_column("Model / Value")
-    table.add_row("Provider",     f"[bold]{provider.upper()}[/bold]")
+    table.add_row("Provider",     "[bold]OPENROUTER[/bold]")
     table.add_row("Chat Model",   chat_model)
     table.add_row("Intent Model", intent_model)
     table.add_row("Embed Model",  embed_model)

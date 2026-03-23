@@ -1,9 +1,4 @@
-"""LLM infrastructure: creation, retry, query rewriting, error formatting, token utilities.
-
-This module is intentionally provider-agnostic — all provider-specific
-branching (openrouter vs deepseek) is contained here so the rest of the
-codebase stays clean.
-"""
+"""LLM infrastructure: creation, retry, query rewriting, error formatting, token utilities."""
 import re
 import asyncio
 import logging
@@ -20,7 +15,6 @@ class LLMClient:
     """Low-level LLM operations: creation, invocation, retry, utilities."""
 
     def __init__(self):
-        self.provider = settings.LLM_PROVIDER
         self.api_base = settings.active_api_base
         self.api_key = settings.active_api_key
         self.default_model = settings.active_chat_model
@@ -43,12 +37,11 @@ class LLMClient:
             temperature=0.82,
             max_tokens=max_tokens or 8192,
             streaming=streaming,
-        )
-        if self.provider == "openrouter":
-            kwargs["extra_body"] = {
+            extra_body={
                 "include_reasoning": False,
                 "provider": {"allow_fallbacks": False, "require_parameters": True},
-            }
+            },
+        )
         if streaming:
             kwargs["stream_usage"] = True
         return ChatOpenAI(**kwargs)
