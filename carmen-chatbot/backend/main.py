@@ -1,7 +1,8 @@
 import uvicorn
 import os
+import asyncio
 
-from .core.logging_config import setup_logging
+from .core.logging_config import setup_logging, log_startup
 setup_logging()
 
 from fastapi import FastAPI, Request, HTTPException
@@ -43,11 +44,28 @@ def build_image_index():
                 IMAGE_INDEX[path.name] = path
     print(f"✅ Image Index Built: {len(IMAGE_INDEX)} images found.")
 
+async def _image_index_refresh_loop():
+    """Periodically rebuild IMAGE_INDEX and clear the lru_cache."""
+    interval = settings.IMAGE_INDEX_REFRESH_SECONDS
+    while True:
+        await asyncio.sleep(interval)
+        build_image_index()
+        find_image_path.cache_clear()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup actions
+    log_startup(
+        provider=settings.LLM_PROVIDER,
+        chat_model=settings.active_chat_model,
+        intent_model=settings.active_intent_model,
+        embed_model=settings.OPENROUTER_EMBED_MODEL,
+    )
     build_image_index()
     await intent_router.async_init()
+    if settings.IMAGE_INDEX_REFRESH_SECONDS > 0:
+        asyncio.create_task(_image_index_refresh_loop())
     yield
 
 app = FastAPI(title="Carmen Chatbot System", lifespan=lifespan)

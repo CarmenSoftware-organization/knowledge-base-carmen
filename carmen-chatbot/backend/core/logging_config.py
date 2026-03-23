@@ -17,12 +17,30 @@ def setup_logging():
         datefmt="[%X]",
         handlers=[RichHandler(rich_tracebacks=True, console=console, show_path=False)]
     )
-    
+
     # Silence noisy third-party loggers
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("openai").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
+
+
+def log_startup(provider: str, chat_model: str, intent_model: str, embed_model: str):
+    """Display active provider and model configuration at startup."""
+    provider_color = "deep_sky_blue1" if provider == "openrouter" else "chartreuse3"
+    table = Table(
+        title=f"[bold {provider_color}]Carmen Chatbot — Active Config[/bold {provider_color}]",
+        show_header=True,
+        header_style=f"bold {provider_color}",
+        border_style=provider_color,
+    )
+    table.add_column("Component", style="bold")
+    table.add_column("Model / Value")
+    table.add_row("Provider",     f"[bold]{provider.upper()}[/bold]")
+    table.add_row("Chat Model",   chat_model)
+    table.add_row("Intent Model", intent_model)
+    table.add_row("Embed Model",  embed_model)
+    console.print(table)
 
 # --- Premium Logging Helpers ---
 

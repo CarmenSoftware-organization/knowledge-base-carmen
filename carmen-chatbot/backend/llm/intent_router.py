@@ -43,11 +43,11 @@ class IntentRouter:
         # Cosine similarity threshold for intent matching
         self.threshold = 0.90
 
-        # Small LLM for final fallback — uses intent model from settings
+        # Small LLM for final fallback — uses active provider's intent model
         self.small_llm = ChatOpenAI(
-            model=settings.OPENROUTER_INTENT_MODEL,
-            openai_api_key=settings.OPENROUTER_API_KEY,
-            openai_api_base=settings.OPENROUTER_API_BASE,
+            model=settings.active_intent_model,
+            openai_api_key=settings.active_api_key,
+            openai_api_base=settings.active_api_base,
             temperature=0.0,
             max_tokens=20
         )
@@ -329,7 +329,7 @@ class IntentRouter:
 
         # --- 3. LLM Fallback ---
         try:
-            logger.info(f"🤖 Intent Routing: Falling back to LLM ({settings.OPENROUTER_INTENT_MODEL})")
+            logger.info(f"🤖 Intent Routing: Falling back to LLM ({settings.active_intent_model})")
 
             context_instruction = (
                 "IMPORTANT: A technical conversation is in progress. If user says 'What?' or 'Confused', respond: TECH_SUPPORT."

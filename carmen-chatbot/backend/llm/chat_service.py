@@ -21,29 +21,34 @@ from ..core.logging_config import log_query, log_intent, log_search, log_perform
 
 class LLMService:
     def __init__(self):
-        self.api_base = settings.OPENROUTER_API_BASE
-        self.api_key = settings.OPENROUTER_API_KEY
-        self.default_model = settings.OPENROUTER_CHAT_MODEL
-        print(f"💬 AI Chat Model Initialization Complete (OpenRouter) using {self.default_model}")
+        self.provider = settings.LLM_PROVIDER
+        self.api_base = settings.active_api_base
+        self.api_key = settings.active_api_key
+        self.default_model = settings.active_chat_model
+        print(f"💬 AI Chat Model Initialization Complete ({self.provider.upper()}) using {self.default_model}")
 
     def _create_llm(self, streaming=False, model_name: str = None, max_tokens: int = None):
-        """Create OpenRouter LLM instance."""
-        return ChatOpenAI(
+        """Create LLM instance (OpenRouter or DeepSeek)."""
+        kwargs = dict(
             model=model_name or self.default_model,
             openai_api_key=self.api_key,
             openai_api_base=self.api_base,
             temperature=0.3,
             max_tokens=max_tokens or 8192,
             streaming=streaming,
-            extra_body={
+        )
+        # OpenRouter-specific routing parameters (not supported by DeepSeek)
+        if self.provider == "openrouter":
+            kwargs["extra_body"] = {
                 "include_reasoning": False,
                 "provider": {
                     "allow_fallbacks": False,
                     "require_parameters": True,
                 }
-            },
-            **({"stream_usage": True} if streaming else {})
-        )
+            }
+        if streaming:
+            kwargs["stream_usage"] = True
+        return ChatOpenAI(**kwargs)
 
     def get_active_model(self, override_model: str = None) -> str:
         return override_model or self.default_model
@@ -159,7 +164,7 @@ class LLMService:
         try:
             llm = self._create_llm(
                 streaming=False,
-                model_name=settings.OPENROUTER_INTENT_MODEL,
+                model_name=settings.active_intent_model,
                 max_tokens=500
             )
 
@@ -225,7 +230,7 @@ class LLMService:
         # 🛡️ STEP 0: INTENT DETECTION
         have_history = chat_history.has_history(room_id)
         intent_type, quick_reply, intent_tokens = await intent_router.detect_intent(message, lang, have_history=have_history)
-        log_intent(intent_type, settings.OPENROUTER_INTENT_MODEL, intent_tokens)
+        log_intent(intent_type, settings.active_intent_model, intent_tokens)
 
         total_tokens_map = {
             "intent": intent_tokens,
@@ -239,7 +244,7 @@ class LLMService:
             yield json.dumps({"type": "chunk", "data": quick_reply}) + "\n"
             log_id = await chat_history.save_chat_logs({
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": quick_reply,
-                "model_name": settings.OPENROUTER_INTENT_MODEL, "input_tokens": intent_tokens[0], "output_tokens": intent_tokens[1],
+                "model_name": settings.active_intent_model, "input_tokens": intent_tokens[0], "output_tokens": intent_tokens[1],
                 "sources": [], "timestamp": datetime.now(), "duration": duration,
                 "lang": lang, "intent_type": intent_type,
                 "was_rewritten": False, "had_zero_results": False, "was_truncated": False,
@@ -545,7 +550,7 @@ class LLMService:
         # 🛡️ STEP 0: INTENT DETECTION
         have_history = chat_history.has_history(room_id)
         intent_type, quick_reply, intent_tokens = await intent_router.detect_intent(message, lang, have_history=have_history)
-        log_intent(intent_type, settings.OPENROUTER_INTENT_MODEL, intent_tokens)
+        log_intent(intent_type, settings.active_intent_model, intent_tokens)
 
         total_tokens_map = {
             "intent": intent_tokens,
@@ -557,7 +562,7 @@ class LLMService:
         if intent_type in ["greeting", "thanks", "out_of_scope", "company_info", "capabilities"]:
             log_id = await chat_history.save_chat_logs({
                 "room_id": room_id, "bu": bu, "username": username, "user_query": message, "bot_response": quick_reply,
-                "model_name": settings.OPENROUTER_INTENT_MODEL,
+                "model_name": settings.active_intent_model,
                 "input_tokens": intent_tokens[0], "output_tokens": intent_tokens[1],
                 "sources": [], "timestamp": datetime.now(), "duration": time.time() - start_time,
                 "lang": lang, "intent_type": intent_type,

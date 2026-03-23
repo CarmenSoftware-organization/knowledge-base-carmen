@@ -19,12 +19,20 @@ class Settings:
     VERSION: str = "1.0.0"
     
     def __init__(self):
+        # --- Active LLM Provider: "openrouter" | "deepseek" ---
+        self.LLM_PROVIDER: str = os.getenv("ACTIVE_LLM_PROVIDER", "openrouter").strip("'\"").lower()
+
         # --- LLM Provider: OpenRouter ---
         self.OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
         self.OPENROUTER_API_BASE: str = os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
         self.OPENROUTER_CHAT_MODEL: str = os.getenv("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
         self.OPENROUTER_INTENT_MODEL: str = os.getenv("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")
         self.OPENROUTER_EMBED_MODEL: str = os.getenv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b")
+
+        # --- LLM Provider: DeepSeek ---
+        self.DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
+        self.DEEPSEEK_API_BASE: str = os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
+        self.DEEPSEEK_CHAT_MODEL: str = os.getenv("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
         
         # --- Database Settings ---
         self.DB_HOST: str = os.getenv("DB_HOST")
@@ -80,6 +88,10 @@ class Settings:
         # Max chat requests allowed per day across all users (0 = unlimited)
         self.DAILY_REQUEST_LIMIT: int = int(os.getenv("DAILY_REQUEST_LIMIT", "500"))
 
+        # --- Image Index ---
+        # How often (seconds) to rescan WIKI_DIR for new images (0 = disable periodic refresh)
+        self.IMAGE_INDEX_REFRESH_SECONDS: int = int(os.getenv("IMAGE_INDEX_REFRESH_SECONDS", "300"))
+
         # --- LLM Reliability ---
         # Fallback model used when primary model fails before yielding content
         self.OPENROUTER_FALLBACK_MODEL: str = os.getenv("OPENROUTER_FALLBACK_MODEL", "")
@@ -121,6 +133,34 @@ class Settings:
     @property
     def is_openrouter_api_ready(self) -> bool:
         return bool(self.OPENROUTER_API_KEY)
+
+    @property
+    def is_deepseek_api_ready(self) -> bool:
+        return bool(self.DEEPSEEK_API_KEY)
+
+    @property
+    def active_api_key(self) -> str:
+        if self.LLM_PROVIDER == "deepseek":
+            return self.DEEPSEEK_API_KEY
+        return self.OPENROUTER_API_KEY
+
+    @property
+    def active_api_base(self) -> str:
+        if self.LLM_PROVIDER == "deepseek":
+            return self.DEEPSEEK_API_BASE
+        return self.OPENROUTER_API_BASE
+
+    @property
+    def active_chat_model(self) -> str:
+        if self.LLM_PROVIDER == "deepseek":
+            return self.DEEPSEEK_CHAT_MODEL
+        return self.OPENROUTER_CHAT_MODEL
+
+    @property
+    def active_intent_model(self) -> str:
+        if self.LLM_PROVIDER == "deepseek":
+            return self.DEEPSEEK_CHAT_MODEL
+        return self.OPENROUTER_INTENT_MODEL
 
 # Instantiate singleton
 settings = Settings()
