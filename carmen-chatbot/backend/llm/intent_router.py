@@ -1,7 +1,6 @@
 import re
 import os
 import time
-import json
 import yaml
 import asyncio
 import logging
@@ -61,6 +60,40 @@ class IntentRouter:
         self._bootstrap_from_cache()
 
     # ------------------------------------------------------------------
+    # Cache helpers
+    # ------------------------------------------------------------------
+    def _try_load_from_cache(self, mtime: float) -> bool:
+        """Attempt to load vector data from disk cache.
+
+        Returns True if the cache was valid and loaded successfully.
+        Does NOT load canned responses — call _load_only_canned_responses() separately.
+        """
+        if not os.path.exists(CACHE_PATH):
+            return False
+        try:
+            cache_data = np.load(CACHE_PATH, allow_pickle=True)
+            cached_mtime = float(cache_data.get('mtime', 0))
+            cached_model = str(cache_data.get('model', ''))
+
+            if cached_mtime != mtime or cached_model != settings.OPENROUTER_EMBED_MODEL:
+                return False
+
+            vm = cache_data['vector_matrix']
+            if vm.shape[1] != settings.VECTOR_DIMENSION:
+                logger.warning(f"⚠️ Cache dim ({vm.shape[1]}) != {settings.VECTOR_DIMENSION} — will re-index.")
+                return False
+
+            self.vector_matrix = vm
+            self.vector_labels = list(cache_data['vector_labels'])
+            self.all_examples = list(cache_data.get('all_examples', []))
+            self.last_load_time = mtime
+            logger.info(f"🚀 Loaded {len(self.vector_labels)} intent embeddings from cache.")
+            return True
+        except Exception as e:
+            logger.warning(f"⚠️ Cache load failed: {e}")
+            return False
+
+    # ------------------------------------------------------------------
     # Bootstrap: cache-only load (no network) — called at import time
     # ------------------------------------------------------------------
     def _bootstrap_from_cache(self):
@@ -79,24 +112,8 @@ class IntentRouter:
                 return
 
             mtime = os.path.getmtime(self.intents_file)
-            cache_data = np.load(CACHE_PATH, allow_pickle=True)
-            cached_mtime = float(cache_data.get('mtime', 0))
-            cached_model = str(cache_data.get('model', ''))
-
-            if cached_mtime != mtime or cached_model != settings.OPENROUTER_EMBED_MODEL:
+            if not self._try_load_from_cache(mtime):
                 logger.info("📂 Intent cache is stale — will re-index on startup.")
-                return
-
-            vm = cache_data['vector_matrix']
-            if vm.shape[1] != settings.VECTOR_DIMENSION:
-                logger.warning(f"⚠️ Cache dim ({vm.shape[1]}) != {settings.VECTOR_DIMENSION} — will re-index on startup.")
-                return
-
-            self.vector_matrix = vm
-            self.vector_labels = list(cache_data['vector_labels'])
-            self.all_examples = list(cache_data.get('all_examples', []))
-            self.last_load_time = mtime
-            logger.info(f"🚀 Loaded {len(self.vector_labels)} intent embeddings from cache.")
         except Exception as e:
             logger.warning(f"⚠️ Bootstrap cache load failed: {e}")
 
@@ -163,25 +180,9 @@ class IntentRouter:
             mtime = os.path.getmtime(self.intents_file)
 
             # --- Try loading from cache ---
-            if os.path.exists(CACHE_PATH):
-                try:
-                    cache_data = np.load(CACHE_PATH, allow_pickle=True)
-                    cached_mtime = float(cache_data.get('mtime', 0))
-                    cached_model = str(cache_data.get('model', ''))
-                    if cached_mtime == mtime and cached_model == settings.OPENROUTER_EMBED_MODEL:
-                        vm = cache_data['vector_matrix']
-                        if vm.shape[1] == settings.VECTOR_DIMENSION:
-                            self.vector_matrix = vm
-                            self.vector_labels = list(cache_data['vector_labels'])
-                            self.all_examples = list(cache_data.get('all_examples', []))
-                            self.last_load_time = mtime
-                            self._load_only_canned_responses()
-                            logger.info(f"🚀 Loaded {len(self.vector_labels)} intent embeddings from cache.")
-                            return
-                        else:
-                            logger.warning(f"⚠️ Cache dim ({vm.shape[1]}) != {settings.VECTOR_DIMENSION}, forcing re-index.")
-                except Exception as e:
-                    logger.warning(f"⚠️ Cache load failed, re-indexing: {e}")
+            if self._try_load_from_cache(mtime):
+                self._load_only_canned_responses()
+                return
 
             self.last_load_time = mtime
             logger.info(f"📂 Loading intents from {self.intents_file} (Modified: {time.ctime(self.last_load_time)})")
