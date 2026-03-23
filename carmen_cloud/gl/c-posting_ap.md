@@ -2,10 +2,10 @@
 title: Posting Account Payable to GL
 description: Posting Account Payable to GL
 published: true
-date: "2026-02-02T06:14:10.626Z"
+date: 2026-03-19T08:36:48.868Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.626Z"
+dateCreated: 2026-02-02T06:55:34.300Z
 ---
 
 # Posting Account Payable to GL

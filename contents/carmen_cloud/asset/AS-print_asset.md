@@ -2,10 +2,10 @@
 title: Print Asset QR Code
 description: Print Asset QR Code
 published: true
-date: "2026-02-02T06:14:10.573Z"
+date: 2026-03-19T08:39:25.160Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.573Z"
+dateCreated: 2026-03-19T08:39:23.065Z
 ---
 
 # Print Asset QR Code

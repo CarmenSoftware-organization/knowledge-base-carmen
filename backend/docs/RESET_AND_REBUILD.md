@@ -1,3 +1,13 @@
+---
+title: RESET_AND_REBUILD
+description: 
+published: true
+date: 2026-03-19T08:34:05.635Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:00:28.346Z
+---
+
 # ลบข้อมูลใน DB และ Rebuild ใหม่
 
 ## วิธีที่ 1: ใช้ CLI (แนะนำ)

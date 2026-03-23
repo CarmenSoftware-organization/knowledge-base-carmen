@@ -2,10 +2,10 @@
 title: Budget
 description: Budget
 published: true
-date: "2026-02-02T06:14:10.615Z"
+date: 2026-03-19T08:41:04.021Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.615Z"
+dateCreated: 2026-03-19T08:41:01.831Z
 ---
 
 # Budget

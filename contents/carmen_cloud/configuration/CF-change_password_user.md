@@ -2,10 +2,10 @@
 title: Users-How To Change User and Password
 description: Users-How To Change User and Password
 published: true
-date: "2026-02-02T06:14:10.578Z"
+date: 2026-03-19T08:40:05.913Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.578Z"
+dateCreated: 2026-03-19T08:40:03.843Z
 ---
 
 # Users-How To Change User and Password

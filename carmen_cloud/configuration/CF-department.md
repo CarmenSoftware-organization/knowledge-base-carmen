@@ -2,7 +2,7 @@
 title: Department
 description: Department
 published: true
-date: 2026-02-23T04:53:51.206Z
+date: 2026-03-19T08:36:12.746Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:54:41.572Z

@@ -2,10 +2,10 @@
 title: การสร้างสกุลเงิน (Currency)
 description: การสร้างสกุลเงิน (Currency)
 published: true
-date: "2026-02-02T06:14:10.582Z"
+date: 2026-03-19T08:36:08.331Z
 tags: carmen_cloud,documentation
 editor: markdown
-dateCreated: "2026-02-02T06:14:10.582Z"
+dateCreated: 2026-02-02T06:54:35.148Z
 ---
 
 # การสร้างสกุลเงิน (Currency)

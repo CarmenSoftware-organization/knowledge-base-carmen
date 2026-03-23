@@ -1,3 +1,13 @@
+---
+title: VERIFY_DB
+description: 
+published: true
+date: 2026-03-19T08:34:07.828Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-19T08:00:31.508Z
+---
+
 # วิธีตรวจสอบว่าข้อมูลเข้า DB จริง
 
 ## 1. Activity Logs (บันทึกกิจกรรม)
