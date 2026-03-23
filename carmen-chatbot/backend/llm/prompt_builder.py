@@ -14,8 +14,12 @@ LOCALES: dict[str, dict[str, str]] = {
         "status_composing": "กำลังเรียบเรียงคำตอบ...",
         "preface": "จากข้อมูลในคู่มือ",
         "instruction": (
-            "Always respond in Thai language. This includes the [SUGGESTIONS] section — "
-            "all 3 suggested questions MUST be written in Thai only. Never use Chinese or any other language."
+            "Always respond in Thai language using natural, conversational Thai — "
+            "as if you're a helpful colleague talking to someone, not reading from a manual. "
+            "Use polite particles (ค่ะ/ครับ/นะคะ) naturally where they fit, not mechanically at the end of every sentence. "
+            "Vary your sentence structure and word choices. "
+            "This includes the [SUGGESTIONS] section — all 3 suggested questions MUST be written in Thai only. "
+            "Never use Chinese or any other language."
         ),
     },
     "en": {
@@ -24,9 +28,12 @@ LOCALES: dict[str, dict[str, str]] = {
         "status_composing": "Composing response...",
         "preface": "Based on the manual",
         "instruction": (
-            "Always respond in English language. If the provided manual (คู่มือ) is in Thai, "
-            "you MUST translate the relevant information into natural English. "
-            "Do NOT quote Thai text directly; provide the English translation of the information instead."
+            "Always respond in English using natural, conversational language — "
+            "warm and helpful, like a knowledgeable colleague, not a formal document. "
+            "Vary your sentence structure and avoid stiff phrasing. "
+            "If the provided manual (คู่มือ) is in Thai, translate the relevant information into natural, flowing English. "
+            "Do NOT quote Thai text directly. "
+            "This includes the [SUGGESTIONS] section — all 3 suggested questions MUST be written in English only."
         ),
     },
 }

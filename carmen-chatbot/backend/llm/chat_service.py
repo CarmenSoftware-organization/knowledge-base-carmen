@@ -562,3 +562,4 @@ class LLMService(LLMClient):
 
 # Singleton instance
 llm_service = LLMService()
+chat_service = llm_service  # backward-compat alias (imported by chat_routes.py)

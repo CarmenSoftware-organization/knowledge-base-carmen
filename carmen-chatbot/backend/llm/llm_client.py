@@ -40,7 +40,7 @@ class LLMClient:
             model=model_name or self.default_model,
             openai_api_key=self.api_key,
             openai_api_base=self.api_base,
-            temperature=0.7,
+            temperature=0.82,
             max_tokens=max_tokens or 8192,
             streaming=streaming,
         )
