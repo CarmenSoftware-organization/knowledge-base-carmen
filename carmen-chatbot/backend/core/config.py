@@ -21,7 +21,8 @@ class Settings:
     def __init__(self):
         # --- LLM Provider: OpenRouter ---
         self.OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-        self.OPENROUTER_API_BASE: str = os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
+        _base = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai").rstrip("/")
+        self.OPENROUTER_API_BASE: str = _base if _base.endswith("/api/v1") else _base + "/api/v1"
         self.OPENROUTER_CHAT_MODEL: str = os.getenv("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
         self.OPENROUTER_INTENT_MODEL: str = os.getenv("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")
         self.OPENROUTER_EMBED_MODEL: str = os.getenv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b")

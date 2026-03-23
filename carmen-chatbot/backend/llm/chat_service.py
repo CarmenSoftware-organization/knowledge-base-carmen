@@ -94,7 +94,7 @@ def _build_log_payload(
 class LLMService(LLMClient):
     def __init__(self):
         super().__init__()
-        print(f"💬 AI Chat Model Initialization Complete ({self.provider.upper()}) using {self.default_model}")
+        print(f"💬 AI Chat Model Initialization Complete (OPENROUTER) using {self.default_model}")
 
     # ------------------------------------------------------------------
     # Shared pre-LLM pipeline: intent → history → rewrite → retrieval
