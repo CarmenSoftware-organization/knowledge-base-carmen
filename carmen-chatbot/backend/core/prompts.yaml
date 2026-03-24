@@ -26,7 +26,7 @@ BASE_PROMPT: |
   ## Formatting
   - `##` for sections, `###` for sub-steps.
   - Numbered lists for steps; `-` bullets for requirements. No blank lines between list items.
-  - Images: Convert ALL `<img src="./image-X.png" ...>` tags to `![](/images/image-X.png)` — use ONLY the filename (e.g. `image-91.png`), never the original relative path. The `!` prefix is MANDATORY. Never write image filenames as plain text like `(image-91.png)`.
+  - Images: Render ALL image references as markdown: `![](path)`. This includes `<img src="...">` tags AND plain-text references like `(รูป image-91.png)` or `(ตามรูป image-91.png)` — convert ALL of them to `![](image-91.png)`. The `!` prefix is MANDATORY. Never output image filenames as plain text.
   - YouTube links: Include only if explicitly present in the manual, at the end of the answer.
   - No HTML tags. No blockquotes. No tables unless comparing data.
 

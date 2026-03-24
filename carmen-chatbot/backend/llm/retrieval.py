@@ -257,6 +257,15 @@ class RetrievalService:
                 path = item["path"]
                 base_dir = os.path.dirname(path).replace("\\", "/")
 
+                # Convert Thai plain-text image references to markdown before URL resolution
+                # e.g. "(รูป image-91.png)" or "(ตามรูป image-92.png)" → "![](image-91.png)"
+                content = re.sub(
+                    r'\((?:ตามรูป|รูป)\s+([\w][^\s)]+\.(?:png|jpe?g|gif|webp|svg))\)',
+                    r'![](\1)',
+                    content,
+                    flags=re.IGNORECASE
+                )
+
                 if base_dir:
                     def resolve_src(src):
                         clean_src = src.lstrip("/")

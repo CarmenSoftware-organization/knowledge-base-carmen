@@ -35,22 +35,33 @@ def _origin_allowed(source: str, allowed_origins: list[str]) -> bool:
     return False
 
 IMAGE_INDEX = {}
+_image_index_lock = asyncio.Lock()
 
-def build_image_index():
-    """Scan all images in WIKI_DIR at startup and cache their paths."""
-    print("📸 Building Image Index Cache...")
-    if settings.WIKI_DIR.exists():
-        for path in settings.WIKI_DIR.rglob("*"):
-            if path.is_file() and path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']:
-                IMAGE_INDEX[path.name] = path
-    print(f"✅ Image Index Built: {len(IMAGE_INDEX)} images found.")
+async def build_image_index():
+    """Scan all images in WIKI_DIR and cache their paths (non-blocking)."""
+    if _image_index_lock.locked():
+        return  # Skip if already building
+
+    async with _image_index_lock:
+        def _scan():
+            new_index = {}
+            if settings.WIKI_DIR.exists():
+                for path in settings.WIKI_DIR.rglob("*"):
+                    if path.is_file() and path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']:
+                        new_index[path.name] = path
+            return new_index
+
+        new_index = await asyncio.to_thread(_scan)
+        IMAGE_INDEX.clear()
+        IMAGE_INDEX.update(new_index)
+        print(f"✅ Image Index Built: {len(IMAGE_INDEX)} images found.")
 
 async def _image_index_refresh_loop():
     """Periodically rebuild IMAGE_INDEX and clear the lru_cache."""
     interval = settings.IMAGE_INDEX_REFRESH_SECONDS
     while True:
         await asyncio.sleep(interval)
-        build_image_index()
+        await build_image_index()
         find_image_path.cache_clear()
 
 
@@ -71,7 +82,7 @@ async def lifespan(app: FastAPI):
         intent_model=settings.active_intent_model,
         embed_model=settings.OPENROUTER_EMBED_MODEL,
     )
-    build_image_index()
+    await build_image_index()
     await intent_router.async_init()
     await sync_pricing_from_openrouter()
     asyncio.create_task(_pricing_sync_loop())
