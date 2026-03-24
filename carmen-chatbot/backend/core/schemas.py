@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 
 
 class ChatRequest(BaseModel):
@@ -11,3 +11,7 @@ class ChatRequest(BaseModel):
     history: Optional[list[dict]] = None
     db_schema: Optional[str] = "carmen"
     lang: Optional[str] = "th"
+
+
+class FeedbackRequest(BaseModel):
+    score: Literal[1, -1]
