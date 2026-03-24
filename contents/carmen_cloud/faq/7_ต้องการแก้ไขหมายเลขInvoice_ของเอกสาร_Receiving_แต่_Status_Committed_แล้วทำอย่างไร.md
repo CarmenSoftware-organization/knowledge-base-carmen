@@ -2,7 +2,7 @@
 title: 7.ต้องการแก้ไขหมายเลขInvoice ของเอกสาร Receiving แต่ Status Committed
 description: 
 published: true
-date: 2026-03-24T18:51:41.292Z
+date: 2026-03-24T19:43:25.678Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T18:51:41.292Z
@@ -28,10 +28,10 @@ editor: markdown
 
 กดปุ่ม Edit   
 
-![img-001.png](/contents/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-002.png)
+![img-002.png](/contents/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-002.png)
 
 ทำการแก้ไขหมายเลข Invoice#: แล้วกด Save หลังแก้ไขข้อมูลให้ดำเนินการ Posting from Receiving ไปที่ AP อีกครั้ง
 
-![img-001.png](/contents/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-003.png)
+![img-003.png](/contents/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-003.png)
 
 **Tag:** Procurement
