@@ -89,7 +89,7 @@ async def clear_chat_history(request: Request, room_id: str):
 @router.post("/feedback/{message_id}", summary="Save user feedback on a bot message")
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def save_feedback(request: Request, message_id: int, body: FeedbackRequest):
-    from sqlalchemy import text
+    from sqlalchemy import text, bindparam, Integer
     from ..core.database import AsyncSessionLocal
 
     async with AsyncSessionLocal() as db:
@@ -97,9 +97,9 @@ async def save_feedback(request: Request, message_id: int, body: FeedbackRequest
             result = await db.execute(
                 text("""
                     UPDATE public.chat_history
-                    SET metrics = jsonb_set(COALESCE(metrics, '{}'), '{feedback}', to_jsonb(:score::int))
+                    SET metrics = jsonb_set(COALESCE(metrics, '{}'), '{feedback}', to_jsonb(:score))
                     WHERE extract(epoch FROM created_at)::bigint BETWEEN :mid - 3 AND :mid + 3
-                """),
+                """).bindparams(bindparam("score", type_=Integer())),
                 {"mid": message_id, "score": body.score},
             )
             await db.commit()
