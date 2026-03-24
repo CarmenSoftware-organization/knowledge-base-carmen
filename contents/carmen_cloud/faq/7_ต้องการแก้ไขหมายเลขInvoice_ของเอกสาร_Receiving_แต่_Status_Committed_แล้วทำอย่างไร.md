@@ -2,7 +2,7 @@
 title: 7.ต้องการแก้ไขหมายเลขInvoice ของเอกสาร Receiving แต่ Status Committed
 description: 
 published: true
-date: 2026-03-24T19:43:25.678Z
+date: 2026-03-24T19:44:23.844Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T18:51:41.292Z
