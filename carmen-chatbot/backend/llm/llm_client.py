@@ -35,7 +35,7 @@ class LLMClient:
             openai_api_key=self.api_key,
             openai_api_base=self.api_base,
             temperature=0.82,
-            max_tokens=max_tokens or 8192,
+            max_tokens=max_tokens,
             streaming=streaming,
             extra_body={
                 "include_reasoning": False,

@@ -87,6 +87,7 @@ export async function executeStream(
         prompt_extend: config.promptExtend,
         history: history.messages.filter((m: any) => m.id !== botMsgId && m.id !== userMsgId),
         lang: locale,
+        referrer_page: config.referrer_page ?? (typeof window !== "undefined" ? window.location.pathname : null),
       }),
       signal,
     });

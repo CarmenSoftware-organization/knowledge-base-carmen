@@ -34,6 +34,7 @@ export interface CarmenChatConfig {
   locale?: LocaleKey;
   proactiveMessages?: { pathPattern: RegExp | string; delayMs: number; message: string; subMessage?: string; timeoutMs?: number }[];
   onTypingFrame?: () => void;
+  referrer_page?: string;
 }
 
 const DEFAULT_SUGGESTIONS = [
@@ -519,7 +520,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   }
 
   async function sendFeedback(msgId: string, score: number) {
-    await api.sendFeedback(msgId, score);
+    await api.sendFeedback(msgId, score, config.bu, config.username);
   }
 
   function updatePosition(newPos: { bottom: string | number; right: string | number }) {

@@ -11,7 +11,10 @@ class ChatRequest(BaseModel):
     history: Optional[list[dict]] = None
     db_schema: Optional[str] = "carmen"
     lang: Optional[str] = "th"
+    referrer_page: Optional[str] = None  # หน้า docs ที่ user ถามมาจาก (ส่งจาก frontend)
 
 
 class FeedbackRequest(BaseModel):
     score: Literal[1, -1]
+    bu: str
+    username: str

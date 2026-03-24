@@ -108,7 +108,7 @@ Key variables in `.env`:
 | `GET` | `/images/{path}` | Serve images from Wiki or Local directory |
 
 ## 🧠 RAG Pipeline
-
+ 
 1.  **Intent Detection:** Regex → vector similarity → LLM fallback to detect greetings, out-of-scope, and tech support queries.
 2.  **Query Rewriting:** Converts follow-up questions (e.g., "how to fix it?") into standalone search queries using conversation context.
 3.  **Hybrid Search:** Vector search (pgvector cosine) + PostgreSQL full-text search, fused with RRF (Reciprocal Rank Fusion).

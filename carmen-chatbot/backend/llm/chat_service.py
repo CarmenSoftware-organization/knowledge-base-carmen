@@ -29,6 +29,20 @@ logger = logging.getLogger(__name__)
 # Module-level helpers (pure, no class state)
 # ---------------------------------------------------------------------------
 
+def _parse_device_type(user_agent: str) -> str:
+    """Classify User-Agent string into mobile / tablet / desktop / unknown."""
+    if not user_agent:
+        return "unknown"
+    ua = user_agent.lower()
+    if "tablet" in ua or "ipad" in ua:
+        return "tablet"
+    if any(x in ua for x in ("mobile", "android", "iphone", "ipod", "windows phone")):
+        return "mobile"
+    if any(x in ua for x in ("mozilla", "chrome", "safari", "gecko", "windows", "macintosh", "linux")):
+        return "desktop"
+    return "unknown"
+
+
 def _extract_token_usage(response) -> tuple[int, int]:
     """Extract (input_tokens, output_tokens) from any LangChain response/chunk."""
     if not response:
@@ -58,6 +72,9 @@ def _build_log_payload(
     was_rewritten: bool, had_zero_results: bool,
     was_truncated: bool, retrieved_chunks: int,
     history_count: int, ttft_ms: int = 0,
+    avg_similarity_score: float | None = None,
+    device_type: str = "unknown",
+    referrer_page: str | None = None,
 ) -> dict:
     """Build the standard chat log payload dict, shared by all code paths."""
     return {
@@ -84,6 +101,10 @@ def _build_log_payload(
         "retrieved_chunks": retrieved_chunks,
         "history_length": history_count,
         "ttft_ms": ttft_ms,
+        "avg_similarity_score": avg_similarity_score,
+        "answer_length": len(response),
+        "device_type": device_type,
+        "referrer_page": referrer_page,
     }
 
 
@@ -151,11 +172,15 @@ class LLMService(LLMClient):
         self, message: str, bu: str, room_id: str, username: str,
         model_name: str = None, history: list[dict] = None,
         db_schema: str = "carmen", lang: str = "th", request: Request = None,
+        referrer_page: str = None,
     ):
         start_time = time.time()
         model_name = self.get_active_model(model_name)
         l = get_locale(lang)
         ttft = 0.0
+        device_type = _parse_device_type(
+            request.headers.get("user-agent", "") if request else ""
+        )
 
         history_count = len(history) if history else 0
         log_query(message, history_count)
@@ -181,6 +206,7 @@ class LLMService(LLMClient):
                 lang=lang, intent_type=intent_type, was_rewritten=False,
                 had_zero_results=False, was_truncated=False,
                 retrieved_chunks=0, history_count=history_count,
+                device_type=device_type, referrer_page=referrer_page,
             ))
             yield json.dumps({"type": "done", "id": log_id}) + "\n"
             log_performance(total_tokens_map, duration, duration)
@@ -211,7 +237,7 @@ class LLMService(LLMClient):
             return
         yield json.dumps({"type": "status", "data": l["status_searching"]}) + "\n"
         await asyncio.sleep(0)
-        passed_docs, source_debug, retrieval_embed_tokens = await retrieval_service.search(search_query, db_schema)
+        passed_docs, source_debug, retrieval_embed_tokens, avg_similarity_score = await retrieval_service.search(search_query, db_schema)
         log_search(search_query, passed_docs)
 
         retrieved_chunks = len(passed_docs)
@@ -229,6 +255,7 @@ class LLMService(LLMClient):
                 lang=lang, intent_type="tech_support", was_rewritten=was_rewritten,
                 had_zero_results=True, was_truncated=False,
                 retrieved_chunks=0, history_count=history_count,
+                device_type=device_type, referrer_page=referrer_page,
             ))
             yield json.dumps({"type": "done", "id": log_id}) + "\n"
             log_performance(total_tokens_map, 0, duration)
@@ -301,6 +328,8 @@ class LLMService(LLMClient):
                                 was_rewritten=was_rewritten, had_zero_results=False, was_truncated=False,
                                 retrieved_chunks=retrieved_chunks, history_count=history_count,
                                 ttft_ms=round(ttft * 1000),
+                                avg_similarity_score=avg_similarity_score,
+                                device_type=device_type, referrer_page=referrer_page,
                             ))
                             return
 
@@ -417,6 +446,8 @@ class LLMService(LLMClient):
             was_rewritten=was_rewritten, had_zero_results=False, was_truncated=was_truncated,
             retrieved_chunks=retrieved_chunks, history_count=history_count,
             ttft_ms=round(ttft * 1000),
+            avg_similarity_score=avg_similarity_score,
+            device_type=device_type, referrer_page=referrer_page,
         ))
         yield json.dumps({"type": "done", "id": log_id}) + "\n"
 
@@ -427,10 +458,14 @@ class LLMService(LLMClient):
         self, message: str, bu: str, room_id: str, username: str,
         model_name: str = None, history: list[dict] = None,
         db_schema: str = "carmen", lang: str = "th",
+        request: Request = None, referrer_page: str = None,
     ) -> dict:
         start_time = time.time()
         model_name = self.get_active_model(model_name)
         l = get_locale(lang)
+        device_type = _parse_device_type(
+            request.headers.get("user-agent", "") if request else ""
+        )
         history_count = len(history) if history else 0
         log_query(message, history_count)
         total_tokens_map = {"intent": (0, 0), "rewrite": (0, 0), "chat_input": 0, "chat_output": 0}
@@ -453,6 +488,7 @@ class LLMService(LLMClient):
                 lang=lang, intent_type=intent_type, was_rewritten=False,
                 had_zero_results=False, was_truncated=False,
                 retrieved_chunks=0, history_count=history_count,
+                device_type=device_type, referrer_page=referrer_page,
             ))
             log_performance(total_tokens_map, 0, time.time() - start_time)
             return {"reply": quick_reply, "sources": [], "room_id": room_id, "message_id": log_id}
@@ -470,7 +506,7 @@ class LLMService(LLMClient):
             total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
 
         # ── Retrieval ──────────────────────────────────────────────────
-        passed_docs, source_debug, retrieval_embed_tokens = await retrieval_service.search(search_query, db_schema)
+        passed_docs, source_debug, retrieval_embed_tokens, avg_similarity_score = await retrieval_service.search(search_query, db_schema)
         log_search(search_query, passed_docs)
         retrieved_chunks = len(passed_docs)
         embed_tokens = intent_embed_tokens + retrieval_embed_tokens
@@ -487,6 +523,7 @@ class LLMService(LLMClient):
                 lang=lang, intent_type="tech_support", was_rewritten=was_rewritten,
                 had_zero_results=True, was_truncated=False,
                 retrieved_chunks=0, history_count=history_count,
+                device_type=device_type, referrer_page=referrer_page,
             ))
             log_performance(total_tokens_map, 0, time.time() - start_time)
             return {"reply": reply, "sources": [], "room_id": room_id, "message_id": log_id}
@@ -541,6 +578,8 @@ class LLMService(LLMClient):
             start_time=start_time, lang=lang, intent_type="tech_support",
             was_rewritten=was_rewritten, had_zero_results=False, was_truncated=was_truncated,
             retrieved_chunks=retrieved_chunks, history_count=history_count,
+            avg_similarity_score=avg_similarity_score,
+            device_type=device_type, referrer_page=referrer_page,
         ))
         total_tokens_map["chat_input"] = input_tokens
         total_tokens_map["chat_output"] = output_tokens

@@ -211,12 +211,12 @@ export function createCarmenApi(baseUrl: string) {
     }
   }
 
-  async function sendFeedback(msgId: string, score: number): Promise<void> {
+  async function sendFeedback(msgId: string, score: number, bu: string, username: string): Promise<void> {
     try {
       await fetch(`${base}/api/chat/feedback/${msgId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ score }),
+        body: JSON.stringify({ score, bu, username }),
       });
     } catch (e) {
       console.error("Feedback Error:", e);

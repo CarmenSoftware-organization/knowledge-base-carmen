@@ -30,7 +30,7 @@ def _sql_like_to_regex(pattern: str) -> str:
 
 class RetrievalService:
     TOP_K = 4
-    MAX_DISTANCE = 0.75
+    MAX_DISTANCE = 0.45
     PATH_BOOST_RRF = 0.02   # bonus added to RRF score for path-boosted results
     FETCH_K = 20
     RRF_K = 60              # RRF constant (higher = smoother rank blending)
@@ -123,18 +123,18 @@ class RetrievalService:
     # Strict schema name validation: lowercase alphanumeric + underscores, 2-63 chars
     SAFE_SCHEMA_PATTERN = re.compile(r'^[a-z][a-z0-9_]{1,62}$')
 
-    async def search(self, query: str, db_schema: str = "carmen") -> tuple[list, list, int]:
-        """Hybrid search. Returns (docs, source_debug, embed_tokens)."""
+    async def search(self, query: str, db_schema: str = "carmen") -> tuple[list, list, int, float | None]:
+        """Hybrid search. Returns (docs, source_debug, embed_tokens, avg_similarity_score)."""
         passed_docs = []
         source_debug = []
 
         if not db_schema or not self.SAFE_SCHEMA_PATTERN.match(db_schema):
             logger.warning(f"🛡️ Security: Invalid or suspicious schema name blocked: '{db_schema}'")
-            return passed_docs, source_debug, 0
+            return passed_docs, source_debug, 0, None
 
         if not self.embeddings:
             logger.error("Embeddings not initialized")
-            return passed_docs, source_debug, 0
+            return passed_docs, source_debug, 0, None
 
         try:
             query_embedding, embed_tokens = await self.get_embedding(query)
@@ -243,6 +243,7 @@ class RetrievalService:
             candidates.sort(key=lambda x: x["effective_rrf"], reverse=True)
 
             # --- 5. Deduplicate and build result ---
+            selected_vec_distances: list[float] = []
             seen_hashes: set[int] = set()
             for item in candidates:
                 if len(passed_docs) >= self.TOP_K:
@@ -252,6 +253,9 @@ class RetrievalService:
                 if content_hash in seen_hashes:
                     continue
                 seen_hashes.add(content_hash)
+
+                if item["vector_dist"] < 1.0:
+                    selected_vec_distances.append(item["vector_dist"])
 
                 content = item["content"]
                 path = item["path"]
@@ -311,7 +315,13 @@ class RetrievalService:
             logger.exception(f"Search error: {e}")
             embed_tokens = 0
 
-        return passed_docs, source_debug, embed_tokens
+        avg_sim_score: float | None = None
+        if selected_vec_distances:
+            avg_sim_score = round(
+                1.0 - sum(selected_vec_distances) / len(selected_vec_distances), 4
+            )
+
+        return passed_docs, source_debug, embed_tokens, avg_sim_score
 
 
 # Singleton instance

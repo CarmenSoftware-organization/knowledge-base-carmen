@@ -44,7 +44,8 @@ async def chat_stream_endpoint(request: Request, req: ChatRequest):
         chat_service.stream_chat(
             message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
             model_name=req.model, history=req.history,
-            db_schema=req.db_schema, lang=req.lang, request=request
+            db_schema=req.db_schema, lang=req.lang, request=request,
+            referrer_page=req.referrer_page,
         ),
         media_type="application/x-ndjson",
         headers={
@@ -70,7 +71,8 @@ async def chat_endpoint(request: Request, req: ChatRequest):
     return await chat_service.invoke_chat(
         message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
         model_name=req.model, history=req.history,
-        db_schema=req.db_schema, lang=req.lang
+        db_schema=req.db_schema, lang=req.lang,
+        request=request, referrer_page=req.referrer_page,
     )
 
 # ==========================================
@@ -91,16 +93,31 @@ async def clear_chat_history(request: Request, room_id: str):
 async def save_feedback(request: Request, message_id: int, body: FeedbackRequest):
     from sqlalchemy import text, bindparam, Integer
     from ..core.database import AsyncSessionLocal
+    from ..core.pii import hash_user_id
+
+    hashed_user = hash_user_id(body.username, settings.PRIVACY_HMAC_SECRET)
 
     async with AsyncSessionLocal() as db:
         try:
+            # Resolve bu slug → bu_id
+            bu_row = await db.execute(
+                text("SELECT id FROM public.business_units WHERE slug = :slug LIMIT 1"),
+                {"slug": body.bu},
+            )
+            row = bu_row.fetchone()
+            if not row:
+                return {"status": "error", "detail": "invalid bu"}
+            bu_id = row[0]
+
             result = await db.execute(
                 text("""
                     UPDATE public.chat_history
                     SET metrics = jsonb_set(COALESCE(metrics, '{}'), '{feedback}', to_jsonb(:score))
                     WHERE extract(epoch FROM created_at)::bigint BETWEEN :mid - 3 AND :mid + 3
+                      AND bu_id = :bu_id
+                      AND user_id = :user_id
                 """).bindparams(bindparam("score", type_=Integer())),
-                {"mid": message_id, "score": body.score},
+                {"mid": message_id, "score": body.score, "bu_id": bu_id, "user_id": hashed_user},
             )
             await db.commit()
             print(f"[feedback] Updated {result.rowcount} row(s) message_id={message_id} score={body.score}")

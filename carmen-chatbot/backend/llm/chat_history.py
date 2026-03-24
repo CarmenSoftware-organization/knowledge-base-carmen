@@ -112,6 +112,10 @@ async def _save_to_db_direct(data: dict) -> bool:
     rewrite_output_tokens = data.get("rewrite_output_tokens") or 0
     embed_model = data.get("embed_model") or settings.OPENROUTER_EMBED_MODEL
     intent_model = data.get("intent_model") or settings.active_intent_model
+    avg_similarity_score = data.get("avg_similarity_score")  # None = no retrieval
+    answer_length = data.get("answer_length") or 0
+    device_type = data.get("device_type") or "unknown"
+    referrer_page = data.get("referrer_page") or None
 
     # Build metrics JSONB from optional operational fields
     metrics: dict = {}
@@ -208,6 +212,12 @@ async def _save_to_db_direct(data: dict) -> bool:
                 "total_tokens": total_tokens or 0,
                 "cost_usd": cost_usd,
                 "metrics_json": metrics_json,
+                "avg_similarity_score": avg_similarity_score,
+                "answer_length": answer_length or 0,
+                "device_type": device_type,
+                "referrer_page": referrer_page,
+                "embed_model": embed_model,
+                "intent_model": intent_model,
             }
 
             if emb_str:
@@ -219,13 +229,17 @@ async def _save_to_db_direct(data: dict) -> bool:
                          lang, intent_type, model_name, chat_input_tokens, chat_output_tokens,
                          intent_input_tokens, intent_output_tokens,
                          embed_tokens, rewrite_input_tokens, rewrite_output_tokens,
-                         total_tokens, cost_usd, metrics, created_at)
+                         total_tokens, cost_usd, metrics,
+                         avg_similarity_score, answer_length, device_type, referrer_page,
+                         embed_model, intent_model, created_at)
                         VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb),
                                 CAST(:emb_str AS vector),
                                 :lang, :intent_type, :model_name, :chat_input_tokens, :chat_output_tokens,
                                 :intent_input_tokens, :intent_output_tokens,
                                 :embed_tokens, :rewrite_input_tokens, :rewrite_output_tokens,
-                                :total_tokens, :cost_usd, CAST(:metrics_json AS jsonb), now())
+                                :total_tokens, :cost_usd, CAST(:metrics_json AS jsonb),
+                                :avg_similarity_score, :answer_length, :device_type, :referrer_page,
+                                :embed_model, :intent_model, now())
                     """),
                     params,
                 )
@@ -237,12 +251,16 @@ async def _save_to_db_direct(data: dict) -> bool:
                          lang, intent_type, model_name, chat_input_tokens, chat_output_tokens,
                          intent_input_tokens, intent_output_tokens,
                          embed_tokens, rewrite_input_tokens, rewrite_output_tokens,
-                         total_tokens, cost_usd, metrics, created_at)
+                         total_tokens, cost_usd, metrics,
+                         avg_similarity_score, answer_length, device_type, referrer_page,
+                         embed_model, intent_model, created_at)
                         VALUES (:bu_id, :user_id, :question, :answer, CAST(:sources_json AS jsonb),
                                 :lang, :intent_type, :model_name, :chat_input_tokens, :chat_output_tokens,
                                 :intent_input_tokens, :intent_output_tokens,
                                 :embed_tokens, :rewrite_input_tokens, :rewrite_output_tokens,
-                                :total_tokens, :cost_usd, CAST(:metrics_json AS jsonb), now())
+                                :total_tokens, :cost_usd, CAST(:metrics_json AS jsonb),
+                                :avg_similarity_score, :answer_length, :device_type, :referrer_page,
+                                :embed_model, :intent_model, now())
                     """),
                     params,
                 )

@@ -20,6 +20,24 @@ CACHE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "intents_ca
 # How often to check if intents.yaml has changed (seconds)
 _MTIME_CHECK_INTERVAL = 30.0
 
+# Per-category cosine similarity thresholds (tuned per risk profile)
+# Lower  = more lenient (catches more, small false-positive risk)
+# Higher = stricter  (safer but more LLM calls)
+_CATEGORY_THRESHOLDS: dict[str, float] = {
+    "greeting":     0.90,
+    "thanks":       0.90,
+    "company_info": 0.82,   # contact queries have very distinctive vocabulary
+    "capabilities": 0.88,
+    "out_of_scope": 0.88,
+    "confusion":    0.92,   # confusion needs extra confidence to avoid misclassifying real questions
+}
+_DEFAULT_THRESHOLD = 0.90
+
+# Soft-zone: score below per-category threshold but above this floor
+# → check top-K consensus before calling LLM
+_SOFT_ZONE_MIN   = 0.75
+_SOFT_ZONE_VOTES = 2  # min examples from same category in soft-zone to accept without LLM
+
 # Fast-track Regex for immediate common cases (Negative Filtering)
 DIRECT_MATCHES = {
     "greeting": [r"^(สวัสดี|hello|hi|hey|good\s?(morning|afternoon|evening)|yo|sup|ทักทาย|ทัก|เฮลโล|หวัดดี|ดี)(ครับ|ค่ะ|คร้า|คับ|นะ|จ๊ะ|จ๋า|!)?$"],
@@ -305,6 +323,10 @@ class IntentRouter:
 
         # --- 2. Vectorized Semantic Similarity ---
         intent_embed_tokens = 0
+        # Track best vector result so LLM fallback can use it as a hint
+        vec_best_score: float = 0.0
+        vec_best_intent: str = ""
+
         if self.vector_matrix is not None:
             try:
                 query_vector, intent_embed_tokens = await asyncio.to_thread(self._embed_query, message)
@@ -315,27 +337,48 @@ class IntentRouter:
                     query_vector = query_vector / query_norm
                     scores = np.dot(self.vector_matrix, query_vector)
 
-                    # Top-3 for rich debug logging
-                    top_n = min(3, len(scores))
+                    # Top-5: top-3 for logging, extra 2 for soft-zone consensus
+                    top_n = min(5, len(scores))
                     top_indices = np.argsort(scores)[-top_n:][::-1]
                     top_info = [
                         (self.vector_labels[i], f"{scores[i]:.4f}",
                          self.all_examples[i] if i < len(self.all_examples) else "???")
-                        for i in top_indices
+                        for i in top_indices[:3]
                     ]
-                    logger.info(f"📊 Vector Top-{top_n}: {top_info}")
+                    logger.info(f"📊 Vector Top-3: {top_info}")
 
                     best_idx = int(top_indices[0])
                     best_score = float(scores[best_idx])
                     best_intent = self.vector_labels[best_idx]
+                    vec_best_score = best_score
+                    vec_best_intent = best_intent
 
-                    # Context-aware logic: confusion phrases with history = real question
-                    is_confusion = best_intent == "confusion" and best_score >= self.threshold
-                    if is_confusion and have_history:
-                        logger.info("📊 Ambiguous query with history — fall through to TECH_SUPPORT.")
-                    elif best_score >= self.threshold:
-                        logger.info(f"📊 Noise Detected (Vectorized): {best_intent} (Score: {best_score:.4f})")
+                    cat_threshold = _CATEGORY_THRESHOLDS.get(best_intent, _DEFAULT_THRESHOLD)
+
+                    # Context-aware: confusion with active history = real question
+                    if best_intent == "confusion" and have_history:
+                        logger.info("📊 Confusion with history — fall through to TECH_SUPPORT.")
+                    elif best_score >= cat_threshold:
+                        # Hard match — confident enough to return without LLM
+                        logger.info(f"📊 Noise Detected (Vector Hard): {best_intent} ({best_score:.4f} >= {cat_threshold})")
                         return best_intent, self.canned_responses.get(best_intent, {}).get(lang, ""), (0, 0), intent_embed_tokens
+                    elif best_score >= _SOFT_ZONE_MIN:
+                        # Soft zone: check if top-K examples reach consensus
+                        vote_counts: dict[str, int] = {}
+                        for i in top_indices:
+                            s = float(scores[i])
+                            if s >= _SOFT_ZONE_MIN:
+                                lbl = self.vector_labels[i]
+                                vote_counts[lbl] = vote_counts.get(lbl, 0) + 1
+
+                        if vote_counts:
+                            top_cat = max(vote_counts, key=vote_counts.get)
+                            top_cnt = vote_counts[top_cat]
+                            # Never promote confusion in soft-zone — too risky
+                            # Also skip confusion-with-history case handled above
+                            if top_cat != "confusion" and top_cnt >= _SOFT_ZONE_VOTES:
+                                logger.info(f"📊 Noise Detected (Vector Soft, votes={top_cnt}): {top_cat} ({best_score:.4f})")
+                                return top_cat, self.canned_responses.get(top_cat, {}).get(lang, ""), (0, 0), intent_embed_tokens
             except Exception as e:
                 logger.error(f"⚠️ Semantic matching failed: {e}")
 
@@ -344,25 +387,38 @@ class IntentRouter:
             logger.info(f"🤖 Intent Routing: Falling back to LLM ({settings.active_intent_model})")
 
             context_instruction = (
-                "IMPORTANT: A technical conversation is in progress. If user says 'What?' or 'Confused', respond: TECH_SUPPORT."
+                "NOTE: An ongoing conversation exists. Classify based on the query itself — "
+                "COMPANY_INFO still applies for contact/address questions regardless of history. "
+                "Use TECH_SUPPORT for ambiguous/confused messages when history is present."
                 if have_history else
-                "If user says 'What?' or 'Confused' without context, respond: OUT_OF_SCOPE."
+                "Treat ambiguous or confused messages (งง, huh?) without context as OUT_OF_SCOPE."
             )
 
-            sanitized_message = self._sanitize_input(message)
-            prompt = f"""Categorize this user query into ONE of these:
-- GREETING: Hello/Hi.
-- THANKS: Thank you.
-- COMPANY_INFO: Address, phone, email, website, OR HOW TO CONTACT SUPPORT/TEAM/SALES.
-- CAPABILITIES: What can you do?
-- OUT_OF_SCOPE: Irrelevant (weather/food/general talk).
-- CONFUSION: What?/Huh?/Not clear (Ambiguous).
-- TECH_SUPPORT: Troubleshooting, technical help, "How to use [Feature]".
+            # Pass vector hint to guide LLM when we have a soft-zone signal
+            vector_hint = ""
+            if vec_best_score >= _SOFT_ZONE_MIN:
+                vector_hint = (
+                    f"\n[Semantic hint: vector analysis suggests {vec_best_intent.upper()} "
+                    f"(score={vec_best_score:.2f}) — confirm or override if clearly wrong.]"
+                )
 
-Query: <user_input>'{sanitized_message}'</user_input>
+            sanitized_message = self._sanitize_input(message)
+            prompt = f"""Classify this user query for a hotel accounting software support chatbot.
+Reply with ONE WORD only — the category name.
+
+Categories:
+- GREETING    : casual hello/greeting  (สวัสดี / hello / hi / good morning)
+- THANKS      : appreciation or done   (ขอบคุณ / thank you / great / awesome)
+- COMPANY_INFO: contact info, address, phone, email, Line ID, website, or how to reach support/sales/team
+- CAPABILITIES: asking what the AI assistant can do  (ทำอะไรได้บ้าง / what can you help with)
+- OUT_OF_SCOPE: completely unrelated topics — weather, food, news, sports, jokes, general chat
+- CONFUSION   : vague/meaningless message with no specific topic  (งง / อะไรนะ / huh? / ???)
+- TECH_SUPPORT: system how-to, troubleshooting, feature usage — DEFAULT for any software question
+{vector_hint}
+Query: "{sanitized_message}"
 {context_instruction}
 
-Decision (ONE word only):"""
+ONE word:"""
 
             response = await self.small_llm.ainvoke([HumanMessage(content=prompt)])
             raw_content = response.content.strip() if response.content else ""
