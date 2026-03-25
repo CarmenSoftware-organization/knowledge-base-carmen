@@ -21,9 +21,9 @@ editor: markdown
 ## สาเหตุ
 วิธีการคำนวณ Cost ของระบบ
 
-![img-001.png](/contents/carmen_cloud/faq/_images/stock-out-cost-unit-not-match-receiving/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/stock-out-cost-unit-not-match-receiving/img-001.png)
 
-![img-002.png](/contents/carmen_cloud/faq/_images/stock-out-cost-unit-not-match-receiving/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/stock-out-cost-unit-not-match-receiving/img-002.png)
 ## วิธีแก้ไข
 ไม่สามารถแก้ไขให้ Stock Out ออกตาม Cost/Unit ของเอกสาร RC ได้เนื่องจาก Cost/Unit จะคำนวณตามวิธีการคำนวณ Cost ที่ตั้งค่าเอาไว้
 1.วิธีการคำนวณ Cost แบบ Average  

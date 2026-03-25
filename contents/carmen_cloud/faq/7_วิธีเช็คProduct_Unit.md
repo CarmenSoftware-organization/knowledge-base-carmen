@@ -21,10 +21,10 @@ editor: markdown
 ## วิธีแก้ไข
 ไปที่หัวข้อ Report > Product List > เลือกข้อมูลที่ต้องการตรวจสอบ > กด OK
 
-![img-001.png](/contents/carmen_cloud/faq/_images/check-product-unit/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/check-product-unit/img-001.png)
 
 โดยดูข้อมูลในช่อง Unit  โดยแบ่งเป็น2รายการ คือ Inventory และ Order หากมีค่าว่างคือรายการ Product ที่ยังไม่มีการ Set unit แนะนำให้ทำการตั้งค่าที่ Product ให้สมบูรณ์เพื่อป้องกันการทำ Receiving ไม่ได้
 
-![img-002.png](/contents/carmen_cloud/faq/_images/check-product-unit/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/check-product-unit/img-002.png)
 
 **Tag:** Procurement

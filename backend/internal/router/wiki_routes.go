@@ -1,6 +1,8 @@
 package router
 
 import (
+	"net/url"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/api"
 )
@@ -24,7 +26,10 @@ func RegisterWiki(app *fiber.App) {
 		if relPath == "" {
 			return c.SendStatus(fiber.StatusNotFound)
 		}
-		
+		if dec, err := url.PathUnescape(relPath); err == nil {
+			relPath = dec
+		}
+
 		wikiSvc := h.GetWikiService()
 		fullPath := wikiSvc.GetLocalAssetPath(bu, relPath)
 		return c.SendFile(fullPath)

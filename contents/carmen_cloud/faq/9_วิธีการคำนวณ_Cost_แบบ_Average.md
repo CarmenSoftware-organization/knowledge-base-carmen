@@ -24,7 +24,7 @@ editor: markdown
 โดยให้ทำการเลือก Period ที่ต้องการ  
 และเรียกทุก Store/Location   
 
-![img-001.png](/contents/carmen_cloud/faq/_images/average-cost-calculation/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/average-cost-calculation/img-001.png)
 
 วิธีคำนวณหา average cost นำเอา total amount และ total qty มาคำนวณ
 
@@ -33,5 +33,5 @@ editor: markdown
 (998199.02) / (525.6)  
 Cost/Unit = 1899.16
 
-![img-001.png](/contents/carmen_cloud/faq/_images/average-cost-calculation/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/average-cost-calculation/img-001.png)
 

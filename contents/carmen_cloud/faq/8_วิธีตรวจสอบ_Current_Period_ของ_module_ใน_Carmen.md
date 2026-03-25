@@ -25,4 +25,4 @@ editor: markdown
 และ Current Period (Period ปัจจุบัน)   
 จากตัวอย่างคือ จะแสดงแต่ละ module ว่าเป็น Period ใดบ้าง เช่น AP ตอนนี้คือ 30/04/2024 เป็นต้น
 
-![img-001.png](/contents/carmen_cloud/faq/_images/check-current-period-per-module/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/check-current-period-per-module/img-001.png)

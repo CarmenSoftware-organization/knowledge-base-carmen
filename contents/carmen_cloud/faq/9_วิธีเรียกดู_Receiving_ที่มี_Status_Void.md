@@ -22,6 +22,6 @@ editor: markdown
 ## วิธีแก้ไข
 สามารถดูได้ 2วิธี
 1.กด View เลือก Receiving Voided ก็จะแสดงเอกสารที่มี Status Voided ในระบบทั้งหมด  
-![img-001.png](/contents/carmen_cloud/faq/_images/receiving-with-void-status/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/receiving-with-void-status/img-001.png)
 2.พิมพ์ค้นหา Receiving ในช่องค้นหา ว่า “Voided” ก็จะแสดงเอกสารที่มี Status Voided ในระบบทั้งหมด  
-![img-002.png](/contents/carmen_cloud/faq/_images/receiving-with-void-status/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/receiving-with-void-status/img-002.png)

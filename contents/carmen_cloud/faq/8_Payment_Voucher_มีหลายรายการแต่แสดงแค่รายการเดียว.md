@@ -21,18 +21,18 @@ editor: markdown
 ## ตัวอย่างเคส
 Print Payment แสดงแค่ 1 รายการใน Invoice มี 3 รายการ แก้ไขอย่างไร
 
-![img-001.png](/contents/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-001.png)
 
-![img-002.png](/contents/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-002.png)
 
 ## วิธีแก้ไข
 ไปที่หัวข้อ Setting > Account Payable > Payment Voucher Print Format  กด Edit
 เลือกหัวข้อ View by ตั้งค่าให้เป็นแบบ Detail เพื่อแสดงรายละเอียดของรายการใน Payment  กด Save   
 
-![img-003.png](/contents/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-003.png)
+![img-003.png](/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-003.png)
 
-![img-004.png](/contents/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-004.png)
+![img-004.png](/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-004.png)
 
 กลับไปที่รายการ Payment ดังกล่าว และทดลองกด Print อีกครั้ง ระบบจะแสดงรายการแบบ Detail เรียบร้อย
 
-![img-005.png](/contents/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-005.png)
+![img-005.png](/carmen_cloud/faq/_images/payment-voucher-print-single-line/img-005.png)

@@ -22,11 +22,11 @@ editor: markdown
 ## ตัวอย่างเคส
 ฟอร์ม PO Company Profile ผิดต้องการแก้ไข
 
-![img-001.png](/contents/carmen_cloud/faq/_images/po-form-company-info-wrong/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/po-form-company-info-wrong/img-001.png)
 ## วิธีแก้ไข
 ไปที่หัวข้อ Options > System Setting > Company Profile กด Edit
 ทำการแก้ไขข้อมูลตามต้องการ กด Save   
-![img-002.png](/contents/carmen_cloud/faq/_images/po-form-company-info-wrong/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/po-form-company-info-wrong/img-002.png)
 
 ทดลองกด Print PO อีกครั้ง ข้อมูลจะเปลี่ยนแปลงตามการแก้ไข  
-![img-003.png](/contents/carmen_cloud/faq/_images/po-form-company-info-wrong/img-003.png)
+![img-003.png](/carmen_cloud/faq/_images/po-form-company-info-wrong/img-003.png)

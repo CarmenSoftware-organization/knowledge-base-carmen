@@ -19,15 +19,15 @@ editor: markdown
 ## ตัวอย่างเคส
 ต้องการทำ CN กับเอกสาร RC25030019 แต่เมื่อค้นหาแล้วไม่พบเอกสารใบนี้
 
-![img-001.png](/contents/carmen_cloud/faq/_images/credit-note-receiving-not-found/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/credit-note-receiving-not-found/img-001.png)
 ## สาเหตุ
 เลือก Date ใน CN ก่อน วันที่ของเอกสาร Receiving
 
 ## วิธีแก้ไข
 ตรวจสอบเอกสาร RC ว่า Date เป็นวันที่ใด และเลือก Date ในเอกสาร CN ให้เป็นวันเดียวกัน หรือเป็นวันที่อยู่หลังจากวันที่ Receiving
 จากตัวอย่างคือ 17/06/2025 ระบบยึดจาก Date ของเอกสาร RC  
-![img-002.png](/contents/carmen_cloud/faq/_images/credit-note-receiving-not-found/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/credit-note-receiving-not-found/img-002.png)
 
-![img-003.png](/contents/carmen_cloud/faq/_images/credit-note-receiving-not-found/img-003.png)
+![img-003.png](/carmen_cloud/faq/_images/credit-note-receiving-not-found/img-003.png)
 
-![img-004.png](/contents/carmen_cloud/faq/_images/credit-note-receiving-not-found/img-004.png)
+![img-004.png](/carmen_cloud/faq/_images/credit-note-receiving-not-found/img-004.png)

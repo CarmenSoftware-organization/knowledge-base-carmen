@@ -19,12 +19,12 @@ editor: markdown
 ## ตัวอย่างเคส
 ต้องการเรียกดูStore 2AG03 แต่ไม่พบStore ดังกล่าวตามรูปภาพ
 Casuse of Problems: Store เป็น Type แบบค่าใช้จ่าย Default Zero  
-![img-001.png](/contents/carmen_cloud/faq/_images/inventory-balance-report-missing-store-v8/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/inventory-balance-report-missing-store-v8/img-001.png)
 
 ## วิธีแก้ไข
 ตรวจสอบว่าStore ดังกล่าวเป็น Enter Counted Stock หรือ Default System หรือไม่
 สังเกตุในช่อง EOP ว่าแสดงเป็นประเภทใด   
-![img-002.png](/contents/carmen_cloud/faq/_images/inventory-balance-report-missing-store-v8/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/inventory-balance-report-missing-store-v8/img-002.png)
 หากเป็น Default Zero ระบบจะไม่ปรากฏข้อมูลเนื่องจากเป็นStore ค่าใช้จ่ายครับ   
 หากเป็นการทำ Receiving ให้ใช้Report Receiving Detail และเลือกวันที่ทำรับเพื่อดูข้อมูล   
-![img-003.png](/contents/carmen_cloud/faq/_images/inventory-balance-report-missing-store-v8/img-003.png)
+![img-003.png](/carmen_cloud/faq/_images/inventory-balance-report-missing-store-v8/img-003.png)

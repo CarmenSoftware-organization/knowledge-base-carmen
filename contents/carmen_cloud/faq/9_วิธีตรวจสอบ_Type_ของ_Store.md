@@ -24,7 +24,7 @@ editor: markdown
 1. EOP : Enter Counted Stock	  
 2. EOP :  Default System  
 นั้นแสดงว่า Store ที่ไม่พบที่ Report คือ Store ประเภทค่าใช้จ่าย หรือ EOP : Default Zero  
-![img-001.png](/contents/carmen_cloud/faq/_images/check-store-type/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/check-store-type/img-001.png)
 ## วิธีแก้ไข
 ตรวจสอบว่า Store มี EOP type อะไร
 
@@ -33,6 +33,6 @@ editor: markdown
 - ดูในช่อง EOP จะแสดงข้อมูล Type Store ดังกล่าว  
 จากตัวอย่าง Store IT คือ Store Type Default Zero   
 ระบบจึงไม่แสดงข้อมูล Inventory ของ Store นี้
-![img-002.png](/contents/carmen_cloud/faq/_images/check-store-type/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/check-store-type/img-002.png)
 
 **Tag:** Procurement

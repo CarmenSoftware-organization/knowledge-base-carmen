@@ -27,26 +27,26 @@ editor: markdown
 - ตรวจสอบที่หัวข้อ Period End(แสดงเฉพาะเอกสาร Receiving ภายใน Period นั้น ๆ)  
 ไปที่ 1.Material>2.Procedure>3.Period End 
 
-![img-001.png](/contents/carmen_cloud/faq/_images/check-uncommitted-receiving/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/check-uncommitted-receiving/img-001.png)
 ระบบจะแสดงรายการ Receiving ที่ยังเป็น Status Received ภายใต้ Period ปัจจุบันของระบบ  
 
-![img-002.png](/contents/carmen_cloud/faq/_images/check-uncommitted-receiving/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/check-uncommitted-receiving/img-002.png)
 
 2.Report Receiving Detail  
 เลือก ข้อมูลที่ต้องการตรวจสอบ และเลือก Status ของ Receiving เป็น Received เพื่อดูรายการที่ยังไม่ได้มี   
 
-![img-003.png](/contents/carmen_cloud/faq/_images/check-uncommitted-receiving/img-003.png)
+![img-003.png](/carmen_cloud/faq/_images/check-uncommitted-receiving/img-003.png)
 
 กด View  ระบบจะแสดงข้อมูลเอกสารที่มี Status ของ Receiving เป็น Received มาแสดงตามรูปภาพด้านล่าง  
 
-![img-004.png](/contents/carmen_cloud/faq/_images/check-uncommitted-receiving/img-004.png)
+![img-004.png](/carmen_cloud/faq/_images/check-uncommitted-receiving/img-004.png)
 
 3.ค้นหาจาก status บนหน้าจอ Receiving list  
 พิมพ์คำว่า “Received” ลงในช่องค้นหา จะปรากฏ Status ของเอกสาร Receiving ที่ยังไม่เป็น Status Committed  
 
-![img-005.png](/contents/carmen_cloud/faq/_images/check-uncommitted-receiving/img-005.png)
+![img-005.png](/carmen_cloud/faq/_images/check-uncommitted-receiving/img-005.png)
 4. ที่ View เลือกหัวข้อ Receiving not Committed
 
-![img-006.png](/contents/carmen_cloud/faq/_images/check-uncommitted-receiving/img-006.png)
+![img-006.png](/carmen_cloud/faq/_images/check-uncommitted-receiving/img-006.png)
 
 **Tag:** Procurement

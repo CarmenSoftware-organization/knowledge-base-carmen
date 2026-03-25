@@ -19,7 +19,7 @@ editor: markdown
 ## ตัวอย่างเคส
 ต้องการ Physical Count Store “IT” แต่เมื่อกด Create แล้วไม่พบ Store ดังกล่าว
 
-![img-001.png](/contents/carmen_cloud/faq/_images/physical-count-store-not-found/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/physical-count-store-not-found/img-001.png)
 
 ## สาเหตุ
 ไม่มีการเปิดสิทธิ์การมองเห็น Store ใน User หรือ Type ของStep ไม่เป็น Type Enter Counted Stock
@@ -28,15 +28,15 @@ editor: markdown
 ตรวจสอบข้อมูล2 ส่วน ดังนี้
 1.ตรวจสอบว่าStore ดังกล่าวเป็น EOP Type Enter Counted Stock หรือไม่  
 
-![img-002.png](/contents/carmen_cloud/faq/_images/physical-count-store-not-found/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/physical-count-store-not-found/img-002.png)
 
 2.ตรวจสอบสิทธิ์ในการเข้าถึง Store ของ User   
 ไปที่  Options > Administrator > User ยังไม่มีการเปิดการมองเห็นให้ User ดำเนินการให้เรียบร้อย  
 
-![img-003.png](/contents/carmen_cloud/faq/_images/physical-count-store-not-found/img-003.png)
+![img-003.png](/carmen_cloud/faq/_images/physical-count-store-not-found/img-003.png)
 
-![img-004.png](/contents/carmen_cloud/faq/_images/physical-count-store-not-found/img-004.png)
+![img-004.png](/carmen_cloud/faq/_images/physical-count-store-not-found/img-004.png)
 
 กด Create อีกครั้ง จะปรากฏ Store IT ขึ้นมาเรียบร้อย ดำเนินการ Physical Count ได้ตามปกติ  
 
-![img-005.png](/contents/carmen_cloud/faq/_images/physical-count-store-not-found/img-005.png)
+![img-005.png](/carmen_cloud/faq/_images/physical-count-store-not-found/img-005.png)

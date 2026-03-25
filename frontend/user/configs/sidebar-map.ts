@@ -7,6 +7,7 @@ export const categoryDisplayMap: Record<string, string> = {
     workbook: "Work Book",
     comment: "Comment & Document",
     dashboard: "Dashboard",
+    faq: "FAQ",
 };
 
 export const articleDisplayMap: Record<string, string> = {

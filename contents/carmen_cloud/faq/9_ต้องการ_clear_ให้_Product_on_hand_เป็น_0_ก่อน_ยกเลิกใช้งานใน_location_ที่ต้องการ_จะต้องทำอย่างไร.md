@@ -21,14 +21,14 @@ Product 10030002 ปรากฏ on hand ที่รายงาน Inventory 
 ## สาเหตุ
 ยังมีข้อมูล On hand ค้างอยู่
 
-![img-001.png](/contents/carmen_cloud/faq/_images/clear-on-hand-before-disable-location/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/clear-on-hand-before-disable-location/img-001.png)
 
 ## วิธีแก้ไข
 1.ทำเอกสาร Stock Out ออกให้เป็น 0 โดยตรวจสอบยอดของคงค้างด้วย Report  Inventory Balance จากตัวอย่าง คือ Qty คงค้าง 10 Kg 
 
-![img-002.png](/contents/carmen_cloud/faq/_images/clear-on-hand-before-disable-location/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/clear-on-hand-before-disable-location/img-002.png)
 
 2.นำการ Assign to Store/Location Store 1FB05 ออกจาก Product 10030002 แล้วทดลองเรียก Report  Inventory Balance ว่ายังมี Qty คงเหลืออีกหรือไม่  
 จากตัวอย่างก็จะไม่พบสินค้าคงเหลือแล้ว  
 
-![img-003.png](/contents/carmen_cloud/faq/_images/clear-on-hand-before-disable-location/img-003.png)
+![img-003.png](/carmen_cloud/faq/_images/clear-on-hand-before-disable-location/img-003.png)

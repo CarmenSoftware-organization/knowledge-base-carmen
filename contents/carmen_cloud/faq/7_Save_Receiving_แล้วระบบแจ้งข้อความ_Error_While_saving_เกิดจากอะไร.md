@@ -19,7 +19,7 @@ editor: markdown
 ## ตัวอย่างเคส
 ต้องการกด Save Receiving แต่ระบบแจ้ง Error แก้ไขอย่างไร
 Casuse of Problems: เกิดจาก ไม่ได้มีการ Set Default Order Unit ที่ Product  
-![img-001.png](/contents/carmen_cloud/faq/_images/save-receiving-error-while-saving/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/save-receiving-error-while-saving/img-001.png)
 เป็นการแจ้งเตือนว่า มีรายการไม่มีหน่วย Unit ทำให้เมื่อกด Save จึง Error  
 ## วิธีแก้ไข
 แจ้ง Support เพื่อดำเนินการแก้ไข เพิ่มหน่วย Order Unit กับรายการที่ติดปัญหา

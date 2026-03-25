@@ -24,12 +24,12 @@ Product 10000001 อยู่ภายใต้ PR Type อะไร
 
 ไปที่ Product ที่ต้องการตรวจสอบ ดูส่วนข้อมูลช่อง Item Group ว่าอยู่ Item Group ใด  
 
-![img-001.png](/contents/carmen_cloud/faq/_images/item-pr-type-category/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/item-pr-type-category/img-001.png)
 2. ตรวจสอบว่า Item Group อยู่ใน PR type อะไร
 
  ไปที่ Procurement > Configuration > Category  
 เลือกดูว่า Item Group นั้นอยู่ภายใต้ Category Type ใด   
 Market list หรือ General ให้เลือกสร้าง PR Type ให้ถูกต้อง เนื่องจากตัวระบบหากสร้าง PR Type General ก็จะไม่พบProduct ที่อยู่ในหมวด Category Type ประภท Market list หรือ Asset  
 
-![img-002.png](/contents/carmen_cloud/faq/_images/item-pr-type-category/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/item-pr-type-category/img-002.png)
 **Tag:** Procurement

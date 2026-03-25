@@ -229,12 +229,41 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
 
           img: ({ src, alt = "", ...props }) => {
             if (!src || typeof src !== "string") return null;
-            const cleanSrc = src.replace("./", "");
             const bu = getSelectedBUClient() || DEFAULT_BU;
+
+            // Absolute http(s) / data — leave as-is
+            if (/^(https?:|data:)/i.test(src)) {
+              return (
+                <img
+                  {...props}
+                  src={src}
+                  alt={alt}
+                  className="block rounded-xl my-6 shadow-md max-w-full"
+                />
+              );
+            }
+
+            // Wiki stores paths in md as /carmen_cloud/faq/_images/... (repo root = carmen_cloud).
+            // Backend /wiki-assets/* expects path relative to that root: faq/_images/...
+            let assetRelative = src.replace("./", "").replace(/^\/+/, "");
+            if (assetRelative.startsWith("carmen_cloud/")) {
+              assetRelative = assetRelative.slice("carmen_cloud/".length);
+            } else if (assetRelative.startsWith("contents/carmen_cloud/")) {
+              assetRelative = assetRelative.slice("contents/carmen_cloud/".length);
+            } else if (!assetRelative.startsWith(category + "/")) {
+              assetRelative = `${category}/${assetRelative}`;
+            }
+
+            const qs = new URLSearchParams({ bu });
+            const url = `${API_BASE}/wiki-assets/${assetRelative
+              .split("/")
+              .map((seg) => encodeURIComponent(seg))
+              .join("/")}?${qs.toString()}`;
+
             return (
               <img
                 {...props}
-                src={`${API_BASE}/wiki-assets/${category}/${cleanSrc}?bu=${bu}`}
+                src={url}
                 alt={alt}
                 className="block rounded-xl my-6 shadow-md max-w-full"
               />

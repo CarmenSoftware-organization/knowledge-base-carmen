@@ -20,7 +20,7 @@ editor: markdown
 เรียกดูReport Inventory แล้วไม่พบStore ที่ต้องการเกิดจากอะไร  
 ตัวอย่าง เรียกดูReport Inventory Balance จะดูสินค้าของ Store 2AG03 แต่ไม่พบStoreให้เลือก  
 
-![img-001.png](/contents/carmen_cloud/faq/_images/inventory-balance-report-missing-store-v7/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/inventory-balance-report-missing-store-v7/img-001.png)
 
 สาเหตุ:เกิดจากStore นั้นเป็น Store Default Zero	เป็นสโตร์ค่าใช้จ่าย ไม่ถูกบันทึกเป็นInventory ระบบจึงไม่นำมาบันทึกข้อมูล  
 หากเป็นการ Receiving เข้าStore ค่าใช้จ่ายให้เรียกดูReport Receiving Detail เพื่อดูข้อมูลการทำรับ  

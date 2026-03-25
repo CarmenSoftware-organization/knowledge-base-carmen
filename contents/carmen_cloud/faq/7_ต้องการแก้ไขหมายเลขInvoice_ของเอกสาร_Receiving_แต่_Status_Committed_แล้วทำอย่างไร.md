@@ -24,14 +24,14 @@ editor: markdown
 วิธีแก้ไข  
 ไปที่เอกสาร Receiving (ตัวอย่าง RC25060108)
 
-![img-001.png](/contents/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-001.png)
+![img-001.png](/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-001.png)
 
 กดปุ่ม Edit   
 
-![img-002.png](/contents/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-002.png)
+![img-002.png](/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-002.png)
 
 ทำการแก้ไขหมายเลข Invoice#: แล้วกด Save หลังแก้ไขข้อมูลให้ดำเนินการ Posting from Receiving ไปที่ AP อีกครั้ง
 
-![img-003.png](/contents/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-003.png)
+![img-003.png](/carmen_cloud/faq/_images/edit-invoice-after-receiving-committed/img-003.png)
 
 **Tag:** Procurement
