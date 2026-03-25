@@ -2,7 +2,7 @@
 title: การสร้างประเภทการวิเคราะห์ข้อมูล Dimension
 description: การสร้างประเภทการวิเคราะห์ข้อมูล Dimension
 published: true
-date: 2026-03-19T08:36:15.007Z
+date: 2026-03-20T09:31:40.515Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:54:44.875Z

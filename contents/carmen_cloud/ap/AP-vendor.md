@@ -2,7 +2,7 @@
 title: ขั้นตอนการสร้างข้อมูลร้านค้า หรือ ผู้ขายในระบบ (Create Vendor)
 description: ขั้นตอนการสร้างข้อมูลร้านค้า หรือ ผู้ขายในระบบ (Create Vendor)
 published: true
-date: 2026-03-19T08:38:17.110Z
+date: 2026-03-20T08:39:18.857Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:14.964Z

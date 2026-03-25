@@ -2,7 +2,7 @@
 title: PROJECT_MANUAL
 description: 
 published: true
-date: 2026-03-19T08:33:44.916Z
+date: 2026-03-20T09:28:15.571Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-19T08:33:42.656Z

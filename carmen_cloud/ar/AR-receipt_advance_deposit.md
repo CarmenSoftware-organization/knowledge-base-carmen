@@ -2,7 +2,7 @@
 title: Receipt for Advance Deposit
 description: Receipt for Advance Deposit
 published: true
-date: 2026-03-19T08:35:05.102Z
+date: 2026-03-20T09:30:16.815Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:53:48.148Z

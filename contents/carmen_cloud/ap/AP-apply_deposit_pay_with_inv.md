@@ -2,7 +2,7 @@
 title: Apply Deposit with Invoice
 description: Apply Deposit with Invoice
 published: true
-date: 2026-03-19T08:37:48.651Z
+date: 2026-03-20T08:38:58.993Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:37:46.573Z

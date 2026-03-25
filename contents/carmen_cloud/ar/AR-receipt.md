@@ -2,7 +2,7 @@
 title: Receipt
 description: Receipt
 published: true
-date: 2026-03-19T08:38:56.565Z
+date: 2026-03-20T08:39:46.658Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:54.312Z

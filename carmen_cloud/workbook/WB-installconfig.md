@@ -2,7 +2,7 @@
 title: Carmen Add-in
 description: Carmen Add-in
 published: true
-date: 2026-03-19T08:37:32.993Z
+date: 2026-03-20T09:32:52.772Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:56:08.260Z

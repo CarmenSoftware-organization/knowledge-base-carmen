@@ -2,7 +2,7 @@
 title: architecture
 description: 
 published: true
-date: 2026-03-19T08:33:53.198Z
+date: 2026-03-20T09:28:23.508Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-19T08:33:51.142Z

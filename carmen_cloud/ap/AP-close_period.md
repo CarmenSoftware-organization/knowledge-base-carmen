@@ -2,7 +2,7 @@
 title: Close Period for Account Payable Module
 description: Close Period for Account Payable Module
 published: true
-date: 2026-03-19T08:34:19.022Z
+date: 2026-03-20T09:29:21.528Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:52:42.002Z

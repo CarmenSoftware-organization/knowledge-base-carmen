@@ -2,7 +2,7 @@
 title: Asset
 description: Asset
 published: true
-date: 2026-03-19T08:35:26.537Z
+date: 2026-03-20T09:30:42.548Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:54:18.911Z

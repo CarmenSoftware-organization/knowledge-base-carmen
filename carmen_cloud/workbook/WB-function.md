@@ -2,7 +2,7 @@
 title: Carmen Work Book Function
 description: Carmen Work Book Function
 published: true
-date: 2026-03-19T08:37:30.624Z
+date: 2026-03-20T09:32:50.501Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:56:04.927Z

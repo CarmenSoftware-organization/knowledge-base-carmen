@@ -2,7 +2,7 @@
 title: Posting Account Receivable to GL
 description: Posting Account Receivable to GL
 published: true
-date: 2026-03-19T08:41:16.877Z
+date: 2026-03-20T08:41:34.690Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:41:14.699Z
