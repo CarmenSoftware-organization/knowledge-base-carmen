@@ -35,7 +35,7 @@ type EmbeddingsResponse struct {
 }
 
 func NewClient() *Client {
-	cfg := config.AppConfig.OpenRouter
+	cfg := config.AppConfig.LLM
 	return &Client{
 		APIKey:     cfg.APIKey,
 		EmbedModel: cfg.EmbedModel,
@@ -56,7 +56,7 @@ func (c *Client) Embedding(text string) ([]float32, error) {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", "https://openrouter.ai/api/v1/embeddings", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", config.AppConfig.LLM.APIBase+"/embeddings", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}

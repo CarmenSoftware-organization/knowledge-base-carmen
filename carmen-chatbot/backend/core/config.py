@@ -19,13 +19,13 @@ class Settings:
     VERSION: str = "1.0.0"
     
     def __init__(self):
-        # --- LLM Provider: OpenRouter ---
-        self.OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-        _base = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai").rstrip("/")
-        self.OPENROUTER_API_BASE: str = _base if _base.endswith("/api/v1") else _base + "/api/v1"
-        self.OPENROUTER_CHAT_MODEL: str = os.getenv("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
-        self.OPENROUTER_INTENT_MODEL: str = os.getenv("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")
-        self.OPENROUTER_EMBED_MODEL: str = os.getenv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b")
+        # --- LLM Provider (OpenAI-compatible) ---
+        self.LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
+        _base = os.getenv("LLM_API_BASE", "https://openrouter.ai/api/v1").rstrip("/")
+        self.LLM_API_BASE: str = _base if _base.endswith("/v1") else _base + "/api/v1"
+        self.LLM_CHAT_MODEL: str = os.getenv("LLM_CHAT_MODEL", "stepfun/step-3.5-flash:free")
+        self.LLM_INTENT_MODEL: str = os.getenv("LLM_INTENT_MODEL", "google/gemini-2.5-flash-lite")
+        self.LLM_EMBED_MODEL: str = os.getenv("LLM_EMBED_MODEL", "qwen/qwen3-embedding-8b")
 
         # --- Database Settings ---
         self.DB_HOST: str = os.getenv("DB_HOST")
@@ -87,7 +87,7 @@ class Settings:
 
         # --- LLM Reliability ---
         # Fallback model used when primary model fails before yielding content
-        self.OPENROUTER_FALLBACK_MODEL: str = os.getenv("OPENROUTER_FALLBACK_MODEL", "")
+        self.LLM_FALLBACK_MODEL: str = os.getenv("LLM_FALLBACK_MODEL", "")
         # Max tokens allowed for the full prompt (system + history + context + question).
         # For RAG customer support: system~700 + history~300 + context~2000 + question~150 ≈ 3,200 typical.
         # 6,000 gives comfortable headroom without risking model context overflow.
@@ -124,24 +124,24 @@ class Settings:
             return None
 
     @property
-    def is_openrouter_api_ready(self) -> bool:
-        return bool(self.OPENROUTER_API_KEY)
+    def is_llm_ready(self) -> bool:
+        return bool(self.LLM_API_KEY)
 
     @property
     def active_api_key(self) -> str:
-        return self.OPENROUTER_API_KEY
+        return self.LLM_API_KEY
 
     @property
     def active_api_base(self) -> str:
-        return self.OPENROUTER_API_BASE
+        return self.LLM_API_BASE
 
     @property
     def active_chat_model(self) -> str:
-        return self.OPENROUTER_CHAT_MODEL
+        return self.LLM_CHAT_MODEL
 
     @property
     def active_intent_model(self) -> str:
-        return self.OPENROUTER_INTENT_MODEL
+        return self.LLM_INTENT_MODEL
 
 # Instantiate singleton
 settings = Settings()
@@ -149,5 +149,5 @@ settings = Settings()
 # Ensure necessary directories exist
 settings.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
-if not settings.is_openrouter_api_ready:
-    print("WARNING: OPENROUTER_API_KEY is missing in .env")
+if not settings.is_llm_ready:
+    print("WARNING: LLM_API_KEY is missing in .env")

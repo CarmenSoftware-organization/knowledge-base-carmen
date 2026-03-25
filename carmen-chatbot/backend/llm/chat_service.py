@@ -88,7 +88,7 @@ def _build_log_payload(
         "embed_tokens": embed_tokens,
         "rewrite_input_tokens": rewrite_in,
         "rewrite_output_tokens": rewrite_out,
-        "embed_model": settings.OPENROUTER_EMBED_MODEL,
+        "embed_model": settings.LLM_EMBED_MODEL,
         "intent_model": settings.active_intent_model,
         "sources": source_debug,
         "timestamp": datetime.now(),
@@ -115,7 +115,7 @@ def _build_log_payload(
 class LLMService(LLMClient):
     def __init__(self):
         super().__init__()
-        print(f"💬 AI Chat Model Initialization Complete (OPENROUTER) using {self.default_model}")
+        print(f"💬 AI Chat Model Initialization Complete using {self.default_model}")
 
     # ------------------------------------------------------------------
     # Shared pre-LLM pipeline: intent → history → rewrite → retrieval
@@ -288,8 +288,8 @@ class LLMService(LLMClient):
             messages, _ = build_messages(system_base, l, lang, context_text, history_text, self._sanitize_input(message))
 
             models_to_try = [model_name]
-            if settings.OPENROUTER_FALLBACK_MODEL and settings.OPENROUTER_FALLBACK_MODEL != model_name:
-                models_to_try.append(settings.OPENROUTER_FALLBACK_MODEL)
+            if settings.LLM_FALLBACK_MODEL and settings.LLM_FALLBACK_MODEL != model_name:
+                models_to_try.append(settings.LLM_FALLBACK_MODEL)
 
             accumulated = None
             first_token_time = None

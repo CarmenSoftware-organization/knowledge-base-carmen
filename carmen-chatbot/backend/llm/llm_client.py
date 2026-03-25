@@ -130,8 +130,8 @@ class LLMClient:
         MAX_RETRIES = 2
 
         models_to_try = [model_name]
-        if settings.OPENROUTER_FALLBACK_MODEL and settings.OPENROUTER_FALLBACK_MODEL != model_name:
-            models_to_try.append(settings.OPENROUTER_FALLBACK_MODEL)
+        if settings.LLM_FALLBACK_MODEL and settings.LLM_FALLBACK_MODEL != model_name:
+            models_to_try.append(settings.LLM_FALLBACK_MODEL)
 
         last_error = None
         for current_model in models_to_try:

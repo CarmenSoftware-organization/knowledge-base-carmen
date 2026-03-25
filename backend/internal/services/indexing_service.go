@@ -29,7 +29,7 @@ type IndexingService struct {
 
 func NewIndexingService() *IndexingService {
 	var llm Embedder
-	if config.AppConfig.OpenRouter.APIKey != "" {
+	if config.AppConfig.LLM.APIKey != "" {
 		llm = openrouter.NewClient()
 	} else {
 		llm = ollama.NewEmbedClient()

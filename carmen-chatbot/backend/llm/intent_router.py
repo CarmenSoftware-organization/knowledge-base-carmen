@@ -93,7 +93,7 @@ class IntentRouter:
             cached_mtime = float(cache_data.get('mtime', 0))
             cached_model = str(cache_data.get('model', ''))
 
-            if cached_mtime != mtime or cached_model != settings.OPENROUTER_EMBED_MODEL:
+            if cached_mtime != mtime or cached_model != settings.LLM_EMBED_MODEL:
                 return False
 
             vm = cache_data['vector_matrix']
@@ -144,15 +144,15 @@ class IntentRouter:
         Returns (vectors, prompt_tokens).
         """
         try:
-            url = f"{settings.OPENROUTER_API_BASE}/embeddings"
+            url = f"{settings.LLM_API_BASE}/embeddings"
             headers = {
-                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {settings.LLM_API_KEY}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": "https://github.com/new-carmen",
                 "X-Title": "Carmen Chatbot Intent Indexer"
             }
             payload = {
-                "model": settings.OPENROUTER_EMBED_MODEL,
+                "model": settings.LLM_EMBED_MODEL,
                 "input": texts
             }
             resp = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -205,8 +205,8 @@ class IntentRouter:
             self.last_load_time = mtime
             logger.info(f"📂 Loading intents from {self.intents_file} (Modified: {time.ctime(self.last_load_time)})")
 
-            if not settings.OPENROUTER_API_KEY:
-                logger.warning("⚠️ OPENROUTER_API_KEY missing. Skipping vectorized indexing.")
+            if not settings.LLM_API_KEY:
+                logger.warning("⚠️ LLM_API_KEY missing. Skipping vectorized indexing.")
                 self._load_only_canned_responses()
                 return
 
@@ -248,7 +248,7 @@ class IntentRouter:
                     vector_labels=self.vector_labels,
                     all_examples=self.all_examples,
                     mtime=mtime,
-                    model=settings.OPENROUTER_EMBED_MODEL
+                    model=settings.LLM_EMBED_MODEL
                 )
                 logger.info("💾 Intent embeddings saved to cache.")
             except Exception as e:
@@ -271,7 +271,7 @@ class IntentRouter:
     # ------------------------------------------------------------------
     async def async_init(self):
         """Trigger full intent indexing in a thread. Call once from app lifespan."""
-        if self.vector_matrix is None and settings.OPENROUTER_API_KEY:
+        if self.vector_matrix is None and settings.LLM_API_KEY:
             logger.info("🔄 IntentRouter: starting async full index...")
             await asyncio.to_thread(self._load_and_index_intents)
 
@@ -302,7 +302,7 @@ class IntentRouter:
                 if current_mtime > self.last_load_time:
                     logger.info("🔄 intents.yaml changed, reloading...")
                     await asyncio.to_thread(self._load_and_index_intents)
-                elif self.vector_matrix is None and settings.OPENROUTER_API_KEY:
+                elif self.vector_matrix is None and settings.LLM_API_KEY:
                     logger.info("🔄 OpenRouter API Key now available. Retrying intent indexing...")
                     await asyncio.to_thread(self._load_and_index_intents)
             except Exception as e:

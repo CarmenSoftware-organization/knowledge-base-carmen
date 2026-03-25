@@ -80,7 +80,8 @@ async def lifespan(app: FastAPI):
     log_startup(
         chat_model=settings.active_chat_model,
         intent_model=settings.active_intent_model,
-        embed_model=settings.OPENROUTER_EMBED_MODEL,
+        embed_model=settings.LLM_EMBED_MODEL,
+        api_base=settings.LLM_API_BASE,
     )
     await build_image_index()
     await intent_router.async_init()

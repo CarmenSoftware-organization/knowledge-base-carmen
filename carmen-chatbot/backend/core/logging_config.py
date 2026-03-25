@@ -25,8 +25,10 @@ def setup_logging():
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
-def log_startup(chat_model: str, intent_model: str, embed_model: str):
+def log_startup(chat_model: str, intent_model: str, embed_model: str, api_base: str = ""):
     """Display active model configuration at startup."""
+    from urllib.parse import urlparse
+    provider_tag = urlparse(api_base).netloc if api_base else "unknown"
     table = Table(
         title="[bold deep_sky_blue1]Carmen Chatbot — Active Config[/bold deep_sky_blue1]",
         show_header=True,
@@ -35,7 +37,7 @@ def log_startup(chat_model: str, intent_model: str, embed_model: str):
     )
     table.add_column("Component", style="bold")
     table.add_column("Model / Value")
-    table.add_row("Provider",     "[bold]OPENROUTER[/bold]")
+    table.add_row("Provider",     f"[bold]{provider_tag}[/bold]")
     table.add_row("Chat Model",   chat_model)
     table.add_row("Intent Model", intent_model)
     table.add_row("Embed Model",  embed_model)

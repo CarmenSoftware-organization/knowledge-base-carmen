@@ -22,16 +22,16 @@ load_dotenv(ENV_PATH)
 # Model Fetchers
 # ---------------------------------------------------------------------------
 
-def fetch_openrouter_models() -> list[Choice]:
-    console.print("[yellow]Fetching OpenRouter models...[/yellow]")
+def fetch_llm_models() -> list[Choice]:
+    console.print("[yellow]Fetching LLM models...[/yellow]")
     try:
-        base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
-        resp = requests.get(f"{base_url}/api/v1/models", timeout=10)
+        base_url = os.environ.get("LLM_API_BASE", "https://openrouter.ai/api/v1").rstrip("/")
+        resp = requests.get(f"{base_url}/models", timeout=10)
         resp.raise_for_status()
         models = resp.json().get("data", [])
         return [Choice(value=m["id"], name=f"{m['id']} ({m.get('name', 'N/A')})") for m in models]
     except Exception as e:
-        console.print(f"[red]Error fetching OpenRouter models: {e}[/red]")
+        console.print(f"[red]Error fetching LLM models: {e}[/red]")
         return []
 
 
@@ -40,15 +40,15 @@ def fetch_openrouter_models() -> list[Choice]:
 # ---------------------------------------------------------------------------
 
 def check_embed_health(model: str) -> bool:
-    """Check OpenRouter embedding endpoint (always used regardless of chat provider)."""
-    console.print(f"🩺 Checking [bold cyan]Embed Model[/bold cyan] (openrouter/{model})...", end=" ")
+    """Check LLM embedding endpoint."""
+    console.print(f"🩺 Checking [bold cyan]Embed Model[/bold cyan] ({model})...", end=" ")
     try:
-        api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        api_key = os.environ.get("LLM_API_KEY", "")
         if not api_key:
-            console.print("[red]FAILED (Missing OPENROUTER_API_KEY)[/red]")
+            console.print("[red]FAILED (Missing LLM_API_KEY)[/red]")
             return False
-        base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
-        url = f"{base_url}/api/v1/embeddings"
+        base_url = os.environ.get("LLM_API_BASE", "https://openrouter.ai/api/v1").rstrip("/")
+        url = f"{base_url}/embeddings"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "HTTP-Referer": "http://localhost:8000",
@@ -67,14 +67,14 @@ def check_embed_health(model: str) -> bool:
 
 
 def check_llm_health(label: str, model: str) -> bool:
-    console.print(f"🩺 Checking [bold cyan]{label}[/bold cyan] (openrouter/{model})...", end=" ")
+    console.print(f"🩺 Checking [bold cyan]{label}[/bold cyan] ({model})...", end=" ")
     try:
-        api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        api_key = os.environ.get("LLM_API_KEY", "")
         if not api_key:
-            console.print("[red]FAILED (Missing OPENROUTER_API_KEY)[/red]")
+            console.print("[red]FAILED (Missing LLM_API_KEY)[/red]")
             return False
-        base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai")
-        url = f"{base_url}/api/v1/chat/completions"
+        base_url = os.environ.get("LLM_API_BASE", "https://openrouter.ai/api/v1").rstrip("/")
+        url = f"{base_url}/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "HTTP-Referer": "http://localhost:8000",
@@ -106,30 +106,30 @@ def main():
     ))
 
     if env_mode == "production":
-        chat_model   = os.environ.get("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
-        intent_model = os.environ.get("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")
+        chat_model   = os.environ.get("LLM_CHAT_MODEL", "stepfun/step-3.5-flash:free")
+        intent_model = os.environ.get("LLM_INTENT_MODEL", "google/gemini-2.5-flash-lite")
 
     else:
         # ── Interactive (development) ──────────────────────────────────────
         intent_model = None
         while True:
-            p_models = fetch_openrouter_models()
+            p_models = fetch_llm_models()
             if not p_models:
-                console.print("[red]No models fetched — check OPENROUTER_API_KEY.[/red]")
+                console.print("[red]No models fetched — check LLM_API_KEY.[/red]")
                 sys.exit(1)
             chat_model   = inquirer.fuzzy(
                 message="Select Chat Model (RAG):",
                 choices=p_models,
-                default=os.environ.get("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free"),
+                default=os.environ.get("LLM_CHAT_MODEL", "stepfun/step-3.5-flash:free"),
             ).execute()
             intent_model = inquirer.fuzzy(
                 message="Select Intent Model (small/fast):",
                 choices=p_models,
-                default=os.environ.get("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite"),
+                default=os.environ.get("LLM_INTENT_MODEL", "google/gemini-2.5-flash-lite"),
             ).execute()
 
             # Health check
-            embed_model = os.environ.get("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b").strip("'\"")
+            embed_model = os.environ.get("LLM_EMBED_MODEL", "qwen/qwen3-embedding-8b").strip("'\"")
             chat_ok   = check_llm_health("Chat Model", chat_model)
             intent_ok = check_llm_health("Intent Model", intent_model)
             embed_ok  = check_embed_health(embed_model)
@@ -152,20 +152,23 @@ def main():
 
         # Save to .env and update os.environ so the spawned worker inherits the new values
         if inquirer.confirm(message="Save selection to .env?", default=True).execute():
-            set_key(ENV_PATH, "OPENROUTER_CHAT_MODEL", chat_model)
-            os.environ["OPENROUTER_CHAT_MODEL"] = chat_model
-            set_key(ENV_PATH, "OPENROUTER_INTENT_MODEL", intent_model)
-            os.environ["OPENROUTER_INTENT_MODEL"] = intent_model
+            set_key(ENV_PATH, "LLM_CHAT_MODEL", chat_model)
+            os.environ["LLM_CHAT_MODEL"] = chat_model
+            set_key(ENV_PATH, "LLM_INTENT_MODEL", intent_model)
+            os.environ["LLM_INTENT_MODEL"] = intent_model
 
     # ── Summary ────────────────────────────────────────────────────────────
-    embed_model = os.environ.get("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b").strip("'\"")
+    embed_model  = os.environ.get("LLM_EMBED_MODEL", "qwen/qwen3-embedding-8b").strip("'\"")
+    from urllib.parse import urlparse
+    _base        = os.environ.get("LLM_API_BASE", "https://openrouter.ai/api/v1")
+    provider_tag = urlparse(_base).netloc or _base
     table = Table(title="[bold green]Active Configuration[/bold green]", show_header=True, header_style="bold green")
     table.add_column("Key",   style="dim")
     table.add_column("Value", style="bold white")
-    table.add_row("Provider",     "OPENROUTER")
+    table.add_row("Provider",     provider_tag)
     table.add_row("Chat Model",   chat_model)
     table.add_row("Intent Model", intent_model or f"{chat_model} (shared)")
-    table.add_row("Embed Model",  f"{embed_model} [dim](openrouter)[/dim]")
+    table.add_row("Embed Model",  embed_model)
     console.print(table)
 
     # ── Start Server ───────────────────────────────────────────────────────

@@ -21,11 +21,12 @@ type Config struct {
 	OpenClaw    OpenClawConfig
 	Make        MakeConfig
 	Translation TranslationConfig
-	OpenRouter  OpenRouterConfig
+	LLM         LLMConfig
 }
 
-type OpenRouterConfig struct {
+type LLMConfig struct {
 	APIKey     string
+	APIBase    string
 	EmbedModel string
 }
 
@@ -224,9 +225,10 @@ func Load() error {
 			APIKey:  getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
 			Enabled: getEnvAsBool("TRANSLATION_ENABLED", true),
 		},
-		OpenRouter: OpenRouterConfig{
-			APIKey:     getEnv("OPENROUTER_API_KEY", ""),
-			EmbedModel: getEnv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b"),
+		LLM: LLMConfig{
+			APIKey:     getEnv("LLM_API_KEY", ""),
+			APIBase:    getEnv("LLM_API_BASE", "https://openrouter.ai/api/v1"),
+			EmbedModel: getEnv("LLM_EMBED_MODEL", "qwen/qwen3-embedding-8b"),
 		},
 	}
 

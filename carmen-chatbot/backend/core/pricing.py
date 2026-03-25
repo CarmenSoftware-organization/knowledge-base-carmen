@@ -96,13 +96,13 @@ async def sync_pricing_from_openrouter() -> int:
 
     Returns จำนวน model ที่ sync สำเร็จ
     """
-    if not settings.OPENROUTER_API_KEY:
-        logger.warning("⚠️ Cannot sync pricing: OPENROUTER_API_KEY not set")
+    if not settings.LLM_API_KEY:
+        logger.warning("⚠️ Cannot sync pricing: LLM_API_KEY not set")
         return 0
     try:
         resp = requests.get(
-            f"{settings.OPENROUTER_API_BASE}/models",
-            headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}"},
+            f"{settings.LLM_API_BASE}/models",
+            headers={"Authorization": f"Bearer {settings.LLM_API_KEY}"},
             timeout=15,
         )
         resp.raise_for_status()

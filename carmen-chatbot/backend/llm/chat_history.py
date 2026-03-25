@@ -110,7 +110,7 @@ async def _save_to_db_direct(data: dict) -> bool:
     intent_output_tokens = data.get("intent_output_tokens") or 0
     rewrite_input_tokens = data.get("rewrite_input_tokens") or 0
     rewrite_output_tokens = data.get("rewrite_output_tokens") or 0
-    embed_model = data.get("embed_model") or settings.OPENROUTER_EMBED_MODEL
+    embed_model = data.get("embed_model") or settings.LLM_EMBED_MODEL
     intent_model = data.get("intent_model") or settings.active_intent_model
     avg_similarity_score = data.get("avg_similarity_score")  # None = no retrieval
     answer_length = data.get("answer_length") or 0

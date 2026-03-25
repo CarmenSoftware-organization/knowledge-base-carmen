@@ -41,11 +41,11 @@ class RetrievalService:
 
     def initialize_brain(self):
         try:
-            logger.info(f"🧠 Initializing AI Brain (OpenRouter) using {settings.OPENROUTER_EMBED_MODEL}")
+            logger.info(f"🧠 Initializing AI Brain using {settings.LLM_EMBED_MODEL}")
             self.embeddings = OpenAIEmbeddings(
-                model=settings.OPENROUTER_EMBED_MODEL,
-                openai_api_key=settings.OPENROUTER_API_KEY,
-                openai_api_base=settings.OPENROUTER_API_BASE,
+                model=settings.LLM_EMBED_MODEL,
+                openai_api_key=settings.LLM_API_KEY,
+                openai_api_base=settings.LLM_API_BASE,
             )
         except Exception as e:
             logger.error(f"❌ Error Initializing AI Brain: {e}")
@@ -56,15 +56,15 @@ class RetrievalService:
         Returns (vector, prompt_tokens).
         """
         try:
-            url = f"{settings.OPENROUTER_API_BASE}/embeddings"
+            url = f"{settings.LLM_API_BASE}/embeddings"
             headers = {
-                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {settings.LLM_API_KEY}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": "https://github.com/new-carmen",
                 "X-Title": "Carmen Chatbot"
             }
             data = {
-                "model": settings.OPENROUTER_EMBED_MODEL,
+                "model": settings.LLM_EMBED_MODEL,
                 "input": [query]
             }
 
