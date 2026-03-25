@@ -14,8 +14,8 @@ from ..core.config import settings
 logger = logging.getLogger(__name__)
 
 # Path to intents configuration
-INTENTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "intents.yaml"))
-CACHE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "intents_cache.npz"))
+INTENTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config", "intents.yaml"))
+CACHE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config", "intents_cache.npz"))
 
 # Load tuning parameters from core/tuning.yaml (via settings.TUNING)
 # Edit tuning.yaml to adjust thresholds — no code changes needed.

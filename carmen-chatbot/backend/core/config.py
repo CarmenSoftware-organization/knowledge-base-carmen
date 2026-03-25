@@ -74,13 +74,13 @@ class Settings:
             self.WIKI_DIR: Path = PROJECT_ROOT / "carmen_cloud"
 
         # --- Dynamic Configs ---
-        self.PATH_RULES = self._load_config_file(BASE_DIR / "core" / "path_rules.yaml") or \
-                          self._load_config_file(BASE_DIR / "core" / "path_rules.json") or []
-        
-        self.PROMPTS = self._load_config_file(BASE_DIR / "core" / "prompts.yaml") or \
-                       self._load_config_file(BASE_DIR / "core" / "prompts.json") or {}
+        self.PATH_RULES = self._load_config_file(BASE_DIR / "config" / "path_rules.yaml") or \
+                          self._load_config_file(BASE_DIR / "config" / "path_rules.json") or []
 
-        self.TUNING = self._load_config_file(BASE_DIR / "core" / "tuning.yaml") or {}
+        self.PROMPTS = self._load_config_file(BASE_DIR / "config" / "prompts.yaml") or \
+                       self._load_config_file(BASE_DIR / "config" / "prompts.json") or {}
+
+        self.TUNING = self._load_config_file(BASE_DIR / "config" / "tuning.yaml") or {}
 
         # --- Vector Settings ---
         self.VECTOR_DIMENSION: int = int(os.getenv("VECTOR_DIMENSION", "1536"))

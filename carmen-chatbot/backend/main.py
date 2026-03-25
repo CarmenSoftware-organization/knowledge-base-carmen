@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from .core.rate_limit import limiter
 
 from .core.config import settings
-from .core.pricing import sync_pricing_from_openrouter
+from .llm.pricing import sync_pricing_from_openrouter
 from .core.database import AsyncSessionLocal
 from .api import chat_routes as chat
 from .llm.intent_router import intent_router

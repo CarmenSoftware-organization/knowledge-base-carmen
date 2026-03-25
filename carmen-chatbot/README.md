@@ -20,17 +20,25 @@ carmen-chatbot/
 │   ├── main.py                 # Entry point — FastAPI app
 │   ├── api/
 │   │   └── chat_routes.py      # Chat API endpoints (/api/chat)
-│   ├── core/
-│   │   ├── config.py           # Environment & settings
-│   │   ├── database.py         # SQLAlchemy engine (PostgreSQL)
-│   │   ├── path_rules.yaml     # RAG path boosting rules
+│   ├── config/                 # All YAML configuration files
+│   │   ├── tuning.yaml         # Tuning parameters (thresholds, TOP_K, RRF_K…)
 │   │   ├── prompts.yaml        # Externalized LLM prompts
+│   │   ├── intents.yaml        # Intent examples & canned responses
+│   │   └── path_rules.yaml     # RAG path boosting rules
+│   ├── core/                   # Infrastructure & cross-cutting concerns
+│   │   ├── config.py           # Environment & settings loader
+│   │   ├── database.py         # SQLAlchemy engine (PostgreSQL)
 │   │   └── schemas.py          # Pydantic request/response models
-│   └── llm/                    # LLM-related services & RAG components
-│       ├── chat_history.py     # Memory cache & chat management
+│   └── llm/                    # LLM pipeline & RAG components
 │       ├── chat_service.py     # Main AI chat orchestration logic
-│       ├── prompt.py           # Prompt loader (loads from yaml/json)
-│       └── retrieval.py        # RAG search (pgvector embeddings)
+│       ├── chat_history.py     # Memory cache & chat management
+│       ├── retrieval.py        # RAG search (pgvector embeddings)
+│       ├── intent_router.py    # Intent detection pipeline
+│       ├── pricing.py          # OpenRouter pricing sync & cost calc
+│       └── prompt.py           # Prompt loader
+├── scripts/                    # Diagnostic & admin scripts (run manually)
+├── tests/                      # pytest integration tests
+├── migrations/                 # Database schema migrations
 ├── images/                     # Local static images served by backend
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Example environment variables
@@ -112,8 +120,8 @@ Key variables in `.env`:
 1.  **Intent Detection:** Regex → vector similarity → LLM fallback to detect greetings, out-of-scope, and tech support queries.
 2.  **Query Rewriting:** Converts follow-up questions (e.g., "how to fix it?") into standalone search queries using conversation context.
 3.  **Hybrid Search:** Vector search (pgvector cosine) + PostgreSQL full-text search, fused with RRF (Reciprocal Rank Fusion).
-4.  **Path Boosting:** Prioritizes results based on folder paths defined in `core/path_rules.yaml`.
-5.  **Externalized Prompts:** System instructions are managed in `core/prompts.yaml` for easy updates without code changes.
+4.  **Path Boosting:** Prioritizes results based on folder paths defined in `config/path_rules.yaml`.
+5.  **Externalized Prompts:** System instructions are managed in `config/prompts.yaml` for easy updates without code changes.
 
 ## 📸 Image Support
 

@@ -88,7 +88,7 @@ async def _save_to_db_direct(data: dict) -> bool:
     """Save Q&A directly to public.chat_history. Returns True on success."""
     from sqlalchemy import text
     from .retrieval import retrieval_service
-    from ..core import pricing
+    from . import pricing
 
     bu = data.get("bu", "carmen")
     username = hash_user_id(data.get("username", "anonymous"), settings.PRIVACY_HMAC_SECRET)

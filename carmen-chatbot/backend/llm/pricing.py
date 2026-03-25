@@ -4,8 +4,8 @@ import requests
 from decimal import Decimal
 from sqlalchemy import text
 
-from .database import AsyncSessionLocal
-from .config import settings
+from ..core.database import AsyncSessionLocal
+from ..core.config import settings
 
 logger = logging.getLogger(__name__)
 
