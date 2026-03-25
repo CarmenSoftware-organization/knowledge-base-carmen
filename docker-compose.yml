@@ -8,7 +8,9 @@
 #   docker compose exec backend ./server migrate migrations/0001_init_documents.sql
 #   # …then 0002, 0003, … in order (see backend/migrations/)
 #
-# Health (UptimeRobot): GET http://<host>:8080/health
+# Health: GET http://<host>:8080/health (Go), http://<host>:8000/api/health (Python chatbot)
+#
+# Stack: db → chatbot (FastAPI) → backend (Go, proxies /api/chat* to chatbot) → frontend
 
 services:
   db:
@@ -27,6 +29,49 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  chatbot:
+    build:
+      context: ./carmen-chatbot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${CHATBOT_PORT:-8000}:8000"
+    environment:
+      ENVIRONMENT: production
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: ${POSTGRES_DB:-carmen_db}
+      DB_SSLMODE: disable
+      LLM_API_KEY: ${OPENROUTER_API_KEY:-}
+      LLM_API_BASE: ${LLM_API_BASE:-https://openrouter.ai/api/v1}
+      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-stepfun/step-3.5-flash:free}
+      LLM_INTENT_MODEL: ${LLM_INTENT_MODEL:-google/gemini-2.5-flash-lite}
+      LLM_EMBED_MODEL: ${OPENROUTER_EMBED_MODEL:-qwen/qwen3-embedding-8b}
+      WIKI_CONTENT_PATH: ${WIKI_CONTENT_PATH:-/repo/carmen_cloud}
+      GO_BACKEND_URL: http://backend:8080
+      PRIVACY_HMAC_SECRET: ${PRIVACY_HMAC_SECRET:-carmen-docker-dev-privacy-secret-min-32-chars-required}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      VECTOR_DIMENSION: ${VECTOR_DIMENSION:-1536}
+    volumes:
+      - .:/repo
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=8).read()",
+        ]
+      interval: 25s
+      timeout: 12s
+      retries: 6
+      start_period: 90s
 
   backend:
     build:
@@ -58,11 +103,15 @@ services:
       OPENROUTER_EMBED_MODEL: ${OPENROUTER_EMBED_MODEL:-qwen/qwen3-embedding-8b}
       GOOGLE_TRANSLATE_API_KEY: ${GOOGLE_TRANSLATE_API_KEY:-}
       TRANSLATION_ENABLED: ${TRANSLATION_ENABLED:-false}
+      PYTHON_CHATBOT_URL: http://chatbot:8000
+      PRIVACY_HMAC_SECRET: ${PRIVACY_HMAC_SECRET:-carmen-docker-dev-privacy-secret-min-32-chars-required}
     volumes:
       # Repo mount: wiki markdown + carmen_cloud + .git for sync (needs write for git pull)
       - .:/repo
     depends_on:
       db:
+        condition: service_healthy
+      chatbot:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
