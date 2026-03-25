@@ -61,6 +61,8 @@ def hash_user_id(user_id: str, secret: str = "") -> str:
     """
     if not user_id or user_id.lower() in ("anonymous", ""):
         return "anonymous"
-    key = (secret or "carmen-privacy-default").encode()
+    if not secret:
+        raise ValueError("HMAC secret must not be empty — set PRIVACY_HMAC_SECRET in .env")
+    key = secret.encode()
     digest = hmac.new(key, user_id.encode("utf-8"), hashlib.sha256).hexdigest()
     return "u:" + digest[:16]

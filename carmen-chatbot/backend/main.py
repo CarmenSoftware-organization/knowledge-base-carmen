@@ -18,9 +18,11 @@ from .core.rate_limit import limiter
 
 from .core.config import settings
 from .core.pricing import sync_pricing_from_openrouter
+from .core.database import AsyncSessionLocal
 from .api import chat_routes as chat
 from .llm.intent_router import intent_router
 from urllib.parse import urlparse
+from sqlalchemy import text
 
 
 def _origin_allowed(source: str, allowed_origins: list[str]) -> bool:
@@ -159,7 +161,12 @@ app.include_router(chat.router)
 @app.get("/api/health")
 @limiter.limit("20/minute")
 async def health_check(request: Request):
-    return {"status": "ok"}
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "ok"}
+    except Exception as e:
+        return JSONResponse(status_code=503, content={"status": "error", "db": str(e)})
 
 # Static Files
 if not settings.IMAGES_DIR.exists(): os.makedirs(settings.IMAGES_DIR)

@@ -79,10 +79,9 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     // Sanitize HTML to prevent XSS from LLM prompt injection
     if (typeof window !== "undefined") {
       return DOMPurify.sanitize(cleaned, {
-        USE_PROFILES: { html: true }, // Use standard HTML profile
-        ADD_TAGS: ["iframe"],
-        ADD_ATTR: ["data-lightbox", "target", "rel", "allow", "allowfullscreen", "frameborder"],
-        ALLOWED_URI_REGEXP: /^(?:(?:https?|data):|\/|images\/)/i,
+        USE_PROFILES: { html: true },
+        ADD_ATTR: ["data-lightbox", "target", "rel"],
+        ALLOWED_URI_REGEXP: /^(?:https?:|\/|images\/)/i,
       });
     }
     return cleaned;

@@ -155,8 +155,13 @@ class IntentRouter:
                 "model": settings.LLM_EMBED_MODEL,
                 "input": texts
             }
-            resp = requests.post(url, headers=headers, json=payload, timeout=60)
-            resp.raise_for_status()
+            for attempt in range(3):
+                resp = requests.post(url, headers=headers, json=payload, timeout=60)
+                if resp.status_code == 429 and attempt < 2:
+                    time.sleep(2 ** attempt)
+                    continue
+                resp.raise_for_status()
+                break
             res_json = resp.json()
 
             embed_tokens = res_json.get("usage", {}).get("prompt_tokens", 0)

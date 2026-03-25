@@ -53,9 +53,15 @@ class Settings:
 
         # --- Privacy ---
         # HMAC secret used to hash user_id before storing/logging.
-        # Set a strong random value in .env — defaults keep the system
-        # functional but should be overridden in production.
-        self.PRIVACY_HMAC_SECRET: str = os.getenv("PRIVACY_HMAC_SECRET", "carmen-privacy-default")
+        # Must be set to a random value of at least 32 characters in .env.
+        # Generate one with: openssl rand -hex 32
+        _hmac_secret = os.getenv("PRIVACY_HMAC_SECRET", "")
+        if len(_hmac_secret) < 32:
+            raise ValueError(
+                "PRIVACY_HMAC_SECRET must be set in .env to a random string of ≥32 characters. "
+                "Generate one with: openssl rand -hex 32"
+            )
+        self.PRIVACY_HMAC_SECRET: str = _hmac_secret
 
         # Read WIKI_DIR from env, fallback to PROJECT_ROOT/carmen_cloud
         wiki_path = os.getenv("WIKI_CONTENT_PATH", "")

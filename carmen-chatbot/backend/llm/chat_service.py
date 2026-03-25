@@ -118,54 +118,6 @@ class LLMService(LLMClient):
         print(f"💬 AI Chat Model Initialization Complete using {self.default_model}")
 
     # ------------------------------------------------------------------
-    # Shared pre-LLM pipeline: intent → history → rewrite → retrieval
-    # Returns None on early exit (caller should yield/return already done)
-    # ------------------------------------------------------------------
-    async def _pre_llm(
-        self, message: str, room_id: str, history: list[dict],
-        db_schema: str, lang: str,
-    ) -> dict | None:
-        """Run steps common to both stream and invoke paths.
-
-        Returns a context dict on success, or None if the caller should stop
-        (e.g. client disconnected — only relevant for streaming; invoke ignores).
-        """
-        l = get_locale(lang)
-        history_count = len(history) if history else 0
-
-        have_history = chat_history.has_history(room_id)
-        intent_type, quick_reply, intent_tokens, intent_embed_tokens = await intent_router.detect_intent(
-            message, lang, have_history=have_history
-        )
-        log_intent(intent_type, settings.active_intent_model, intent_tokens)
-
-        if history:
-            chat_history.restore_history(room_id, history)
-        history_text = chat_history.get_history_text(room_id)
-
-        # Query rewriting for follow-up questions
-        search_query, was_rewritten, rewrite_in, rewrite_out = message, False, 0, 0
-        if chat_history.has_history(room_id):
-            search_query, rewrite_in, rewrite_out = await self._rewrite_query(message, history_text)
-            was_rewritten = search_query != message
-            logger.info(f"🔄 Query Rewrite: \"{message}\" → \"{search_query}\"")
-
-        passed_docs, source_debug, retrieval_embed_tokens = await retrieval_service.search(search_query, db_schema)
-        log_search(search_query, passed_docs)
-
-        return {
-            "l": l, "history_count": history_count,
-            "intent_type": intent_type, "quick_reply": quick_reply,
-            "intent_tokens": intent_tokens, "intent_embed_tokens": intent_embed_tokens,
-            "history_text": history_text,
-            "search_query": search_query, "was_rewritten": was_rewritten,
-            "rewrite_in": rewrite_in, "rewrite_out": rewrite_out,
-            "passed_docs": passed_docs, "source_debug": source_debug,
-            "embed_tokens": intent_embed_tokens + retrieval_embed_tokens,
-            "retrieved_chunks": len(passed_docs),
-        }
-
-    # ------------------------------------------------------------------
     # Streaming chat
     # ------------------------------------------------------------------
     async def stream_chat(
@@ -307,7 +259,8 @@ class LLMService(LLMClient):
 
                 try:
                     llm = self._create_llm(streaming=True, model_name=current_model)
-                    async for chunk in llm.astream(messages):
+                    async with asyncio.timeout(90):
+                      async for chunk in llm.astream(messages):
                         if request and await request.is_disconnected():
                             logger.warning("🛑 Client disconnected during streaming.")
                             partial_duration = time.time() - start_time
@@ -586,17 +539,8 @@ class LLMService(LLMClient):
         log_performance(total_tokens_map, 0, time.time() - start_time)
         return {"reply": bot_ans, "sources": source_debug, "room_id": room_id, "message_id": log_id}
 
-    # ------------------------------------------------------------------
-    # Delegation helpers (thin wrappers kept for API compatibility)
-    # ------------------------------------------------------------------
     def clear_history(self, room_id: str):
         chat_history.clear_history(room_id)
-
-    def save_chat_logs(self, data: dict):
-        return chat_history.save_chat_logs(data)
-
-    def get_chat_history_text(self, room_id: str) -> str:
-        return chat_history.get_history_text(room_id)
 
 
 # Singleton instance

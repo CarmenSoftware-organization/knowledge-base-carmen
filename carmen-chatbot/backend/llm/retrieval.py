@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import asyncio
+import time
 import requests
 import numpy as np
 from sqlalchemy import text
@@ -70,9 +71,13 @@ class RetrievalService:
             }
 
             def call_api():
-                resp = requests.post(url, headers=headers, json=data, timeout=30)
-                resp.raise_for_status()
-                return resp.json()
+                for attempt in range(3):
+                    resp = requests.post(url, headers=headers, json=data, timeout=30)
+                    if resp.status_code == 429 and attempt < 2:
+                        time.sleep(2 ** attempt)
+                        continue
+                    resp.raise_for_status()
+                    return resp.json()
 
             res_json = await asyncio.to_thread(call_api)
 
