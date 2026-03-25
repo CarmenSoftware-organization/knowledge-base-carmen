@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net/url"
 	"os"
 	"sync"
 
@@ -93,6 +94,10 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	pathParam := c.Params("*")
 	if pathParam == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "path is required"})
+	}
+	// Browsers send UTF-8 path segments percent-encoded; match on-disk filenames (e.g. Thai names).
+	if dec, err := url.PathUnescape(pathParam); err == nil {
+		pathParam = dec
 	}
 	bu := middleware.GetBU(c)
 	locale := services.NormalizeLocale(c.Query("locale"))

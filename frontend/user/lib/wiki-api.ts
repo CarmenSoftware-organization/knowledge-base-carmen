@@ -281,7 +281,15 @@ export async function askChat(
     }),
   });
 
-  const data = (await res.json()) as ChatAskResponse;
+  const raw = await res.text();
+  let data: ChatAskResponse;
+  try {
+    data = JSON.parse(raw) as ChatAskResponse;
+  } catch {
+    throw new Error(
+      `Chat API returned non-JSON (HTTP ${res.status}). Check NEXT_PUBLIC_API_BASE (${API_BASE}) and that the Go backend is running. Body starts with: ${raw.slice(0, 120)}`
+    );
+  }
   if (!res.ok) {
     throw new Error(data.error || "Failed to get answer");
   }
