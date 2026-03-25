@@ -2,8 +2,10 @@ import logging
 import os
 import re
 import asyncio
+import time
+import requests
+import numpy as np
 from sqlalchemy import text
-from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
@@ -12,76 +14,89 @@ from ..core.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
-class RetrievalService:
-    TOP_K = 4
-    MAX_DISTANCE = 0.75
-    PATH_BOOST = 0.08
-    FETCH_K = 20  
 
+def _sql_like_to_regex(pattern: str) -> str:
+    """Convert SQL LIKE pattern to a file-path-safe regex.
+
+    Rules:
+    - % → .* (any sequence of characters)
+    - _ is treated as a literal underscore (NOT a single-char wildcard),
+      because file paths commonly contain underscores in names like user_guide.md.
+    - All other regex special characters are escaped.
+    """
+    # Split on % first, escape each part, then join with .*
+    # (re.escape no longer escapes % in Python 3.7+, so can't rely on \% replacement)
+    parts = pattern.split('%')
+    return '.*'.join(re.escape(part) for part in parts)
+
+
+class RetrievalService:
     def __init__(self):
+        # Load tuning parameters from core/tuning.yaml — edit that file to adjust.
+        _rt = settings.TUNING.get("retrieval", {})
+        self.TOP_K          = int(  _rt.get("top_k",          4))
+        self.MAX_DISTANCE   = float(_rt.get("max_distance",   0.45))
+        self.PATH_BOOST_RRF = float(_rt.get("path_boost_rrf", 0.02))
+        self.FETCH_K        = int(  _rt.get("fetch_k",        20))
+        self.RRF_K          = int(  _rt.get("rrf_k",          60))
+
         self.embeddings = None
         self.initialize_brain()
 
     def initialize_brain(self):
         try:
-            provider = settings.ACTIVE_LLM_PROVIDER.lower()
-            if provider == "openrouter":
-                logger.info(f"🧠 Initializing AI Brain (OpenRouter) using {settings.OPENROUTER_EMBED_MODEL}")
-                self.embeddings = OpenAIEmbeddings(
-                    model=settings.OPENROUTER_EMBED_MODEL,
-                    openai_api_key=settings.OPENROUTER_API_KEY,
-                    openai_api_base="https://openrouter.ai/api/v1",
-                )
-            else:
-                logger.info(f"🧠 Initializing AI Brain (Ollama) using {settings.OLLAMA_EMBED_MODEL}")
-                self.embeddings = OllamaEmbeddings(
-                    model=settings.OLLAMA_EMBED_MODEL,
-                    base_url=settings.OLLAMA_URL,
-                    client_kwargs={"timeout": 60.0}
-                )
+            logger.info(f"🧠 Initializing AI Brain using {settings.LLM_EMBED_MODEL}")
+            self.embeddings = OpenAIEmbeddings(
+                model=settings.LLM_EMBED_MODEL,
+                openai_api_key=settings.LLM_API_KEY,
+                openai_api_base=settings.LLM_API_BASE,
+            )
         except Exception as e:
             logger.error(f"❌ Error Initializing AI Brain: {e}")
 
-    async def get_embedding(self, query: str) -> list[float]:
-        """Generate an embedding via raw OpenRouter API and truncate/normalize it."""
+    async def get_embedding(self, query: str) -> tuple[list[float], int]:
+        """Generate an embedding via OpenRouter API and truncate/normalize it.
+
+        Returns (vector, prompt_tokens).
+        """
         try:
-            url = "https://openrouter.ai/api/v1/embeddings"
+            url = f"{settings.LLM_API_BASE}/embeddings"
             headers = {
-                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {settings.LLM_API_KEY}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": "https://github.com/new-carmen",
                 "X-Title": "Carmen Chatbot"
             }
             data = {
-                "model": settings.OPENROUTER_EMBED_MODEL,
+                "model": settings.LLM_EMBED_MODEL,
                 "input": [query]
             }
-            
-            # Use requests in a thread for sync-to-async compatibility
-            import requests
-            import numpy as np
-            
+
             def call_api():
-                resp = requests.post(url, headers=headers, json=data, timeout=30)
-                resp.raise_for_status()
-                return resp.json()
-                
+                for attempt in range(3):
+                    resp = requests.post(url, headers=headers, json=data, timeout=30)
+                    if resp.status_code == 429 and attempt < 2:
+                        time.sleep(2 ** attempt)
+                        continue
+                    resp.raise_for_status()
+                    return resp.json()
+
             res_json = await asyncio.to_thread(call_api)
-            
+
+            embed_tokens = res_json.get("usage", {}).get("prompt_tokens", 0)
+
             if "data" not in res_json or not res_json["data"]:
                 raise ValueError(f"OpenRouter embedding failed: {res_json}")
-                
+
             vector = res_json["data"][0]["embedding"]
-            
-            # Truncate and Normalize for Matryoshka
+
             dim = settings.VECTOR_DIMENSION
             truncated = vector[:dim]
-            
             norm = np.linalg.norm(truncated)
             if norm > 1e-9:
                 truncated = (np.array(truncated) / norm).tolist()
-                
-            return truncated
+
+            return truncated, embed_tokens
         except Exception as e:
             logger.error(f"❌ Raw Embedding Error: {e}")
             raise
@@ -94,181 +109,228 @@ class RetrievalService:
         q_lower = question.lower()
         all_patterns = []
         matched_keywords = []
-        
-        # settings.PATH_RULES is loaded from YAML/JSON
+
         for rule in settings.PATH_RULES:
             keywords = rule.get("keywords", [])
             patterns = rule.get("patterns", [])
-            
+
             for kw in keywords:
                 if kw.lower() in q_lower:
                     matched_keywords.append(kw)
                     for p in patterns:
                         if p not in all_patterns:
                             all_patterns.append(p)
-                    break # Move to next rule once one keyword matches
+                    break  # Move to next rule once one keyword matches
 
-        # If too many rules match, it might be a generic query, skip boosting
+        # If too many rules match, it's likely a generic query — skip boosting
         if len(matched_keywords) >= 5:
             return []
-            
+
         return all_patterns
 
-    # Stricter pattern: allow only lowercase alphanumeric and underscores, 
-    # and limit length to prevent DoS/overflow (e.g., 63 chars for PG identifiers).
+    # Strict schema name validation: lowercase alphanumeric + underscores, 2-63 chars
     SAFE_SCHEMA_PATTERN = re.compile(r'^[a-z][a-z0-9_]{1,62}$')
 
-    async def search(self, query: str, db_schema: str = "carmen"):
+    async def search(self, query: str, db_schema: str = "carmen") -> tuple[list, list, int, float | None]:
+        """Hybrid search. Returns (docs, source_debug, embed_tokens, avg_similarity_score)."""
         passed_docs = []
         source_debug = []
 
-        # Validate schema name strictly
         if not db_schema or not self.SAFE_SCHEMA_PATTERN.match(db_schema):
             logger.warning(f"🛡️ Security: Invalid or suspicious schema name blocked: '{db_schema}'")
-            return passed_docs, source_debug
-        
+            return passed_docs, source_debug, 0, None
+
         if not self.embeddings:
             logger.error("Embeddings not initialized")
-            return passed_docs, source_debug
+            return passed_docs, source_debug, 0, None
 
         try:
-            # Generate and truncate embedding centralizing logic
-            query_embedding = await self.get_embedding(query)
+            query_embedding, embed_tokens = await self.get_embedding(query)
             emb_str = self.format_pgvector(query_embedding)
-
             boost_patterns = self.get_path_boost_patterns(query)
-            
-            sql_query = text(f"""
-                SELECT 
-                    d.path, 
-                    d.title, 
-                    dc.content, 
-                    (dc.embedding <=> CAST(:emb AS vector)) as distance
-                FROM {db_schema}.document_chunks dc
-                JOIN {db_schema}.documents d ON dc.document_id = d.id
-                WHERE (dc.embedding <=> CAST(:emb AS vector)) < :max_dist
-                  AND d.path NOT LIKE '%index.md'
-                ORDER BY (dc.embedding <=> CAST(:emb AS vector))
-                LIMIT :fetch_limit
-            """)
-
-            params = {
-                "emb": emb_str,
-                "max_dist": self.MAX_DISTANCE,
-                "fetch_limit": self.FETCH_K
-            }
 
             async with AsyncSessionLocal() as db:
-                result = await db.execute(sql_query, params)
-                rows = result.fetchall()
-                
-                # Re-ranking Logic in Python
-                candidates = []
-                for row in rows:
-                    path = row.path
-                    actual_dist = float(row.distance)
-                    is_boosted = False
-                    
-                    if boost_patterns:
-                        for pattern in boost_patterns:
-                            # Convert SQL LIKE pattern to regex
-                            regex_pattern = pattern.replace("%", ".*").replace("_", ".")
-                            if re.search(regex_pattern, path, re.IGNORECASE):
-                                is_boosted = True
-                                break
-                    
-                    effective_dist = actual_dist - (self.PATH_BOOST if is_boosted else 0)
-                    
-                    if is_boosted:
-                        logger.debug(f"🚀 [Path Boost Applied] -> path: {path} | Original: {actual_dist:.4f} | Boosted: {effective_dist:.4f}")
 
-                    candidates.append({
-                        "path": path,
-                        "title": row.title or os.path.basename(path),
+                # --- 1. Vector Search ---
+                vector_sql = text(f"""
+                    SELECT
+                        d.path,
+                        d.title,
+                        dc.content,
+                        (dc.embedding <=> CAST(:emb AS vector)) AS distance
+                    FROM {db_schema}.document_chunks dc
+                    JOIN {db_schema}.documents d ON dc.document_id = d.id
+                    WHERE (dc.embedding <=> CAST(:emb AS vector)) < :max_dist
+                      AND d.path NOT LIKE '%index.md'
+                    ORDER BY distance
+                    LIMIT :fetch_limit
+                """)
+                vector_rows = (await db.execute(vector_sql, {
+                    "emb": emb_str,
+                    "max_dist": self.MAX_DISTANCE,
+                    "fetch_limit": self.FETCH_K,
+                })).fetchall()
+
+                # --- 2. Keyword Search (PostgreSQL Full-Text Search / BM25-like) ---
+                # Works well for English terms, codes, product names.
+                # Thai-only queries may return fewer hits but won't break anything.
+                keyword_rows = []
+                try:
+                    keyword_sql = text(f"""
+                        SELECT
+                            d.path,
+                            d.title,
+                            dc.content,
+                            ts_rank_cd(
+                                to_tsvector('simple', dc.content),
+                                plainto_tsquery('simple', :query)
+                            ) AS kw_score
+                        FROM {db_schema}.document_chunks dc
+                        JOIN {db_schema}.documents d ON dc.document_id = d.id
+                        WHERE to_tsvector('simple', dc.content) @@ plainto_tsquery('simple', :query)
+                          AND d.path NOT LIKE '%index.md'
+                        ORDER BY kw_score DESC
+                        LIMIT :fetch_limit
+                    """)
+                    keyword_rows = (await db.execute(keyword_sql, {
+                        "query": query,
+                        "fetch_limit": self.FETCH_K,
+                    })).fetchall()
+                    logger.debug(f"🔍 Keyword search: {len(keyword_rows)} hits")
+                except Exception as e:
+                    logger.warning(f"⚠️ Keyword search failed, using vector-only: {e}")
+
+            # --- 3. Reciprocal Rank Fusion (RRF) ---
+            # Merges vector and keyword rankings into a single score.
+            # rrf_score = 1/(k+rank_vector) + 1/(k+rank_keyword)
+            rrf_map: dict[int, dict] = {}  # keyed by content hash
+
+            for rank, row in enumerate(vector_rows, 1):
+                key = hash(row.content)
+                if key not in rrf_map:
+                    rrf_map[key] = {
+                        "path": row.path,
+                        "title": row.title or os.path.basename(row.path),
                         "content": row.content,
-                        "actual_dist": actual_dist,
-                        "effective_dist": effective_dist,
-                        "is_boosted": is_boosted
-                    })
+                        "vector_dist": float(row.distance),
+                        "rrf": 0.0,
+                    }
+                rrf_map[key]["rrf"] += 1.0 / (self.RRF_K + rank)
 
-                # Sort by effective distance
-                candidates.sort(key=lambda x: x["effective_dist"])
+            for rank, row in enumerate(keyword_rows, 1):
+                key = hash(row.content)
+                if key not in rrf_map:
+                    rrf_map[key] = {
+                        "path": row.path,
+                        "title": row.title or os.path.basename(row.path),
+                        "content": row.content,
+                        "vector_dist": 1.0,   # not from vector search
+                        "rrf": 0.0,
+                    }
+                rrf_map[key]["rrf"] += 1.0 / (self.RRF_K + rank)
 
-                unique_contents = set()
-                for item in candidates:
-                    if len(passed_docs) >= self.TOP_K:
-                        break
-                    
-                    # Deduplicate by content
-                    content = item["content"]
-                    if content in unique_contents:
-                        continue
-                    unique_contents.add(content)
+            # --- 4. Path Boost on RRF Score ---
+            candidates = []
+            for item in rrf_map.values():
+                path = item["path"]
+                is_boosted = False
+                if boost_patterns:
+                    for pattern in boost_patterns:
+                        if re.search(_sql_like_to_regex(pattern), path, re.IGNORECASE):
+                            is_boosted = True
+                            break
 
-                    # Fix image paths in content
-                    path = item["path"]
-                    base_dir = os.path.dirname(path).replace("\\", "/")
-                    
-                    if base_dir:
-                        def resolve_src(src):
-                            # 1. Clean up the source path
-                            clean_src = src.lstrip("/")
-                            if clean_src.startswith("./"):
-                                clean_src = clean_src[2:]
-                            
-                            # 2. Preserve absolute URLs or data URIs
-                            if clean_src.startswith("http") or clean_src.startswith("data:"):
-                                return src
-                            
-                            # 3. Handle paths that already have 'images/' prefix
-                            if clean_src.startswith("images/"):
-                                clean_src = clean_src[len("images/"):]
-                            
-                            # 4. Resolve relative path using base_dir
-                            if "/" not in clean_src:
-                                clean_src = f"{base_dir}/{clean_src}"
-                            
-                            # 5. Return a full relative-style path (e.g., /images/ap/image.png)
-                            # Prepending /images/ makes it unmistakable for the LLM
-                            res = clean_src.lstrip("/")
-                            return f"/images/{res}"
+                effective_rrf = item["rrf"] + (self.PATH_BOOST_RRF if is_boosted else 0.0)
+                if is_boosted:
+                    logger.debug(
+                        f"🚀 [Path Boost] {path} | RRF: {item['rrf']:.4f} → {effective_rrf:.4f}"
+                    )
+                candidates.append({**item, "effective_rrf": effective_rrf, "is_boosted": is_boosted})
 
-                        # Fix <img> tags: only replace the src attribute, don't convert to Markdown
-                        # This preserves inline styles like height/width
-                        def fix_img_tag(match):
-                            full_tag = match.group(0)
-                            src_match = re.search(r'src=["\']([^"\']+)["\']', full_tag)
-                            if not src_match:
-                                return full_tag
-                            
-                            new_src = resolve_src(src_match.group(1))
-                            # Use double quotes for the new src
-                            return re.sub(r'src=["\']([^"\']+)["\']', f'src="{new_src}"', full_tag)
+            # Sort descending (higher RRF = better)
+            candidates.sort(key=lambda x: x["effective_rrf"], reverse=True)
 
-                        content = re.sub(r'<img\s+[^>]*src=["\']([^"\']+)["\'][^>]*>', fix_img_tag, content)
+            # --- 5. Deduplicate and build result ---
+            selected_vec_distances: list[float] = []
+            seen_hashes: set[int] = set()
+            for item in candidates:
+                if len(passed_docs) >= self.TOP_K:
+                    break
 
-                        # Fix Markdown images: ![alt](src)
-                        content = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', 
-                            lambda m: f"![{m.group(1)}]({resolve_src(m.group(2))})", content)
+                content_hash = hash(item["content"])
+                if content_hash in seen_hashes:
+                    continue
+                seen_hashes.add(content_hash)
 
-                    score_label = f"{item['actual_dist']:.4f}"
-                    if item["is_boosted"]:
-                        score_label += f" (Boosted → {item['effective_dist']:.4f})"
+                if item["vector_dist"] < 1.0:
+                    selected_vec_distances.append(item["vector_dist"])
 
-                    passed_docs.append(Document(
-                        page_content=content, 
-                        metadata={
-                            "source": path, 
-                            "title": item["title"],
-                            "score": score_label
-                        }
-                    ))
-                    source_debug.append({"source": path, "title": item["title"], "score": score_label})
+                content = item["content"]
+                path = item["path"]
+                base_dir = os.path.dirname(path).replace("\\", "/")
+
+                # Convert Thai plain-text image references to markdown before URL resolution
+                # e.g. "(รูป image-91.png)" or "(ตามรูป image-92.png)" → "![](image-91.png)"
+                content = re.sub(
+                    r'\((?:ตามรูป|รูป)\s+([\w][^\s)]+\.(?:png|jpe?g|gif|webp|svg))\)',
+                    r'![](\1)',
+                    content,
+                    flags=re.IGNORECASE
+                )
+
+                if base_dir:
+                    def resolve_src(src):
+                        clean_src = src.lstrip("/")
+                        if clean_src.startswith("./"):
+                            clean_src = clean_src[2:]
+                        if clean_src.startswith("http") or clean_src.startswith("data:"):
+                            return src
+                        if clean_src.startswith("images/"):
+                            clean_src = clean_src[len("images/"):]
+                        if "/" not in clean_src:
+                            clean_src = f"{base_dir}/{clean_src}"
+                        return f"/images/{clean_src.lstrip('/')}"
+
+                    def fix_img_tag(match):
+                        full_tag = match.group(0)
+                        src_match = re.search(r'src=["\']([^"\']+)["\']', full_tag)
+                        if not src_match:
+                            return full_tag
+                        new_src = resolve_src(src_match.group(1))
+                        return re.sub(r'src=["\']([^"\']+)["\']', f'src="{new_src}"', full_tag)
+
+                    content = re.sub(r'<img\s+[^>]*src=["\']([^"\']+)["\'][^>]*>', fix_img_tag, content)
+                    content = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)',
+                        lambda m: f"![{m.group(1)}]({resolve_src(m.group(2))})", content)
+
+                score_label = f"rrf={item['rrf']:.4f}"
+                if item["vector_dist"] < 1.0:
+                    score_label += f" | vec={item['vector_dist']:.4f}"
+                if item["is_boosted"]:
+                    score_label += " (boosted)"
+
+                passed_docs.append(Document(
+                    page_content=content,
+                    metadata={
+                        "source": path,
+                        "title": item["title"],
+                        "score": score_label
+                    }
+                ))
+                source_debug.append({"source": path, "title": item["title"], "score": score_label})
 
         except Exception as e:
             logger.exception(f"Search error: {e}")
-            
-        return passed_docs, source_debug
+            embed_tokens = 0
+
+        avg_sim_score: float | None = None
+        if selected_vec_distances:
+            avg_sim_score = round(
+                1.0 - sum(selected_vec_distances) / len(selected_vec_distances), 4
+            )
+
+        return passed_docs, source_debug, embed_tokens, avg_sim_score
+
 
 # Singleton instance
 retrieval_service = RetrievalService()

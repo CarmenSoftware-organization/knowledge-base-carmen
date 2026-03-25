@@ -21,11 +21,12 @@ type Config struct {
 	OpenClaw    OpenClawConfig
 	Make        MakeConfig
 	Translation TranslationConfig
-	OpenRouter  OpenRouterConfig
+	LLM         LLMConfig
 }
 
-type OpenRouterConfig struct {
+type LLMConfig struct {
 	APIKey     string
+	APIBase    string
 	EmbedModel string
 }
 
@@ -41,6 +42,8 @@ type ServerConfig struct {
 	ChatbotURL   string
 	Environment  string
 	CORSOrigins  string
+	AdminAPIKey  string // ADMIN_API_KEY — required to access /api/chat/history/list
+	PrivacySecret string // PRIVACY_HMAC_SECRET — HMAC key for hashing user_id
 }
 
 type DatabaseConfig struct {
@@ -148,11 +151,13 @@ func Load() error {
 
 	AppConfig = &Config{
 		Server: ServerConfig{
-			Port:         getEnv("SERVER_PORT", "8080"),
-			Host:         getEnv("SERVER_HOST", "localhost"),
-			ChatbotURL:   getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
-			Environment:  getEnv("ENVIRONMENT", "development"),
-			CORSOrigins:  getEnv("CORS_ORIGINS", "*"),
+			Port:          getEnv("SERVER_PORT", "8080"),
+			Host:          getEnv("SERVER_HOST", "localhost"),
+			ChatbotURL:    getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
+			Environment:   getEnv("ENVIRONMENT", "development"),
+			CORSOrigins:   getEnv("CORS_ORIGINS", "*"),
+			AdminAPIKey:   getEnv("ADMIN_API_KEY", ""),
+			PrivacySecret: getEnv("PRIVACY_HMAC_SECRET", "carmen-privacy-default"),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -220,9 +225,10 @@ func Load() error {
 			APIKey:  getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
 			Enabled: getEnvAsBool("TRANSLATION_ENABLED", true),
 		},
-		OpenRouter: OpenRouterConfig{
-			APIKey:     getEnv("OPENROUTER_API_KEY", ""),
-			EmbedModel: getEnv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b"),
+		LLM: LLMConfig{
+			APIKey:     getEnv("LLM_API_KEY", ""),
+			APIBase:    getEnv("LLM_API_BASE", "https://openrouter.ai/api/v1"),
+			EmbedModel: getEnv("LLM_EMBED_MODEL", "qwen/qwen3-embedding-8b"),
 		},
 	}
 

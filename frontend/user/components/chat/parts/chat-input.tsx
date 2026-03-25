@@ -45,7 +45,7 @@ export const ChatInput = React.memo(({
                 )}
             </AnimatePresence>
 
-            <div className={`flex items-center gap-3 px-6 pt-5 pb-6 flex-shrink-0 border-t border-slate-100/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 transition-all duration-300 ${isResizing ? "opacity-10 blur-sm pointer-events-none" : "opacity-100 blur-0"}`}>
+            <div className={`flex items-center gap-3 px-6 pt-5 pb-3 flex-shrink-0 border-t border-slate-100/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/40 transition-all duration-300 ${isResizing ? "opacity-10 blur-sm pointer-events-none" : "opacity-100 blur-0"}`}>
                 {config.showAttach && (
                     <>
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} title={t("tools.attach")} aria-label={t("tools.attach")} />
@@ -117,6 +117,12 @@ export const ChatInput = React.memo(({
                         )}
                     </AnimatePresence>
                 </div>
+            </div>
+
+            <div className={`flex justify-center pb-4 px-7 transition-all duration-300 ${isResizing ? "opacity-10 blur-sm pointer-events-none" : "opacity-100"}`}>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-none select-none text-center">
+                    {t("chat.ai_disclaimer")}
+                </span>
             </div>
         </>
     );

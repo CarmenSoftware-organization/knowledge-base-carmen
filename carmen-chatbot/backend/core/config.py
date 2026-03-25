@@ -19,21 +19,14 @@ class Settings:
     VERSION: str = "1.0.0"
     
     def __init__(self):
-        # --- LLM Providers ---
-        self.OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-        self.ACTIVE_LLM_PROVIDER: str = os.getenv("ACTIVE_LLM_PROVIDER", "openrouter")
-        self.OPENROUTER_CHAT_MODEL: str = os.getenv("OPENROUTER_CHAT_MODEL", "stepfun/step-3.5-flash:free")
-        self.OPENROUTER_INTENT_MODEL: str = os.getenv("OPENROUTER_INTENT_MODEL", "google/gemini-2.5-flash-lite")
+        # --- LLM Provider (OpenAI-compatible) ---
+        self.LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
+        _base = os.getenv("LLM_API_BASE", "https://openrouter.ai/api/v1").rstrip("/")
+        self.LLM_API_BASE: str = _base if _base.endswith("/v1") else _base + "/api/v1"
+        self.LLM_CHAT_MODEL: str = os.getenv("LLM_CHAT_MODEL", "stepfun/step-3.5-flash:free")
+        self.LLM_INTENT_MODEL: str = os.getenv("LLM_INTENT_MODEL", "google/gemini-2.5-flash-lite")
+        self.LLM_EMBED_MODEL: str = os.getenv("LLM_EMBED_MODEL", "qwen/qwen3-embedding-8b")
 
-        self.ZAI_API_KEY: str = os.getenv("ZAI_API_KEY", "")
-        self.ZAI_API_BASE: str = os.getenv("ZAI_API_BASE", "https://api.z.ai/api/coding/paas/v4")
-        self.ZAI_CHAT_MODEL: str = os.getenv("ZAI_CHAT_MODEL", "gpt-4o")
-
-        self.OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
-        self.OLLAMA_EMBED_MODEL: str = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text:latest")
-        self.OLLAMA_CHAT_MODEL: str = os.getenv("OLLAMA_CHAT_MODEL", "gemma3:1b")
-        self.OPENROUTER_EMBED_MODEL: str = os.getenv("OPENROUTER_EMBED_MODEL", "qwen/qwen3-embedding-8b")
-        
         # --- Database Settings ---
         self.DB_HOST: str = os.getenv("DB_HOST")
         self.DB_PORT: str = os.getenv("DB_PORT")
@@ -58,6 +51,18 @@ class Settings:
         # When set, save_chat_logs will POST to /api/chat/record-history
         self.GO_BACKEND_URL: str = os.getenv("GO_BACKEND_URL", "").rstrip("/")
 
+        # --- Privacy ---
+        # HMAC secret used to hash user_id before storing/logging.
+        # Must be set to a random value of at least 32 characters in .env.
+        # Generate one with: openssl rand -hex 32
+        _hmac_secret = os.getenv("PRIVACY_HMAC_SECRET", "")
+        if len(_hmac_secret) < 32:
+            raise ValueError(
+                "PRIVACY_HMAC_SECRET must be set in .env to a random string of ≥32 characters. "
+                "Generate one with: openssl rand -hex 32"
+            )
+        self.PRIVACY_HMAC_SECRET: str = _hmac_secret
+
         # Read WIKI_DIR from env, fallback to PROJECT_ROOT/carmen_cloud
         wiki_path = os.getenv("WIKI_CONTENT_PATH", "")
         if wiki_path:
@@ -69,14 +74,32 @@ class Settings:
             self.WIKI_DIR: Path = PROJECT_ROOT / "carmen_cloud"
 
         # --- Dynamic Configs ---
-        self.PATH_RULES = self._load_config_file(BASE_DIR / "core" / "path_rules.yaml") or \
-                          self._load_config_file(BASE_DIR / "core" / "path_rules.json") or []
-        
-        self.PROMPTS = self._load_config_file(BASE_DIR / "core" / "prompts.yaml") or \
-                       self._load_config_file(BASE_DIR / "core" / "prompts.json") or {}
+        self.PATH_RULES = self._load_config_file(BASE_DIR / "config" / "path_rules.yaml") or \
+                          self._load_config_file(BASE_DIR / "config" / "path_rules.json") or []
+
+        self.PROMPTS = self._load_config_file(BASE_DIR / "config" / "prompts.yaml") or \
+                       self._load_config_file(BASE_DIR / "config" / "prompts.json") or {}
+
+        self.TUNING = self._load_config_file(BASE_DIR / "config" / "tuning.yaml") or {}
 
         # --- Vector Settings ---
         self.VECTOR_DIMENSION: int = int(os.getenv("VECTOR_DIMENSION", "1536"))
+
+        # --- Daily Budget Cap ---
+        # Max chat requests allowed per day across all users (0 = unlimited)
+        self.DAILY_REQUEST_LIMIT: int = int(os.getenv("DAILY_REQUEST_LIMIT", "500"))
+
+        # --- Image Index ---
+        # How often (seconds) to rescan WIKI_DIR for new images (0 = disable periodic refresh)
+        self.IMAGE_INDEX_REFRESH_SECONDS: int = int(os.getenv("IMAGE_INDEX_REFRESH_SECONDS", "300"))
+
+        # --- LLM Reliability ---
+        # Fallback model used when primary model fails before yielding content
+        self.LLM_FALLBACK_MODEL: str = os.getenv("LLM_FALLBACK_MODEL", "")
+        # Max tokens allowed for the full prompt (system + history + context + question).
+        # For RAG customer support: system~700 + history~300 + context~2000 + question~150 ≈ 3,200 typical.
+        # 6,000 gives comfortable headroom without risking model context overflow.
+        self.MAX_PROMPT_TOKENS: int = int(os.getenv("MAX_PROMPT_TOKENS", "6000"))
 
     @property
     def DATABASE_URL(self) -> str:
@@ -109,12 +132,24 @@ class Settings:
             return None
 
     @property
-    def is_openrouter_api_ready(self) -> bool:
-        return bool(self.OPENROUTER_API_KEY)
+    def is_llm_ready(self) -> bool:
+        return bool(self.LLM_API_KEY)
 
     @property
-    def is_zai_api_ready(self) -> bool:
-        return bool(self.ZAI_API_KEY)
+    def active_api_key(self) -> str:
+        return self.LLM_API_KEY
+
+    @property
+    def active_api_base(self) -> str:
+        return self.LLM_API_BASE
+
+    @property
+    def active_chat_model(self) -> str:
+        return self.LLM_CHAT_MODEL
+
+    @property
+    def active_intent_model(self) -> str:
+        return self.LLM_INTENT_MODEL
 
 # Instantiate singleton
 settings = Settings()
@@ -122,5 +157,5 @@ settings = Settings()
 # Ensure necessary directories exist
 settings.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
-if not settings.is_openrouter_api_ready:
-    print("WARNING: OPENROUTER_API_KEY is missing in .env")
+if not settings.is_llm_ready:
+    print("WARNING: LLM_API_KEY is missing in .env")

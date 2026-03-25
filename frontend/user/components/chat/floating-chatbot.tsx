@@ -6,7 +6,7 @@ import { API_BASE } from "@/lib/config";
 import { getOrCreateClientId } from "@/lib/carmen-client-id";
 import { getSelectedBUClient } from "@/lib/wiki-api";
 import { useEffect, useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 interface Props extends Partial<CarmenChatConfig> {
   bu?: string;
@@ -25,6 +25,7 @@ export default function FloatingChatBot({
   suggestedQuestions,
 }: Props) {
   const locale = useLocale();
+  const t = useTranslations("chat");
   const [currentBU, setCurrentBU] = useState(initialBU || getSelectedBUClient());
   const [clientId, setClientId] = useState<string | null>(null);
 
@@ -61,16 +62,17 @@ export default function FloatingChatBot({
     suggestedQuestions,
     proactiveMessages: [
       {
-        pathPattern: "/settings", // match path exactly or partially
+        pathPattern: "/settings",
         delayMs: 60000,
-        message: "สับสนการตั้งค่าระบบหรือเปล่าคะ?",
-        subMessage: "สอบถาม Carmen ได้เลยนะ!",
+        message: t("proactive_settings_message"),
+        subMessage: t("proactive_settings_sub"),
         timeoutMs: 15000,
       },
       {
-        pathPattern: "/", // Catch all / Home page
-        delayMs: 180000, // 3 minutes engagement
-        message: "กำลังค้นหาคู่มือเรื่องอะไรอยู่หรือเปล่าคะ?",
+        pathPattern: "/",
+        delayMs: 180000,
+        message: t("proactive_home_message"),
+        subMessage: t("proactive_home_sub"),
         timeoutMs: 15000,
       }
     ],

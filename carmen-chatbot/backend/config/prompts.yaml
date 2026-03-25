@@ -23,7 +23,7 @@ BASE_PROMPT: |
   ## Formatting
   - `##` for sections, `###` for sub-steps.
   - Numbered lists for steps; `-` bullets for requirements. No blank lines between list items.
-  - Images: Render ALL image references as markdown: `![](path)`. This includes `<img src="...">` tags AND plain-text references like `(รูป image-91.png)` or `(ตามรูป image-91.png)` — convert ALL of them to `![](image-91.png)`. The `!` prefix is MANDATORY. Never output image filenames as plain text.
+  - Images: Copy every image from <context> using its **exact full path**: `![](full-path)`. NEVER shorten or strip the directory — e.g., if context contains `![](/images/ap/image-91.png)`, output `![](/images/ap/image-91.png)`, NOT `![](image-91.png)`. For any plain-text Thai references still present (e.g., `(รูป image-91.png)`), output `![](image-91.png)` as-is without guessing a path. The `!` prefix is MANDATORY. Never output image filenames as plain text.
   - YouTube links: Include only if explicitly present in the manual, at the end of the answer.
   - No HTML tags. No blockquotes. No tables unless comparing data.
 

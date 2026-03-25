@@ -58,7 +58,13 @@
     "delete_room_block": "Cannot delete rooms while processing. Please wait.",
     "clear_history_block": "Cannot clear chat while processing. Please wait.",
     "remaining_queue": "+ {count} more in queue",
-    "stop_generation": "Stop generation"
+    "stop_generation": "Stop generation",
+    "ai_disclaimer": "Carmen AI may make mistakes. Verify important info.",
+    "file_too_large": "File too large. Maximum size is 5MB.",
+    "proactive_settings_message": "Need help with system settings?",
+    "proactive_settings_sub": "Ask Carmen anytime!",
+    "proactive_home_message": "Looking for a guide?",
+    "proactive_home_sub": "Ask Carmen for help!"
   },
   "header": {
     "history": "Chat History",
@@ -92,9 +98,9 @@
     "desc": "Ask anything about the corporate manual or start a new conversation below.",
     "new_chat": "New Chat",
     "default_suggestions": [
-      "How to refresh workbook data?",
-      "Can I import purchase tax invoices from Excel?",
-      "How to upload files to RDPrep?",
+      "The refresh button in workbook doesn't work, what should I do?",
+      "Can I record purchase tax invoices in Excel and then import them?",
+      "Can Carmen upload files to the Revenue Department's RDPrep program?",
       "Can I create a receipt without selecting an invoice?",
       "Can I record a JV with unbalanced debit and credit?"
     ]

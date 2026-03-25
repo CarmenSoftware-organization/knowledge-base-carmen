@@ -39,96 +39,6 @@ func NewChatHandler() *ChatHandler {
 	}
 }
 
-// RecordHistory accepts Q&A from Python chatbot and saves to chat_history (with embedding).
-// Called by carmen-chatbot after stream completes. POST /api/chat/record-history
-func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
-	var req models.RecordHistoryRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
-	}
-	bu := strings.TrimSpace(req.BU)
-	q := strings.TrimSpace(req.Question)
-	a := strings.TrimSpace(req.Answer)
-	if bu == "" || q == "" || a == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bu, question, answer required"})
-	}
-
-	if !config.AppConfig.Chat.HistoryEnabled {
-		return c.JSON(fiber.Map{"ok": true, "skipped": "history disabled"})
-	}
-
-	buID, err := h.historyService.GetBUIDFromSlug(bu)
-	if err != nil || buID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu: " + bu})
-	}
-
-	emb, err := h.embedLLM.Embedding(q)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "embedding failed: " + err.Error()})
-	}
-
-	userID := req.UserID
-	if userID == "" {
-		userID = "anonymous"
-	}
-
-	sources := req.Sources
-	if sources == nil {
-		sources = []models.ChatSource{}
-	}
-
-	if err := h.historyService.Save(buID, userID, q, a, sources, emb); err != nil {
-		log.Printf("[chat] record-history save failed: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return c.JSON(fiber.Map{"ok": true})
-}
-
-// ListHistory returns chat history for verification. GET /api/chat/history/list?bu=carmen&limit=10&offset=0
-func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {
-	bu := middleware.GetBU(c)
-	buID, err := h.historyService.GetBUIDFromSlug(bu)
-	if err != nil || buID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu"})
-	}
-	limit, _ := strconv.Atoi(c.Query("limit", "20"))
-	offset, _ := strconv.Atoi(c.Query("offset", "0"))
-	if limit > 100 {
-		limit = 100
-	}
-	entries, total, err := h.historyService.List(buID, limit, offset)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return c.JSON(fiber.Map{
-		"items":  entries,
-		"total":  total,
-		"limit":  limit,
-		"offset": offset,
-	})
-}
-
-// RouteOnly ใช้เทส OpenClaw question routing โดยไม่ยิง vector DB / LLM
-// POST /api/chat/route-test { "question": "..." }
-func (h *ChatHandler) RouteOnly(c *fiber.Ctx) error {
-	var req models.ChatAskRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
-	}
-	q := strings.TrimSpace(req.Question)
-	if q == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "question is required"})
-	}
-
-	res, err := h.router.RouteQuestion(q)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-	return c.JSON(res)
-}
-
 // Proxy ส่งต่อ request ไปยัง Python Chatbot
 func (h *ChatHandler) Proxy(c *fiber.Ctx) error {
 	chatbotURL := config.AppConfig.Server.ChatbotURL
@@ -200,8 +110,8 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	if chatCfg.HistoryEnabled {
 		if buID, err := h.historyService.GetBUIDFromSlug(bu); err == nil && buID > 0 {
 			if cached, ok := h.historyService.FindSimilar(buID, emb, chatCfg.HistorySimilarityThreshold); ok {
-				userID := c.Get("X-User-ID", "anonymous")
-				h.logService.Log(bu, userID, "ถาม Chat AI (จาก cache)", "wiki", map[string]interface{}{
+				userID := services.HashUserID(c.Get("X-User-ID", "anonymous"), config.AppConfig.Server.PrivacySecret)
+				h.logService.Log(bu, userID, "ถาม Chat AI (จาก cache)", "wiki", map[string]any{
 					"status": "cached",
 					"sources": len(cached.Sources),
 				}, c.Get("User-Agent"))
@@ -349,7 +259,7 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 					placeholders[i] = "d.path = ?"
 				}
 				pathWhere = "WHERE (" + strings.Join(placeholders, " OR ") + ")"
-				pathArgs = make([]interface{}, len(paths))
+				pathArgs = make([]any, len(paths))
 				for i, p := range paths {
 					pathArgs[i] = p
 				}
@@ -366,7 +276,7 @@ JOIN %s.documents d ON dc.document_id = d.id
 ORDER BY dc.embedding <-> ?::vector
 LIMIT ?
 `
-	args := make([]interface{}, 0, len(pathArgs)+2)
+	args := make([]any, 0, len(pathArgs)+2)
 	args = append(args, pathArgs...)
 	args = append(args, embStr, chatCfg.ContextLimit)
 
@@ -423,8 +333,8 @@ LIMIT ?
 	}
 
 	// Log chat interaction
-	userID := c.Get("X-User-ID", "anonymous")
-	h.logService.Log(bu, userID, "ถาม Chat AI", "wiki", map[string]interface{}{
+	userID := services.HashUserID(c.Get("X-User-ID", "anonymous"), config.AppConfig.Server.PrivacySecret)
+	h.logService.Log(bu, userID, "ถาม Chat AI", "wiki", map[string]any{
 		"status":  "POST",
 		"sources": len(sources),
 	}, c.Get("User-Agent"))
@@ -445,40 +355,3 @@ LIMIT ?
 }
 
 
-type topicPathRule struct {
-	Keywords []string 
-	Patterns []string 
-}
-
-var topicPathRules = []topicPathRule{
-	{Keywords: []string{"vendor", "ap-vendor", "ผู้ขาย", "ร้านค้า"}, Patterns: []string{"%vendor%", "%ผู้ขาย%", "%ร้านค้า%"}},
-	{Keywords: []string{"configuration", "company profile", "chart of account", "department", "currency", "payment type", "permission", "cf-", "ตั้งค่า", "ผู้ใช้", "user"}, Patterns: []string{"%configuration%", "%CF-%"}},
-	{Keywords: []string{" ar ", "ar-", "ar invoice", "ar receipt", "ลูกค้า", "receipt", "contract", "folio", "ใบเสร็จ", "ลูกหนี้"}, Patterns: []string{"%AR-%", "%/ar/%"}},
-	{Keywords: []string{" ap ", "ap-", "ap invoice", "ap payment", "เจ้าหนี้", "cheque", "wht", "หัก ณ ที่จ่าย", "input tax", "ภาษีซื้อ"}, Patterns: []string{"%AP-%", "%/ap/%"}},
-	{Keywords: []string{"asset", "สินทรัพย์", "as-", "ทะเบียนสินทรัพย์", "asset register", "asset disposal"}, Patterns: []string{"%AS-%", "%asset%"}},
-	{Keywords: []string{" gl ", "gl ", "general ledger", "journal voucher", "voucher", "บัญชีแยกประเภท", "ผังบัญชี", "allocation", "amortization", "budget", "recurring"}, Patterns: []string{"%gl%", "%c-%"}},
-	{Keywords: []string{"dashboard", "สถิติ", "revenue", "occupancy", "adr", "revpar", "trevpar", "p&l", "กำไรขาดทุน"}, Patterns: []string{"%dashboard%"}},
-	{Keywords: []string{"workbook", "excel", "security", "formula", "function"}, Patterns: []string{"%workbook%", "%WB-%", "%excel%"}},
-	{Keywords: []string{"comment", "activity log", "document management", "ไฟล์แนบ", "รูปภาพแนบ", "ประวัติเอกสาร", "คอมเมนต์", "ความคิดเห็น"}, Patterns: []string{"%comment%", "%CM-%"}},
-}
-
-// buildPathFilterFromQuestion returns (whereClause, args) for parameterized query.
-func buildPathFilterFromQuestion(question string) (string, []interface{}) {
-	qLower := strings.ToLower(question)
-	for _, rule := range topicPathRules {
-		for _, kw := range rule.Keywords {
-			if strings.Contains(qLower, strings.ToLower(kw)) || strings.Contains(question, kw) {
-				placeholders := make([]string, len(rule.Patterns))
-				for i := range rule.Patterns {
-					placeholders[i] = "d.path ILIKE ?"
-				}
-				args := make([]interface{}, len(rule.Patterns))
-				for i, p := range rule.Patterns {
-					args[i] = p
-				}
-				return "WHERE (" + strings.Join(placeholders, " OR ") + ")", args
-			}
-		}
-	}
-	return "", nil
-}

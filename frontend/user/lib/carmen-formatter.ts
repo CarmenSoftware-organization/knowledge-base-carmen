@@ -108,7 +108,7 @@ function processLinks(text: string): string {
     return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="carmen-link">${escapeHtml(label)}</a>`;
   });
 
-  const urlRegex = /(https?:\/\/(?!(?:www\.)?(?:youtube\.com|youtu\.be))[^\s<)"']+)/g;
+  const urlRegex = /(https?:\/\/(?!(?:www\.)?(?:youtube\.com|youtu\.be))[^\s<)"'*\]]+)/g;
   text = text.replace(urlRegex, (match, _p1, offset, fullString) => {
     const prefix = fullString.substring(Math.max(0, offset - 50), offset);
     if (/[=]['"]\s*$/.test(prefix)) return match;
@@ -206,7 +206,7 @@ export function formatCarmenMessage(text: string, apiBase: string): string {
   // 1. Only protect specific HTML tags that are legitimate from Context
   // This prevents accidental protection of text like "Amount < 100"
   const protections: string[] = [];
-  const tagRegex = /<(img|span|br|p|div|a|b|i|code)(\s+[^>]*?)?\/?>|<\/(span|p|div|a|b|i|code)>/gi;
+  const tagRegex = /<(img|span|br|p|div|a|b|i|code|h1|h2|h3|h4|h5|h6|iframe|ul|li|ol|strong|em)(\s+[^>]*?)?\/?>|<\/(span|p|div|a|b|i|code|h1|h2|h3|h4|h5|h6|iframe|ul|li|ol|strong|em)>/gi;
 
   t = t.replace(tagRegex, (match) => {
     const placeholder = `__HTML_TAG_PROTECTED_${protections.length}__`;

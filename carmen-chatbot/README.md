@@ -20,18 +20,25 @@ carmen-chatbot/
 │   ├── main.py                 # Entry point — FastAPI app
 │   ├── api/
 │   │   └── chat_routes.py      # Chat API endpoints (/api/chat)
-│   ├── core/
-│   │   ├── config.py           # Environment & settings
-│   │   ├── database.py         # SQLAlchemy engine (PostgreSQL)
-│   │   ├── path_rules.yaml     # RAG path boosting rules
+│   ├── config/                 # All YAML configuration files
+│   │   ├── tuning.yaml         # Tuning parameters (thresholds, TOP_K, RRF_K…)
 │   │   ├── prompts.yaml        # Externalized LLM prompts
+│   │   ├── intents.yaml        # Intent examples & canned responses
+│   │   └── path_rules.yaml     # RAG path boosting rules
+│   ├── core/                   # Infrastructure & cross-cutting concerns
+│   │   ├── config.py           # Environment & settings loader
+│   │   ├── database.py         # SQLAlchemy engine (PostgreSQL)
 │   │   └── schemas.py          # Pydantic request/response models
-│   └── llm/                    # LLM-related services & RAG components
-│       ├── chat_history.py     # Memory cache & chat management
+│   └── llm/                    # LLM pipeline & RAG components
 │       ├── chat_service.py     # Main AI chat orchestration logic
-│       ├── prompt.py           # Prompt loader (loads from yaml/json)
+│       ├── chat_history.py     # Memory cache & chat management
 │       ├── retrieval.py        # RAG search (pgvector embeddings)
-│       └── rerank.py           # Cross-Encoder Reranker (FlashRank)
+│       ├── intent_router.py    # Intent detection pipeline
+│       ├── pricing.py          # OpenRouter pricing sync & cost calc
+│       └── prompt.py           # Prompt loader
+├── scripts/                    # Diagnostic & admin scripts (run manually)
+├── tests/                      # pytest integration tests
+├── migrations/                 # Database schema migrations
 ├── images/                     # Local static images served by backend
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Example environment variables
@@ -44,9 +51,8 @@ carmen-chatbot/
 ### Prerequisites
 
 - **Python 3.10+**
-- **Node.js 18+** (for widget development)
 - **PostgreSQL** with `pgvector` extension
-- **Ollama** running locally (optional, for local embeddings/chat)
+- **OpenRouter API Key**
 
 ### 1. Setup Backend
 
@@ -78,7 +84,7 @@ The easiest way to start the server and configure your LLM provider is using the
 python start_server.py
 ```
 
-This script allows you to choose between **OpenRouter**, **Ollama**, or **Z.ai**, select models with fuzzy search, and perform a health check before the server starts.
+This script fetches available OpenRouter models with fuzzy search and performs a health check before the server starts.
 
 ---
 
@@ -88,14 +94,16 @@ Key variables in `.env`:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `ACTIVE_LLM_PROVIDER` | `openrouter`, `ollama`, or `zai` | `openrouter` |
 | `OPENROUTER_API_KEY` | Your OpenRouter API Key | `sk-or-v1-...` |
-| `OLLAMA_URL` | Local Ollama endpoint | `http://localhost:11434` |
-| `OLLAMA_EMBED_MODEL` | Model for vector embeddings | `qwen3-embedding:8b` |
+| `OPENROUTER_BASE_URL` | OpenRouter API base URL | `https://openrouter.ai/api/v1` |
+| `OPENROUTER_CHAT_MODEL` | Chat model ID | `stepfun/step-3.5-flash:free` |
+| `OPENROUTER_INTENT_MODEL` | Intent detection model | `google/gemini-2.5-flash-lite` |
+| `OPENROUTER_EMBED_MODEL` | Embedding model | `qwen/qwen3-embedding-8b` |
 | `DB_HOST` | PostgreSQL Host | `localhost` |
-| `VECTOR_DIMENSION` | Dimensions for your embeddings | `1536` |
-| `DB_SCHEMA` | Search path schemas | `carmen,public` |
+| `VECTOR_DIMENSION` | Embedding dimensions (must match DB) | `2000` |
 | `WIKI_CONTENT_PATH` | Path to source markdown/images | `../carmen_cloud` |
+| `CORS_ORIGINS` | Allowed frontend origins | `https://docs.yourcompany.com` |
+| `PRIVACY_HMAC_SECRET` | Secret for hashing user IDs | `<random string>` |
 
 ## 📡 API Endpoints
 
@@ -108,12 +116,12 @@ Key variables in `.env`:
 | `GET` | `/images/{path}` | Serve images from Wiki or Local directory |
 
 ## 🧠 RAG Pipeline
-
-1.  **Query Rewriting:** Converts follow-up questions (e.g., "how to fix it?") into standalone search queries using conversation context.
-2.  **Vector Search:** Semantic search using `pgvector` and configurable embedding models.
-3.  **Path Boosting:** Prioritizes results based on folder paths defined in `core/path_rules.yaml`.
-4.  **Reranking (FlashRank):** Scores the top 10 candidates using a Cross-Encoder to ensure maximum relevance.
-5.  **Externalized Prompts:** System instructions are managed in `core/prompts.yaml` for easy updates without code changes.
+ 
+1.  **Intent Detection:** Regex → vector similarity → LLM fallback to detect greetings, out-of-scope, and tech support queries.
+2.  **Query Rewriting:** Converts follow-up questions (e.g., "how to fix it?") into standalone search queries using conversation context.
+3.  **Hybrid Search:** Vector search (pgvector cosine) + PostgreSQL full-text search, fused with RRF (Reciprocal Rank Fusion).
+4.  **Path Boosting:** Prioritizes results based on folder paths defined in `config/path_rules.yaml`.
+5.  **Externalized Prompts:** System instructions are managed in `config/prompts.yaml` for easy updates without code changes.
 
 ## 📸 Image Support
 

@@ -1,13 +1,34 @@
 package services
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/utils"
 )
+
+// HashUserID returns a short HMAC-SHA256 token for userID so raw identifiers
+// are never stored in the database.  "anonymous" is kept as-is.
+func HashUserID(userID, secret string) string {
+	lower := strings.ToLower(strings.TrimSpace(userID))
+	if lower == "" || lower == "anonymous" {
+		return "anonymous"
+	}
+	key := []byte(secret)
+	if len(key) == 0 {
+		key = []byte("carmen-privacy-default")
+	}
+	mac := hmac.New(sha256.New, key)
+	mac.Write([]byte(userID))
+	return "u:" + hex.EncodeToString(mac.Sum(nil))[:16]
+}
 
 type ChatHistoryService struct{}
 
@@ -56,7 +77,8 @@ func (s *ChatHistoryService) FindSimilar(buID uint, questionEmbedding []float32,
 	}, true
 }
 
-// Save stores a new Q&A with embedding for future similarity search
+// Save stores a new Q&A with embedding for future similarity search.
+// userID is hashed before insertion so raw identifiers are never persisted.
 func (s *ChatHistoryService) Save(buID uint, userID, question, answer string, sources interface{}, embedding []float32) error {
 	if len(embedding) == 0 {
 		return fmt.Errorf("embedding required to save chat history")
@@ -64,11 +86,17 @@ func (s *ChatHistoryService) Save(buID uint, userID, question, answer string, so
 	embedding = utils.TruncateEmbedding(embedding)
 	embStr := utils.Float32SliceToPgVector(embedding)
 
+	secret := ""
+	if config.AppConfig != nil {
+		secret = config.AppConfig.Server.PrivacySecret
+	}
+	hashedID := HashUserID(userID, secret)
+
 	sql := `
 		INSERT INTO public.chat_history (bu_id, user_id, question, answer, sources, question_embedding, created_at)
 		VALUES (?, ?, ?, ?, ?::jsonb, ?::vector, now())
 	`
-	return database.DB.Exec(sql, buID, userID, question, answer, sourcesToJSON(sources), embStr).Error
+	return database.DB.Exec(sql, buID, hashedID, question, answer, sourcesToJSON(sources), embStr).Error
 }
 
 // sourcesToJSON converts sources to JSON string for jsonb column

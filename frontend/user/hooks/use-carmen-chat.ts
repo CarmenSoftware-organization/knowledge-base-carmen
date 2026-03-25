@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { formatCarmenMessage } from "@/lib/carmen-formatter";
 import { CarmenApi, CarmenRoom, createCarmenApi } from "./use-carmen-api";
 import { locales, LocaleKey, LocaleStrings } from "@/configs/locales";
+import { executeStream, stopGeneration } from "./use-chat-stream";
 
 export interface DisplayMessage {
   id: string;
@@ -33,6 +34,7 @@ export interface CarmenChatConfig {
   locale?: LocaleKey;
   proactiveMessages?: { pathPattern: RegExp | string; delayMs: number; message: string; subMessage?: string; timeoutMs?: number }[];
   onTypingFrame?: () => void;
+  referrer_page?: string;
 }
 
 const DEFAULT_SUGGESTIONS = [
@@ -88,6 +90,32 @@ export interface UseCarmenChatReturn {
   dismissTooltip: () => void;
   updatePosition: (pos: { bottom: string | number; right: string | number }) => void;
   stopGeneration: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// UI state helpers — consolidate all per-BU localStorage keys into one entry
+// so we minimise the fingerprint surface exposed to browser storage.
+// ---------------------------------------------------------------------------
+type UiState = {
+  open?: boolean;
+  expanded?: boolean;
+  tooltipSeen?: boolean;
+  pos?: { bottom: string | number; right: string | number };
+  currentRoom?: string | null;
+};
+
+function readUiState(bu: string): UiState {
+  try {
+    const raw = localStorage.getItem(`carmen_ui_${bu}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function writeUiState(bu: string, patch: Partial<UiState>): void {
+  try {
+    const current = readUiState(bu);
+    localStorage.setItem(`carmen_ui_${bu}`, JSON.stringify({ ...current, ...patch }));
+  } catch { /* quota or private-mode — fail silently */ }
 }
 
 export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
@@ -157,11 +185,9 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   };
 
   useEffect(() => {
-    const wasOpen = localStorage.getItem(`carmen_open_${config.bu}`) === "true";
-    const wasExpanded =
-      localStorage.getItem(`carmen_expanded_${config.bu}`) === "true";
-    if (wasOpen) setIsOpen(true);
-    if (wasExpanded) setIsExpanded(true);
+    const ui = readUiState(config.bu);
+    if (ui.open) setIsOpen(true);
+    if (ui.expanded) setIsExpanded(true);
 
     const checkProactiveMessages = () => {
       if (isOpen || !config.proactiveMessages) return;
@@ -203,25 +229,20 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       }
       
       // Default Welcome Tooltip (only if hasn't seen any tooltip)
-      const seenDefault = localStorage.getItem(`carmen_tooltip_seen_${config.bu}`);
-      if (!seenDefault) {
+      if (!ui.tooltipSeen) {
         setTimeout(() => setTooltipData(prev => ({...prev, visible: true})), 2000);
         setTimeout(() => setTooltipData(prev => ({...prev, visible: false})), 10000);
-        localStorage.setItem(`carmen_tooltip_seen_${config.bu}`, "true");
+        writeUiState(config.bu, { tooltipSeen: true });
       }
     };
     
     checkProactiveMessages();
 
-    const savedPos = localStorage.getItem(`carmen_chat_pos_${config.bu}`);
-    if (savedPos) {
-      try {
-        setPosition(JSON.parse(savedPos));
-      } catch (e) {
-        console.warn("Restore Position Error:", e);
-      }
+    if (ui.pos) {
+      setPosition(ui.pos);
     }
 
+    api.housekeep();   // ลบห้องเก่า + orphan keys ตอน mount
     loadRoomList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -284,24 +305,24 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   function toggleOpen() {
     const next = !isOpen;
     setIsOpen(next);
-    localStorage.setItem(`carmen_open_${config.bu}`, String(next));
+    writeUiState(config.bu, { open: next });
     if (!next) {
       setIsExpanded(false);
       setShowRoomDropdown(false);
-      localStorage.setItem(`carmen_expanded_${config.bu}`, "false");
+      writeUiState(config.bu, { open: next, expanded: false });
     }
     if (next) setTooltipData(prev => ({...prev, visible: false})); // Auto dismiss tooltip when opened
   }
 
   function dismissTooltip() {
     setTooltipData(prev => ({...prev, visible: false}));
-    localStorage.setItem(`carmen_tooltip_seen_${config.bu}`, "true");
+    writeUiState(config.bu, { tooltipSeen: true });
   }
 
   function toggleExpand() {
     const next = !isExpanded;
     setIsExpanded(next);
-    localStorage.setItem(`carmen_expanded_${config.bu}`, String(next));
+    writeUiState(config.bu, { expanded: next });
     if (!next) setShowRoomDropdown(false);
   }
 
@@ -323,7 +344,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       await api.clearHistory(currentRoomId);
     }
     setCurrentRoomId(null);
-    localStorage.removeItem(`carmen_current_room_${config.bu}`);
+    writeUiState(config.bu, { currentRoom: null });
     setMessages([]);
     setShowSuggestions(true);
     setShowRoomDropdown(false);
@@ -347,7 +368,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     setIsTyping(false);
 
     setCurrentRoomId(roomId);
-    localStorage.setItem(`carmen_current_room_${config.bu}`, roomId);
+    writeUiState(config.bu, { currentRoom: roomId });
     await loadHistory(roomId);
     await loadRoomList();
     setShowRoomDropdown(false);
@@ -418,246 +439,17 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         timestamp: botTimestamp,
       });
 
-      executeStream(errorText, currentRoomId, botMsgId, userMsgId);
+      executeStream(errorText, currentRoomId, botMsgId, userMsgId, getStreamDeps());
     }
   }
 
-  async function executeStream(msgText: string, processingRoomId: string, botMsgId: string, userMsgId: string) {
-    if (isProcessingRef.current) return;
-    isProcessingRef.current = true;
-
-    // Update messages to show searching status
-    setMessages((prev) =>
-      prev.map((msg) => {
-        if (msg.id === botMsgId) {
-          return { ...msg, statusText: t("chat.status_searching") };
-        }
-        return msg;
-      })
-    );
-
-    setIsTyping(true);
-    setTypingStatus(t("chat.status_searching"));
-
-    // Clear any existing status timers
-    statusTimers.current.forEach(clearTimeout);
-    statusTimers.current = [];
-
-    // Legacy status rotation logic
-    const statusMessages = [
-      { delay: 8000, text: t("chat.status_analyzing") },
-      { delay: 20000, text: t("chat.status_composing") },
-      { delay: 45000, text: t("chat.status_processing") },
-    ];
-
-    statusMessages.forEach(st => {
-      const timer = setTimeout(() => {
-        setTypingStatus(st.text);
-        setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, statusText: st.text } : m));
-      }, st.delay);
-      statusTimers.current.push(timer);
-    });
-
-    const controller = new AbortController();
-    abortController.current = controller;
-    const signal = controller.signal;
-
-    let accumulated = "";
-    let finalMsgId: string | null = null;
-    let didSave = false;
-
-    try {
-      const history = await api.getRoomHistory(processingRoomId!);
-
-      const response = await fetch(`${api.baseUrl}/api/chat/stream`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: msgText,
-          bu: config.bu,
-          username: config.username,
-          room_id: processingRoomId,
-          prompt_extend: config.promptExtend,
-          history: history.messages.filter((m: any) => m.id !== botMsgId && m.id !== userMsgId),
-          lang: locale,
-        }),
-        signal,
-      });
-
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let lineBuffer = "";
-
-      let typingBuffer = "";
-      let displayedText = "";
-      let isStreamingActive = true;
-      let bufferedSuggestions: string[] | null = null;
-
-      const processTyping = () => {
-        if (signal.aborted) return;
-        if (typingBuffer.length > 0) {
-          const charsToTake = typingBuffer.length > 40 ? 2 : 1;
-          displayedText += typingBuffer.substring(0, charsToTake);
-          typingBuffer = typingBuffer.substring(charsToTake);
-
-          const html = formatCarmenMessage(displayedText, api.baseUrl);
-          setMessages((prev) =>
-            prev.map((m) => (m.id === botMsgId ? { ...m, html } : m))
-          );
-          config.onTypingFrame?.();
-        }
-
-        if (isStreamingActive || typingBuffer.length > 0) {
-          requestAnimationFrame(processTyping);
-        } else {
-          const finalHtml = formatCarmenMessage(displayedText, api.baseUrl);
-          setMessages((prev) => {
-            const botMessages = prev.filter(m => m.role === 'bot');
-            const isLastBot = botMessages.length > 0 && botMessages[botMessages.length - 1].id === botMsgId;
-            
-            return prev.map((m) => {
-              if (m.id === botMsgId) {
-                return { 
-                  ...m, 
-                  html: finalHtml, 
-                  suggestions: isLastBot ? (bufferedSuggestions || m.suggestions) : [] 
-                };
-              }
-              return m;
-            });
-          });
-          
-          window.dispatchEvent(new CustomEvent("carmen-scroll-smooth"));
-          setTimeout(() => window.dispatchEvent(new CustomEvent("carmen-scroll-smooth")), 300);
-          setTimeout(() => window.dispatchEvent(new CustomEvent("carmen-scroll-smooth")), 800);
-        }
-      };
-
-      processTyping();
-
-      for (; ;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (signal.aborted) break;
-
-        lineBuffer += decoder.decode(value, { stream: true });
-        const lines = lineBuffer.split("\n");
-        lineBuffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            const parsed = JSON.parse(trimmed);
-            if (parsed.type === "chunk") {
-              typingBuffer += parsed.data;
-              accumulated += parsed.data;
-            } else if (parsed.type === "status") {
-              setTypingStatus(parsed.data);
-            } else if (parsed.type === "sources") {
-              const src = parsed.data;
-              setMessages((prev) =>
-                prev.map((m) => (m.id === botMsgId ? { ...m, sources: src } : m))
-              );
-            } else if (parsed.type === "suggestions") {
-              bufferedSuggestions = parsed.data;
-            } else if (parsed.type === "done") {
-              finalMsgId = parsed.id;
-              const finalSources = parsed.sources || null;
-              const finalTimestamp = new Date().toISOString();
-              setMessages((prev) =>
-                prev.map((m) => (m.id === botMsgId ? { ...m, msgId: finalMsgId!, sources: finalSources || m.sources, timestamp: finalTimestamp } : m))
-              );
-              await loadRoomList();
-            }
-          } catch (err) {
-            console.warn("JSON Parse Error on line:", line, err);
-          }
-        }
-      }
-
-      if (lineBuffer.trim()) {
-        try {
-          const parsed = JSON.parse(lineBuffer.trim());
-          if (parsed.type === "chunk") {
-            typingBuffer += parsed.data;
-            accumulated += parsed.data;
-          } else if (parsed.type === "done" && !finalMsgId) {
-             finalMsgId = parsed.id;
-          } else if (parsed.type === "suggestions") {
-             bufferedSuggestions = parsed.data;
-          }
-        } catch (e) {
-          console.warn("Final lineBuffer parse error:", e);
-        }
-      }
-
-      isStreamingActive = false;
-
-      await new Promise<void>((resolve) => {
-        const checkDone = () => {
-          if ((typingBuffer.length === 0 && !isStreamingActive) || signal.aborted) resolve();
-          else setTimeout(checkDone, 20);
-        };
-        checkDone();
-      });
-    } catch (e: any) {
-      if (e.name === "AbortError") {
-        if (isUserStopRef.current) {
-          const finalHtml = formatCarmenMessage(accumulated + `\n\n**${t("chat.status_stopped")}**`, api.baseUrl);
-          setMessages((prev) =>
-            prev.map((m) => (m.id === botMsgId ? { ...m, html: finalHtml } : m))
-          );
-        } else {
-          console.log("Stream request aborted due to room switch.");
-          return;
-        }
-      } else {
-        console.warn("Stream Error:", e.message || e);
-        if (abortController.current === controller) {
-          statusTimers.current.forEach(clearTimeout);
-          statusTimers.current = [];
-          setMessages((prev) => prev.map((m) => {
-            if (m.id === botMsgId) {
-              return {
-                ...m,
-                html: "⚠️ Error occurred, please try again",
-                isError: true,
-                errorText: msgText,
-              };
-            }
-            return m;
-          }));
-        }
-      }
-    } finally {
-      if (abortController.current === controller || isUserStopRef.current) {
-        statusTimers.current.forEach(clearTimeout);
-        statusTimers.current = [];
-
-        setIsTyping(false);
-        isProcessingRef.current = false;
-        abortController.current = null;
-      }
-    }
-
-    if (accumulated && processingRoomId && (!signal.aborted || isUserStopRef.current)) {
-      const stopNote = signal.aborted ? `\n\n**${t("chat.status_stopped")}**` : "";
-      await api.saveMessage(processingRoomId, {
-        id: finalMsgId || botMsgId,
-        sender: "bot",
-        message: accumulated + stopNote,
-        timestamp: new Date().toISOString(),
-      }, botMsgId);
-      didSave = true;
-      await loadRoomList();
-    }
-    
-    if (!didSave && processingRoomId) {
-      await api.deleteMessage(processingRoomId, botMsgId);
-    }
-    
-    isUserStopRef.current = false;
+  function getStreamDeps() {
+    return {
+      api, config, locale, t: translator,
+      isProcessingRef, abortController, isUserStopRef, statusTimers,
+      setMessages, setIsTyping, setTypingStatus,
+      loadRoomList,
+    };
   }
 
   async function sendMessage(text?: string, sourceMsgId?: string) {
@@ -679,7 +471,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       const room = await api.createRoom(config.bu, config.username, title);
       roomId = room.room_id;
       setCurrentRoomId(roomId);
-      localStorage.setItem(`carmen_current_room_${config.bu}`, roomId);
+      writeUiState(config.bu, { currentRoom: roomId });
       await loadRoomList();
     }
 
@@ -724,23 +516,20 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       timestamp: new Date(Date.now() + 1).toISOString(),
     });
 
-    executeStream(msgText, roomId, botMsgId, userMsgId);
+    executeStream(msgText, roomId, botMsgId, userMsgId, getStreamDeps());
   }
 
   async function sendFeedback(msgId: string, score: number) {
-    await api.sendFeedback(msgId, score);
+    await api.sendFeedback(msgId, score, config.bu, config.username);
   }
 
   function updatePosition(newPos: { bottom: string | number; right: string | number }) {
     setPosition(newPos);
-    localStorage.setItem(`carmen_chat_pos_${config.bu}`, JSON.stringify(newPos));
+    writeUiState(config.bu, { pos: newPos });
   }
 
-  function stopGeneration() {
-    if (isProcessingRef.current && abortController.current) {
-      isUserStopRef.current = true;
-      abortController.current.abort();
-    }
+  function handleStopGeneration() {
+    stopGeneration(isProcessingRef, abortController, isUserStopRef);
   }
 
   // Use refs to keep stable function identities
@@ -762,8 +551,8 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const stableRetryMessage = useState(() => (errorText: string) => retryMessageRef.current(errorText))[0];
   const stableSendFeedback = useState(() => (msgId: string, score: number) => sendFeedbackRef.current(msgId, score))[0];
   
-  const stopGenerationRef = useRef(stopGeneration);
-  useEffect(() => { stopGenerationRef.current = stopGeneration; });
+  const stopGenerationRef = useRef(handleStopGeneration);
+  useEffect(() => { stopGenerationRef.current = handleStopGeneration; });
   const stableStopGeneration = useState(() => () => stopGenerationRef.current())[0];
 
   const stableCreateNewChat = useState(() => () => createNewChatRef.current())[0];

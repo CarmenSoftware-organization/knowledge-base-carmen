@@ -37,9 +37,24 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const sentHistoryRef = useRef<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+    const draftValueRef = useRef('');
+
     const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const lastProgrammaticScrollTime = useRef(0);
+
+    // Esc key closes the chat (unless a modal/panel is open)
+    useEffect(() => {
+        const handleGlobalEsc = (e: globalThis.KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            if (deleteModal.open || clearModal || alertModal.open || showRoomDropdown) return;
+            toggleOpen();
+        };
+        window.addEventListener('keydown', handleGlobalEsc);
+        return () => window.removeEventListener('keydown', handleGlobalEsc);
+    }, [deleteModal.open, clearModal, alertModal.open, showRoomDropdown, toggleOpen]);
 
     const safeHtmlToText = (html: string) => {
         // For the sticky queue UI we only need a safe, plain-text snippet.
@@ -176,9 +191,44 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
     }
 
     function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+        // ↑ when input is empty — navigate sent message history
+        if (e.key === "ArrowUp" && inputValue === "" && sentHistoryRef.current.length > 0) {
+            e.preventDefault();
+            const newIndex = Math.min(historyIndex + 1, sentHistoryRef.current.length - 1);
+            if (historyIndex === -1) draftValueRef.current = "";
+            setHistoryIndex(newIndex);
+            setInputValue(sentHistoryRef.current[newIndex]);
+            setTimeout(() => {
+                if (inputRef.current) {
+                    inputRef.current.style.height = "auto";
+                    inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + "px";
+                }
+            }, 0);
+            return;
+        }
+
+        // ↓ when navigating history — go forward / restore draft
+        if (e.key === "ArrowDown" && historyIndex >= 0) {
+            e.preventDefault();
+            const newIndex = historyIndex - 1;
+            setHistoryIndex(newIndex);
+            setInputValue(newIndex >= 0 ? sentHistoryRef.current[newIndex] : draftValueRef.current);
+            setTimeout(() => {
+                if (inputRef.current) {
+                    inputRef.current.style.height = "auto";
+                    inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + "px";
+                }
+            }, 0);
+            return;
+        }
+
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             if (!isProcessing()) {
+                if (inputValue.trim()) {
+                    sentHistoryRef.current = [inputValue, ...sentHistoryRef.current.filter(h => h !== inputValue)].slice(0, 50);
+                    setHistoryIndex(-1);
+                }
                 sendMessage();
                 setUserHasScrolledUp(false);
                 if (inputRef.current) inputRef.current.style.height = "auto";
@@ -189,7 +239,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
     function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { alert(t("chat.placeholder") === "Type your message here..." ? "File too large. Max 5MB." : "ไฟล์ใหญ่เกินไป ไม่เกิน 5MB"); return; }
+        if (file.size > 5 * 1024 * 1024) { setAlertModal({ open: true, title: t("chat.error_title"), description: t("chat.file_too_large"), variant: "info" }); return; }
         const reader = new FileReader();
         reader.onload = (ev) => setImageBase64(ev.target?.result as string);
         reader.readAsDataURL(file);
@@ -244,6 +294,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 config={config}
                 currentRoomId={currentRoomId}
                 setClearModal={setClearModal}
+                setAlertModal={setAlertModal}
                 t={t}
             />
 

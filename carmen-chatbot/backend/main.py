@@ -1,14 +1,13 @@
 import uvicorn
 import os
+import asyncio
 
-from .core.logging_config import setup_logging
+from .core.logging_config import setup_logging, log_startup
 setup_logging()
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from pathlib import Path
 from functools import lru_cache
@@ -18,26 +17,81 @@ from slowapi.errors import RateLimitExceeded
 from .core.rate_limit import limiter
 
 from .core.config import settings
+from .llm.pricing import sync_pricing_from_openrouter
+from .core.database import AsyncSessionLocal
 from .api import chat_routes as chat
+from .llm.intent_router import intent_router
+from urllib.parse import urlparse
+from sqlalchemy import text
+
+
+def _origin_allowed(source: str, allowed_origins: list[str]) -> bool:
+    """Compare netloc of request origin against allowed origins list."""
+    try:
+        source_host = urlparse(source).netloc
+        for allowed in allowed_origins:
+            if urlparse(allowed).netloc == source_host:
+                return True
+    except Exception:
+        pass
+    return False
 
 IMAGE_INDEX = {}
+_image_index_lock = asyncio.Lock()
 
-def build_image_index():
-    """Scan all images in WIKI_DIR at startup and cache their paths."""
-    print("📸 Building Image Index Cache...")
-    if settings.WIKI_DIR.exists():
-        for path in settings.WIKI_DIR.rglob("*"):
-            if path.is_file() and path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']:
-                IMAGE_INDEX[path.name] = path
-    print(f"✅ Image Index Built: {len(IMAGE_INDEX)} images found.")
+async def build_image_index():
+    """Scan all images in WIKI_DIR and cache their paths (non-blocking)."""
+    if _image_index_lock.locked():
+        return  # Skip if already building
+
+    async with _image_index_lock:
+        def _scan():
+            new_index = {}
+            if settings.WIKI_DIR.exists():
+                for path in settings.WIKI_DIR.rglob("*"):
+                    if path.is_file() and path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']:
+                        new_index[path.name] = path
+            return new_index
+
+        new_index = await asyncio.to_thread(_scan)
+        IMAGE_INDEX.clear()
+        IMAGE_INDEX.update(new_index)
+        print(f"✅ Image Index Built: {len(IMAGE_INDEX)} images found.")
+
+async def _image_index_refresh_loop():
+    """Periodically rebuild IMAGE_INDEX and clear the lru_cache."""
+    interval = settings.IMAGE_INDEX_REFRESH_SECONDS
+    while True:
+        await asyncio.sleep(interval)
+        await build_image_index()
+        find_image_path.cache_clear()
+
+
+_PRICING_SYNC_INTERVAL = 86400  # 24 ชั่วโมง
+
+async def _pricing_sync_loop():
+    """Re-sync OpenRouter pricing every 24 hours while server is running."""
+    while True:
+        await asyncio.sleep(_PRICING_SYNC_INTERVAL)
+        await sync_pricing_from_openrouter()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup actions
-    build_image_index()
+    log_startup(
+        chat_model=settings.active_chat_model,
+        intent_model=settings.active_intent_model,
+        embed_model=settings.LLM_EMBED_MODEL,
+        api_base=settings.LLM_API_BASE,
+    )
+    await build_image_index()
+    await intent_router.async_init()
+    await sync_pricing_from_openrouter()
+    asyncio.create_task(_pricing_sync_loop())
+    if settings.IMAGE_INDEX_REFRESH_SECONDS > 0:
+        asyncio.create_task(_image_index_refresh_loop())
     yield
-    # Shutdown actions
-    pass
 
 app = FastAPI(title="Carmen Chatbot System", lifespan=lifespan)
 
@@ -77,6 +131,29 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+# ==========================================
+# 🛡️ ORIGIN VALIDATION MIDDLEWARE
+# Blocks /api/chat requests from unknown origins
+# when specific domains are configured in CORS_ORIGINS.
+# If CORS_ORIGINS = ["*"], validation is skipped.
+# ==========================================
+@app.middleware("http")
+async def origin_validation_middleware(request: Request, call_next):
+    if request.url.path.startswith("/api/chat"):
+        allowed = settings.CORS_ORIGINS
+        if "*" not in allowed:
+            origin = request.headers.get("origin", "")
+            referer = request.headers.get("referer", "")
+            source = origin or referer
+            # Only reject when a source header is present but doesn't match.
+            # Missing Origin/Referer = same-origin page request → allow.
+            if source and not _origin_allowed(source, allowed):
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "Request origin not allowed."}
+                )
+    return await call_next(request)
+
 # Include Routers
 app.include_router(chat.router)
 
@@ -84,10 +161,21 @@ app.include_router(chat.router)
 @app.get("/api/health")
 @limiter.limit("20/minute")
 async def health_check(request: Request):
-    return {"status": "ok"}
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "ok"}
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("Health check DB error: %s", e)
+        return JSONResponse(status_code=503, content={"status": "error", "db": "unavailable"})
 
 # Static Files
 if not settings.IMAGES_DIR.exists(): os.makedirs(settings.IMAGES_DIR)
+
+# Pre-resolve base directories once at module load time for path jail checks
+_WIKI_DIR_RESOLVED = settings.WIKI_DIR.resolve()
+_IMAGES_DIR_RESOLVED = settings.IMAGES_DIR.resolve()
 
 # ⚡ Caching Image Paths to prevent recursive IO bottlenecks in Production ⚡
 @lru_cache(maxsize=1024)
@@ -96,24 +184,33 @@ def find_image_path(filename: str) -> Path | None:
     clean_filename = filename.replace("\\", "/")
     if clean_filename.startswith("carmen_cloud/"):
         clean_filename = clean_filename[len("carmen_cloud/"):]
-        
+
     if settings.WIKI_DIR.exists():
         # First check the exact relative path in WIKI_DIR
         exact_path = settings.WIKI_DIR / clean_filename
         if exact_path.is_file():
-            return exact_path
-            
+            # 🛡️ Path jail: ensure resolved path stays inside WIKI_DIR
+            try:
+                exact_path.resolve().relative_to(_WIKI_DIR_RESOLVED)
+                return exact_path
+            except ValueError:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Path traversal attempt blocked: %s (resolved outside WIKI_DIR)", filename
+                )
+                return None
+
         # Fallback to searching by basename in cache (Instant lookup)
         basename = os.path.basename(clean_filename)
         if basename in IMAGE_INDEX:
             return IMAGE_INDEX[basename]
-                
-    # Fallback to local images folder
+
+    # Fallback to local images folder (basename strips any directory component)
     basename = os.path.basename(clean_filename)
     local_path = settings.IMAGES_DIR / basename
     if local_path.is_file():
         return local_path
-        
+
     return None
 
 @app.get("/images/{filename:path}")
@@ -128,7 +225,6 @@ async def get_image(filename: str, request: Request):
         # This fixes issues where old code cached wrong images for generic filenames like image-12.png
         response = FileResponse(resolved_path)
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
-        response.headers["X-Resolved-From"] = str(resolved_path)  # Debug: trace which file was served
         return response
         
     raise HTTPException(status_code=404, detail="Image not found")
