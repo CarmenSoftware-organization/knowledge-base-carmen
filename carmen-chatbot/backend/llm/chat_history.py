@@ -14,11 +14,10 @@ from ..core.config import settings
 from ..core.database import AsyncSessionLocal
 from ..core.pii import mask_pii, hash_user_id
 
-# Number of recent messages injected into the LLM prompt (4 messages = 2 Q&A pairs)
-HISTORY_CONTEXT_LIMIT = 4
-
-# How many messages to keep in memory per room (buffer for future limit increases)
-HISTORY_MEMORY_LIMIT = 20
+# Load from tuning.yaml — edit that file to adjust these limits.
+_history_tuning = settings.TUNING.get("history", {})
+HISTORY_CONTEXT_LIMIT = int(_history_tuning.get("context_limit", 4))   # messages injected into LLM prompt
+HISTORY_MEMORY_LIMIT  = int(_history_tuning.get("memory_limit",  20))  # messages kept in LRU cache per room
 
 # Temporary per-request cache (populated from frontend history each request)
 # Limit to 50 rooms to prevent memory leaks

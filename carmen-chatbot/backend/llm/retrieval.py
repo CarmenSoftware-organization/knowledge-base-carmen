@@ -31,13 +31,15 @@ def _sql_like_to_regex(pattern: str) -> str:
 
 
 class RetrievalService:
-    TOP_K = 4
-    MAX_DISTANCE = 0.45
-    PATH_BOOST_RRF = 0.02   # bonus added to RRF score for path-boosted results
-    FETCH_K = 20
-    RRF_K = 60              # RRF constant (higher = smoother rank blending)
-
     def __init__(self):
+        # Load tuning parameters from core/tuning.yaml — edit that file to adjust.
+        _rt = settings.TUNING.get("retrieval", {})
+        self.TOP_K          = int(  _rt.get("top_k",          4))
+        self.MAX_DISTANCE   = float(_rt.get("max_distance",   0.45))
+        self.PATH_BOOST_RRF = float(_rt.get("path_boost_rrf", 0.02))
+        self.FETCH_K        = int(  _rt.get("fetch_k",        20))
+        self.RRF_K          = int(  _rt.get("rrf_k",          60))
+
         self.embeddings = None
         self.initialize_brain()
 

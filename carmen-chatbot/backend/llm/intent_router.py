@@ -17,26 +17,22 @@ logger = logging.getLogger(__name__)
 INTENTS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "intents.yaml"))
 CACHE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "intents_cache.npz"))
 
-# How often to check if intents.yaml has changed (seconds)
-_MTIME_CHECK_INTERVAL = 30.0
+# Load tuning parameters from core/tuning.yaml (via settings.TUNING)
+# Edit tuning.yaml to adjust thresholds — no code changes needed.
+_intent_tuning = settings.TUNING.get("intent", {})
 
-# Per-category cosine similarity thresholds (tuned per risk profile)
-# Lower  = more lenient (catches more, small false-positive risk)
-# Higher = stricter  (safer but more LLM calls)
-_CATEGORY_THRESHOLDS: dict[str, float] = {
+_CATEGORY_THRESHOLDS: dict[str, float] = _intent_tuning.get("category_thresholds", {
     "greeting":     0.90,
     "thanks":       0.90,
-    "company_info": 0.82,   # contact queries have very distinctive vocabulary
+    "company_info": 0.82,
     "capabilities": 0.88,
     "out_of_scope": 0.88,
-    "confusion":    0.92,   # confusion needs extra confidence to avoid misclassifying real questions
-}
-_DEFAULT_THRESHOLD = 0.90
-
-# Soft-zone: score below per-category threshold but above this floor
-# → check top-K consensus before calling LLM
-_SOFT_ZONE_MIN   = 0.75
-_SOFT_ZONE_VOTES = 2  # min examples from same category in soft-zone to accept without LLM
+    "confusion":    0.92,
+})
+_DEFAULT_THRESHOLD    = float(_intent_tuning.get("default_threshold",    0.90))
+_SOFT_ZONE_MIN        = float(_intent_tuning.get("soft_zone_min",        0.75))
+_SOFT_ZONE_VOTES      = int(  _intent_tuning.get("soft_zone_votes",      2))
+_MTIME_CHECK_INTERVAL = float(_intent_tuning.get("mtime_check_interval", 30.0))
 
 # Fast-track Regex for immediate common cases (Negative Filtering)
 DIRECT_MATCHES = {

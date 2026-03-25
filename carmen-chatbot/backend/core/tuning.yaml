@@ -1,0 +1,45 @@
+# =============================================================================
+# tuning.yaml — Sensitivity & Performance Tuning Parameters
+# =============================================================================
+# แก้ไขไฟล์นี้เพื่อปรับ accuracy ของ intent detection และ retrieval
+# ไม่ต้องแตะ .py ไม่ต้อง restart server (ถ้าใช้ --reload)
+#
+# ค่า default ที่ตั้งมาผ่านการ tune แล้ว — เปลี่ยนเมื่อมีหลักฐานจาก logs เท่านั้น
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Intent Router — cosine similarity thresholds
+# Lower  = more lenient (catches more queries, small false-positive risk)
+# Higher = stricter   (safer, but routes more queries to LLM fallback)
+# -----------------------------------------------------------------------------
+intent:
+  default_threshold: 0.90        # fallback threshold for categories not listed below
+  soft_zone_min: 0.75            # floor of the "uncertain zone"; triggers consensus check
+  soft_zone_votes: 2             # min examples from same category in soft-zone to accept without LLM
+  mtime_check_interval: 30       # seconds between intents.yaml hot-reload checks
+
+  # Per-category thresholds — tune individually based on false-positive/negative rate
+  category_thresholds:
+    greeting: 0.90
+    thanks: 0.90
+    company_info: 0.82           # contact queries have very distinctive vocabulary → can be more lenient
+    capabilities: 0.88
+    out_of_scope: 0.88
+    confusion: 0.92              # needs extra confidence to avoid misclassifying real questions
+
+# -----------------------------------------------------------------------------
+# Retrieval — hybrid search (pgvector + PostgreSQL FTS + RRF)
+# -----------------------------------------------------------------------------
+retrieval:
+  top_k: 4                       # number of chunks sent to LLM as context
+  max_distance: 0.45             # cosine distance cutoff for vector search (0=identical, 1=opposite)
+  fetch_k: 20                    # candidates fetched from DB before RRF re-ranking
+  rrf_k: 60                      # RRF constant — higher = smoother rank blending
+  path_boost_rrf: 0.02           # RRF score bonus added to path-rule-matched results
+
+# -----------------------------------------------------------------------------
+# Chat History — in-memory session management
+# -----------------------------------------------------------------------------
+history:
+  context_limit: 4               # messages injected into LLM prompt (4 = 2 full Q&A pairs)
+  memory_limit: 20               # messages kept in LRU cache per room (buffer for limit increases)
