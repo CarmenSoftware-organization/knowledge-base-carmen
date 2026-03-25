@@ -1,85 +1,162 @@
 import { KBHeader } from "@/components/kb/header";
 import { KBFooter } from "@/components/kb/footer";
+import { KBSidebar } from "@/components/kb/sidebar";
+import { Breadcrumb } from "@/components/kb/breadcrumb";
+import { getCategory, getContent } from "@/lib/wiki-api";
+import { MobileSidebar } from "@/components/kb/mobile-sidebar";
+import { ArticleGridTransition } from "@/components/kb/article-grid-client";
+import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
+import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import { cookies } from "next/headers";
-import Link from "next/link";
-import { API_BASE } from "@/lib/config";
+import { getTranslations } from "next-intl/server";
+import matter from "gray-matter";
+import { categoryDisplayMap } from "@/configs/sidebar-map";
 
-type FAQModule = {
-  id: number;
-  name: string;
-  slug: string;
-  icon?: string;
-};
+const FAQ_SLUG = "faq";
 
 export default async function FAQHomePage() {
+  const t = await getTranslations();
   const cookieStore = await cookies();
   const bu = cookieStore.get("selected_bu")?.value || "carmen";
 
-  const res = await fetch(
-    `${API_BASE}/api/faq/modules?bu=${encodeURIComponent(bu)}`,
-    { cache: "no-store" }
-  );
+  let data: Awaited<ReturnType<typeof getCategory>>;
+  let indexContent: ReturnType<typeof matter> | null = null;
 
-  let modules: FAQModule[] = [];
-  if (res.ok) {
-    const data = await res.json();
-    modules = data.items || [];
+  try {
+    data = await getCategory(FAQ_SLUG, bu);
+    try {
+      const rawIndex = await getContent(`${FAQ_SLUG}/index.md`, bu);
+      if (rawIndex) {
+        indexContent = matter(rawIndex.content);
+      }
+    } catch {
+      indexContent = null;
+    }
+  } catch {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <KBHeader />
+        <MobileSidebar />
+        <main className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
+            <aside className="hidden md:block w-64 shrink-0">
+              <KBSidebar />
+            </aside>
+            <div className="flex-1">
+              <Breadcrumb
+                items={[
+                  { label: t("common.categories"), href: "/categories" },
+                  { label: categoryDisplayMap[FAQ_SLUG] || "FAQ" },
+                ]}
+              />
+              <p className="mt-8 text-sm text-muted-foreground">
+                ยังไม่มีโฟลเดอร์ FAQ ใน wiki (หรือโหลดไม่สำเร็จ) — ตรวจสอบว่าใน repo มี{" "}
+                <code className="text-xs bg-muted px-1 rounded">carmen_cloud/faq/*.md</code>{" "}
+                และ backend ชี้ <code className="text-xs bg-muted px-1 rounded">WIKI_CONTENT_PATH</code> ถูกต้อง
+              </p>
+            </div>
+          </div>
+        </main>
+        <KBFooter />
+      </div>
+    );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <KBHeader />
-      <main className="flex-1">
-        <section className="border-b bg-gradient-to-b from-background to-muted/40">
-          <div className="mx-auto max-w-5xl px-4 py-10 sm:py-14">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">
-              FAQ
-            </p>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
-              คำถามที่พบบ่อยสำหรับ{" "}
-              <span className="text-primary">Carmen Cloud</span>
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
-              รวมคำถามและคำตอบ แยกตามโมดูลการทำงาน เช่น AP, AR, GL, Asset
-              เพื่อช่วยให้คุณหาวิธีแก้ปัญหาได้เร็วขึ้น
-            </p>
-          </div>
-        </section>
+  const categoryName = categoryDisplayMap[FAQ_SLUG] || "FAQ";
 
-        <section className="py-8 sm:py-10">
-          <div className="mx-auto max-w-5xl px-4">
-            {modules.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                ยังไม่มี FAQ สำหรับ BU นี้
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <KBHeader />
+      <MobileSidebar />
+
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex gap-10 items-start relative">
+          <aside className="hidden lg:block sticky top-24 shrink-0">
+            <KBSidebar />
+          </aside>
+
+          <div className="flex-1 min-w-0">
+            <Breadcrumb
+              items={[
+                { label: t("common.categories"), href: "/categories" },
+                { label: categoryName },
+              ]}
+            />
+
+            <div className="mt-6 mb-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-2">
+                FAQ
               </p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {modules.map((m) => (
-                  <Link
-                    key={m.id}
-                    href={`/faq/${m.slug}`}
-                    className="group rounded-2xl border bg-card/60 hover:bg-card shadow-sm hover:shadow-md transition-all p-4 flex flex-col gap-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <h2 className="font-semibold text-base sm:text-lg">
-                        {m.name}
-                      </h2>
-                      <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs px-3 py-1">
-                        ดูรายละเอียด
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      คำถามที่พบบ่อยในโมดูล {m.name}
-                    </p>
-                  </Link>
-                ))}
+              <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                คำถามที่พบบ่อย — {categoryName}
+              </h1>
+              <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
+                รายการดึงจากไฟล์ Markdown ใต้โฟลเดอร์ <code className="text-xs bg-muted px-1 rounded">faq/</code> ใน repo (เดียวกับหมวดหมู่เอกสาร) — อัปเดตตาม Wiki.js / Git หลัง sync
+              </p>
+            </div>
+
+            {indexContent && (
+              <div className="mt-4 mb-8">
+                <ArticleHeaderInfo
+                  title={
+                    (indexContent.data.title as string) || categoryName
+                  }
+                  formattedDate={
+                    indexContent.data.date
+                      ? new Date(
+                          indexContent.data.date as string
+                        ).toLocaleDateString("th-TH", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : null
+                  }
+                  tags={
+                    Array.isArray(indexContent.data.tags)
+                      ? (indexContent.data.tags as string[])
+                      : []
+                  }
+                />
+                <div className="border-b my-6 border-border" />
+                <MarkdownRender
+                  content={indexContent.content
+                    .toString()
+                    .replace(/\n##/g, "\n\n##")}
+                  category={FAQ_SLUG}
+                />
+                <div className="relative py-8">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-background px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                      {t("category.articlesInCategory")}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
+
+            {!indexContent && (
+              <div className="relative py-2 mb-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-background px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                    {t("category.articlesInCategory")}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <ArticleGridTransition items={data.items} category={FAQ_SLUG} />
           </div>
-        </section>
+        </div>
       </main>
+
       <KBFooter />
     </div>
   );
 }
-

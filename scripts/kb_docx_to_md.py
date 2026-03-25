@@ -5,9 +5,9 @@
 การติดตั้ง (ครั้งเดียว):
   pip install -r scripts/requirements-kb-convert.txt
 
-การใช้งาน (จาก root โปรเจกต์):
-  python scripts/kb_docx_to_md.py --input contents/KB --output carmen_cloud/kb
-  python scripts/kb_docx_to_md.py --input contents/KB --output contents/carmen_cloud/kb  --mirror
+การใช้งาน (จาก root โปรเจกต์) — ปลายทางแนะนำเป็น faq ไม่ใช้โฟลเดอร์ kb ใต้ carmen_cloud แล้ว:
+  python scripts/kb_docx_to_md.py --input contents/KB --output carmen_cloud/faq
+  python scripts/kb_docx_to_md.py --input contents/KB --output carmen_cloud/faq --mirror
 
 --mirror: เขียน .md ทั้งที่ output และที่ input (แทนที่เฉพาะไฟล์ .md ที่สร้างใหม่)
 
@@ -93,7 +93,7 @@ def convert_one(
         "---\n"
         f"title: {docx.stem}\n"
         "published: true\n"
-        "tags: kb,documentation\n"
+        "tags: faq,documentation\n"
         "editor: markdown\n"
         "---\n\n"
     )
@@ -107,7 +107,7 @@ def main() -> None:
     p.add_argument(
         "--output",
         required=True,
-        help="โฟลเดอร์ปลายทางสำหรับ .md (เช่น carmen_cloud/kb)",
+        help="โฟลเดอร์ปลายทางสำหรับ .md (เช่น carmen_cloud/faq)",
     )
     p.add_argument(
         "--mirror",

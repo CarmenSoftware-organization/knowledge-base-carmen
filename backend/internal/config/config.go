@@ -226,9 +226,10 @@ func Load() error {
 			Enabled: getEnvAsBool("TRANSLATION_ENABLED", true),
 		},
 		LLM: LLMConfig{
-			APIKey:     getEnv("LLM_API_KEY", ""),
+			// OPENROUTER_* accepted as aliases so .env can use one naming style
+			APIKey:     getEnvFirst([]string{"LLM_API_KEY", "OPENROUTER_API_KEY"}, ""),
 			APIBase:    getEnv("LLM_API_BASE", "https://openrouter.ai/api/v1"),
-			EmbedModel: getEnv("LLM_EMBED_MODEL", "qwen/qwen3-embedding-8b"),
+			EmbedModel: getEnvFirst([]string{"LLM_EMBED_MODEL", "OPENROUTER_EMBED_MODEL"}, "qwen/qwen3-embedding-8b"),
 		},
 	}
 
@@ -267,6 +268,16 @@ func NormalizePath(path string) string {
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+// getEnvFirst returns the first non-empty env among keys, else defaultValue.
+func getEnvFirst(keys []string, defaultValue string) string {
+	for _, k := range keys {
+		if v := os.Getenv(k); v != "" {
+			return v
+		}
 	}
 	return defaultValue
 }
