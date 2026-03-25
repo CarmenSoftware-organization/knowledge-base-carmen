@@ -2,7 +2,7 @@
 title: ขั้นตอนการบันทึก A/P Invoice (User Manual)
 description: ขั้นตอนการบันทึก A/P Invoice (User Manual)
 published: true
-date: 2026-03-19T08:38:07.725Z
+date: 2026-03-20T08:39:12.252Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:05.575Z

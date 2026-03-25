@@ -2,7 +2,7 @@
 title: Recurring Voucher
 description: Recurring Voucher
 published: true
-date: 2026-03-19T08:41:26.454Z
+date: 2026-03-20T08:41:41.236Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:41:24.339Z

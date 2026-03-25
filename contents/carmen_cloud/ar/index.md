@@ -2,7 +2,7 @@
 title: Account Receivable
 description: Account Receivable
 published: true
-date: 2026-03-19T08:39:03.321Z
+date: 2026-03-20T08:39:51.691Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:39:01.279Z

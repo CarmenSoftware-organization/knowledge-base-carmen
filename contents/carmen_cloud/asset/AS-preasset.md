@@ -2,7 +2,7 @@
 title: Pre-Register Asset
 description: Pre-Register Asset
 published: true
-date: 2026-03-19T08:39:18.951Z
+date: 2026-03-20T08:40:02.945Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:39:16.873Z

@@ -2,7 +2,7 @@
 title: A/R Profile
 description: A/R Profile
 published: true
-date: 2026-03-19T08:38:53.303Z
+date: 2026-03-20T08:39:44.380Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:51.149Z

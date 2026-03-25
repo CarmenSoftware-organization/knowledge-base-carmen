@@ -2,7 +2,7 @@
 title: ขั้นตอนการตัดชำระหนี้ A/P Payment
 description: ขั้นตอนการตัดชำระหนี้ A/P Payment
 published: true
-date: 2026-03-19T08:34:30.428Z
+date: 2026-03-20T09:29:34.959Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:52:58.141Z

@@ -2,7 +2,7 @@
 title: Allocation Voucher
 description: Allocation Voucher
 published: true
-date: 2026-03-19T08:40:57.568Z
+date: 2026-03-20T08:41:21.329Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:40:55.430Z

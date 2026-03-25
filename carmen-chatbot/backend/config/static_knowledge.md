@@ -2,7 +2,7 @@
 title: static_knowledge
 description: 
 published: true
-date: 2026-03-19T08:37:40.117Z
+date: 2026-03-25T07:49:50.661Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-19T08:00:38.717Z

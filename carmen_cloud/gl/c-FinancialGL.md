@@ -2,7 +2,7 @@
 title: Financial Report
 description: Financial Report
 published: true
-date: 2026-03-19T08:36:35.321Z
+date: 2026-03-20T09:32:04.419Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:55:14.697Z

@@ -2,7 +2,7 @@
 title: Product License
 description: Product License
 published: true
-date: 2026-03-19T08:40:34.768Z
+date: 2026-03-20T08:41:05.349Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:40:32.640Z
