@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date
+from datetime import timezone, datetime
 
 # ==========================================
 # 📊 DAILY API BUDGET CAP (In-Memory)
@@ -21,7 +21,7 @@ async def check_and_increment(daily_limit: int) -> bool:
         return True
 
     async with _lock:
-        today = date.today().isoformat()
+        today = datetime.now(timezone.utc).date().isoformat()
         if _state["date"] != today:
             _state["date"] = today
             _state["count"] = 0

@@ -166,7 +166,9 @@ async def health_check(request: Request):
             await db.execute(text("SELECT 1"))
         return {"status": "ok", "db": "ok"}
     except Exception as e:
-        return JSONResponse(status_code=503, content={"status": "error", "db": str(e)})
+        import logging
+        logging.getLogger(__name__).error("Health check DB error: %s", e)
+        return JSONResponse(status_code=503, content={"status": "error", "db": "unavailable"})
 
 # Static Files
 if not settings.IMAGES_DIR.exists(): os.makedirs(settings.IMAGES_DIR)
@@ -192,7 +194,11 @@ def find_image_path(filename: str) -> Path | None:
                 exact_path.resolve().relative_to(_WIKI_DIR_RESOLVED)
                 return exact_path
             except ValueError:
-                pass  # Path traversal attempt — silently block
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Path traversal attempt blocked: %s (resolved outside WIKI_DIR)", filename
+                )
+                return None
 
         # Fallback to searching by basename in cache (Instant lookup)
         basename = os.path.basename(clean_filename)

@@ -58,7 +58,13 @@
     "delete_room_block": "ไม่สามารถลบห้องได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่",
     "clear_history_block": "ไม่สามารถล้างแชทได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่",
     "remaining_queue": "+ อีก {count} ข้อความในคิว",
-    "stop_generation": "หยุดการสร้างคำตอบ"
+    "stop_generation": "หยุดการสร้างคำตอบ",
+    "ai_disclaimer": "Carmen AI อาจเกิดข้อผิดพลาดได้ กรุณาตรวจสอบข้อมูลสำคัญ",
+    "file_too_large": "ไฟล์ใหญ่เกินไป ขนาดสูงสุดคือ 5MB",
+    "proactive_settings_message": "สับสนการตั้งค่าระบบหรือเปล่าคะ?",
+    "proactive_settings_sub": "สอบถาม Carmen ได้เลยนะ!",
+    "proactive_home_message": "กำลังค้นหาคู่มือเรื่องอะไรอยู่หรือเปล่าคะ?",
+    "proactive_home_sub": "สอบถามข้อมูลคู่มือได้ทันที!"
   },
   "header": {
     "history": "ประวัติการสนทนา",

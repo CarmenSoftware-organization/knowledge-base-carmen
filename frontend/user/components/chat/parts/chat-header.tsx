@@ -13,12 +13,13 @@ interface ChatHeaderProps {
     config: any;
     currentRoomId: string | null;
     setClearModal: (val: boolean) => void;
+    setAlertModal: (val: { open: boolean; title: string; description: string; variant?: "danger" | "info" | "success" }) => void;
     t: any;
 }
 
 export const ChatHeader = React.memo(({
     isExpanded, onDragStart, toggleExpand, toggleOpen, isProcessing,
-    showRoomDropdown, setShowRoomDropdown, config, currentRoomId, setClearModal, t
+    showRoomDropdown, setShowRoomDropdown, config, currentRoomId, setClearModal, setAlertModal, t
 }: ChatHeaderProps) => {
     return (
         <motion.div
@@ -60,7 +61,7 @@ export const ChatHeader = React.memo(({
                 <button
                     onClick={() => {
                         if (isProcessing()) {
-                            alert(t("chat.switch_room_block"));
+                            setAlertModal({ open: true, title: t("chat.status_processing"), description: t("chat.switch_room_block"), variant: "info" });
                             return;
                         }
                         setShowRoomDropdown(!showRoomDropdown);
@@ -94,7 +95,7 @@ export const ChatHeader = React.memo(({
                     <button
                         onClick={() => {
                             if (isProcessing()) {
-                                alert(t("chat.clear_history_block"));
+                                setAlertModal({ open: true, title: t("chat.status_processing"), description: t("chat.clear_history_block"), variant: "info" });
                                 return;
                             }
                             setClearModal(true);

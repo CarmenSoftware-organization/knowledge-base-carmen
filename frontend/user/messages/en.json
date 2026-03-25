@@ -58,7 +58,13 @@
     "delete_room_block": "Cannot delete rooms while processing. Please wait.",
     "clear_history_block": "Cannot clear chat while processing. Please wait.",
     "remaining_queue": "+ {count} more in queue",
-    "stop_generation": "Stop generation"
+    "stop_generation": "Stop generation",
+    "ai_disclaimer": "Carmen AI may make mistakes. Verify important info.",
+    "file_too_large": "File too large. Maximum size is 5MB.",
+    "proactive_settings_message": "Need help with system settings?",
+    "proactive_settings_sub": "Ask Carmen anytime!",
+    "proactive_home_message": "Looking for a guide?",
+    "proactive_home_sub": "Ask Carmen for help!"
   },
   "header": {
     "history": "Chat History",
