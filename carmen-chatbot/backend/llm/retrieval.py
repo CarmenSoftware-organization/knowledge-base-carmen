@@ -23,9 +23,10 @@ def _sql_like_to_regex(pattern: str) -> str:
       because file paths commonly contain underscores in names like user_guide.md.
     - All other regex special characters are escaped.
     """
-    escaped = re.escape(pattern)
-    # Restore only the % wildcard; _ stays escaped (literal)
-    return escaped.replace(r'\%', '.*')
+    # Split on % first, escape each part, then join with .*
+    # (re.escape no longer escapes % in Python 3.7+, so can't rely on \% replacement)
+    parts = pattern.split('%')
+    return '.*'.join(re.escape(part) for part in parts)
 
 
 class RetrievalService:
