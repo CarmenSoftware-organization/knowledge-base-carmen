@@ -2,7 +2,7 @@
 title: 8.Cost_Unit ใน Stock Out แสดงไม่เท่ากับ Receiving ที่ต้องการปรับปรุงเกิดจากอะไร
 description: 
 published: true
-date: 2026-03-25T02:45:41.688Z
+date: 2026-03-25T02:45:43.817Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T02:45:41.688Z

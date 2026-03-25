@@ -2,7 +2,7 @@
 title: Payment Type
 description: Payment Type
 published: true
-date: 2026-03-19T08:36:17.188Z
+date: 2026-03-20T09:31:43.210Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:54:48.114Z

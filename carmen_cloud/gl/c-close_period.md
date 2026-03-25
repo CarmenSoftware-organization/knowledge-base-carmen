@@ -2,7 +2,7 @@
 title: Close Period for General Ledger Module
 description: Close Period for General Ledger Module
 published: true
-date: 2026-03-19T08:36:44.284Z
+date: 2026-03-20T09:32:15.166Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:55:27.770Z

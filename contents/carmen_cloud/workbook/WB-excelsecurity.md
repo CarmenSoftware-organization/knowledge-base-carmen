@@ -2,7 +2,7 @@
 title: Excel Security setting for Carmen Add-in
 description: Excel Security setting for Carmen Add-in
 published: true
-date: 2026-03-19T08:42:00.322Z
+date: 2026-03-20T08:42:19.676Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:41:58.192Z

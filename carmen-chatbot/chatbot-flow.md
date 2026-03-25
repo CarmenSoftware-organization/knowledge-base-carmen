@@ -1,3 +1,13 @@
+---
+title: chatbot-flow
+description: 
+published: true
+date: 2026-03-25T07:49:52.911Z
+tags: 
+editor: markdown
+dateCreated: 2026-03-25T07:49:50.769Z
+---
+
 # Carmen Chatbot — System Flowchart
 
 ```mermaid

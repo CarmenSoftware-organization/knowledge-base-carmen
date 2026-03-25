@@ -2,7 +2,7 @@
 title: 7.Receiving ผิด Store จะปรับปรุงข้อมูลอย่างไร
 description: 
 published: true
-date: 2026-03-24T20:39:01.305Z
+date: 2026-03-24T20:39:03.523Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T20:39:01.305Z

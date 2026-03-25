@@ -2,7 +2,7 @@
 title: Template Voucher
 description: Template Voucher
 published: true
-date: 2026-03-19T08:41:29.768Z
+date: 2026-03-20T08:41:43.442Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:41:27.470Z

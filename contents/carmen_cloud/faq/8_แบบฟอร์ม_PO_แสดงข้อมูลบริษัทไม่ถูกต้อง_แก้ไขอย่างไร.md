@@ -2,7 +2,7 @@
 title: 8.แบบฟอร์ม PO แสดงข้อมูลบริษัทไม่ถูกต้อง แก้ไขอย่างไร
 description: 
 published: true
-date: 2026-03-24T21:04:21.804Z
+date: 2026-03-24T21:04:23.948Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T21:04:21.804Z

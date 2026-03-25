@@ -2,7 +2,7 @@
 title: 9.มีรายการปรากฏที่ Inventory Balance แต่ไม่การ Assign Item ไว้ที่Store นั้นแล้ว
 description: 
 published: true
-date: 2026-03-25T02:58:19.534Z
+date: 2026-03-25T02:58:21.692Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T02:58:19.533Z

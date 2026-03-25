@@ -2,7 +2,7 @@
 title: 7.วิธีเช็คProduct  Unit
 description: 
 published: true
-date: 2026-03-24T20:07:17.464Z
+date: 2026-03-24T20:07:19.614Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T20:07:17.464Z

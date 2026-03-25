@@ -2,7 +2,7 @@
 title: 8.ทำ Credit Note หาหมายเลขเอกสาร Receiving ไม่เจอ
 description: 
 published: true
-date: 2026-03-24T21:01:08.015Z
+date: 2026-03-24T21:01:10.132Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T21:01:08.015Z

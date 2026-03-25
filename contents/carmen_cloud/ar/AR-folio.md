@@ -2,7 +2,7 @@
 title: Folio
 description: Function นี้ใช้สำหรับดู Transaction ที่มาจากการ post (PMS Interface) ข้อมูล City Ledger และ Credit Card จากระบบ PMS
 published: true
-date: 2026-03-19T08:38:43.734Z
+date: 2026-03-20T08:39:37.696Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:41.613Z

@@ -2,7 +2,7 @@
 title: 7. Save Receiving แล้วระบบแจ้งข้อความ Error _While saving_ เกิดจากอะไร
 description: 
 published: true
-date: 2026-03-24T20:55:16.169Z
+date: 2026-03-24T20:55:18.317Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T20:55:16.169Z

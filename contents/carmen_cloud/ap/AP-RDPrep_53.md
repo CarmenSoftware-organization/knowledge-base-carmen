@@ -2,7 +2,7 @@
 title: การโอนย้ายข้อมูลใบแนบ ภ.ง.ด.53 ผ่านโปรแกรม RDPrep
 description: การโอนย้ายข้อมูลใบแนบ ภ.ง.ด.53 ผ่านโปรแกรม RDPrep
 published: true
-date: 2026-03-19T08:37:45.574Z
+date: 2026-03-20T08:38:56.795Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:37:43.405Z

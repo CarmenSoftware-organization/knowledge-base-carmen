@@ -2,7 +2,7 @@
 title: 9.วิธีการคำนวณ Cost แบบ Average
 description: 
 published: true
-date: 2026-03-25T05:08:57.591Z
+date: 2026-03-25T05:08:59.889Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T05:08:57.591Z

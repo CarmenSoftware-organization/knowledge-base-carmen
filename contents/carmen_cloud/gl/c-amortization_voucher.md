@@ -2,7 +2,7 @@
 title: Amortization Voucher
 description: Amortization Voucher
 published: true
-date: 2026-03-19T08:41:00.808Z
+date: 2026-03-20T08:41:23.655Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:40:58.574Z

@@ -2,7 +2,7 @@
 title: 7.Receiving รับเกินราคาPO ไม่ได้ ระบบแจ้ง Warning
 description: 
 published: true
-date: 2026-03-24T20:41:47.857Z
+date: 2026-03-24T20:41:50.051Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T20:41:47.857Z

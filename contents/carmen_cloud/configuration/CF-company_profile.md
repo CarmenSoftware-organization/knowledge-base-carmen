@@ -2,7 +2,7 @@
 title: Company Profile
 description: Company Profile
 published: true
-date: 2026-03-19T08:40:12.278Z
+date: 2026-03-20T08:40:49.772Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:40:10.126Z

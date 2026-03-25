@@ -2,7 +2,7 @@
 title: 8.Commitเอกสาร SR ไม่ได้
 description: 
 published: true
-date: 2026-03-25T02:42:17.684Z
+date: 2026-03-25T02:42:19.860Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T02:42:17.684Z

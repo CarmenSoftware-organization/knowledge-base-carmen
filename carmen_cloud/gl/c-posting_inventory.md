@@ -2,7 +2,7 @@
 title: Inventory & Extra Cost Posting to GL
 description: Inventory & Extra Cost Posting to GL
 published: true
-date: 2026-03-19T08:36:55.430Z
+date: 2026-03-20T09:32:28.505Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:55:44.078Z

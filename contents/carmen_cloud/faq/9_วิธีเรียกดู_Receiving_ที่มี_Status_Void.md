@@ -2,7 +2,7 @@
 title: 9.วิธีเรียกดู Receiving ที่มี Status Void
 description: 
 published: true
-date: 2026-03-25T05:14:06.999Z
+date: 2026-03-25T05:14:09.100Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T05:14:06.999Z

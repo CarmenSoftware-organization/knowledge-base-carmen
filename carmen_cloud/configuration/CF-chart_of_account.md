@@ -2,7 +2,7 @@
 title: Chart Of Accounts
 description: Chart Of Accounts
 published: true
-date: 2026-03-19T08:36:03.950Z
+date: 2026-03-20T09:31:27.435Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-02-02T06:54:28.498Z

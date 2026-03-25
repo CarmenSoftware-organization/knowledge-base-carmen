@@ -2,7 +2,7 @@
 title: 7.เรียกดูReport Inventory Balance แล้วไม่พบStore
 description: 
 published: true
-date: 2026-03-24T20:04:34.482Z
+date: 2026-03-24T20:04:36.664Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T20:04:34.482Z

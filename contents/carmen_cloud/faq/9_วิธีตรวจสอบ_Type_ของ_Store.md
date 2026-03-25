@@ -2,7 +2,7 @@
 title: 9.วิธีตรวจสอบ Type ของ Store
 description: 
 published: true
-date: 2026-03-25T05:11:59.969Z
+date: 2026-03-25T05:12:02.158Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T05:11:59.969Z

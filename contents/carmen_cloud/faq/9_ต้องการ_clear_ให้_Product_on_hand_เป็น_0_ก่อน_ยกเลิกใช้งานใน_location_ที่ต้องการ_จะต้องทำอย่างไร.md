@@ -2,7 +2,7 @@
 title: 9.ต้องการ clear ให้ Product on hand เป็น 0 ก่อน ยกเลิกใช้งานใน location ที่ต้องการ
 description: 
 published: true
-date: 2026-03-25T02:54:26.315Z
+date: 2026-03-25T02:54:28.479Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T02:54:26.315Z

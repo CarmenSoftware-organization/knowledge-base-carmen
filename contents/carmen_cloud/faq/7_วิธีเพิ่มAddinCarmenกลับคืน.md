@@ -2,7 +2,7 @@
 title: 7.วิธีเพิ่มAddinCarmenกลับคืน
 description: 
 published: true
-date: 2026-03-24T20:10:07.016Z
+date: 2026-03-24T20:10:09.135Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T20:10:07.016Z

@@ -2,7 +2,7 @@
 title: 9.Receiving Manually เลือก Store แล้วมองไม่เห็น Product
 description: 
 published: true
-date: 2026-03-25T06:36:46.085Z
+date: 2026-03-25T06:36:48.208Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T06:36:46.085Z

@@ -2,7 +2,7 @@
 title: Comment and Document Management & Activity Log
 description: Comment and Document Management & Activity Log
 published: true
-date: 2026-03-19T08:40:02.777Z
+date: 2026-03-20T08:40:43.202Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:40:00.594Z

@@ -2,7 +2,7 @@
 title: 9.สร้างPR ไม่เจอStore ให้เลือก
 description: 
 published: true
-date: 2026-03-25T06:31:23.085Z
+date: 2026-03-25T06:31:25.222Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T06:31:23.085Z

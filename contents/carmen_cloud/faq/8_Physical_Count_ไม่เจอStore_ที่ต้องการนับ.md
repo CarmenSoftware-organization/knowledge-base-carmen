@@ -2,7 +2,7 @@
 title: 8.Physical Count ไม่เจอStore ที่ต้องการนับ
 description: 
 published: true
-date: 2026-03-25T02:50:36.396Z
+date: 2026-03-25T02:50:38.562Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T02:50:36.396Z

@@ -2,7 +2,7 @@
 title: 8. วิธีตรวจสอบ Current Period ของ module ใน Carmen
 description: 
 published: true
-date: 2026-03-25T02:35:04.990Z
+date: 2026-03-25T02:35:07.143Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T02:35:04.990Z

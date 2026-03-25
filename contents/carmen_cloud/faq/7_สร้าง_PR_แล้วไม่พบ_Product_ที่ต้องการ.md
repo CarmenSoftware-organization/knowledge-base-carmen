@@ -2,7 +2,7 @@
 title: 7.สร้าง PR แล้วไม่พบ Product ที่ต้องการ
 description: 
 published: true
-date: 2026-03-24T20:13:47.166Z
+date: 2026-03-24T20:13:49.291Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T20:13:47.166Z

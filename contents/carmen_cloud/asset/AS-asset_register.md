@@ -2,7 +2,7 @@
 title: Asset Register
 description: Asset Register
 published: true
-date: 2026-03-19T08:39:12.788Z
+date: 2026-03-20T08:39:58.567Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:39:10.644Z

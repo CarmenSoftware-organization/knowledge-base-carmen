@@ -2,7 +2,7 @@
 title: 7.ต้องการตรวจสอบว่า item อยู่ในหมวด PR Type อะไร
 description: 
 published: true
-date: 2026-03-24T19:38:28.689Z
+date: 2026-03-24T19:38:30.925Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T19:38:28.689Z

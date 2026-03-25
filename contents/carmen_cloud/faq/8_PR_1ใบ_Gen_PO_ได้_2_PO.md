@@ -2,7 +2,7 @@
 title: 8.PR 1ใบ Gen PO ได้ 2 PO
 description: 
 published: true
-date: 2026-03-25T02:52:26.551Z
+date: 2026-03-25T02:52:28.729Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-25T02:52:26.551Z

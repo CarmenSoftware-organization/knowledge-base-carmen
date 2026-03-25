@@ -2,7 +2,7 @@
 title: 7. ตรวจสอบ Receiving ที่ยังไม่ committed ได้อย่างไร
 description: 
 published: true
-date: 2026-03-24T18:47:22.598Z
+date: 2026-03-24T18:47:24.758Z
 tags: 
 editor: markdown
 dateCreated: 2026-03-24T18:47:22.598Z
