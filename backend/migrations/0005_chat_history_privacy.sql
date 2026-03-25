@@ -2,6 +2,8 @@
 -- Migration: Privacy hardening for chat_history table
 -- รัน: go run cmd/server/main.go migrate
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ──────────────────────────────────────────────────────────────────────────────
 -- 1. Anonymise existing user_id rows that look like real identifiers.
 --    Rows already set to 'anonymous' or starting with 'u:' (already hashed)
@@ -15,13 +17,41 @@ WHERE user_id IS NOT NULL
   AND user_id NOT LIKE 'anon:%';
 
 -- ──────────────────────────────────────────────────────────────────────────────
--- 2. Add expires_at column for per-row retention control.
---    Default: 90 days from created_at.
---    Application can override per BU by setting a different interval.
+-- 2. expires_at — plain column + backfill + trigger (GENERATED timestamptz+interval
+--    is not immutable in PostgreSQL, so we maintain it in a BEFORE trigger).
+--    On INSERT: if expires_at is NULL, set to created_at + 90 days.
+--    On UPDATE: if created_at changes, set expires_at to new created_at + 90 days.
 -- ──────────────────────────────────────────────────────────────────────────────
 ALTER TABLE public.chat_history
-  ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ
-    GENERATED ALWAYS AS (created_at + INTERVAL '90 days') STORED;
+  ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+
+UPDATE public.chat_history
+SET expires_at = created_at + interval '90 days'
+WHERE expires_at IS NULL;
+
+CREATE OR REPLACE FUNCTION public.chat_history_set_expires_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.expires_at IS NULL THEN
+      NEW.expires_at := NEW.created_at + interval '90 days';
+    END IF;
+  ELSIF TG_OP = 'UPDATE' THEN
+    IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+      NEW.expires_at := NEW.created_at + interval '90 days';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_chat_history_expires_at ON public.chat_history;
+CREATE TRIGGER trg_chat_history_expires_at
+  BEFORE INSERT OR UPDATE ON public.chat_history
+  FOR EACH ROW
+  EXECUTE PROCEDURE public.chat_history_set_expires_at();
 
 CREATE INDEX IF NOT EXISTS idx_chat_history_expires_at
   ON public.chat_history (expires_at);
