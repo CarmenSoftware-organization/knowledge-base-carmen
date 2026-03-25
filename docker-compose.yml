@@ -4,9 +4,10 @@
 #   # edit .env.docker — set secrets (JWT, OPENROUTER_API_KEY, GITHUB_TOKEN, …)
 #   docker compose --env-file .env.docker up --build
 #
-# Migrations (run once against DB):
-#   docker compose exec backend ./server migrate migrations/0001_init_documents.sql
-#   # …then 0002, 0003, … in order (see backend/migrations/)
+# Migrations (ครั้งแรกหลัง DB ขึ้น — รันจาก host ที่ root ของ repo):
+#   ./scripts/migrate-docker.sh
+#   # หรือ PowerShell: .\scripts\migrate-docker.ps1
+# รายละเอียด / ไฟล์ทางเลือก (vector 2000, FAQ clear, ฯลฯ): backend/migrations/README.md
 #
 # Health: GET http://<host>:8080/health (Go), http://<host>:8000/api/health (Python chatbot)
 #

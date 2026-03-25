@@ -15,7 +15,11 @@ wiki-import/
 
 # Environment variables
 .env
+
+# Docker Compose — local secrets (use docker-compose.env.example as template)
 .env.docker
+.env.docker.local
+docker-compose.override.yml
 
 # Dependencies
 node_modules/
