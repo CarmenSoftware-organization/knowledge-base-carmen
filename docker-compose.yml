@@ -1,0 +1,90 @@
+# New Carmen — local / VPS stack (Postgres + pgvector, Go API, Next.js)
+# Usage:
+#   cp docker-compose.env.example .env.docker
+#   # edit .env.docker — set secrets (JWT, OPENROUTER_API_KEY, GITHUB_TOKEN, …)
+#   docker compose --env-file .env.docker up --build
+#
+# Migrations (run once against DB):
+#   docker compose exec backend ./server migrate migrations/0001_init_documents.sql
+#   # …then 0002, 0003, … in order (see backend/migrations/)
+#
+# Health (UptimeRobot): GET http://<host>:8080/health
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-carmen_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-carmen_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      PORT: "8080"
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: ${POSTGRES_DB:-carmen_db}
+      DB_SSLMODE: disable
+      DB_SCHEMA: ${DB_SCHEMA:-carmen,public}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      GIT_REPO_PATH: /repo
+      # ค่าเริ่มต้น = carmen_cloud ที่ root ของ repo; ถ้าใช้เฉพาะ contents/ ให้ตั้งเป็น /repo/contents/carmen_cloud
+      WIKI_CONTENT_PATH: ${WIKI_CONTENT_PATH:-/repo/carmen_cloud}
+      GITHUB_REPO_OWNER: ${GITHUB_REPO_OWNER:-Sunshine050}
+      GITHUB_REPO_NAME: ${GITHUB_REPO_NAME:-new-carmen}
+      GITHUB_BRANCH: ${GITHUB_BRANCH:-main}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_EMBED_MODEL: ${OPENROUTER_EMBED_MODEL:-qwen/qwen3-embedding-8b}
+      GOOGLE_TRANSLATE_API_KEY: ${GOOGLE_TRANSLATE_API_KEY:-}
+      TRANSLATION_ENABLED: ${TRANSLATION_ENABLED:-false}
+    volumes:
+      # Repo mount: wiki markdown + carmen_cloud + .git for sync (needs write for git pull)
+      - .:/repo
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend/user
+      dockerfile: Dockerfile
+      args:
+        DOCKER_BUILD: "1"
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8080}
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata:
