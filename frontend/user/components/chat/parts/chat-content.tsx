@@ -321,7 +321,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                         animate={{ opacity: 1, scale: 1, x: "-50%" }}
                         exit={{ opacity: 0, scale: 0.5, x: "-50%", transition: { duration: 0.15 } }}
                         onClick={() => scrollToBottom(true, false)}
-                        className="absolute bottom-[110px] left-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg z-50 transition-transform hover:scale-110 active:scale-95"
+                        className="absolute bottom-[125px] left-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg z-50 transition-transform hover:scale-110 active:scale-95"
                         style={{ background: `linear-gradient(135deg, ${theme}, ${theme}dd)` }}
                         title={t("tools.scroll_down")}
                     >

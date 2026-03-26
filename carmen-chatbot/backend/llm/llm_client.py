@@ -151,6 +151,58 @@ class LLMClient:
         raise last_error
 
     # ------------------------------------------------------------------
+    # Language detection
+    # ------------------------------------------------------------------
+    def _detect_lang(self, text: str) -> str:
+        """Return 'th' if text is predominantly Thai, otherwise 'other'.
+
+        Uses Thai Unicode block (U+0E00–U+0E7F).
+        Threshold: ≥15% of non-whitespace chars are Thai → treat as Thai.
+        """
+        non_space = [c for c in text if not c.isspace()]
+        if not non_space:
+            return "th"
+        thai_count = sum(1 for c in non_space if '\u0e00' <= c <= '\u0e7f')
+        return "th" if (thai_count / len(non_space)) >= 0.15 else "other"
+
+    # ------------------------------------------------------------------
+    # Query translation (non-Thai → Thai for KB retrieval)
+    # ------------------------------------------------------------------
+    async def _translate_query_to_thai(self, query: str) -> tuple[str, int, int]:
+        """Translate a non-Thai query to Thai for searching the Thai KB.
+
+        Returns (translated_query, input_tokens, output_tokens).
+        Falls back to original query on any error.
+        """
+        try:
+            from .prompt import TRANSLATE_PROMPT
+            prompt = TRANSLATE_PROMPT.replace("{query}", self._sanitize_input(query))
+            llm = self._create_llm(streaming=False, model_name=settings.active_intent_model, max_tokens=100)
+            messages = [HumanMessage(content=prompt)]
+            response = await llm.ainvoke(messages)
+
+            input_tokens = output_tokens = 0
+            resp_meta = getattr(response, 'response_metadata', {})
+            if resp_meta and 'token_usage' in resp_meta:
+                tu = resp_meta['token_usage']
+                input_tokens = tu.get('prompt_tokens', 0)
+                output_tokens = tu.get('completion_tokens', 0)
+            else:
+                usage = getattr(response, 'usage_metadata', None)
+                if usage and isinstance(usage, dict):
+                    input_tokens = usage.get('input_tokens', 0)
+                    output_tokens = usage.get('output_tokens', 0)
+
+            translated = response.content.strip().strip('"').strip("'")
+            if len(translated) < 2 or len(translated) > 200:
+                return query, input_tokens, output_tokens
+            logger.info(f"🌐 Query translated: '{query}' → '{translated}'")
+            return translated, input_tokens, output_tokens
+        except Exception as e:
+            logger.warning(f"⚠️ Query translation failed: {e}")
+            return query, 0, 0
+
+    # ------------------------------------------------------------------
     # Query rewriting
     # ------------------------------------------------------------------
     async def _rewrite_query(self, message: str, history_text: str) -> tuple[str, int, int]:

@@ -278,30 +278,32 @@ class RetrievalService:
                     flags=re.IGNORECASE
                 )
 
-                if base_dir:
-                    def resolve_src(src):
-                        clean_src = src.lstrip("/")
-                        if clean_src.startswith("./"):
-                            clean_src = clean_src[2:]
-                        if clean_src.startswith("http") or clean_src.startswith("data:"):
-                            return src
-                        if clean_src.startswith("images/"):
-                            clean_src = clean_src[len("images/"):]
-                        if "/" not in clean_src:
-                            clean_src = f"{base_dir}/{clean_src}"
-                        return f"/images/{clean_src.lstrip('/')}"
+                def resolve_src(src):
+                    clean_src = src.lstrip("/")
+                    if clean_src.startswith("./"):
+                        clean_src = clean_src[2:]
+                    # Strip leading ../ sequences that cannot be resolved without full tree
+                    while clean_src.startswith("../"):
+                        clean_src = clean_src[3:]
+                    if clean_src.startswith("http") or clean_src.startswith("data:"):
+                        return src
+                    if clean_src.startswith("images/"):
+                        clean_src = clean_src[len("images/"):]
+                    if "/" not in clean_src:
+                        clean_src = f"{base_dir}/{clean_src}" if base_dir else clean_src
+                    return f"/images/{clean_src.lstrip('/')}"
 
-                    def fix_img_tag(match):
-                        full_tag = match.group(0)
-                        src_match = re.search(r'src=["\']([^"\']+)["\']', full_tag)
-                        if not src_match:
-                            return full_tag
-                        new_src = resolve_src(src_match.group(1))
-                        return re.sub(r'src=["\']([^"\']+)["\']', f'src="{new_src}"', full_tag)
+                def fix_img_tag(match):
+                    full_tag = match.group(0)
+                    src_match = re.search(r'src=["\']([^"\']+)["\']', full_tag)
+                    if not src_match:
+                        return full_tag
+                    new_src = resolve_src(src_match.group(1))
+                    return re.sub(r'src=["\']([^"\']+)["\']', f'src="{new_src}"', full_tag)
 
-                    content = re.sub(r'<img\s+[^>]*src=["\']([^"\']+)["\'][^>]*>', fix_img_tag, content)
-                    content = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)',
-                        lambda m: f"![{m.group(1)}]({resolve_src(m.group(2))})", content)
+                content = re.sub(r'<img\s+[^>]*src=["\']([^"\']+)["\'][^>]*>', fix_img_tag, content)
+                content = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)',
+                    lambda m: f"![{m.group(1)}]({resolve_src(m.group(2))})", content)
 
                 score_label = f"rrf={item['rrf']:.4f}"
                 if item["vector_dist"] < 1.0:
