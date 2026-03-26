@@ -1,6 +1,6 @@
 "use client";
 import { DisplayMessage } from "@/hooks/use-carmen-chat";
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import DOMPurify from "dompurify";
 
@@ -24,6 +24,33 @@ const IconRetry = (
 const IconCopy = (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
     <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+  </svg>
+);
+
+const IconExport = (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+const IconDocx = (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+);
+
+const IconPdf = (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <path d="M9 13h2a1 1 0 0 0 0-2H9v6" />
+    <path d="M15 11h1.5a1.5 1.5 0 0 1 0 3H15v-3z" />
   </svg>
 );
 
@@ -55,7 +82,7 @@ const suggestionContainerVariants = {
     opacity: 1,
     height: "auto",
     marginTop: 8,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1, duration: 0.3, ease: "easeOut" },
+    transition: { staggerChildren: 0.08, delayChildren: 0.1, duration: 0.3, ease: "easeOut" as const },
   },
   exit: {
     opacity: 0,
@@ -116,7 +143,22 @@ interface Props {
 const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, onSelect, theme = "#34558b", t }: Props) {
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const isBot = msg.role === "bot";
+
+  // Close export menu on outside click
+  useEffect(() => {
+    if (!showExportMenu) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showExportMenu]);
 
   // Sanitize HTML to prevent XSS from LLM prompt injection
   const processedContent = useMemo(() => {
@@ -171,6 +213,113 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
       console.error("Fallback copy failed", err);
     }
     document.body.removeChild(ta);
+  }
+
+  /** Grab already-rendered images from the DOM and convert to base64 via canvas. */
+  function embedImagesFromDom(html: string): string {
+    // Get the real rendered images from the content ref
+    const renderedImgs = contentRef.current?.querySelectorAll("img");
+    if (!renderedImgs || renderedImgs.length === 0) return html;
+
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    const exportImgs = div.querySelectorAll("img");
+
+    renderedImgs.forEach((rendered, i) => {
+      if (i >= exportImgs.length) return;
+      const imgEl = rendered as HTMLImageElement;
+      if (!imgEl.complete || imgEl.naturalWidth === 0) return;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = imgEl.naturalWidth;
+        canvas.height = imgEl.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(imgEl, 0, 0);
+        exportImgs[i].setAttribute("src", canvas.toDataURL("image/png"));
+      } catch {
+        // keep original src if canvas is tainted (cross-origin)
+      }
+    });
+    return div.innerHTML;
+  }
+
+  function handleExportDocx() {
+    setShowExportMenu(false);
+    const embeddedHtml = embedImagesFromDom(processedContent);
+    const header = [
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office"',
+      ' xmlns:w="urn:schemas-microsoft-com:office:word"',
+      ' xmlns="http://www.w3.org/TR/REC-html40">',
+      "<head><meta charset='utf-8'>",
+      "<style>",
+      "body { font-family: 'Sarabun', 'TH SarabunPSK', 'Tahoma', sans-serif; font-size: 14pt; line-height: 1.6; padding: 20px; }",
+      "img { max-width: 100%; height: auto; }",
+      "table { border-collapse: collapse; width: 100%; }",
+      "td, th { border: 1px solid #ccc; padding: 6px 10px; }",
+      "</style></head><body>",
+    ].join("");
+    const footer = "</body></html>";
+    const blob = new Blob(["\ufeff", header + embeddedHtml + footer], {
+      type: "application/msword",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `carmen-export-${Date.now()}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function handleExportPdf() {
+    setShowExportMenu(false);
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write([
+      "<!DOCTYPE html><html><head><meta charset='utf-8'>",
+      "<title>Carmen Export</title>",
+      "<style>",
+      "@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');",
+      "body { font-family: 'Sarabun', 'TH SarabunPSK', 'Tahoma', sans-serif; font-size: 14pt; line-height: 1.8; padding: 40px; color: #1e293b; }",
+      "img { max-width: 100%; height: auto; }",
+      "table { border-collapse: collapse; width: 100%; margin: 12px 0; }",
+      "td, th { border: 1px solid #cbd5e1; padding: 8px 12px; }",
+      "th { background: #f1f5f9; }",
+      "a { color: #2563eb; }",
+      "pre { background: #f8fafc; padding: 12px; border-radius: 6px; overflow-x: auto; }",
+      "code { font-size: 12pt; }",
+      "@media print { body { padding: 0; } }",
+      "</style></head><body>",
+      processedContent,
+      "</body></html>",
+    ].join(""));
+    printWindow.document.close();
+
+    // Wait for images to load before printing
+    const images = printWindow.document.querySelectorAll("img");
+    if (images.length === 0) {
+      printWindow.focus();
+      printWindow.print();
+      return;
+    }
+    let loaded = 0;
+    const onLoad = () => {
+      loaded++;
+      if (loaded >= images.length) {
+        printWindow.focus();
+        printWindow.print();
+      }
+    };
+    images.forEach((img) => {
+      if (img.complete) {
+        onLoad();
+      } else {
+        img.addEventListener("load", onLoad);
+        img.addEventListener("error", onLoad);
+      }
+    });
   }
 
   function handleFeedback(score: number) {
@@ -240,7 +389,9 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                 </div>
               </div>
             ) : (
-              <StaticHtmlContent content={processedContent} />
+              <div ref={contentRef}>
+                <StaticHtmlContent content={processedContent} />
+              </div>
             )}
           </div>
         )}
@@ -267,6 +418,47 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                 : IconCopy
               }
             </button>
+
+            {/* Export dropdown */}
+            <div className="relative" ref={exportMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowExportMenu((v) => !v)}
+                className="p-1 text-slate-400 dark:text-slate-500 transition-all duration-200 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:scale-110 rounded"
+                title={t("tools.export")}
+              >
+                {IconExport}
+              </button>
+
+              <AnimatePresence>
+                {showExportMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute bottom-full mb-1 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-50 min-w-[110px] whitespace-nowrap"
+                  >
+                    <button
+                      type="button"
+                      onClick={handleExportDocx}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      {IconDocx}
+                      {t("tools.export_doc")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportPdf}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      {IconPdf}
+                      {t("tools.export_pdf")}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {msg.msgId && (
               <>

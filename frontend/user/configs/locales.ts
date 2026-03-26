@@ -51,6 +51,9 @@ export interface LocaleStrings {
   tools: {
     copy: string;
     copied: string;
+    export: string;
+    export_doc: string;
+    export_pdf: string;
     helpful: string;
     incorrect: string;
     scroll_down: string;
@@ -115,6 +118,9 @@ export const locales: Record<LocaleKey, LocaleStrings> = {
     tools: {
       copy: "คัดลอกข้อมูล",
       copied: "คัดลอกแล้ว!",
+      export: "ส่งออกไฟล์",
+      export_doc: "ส่งออก Word",
+      export_pdf: "ส่งออก PDF",
       helpful: "มีประโยชน์",
       incorrect: "ไม่ถูกต้อง",
       scroll_down: "เลื่อนลงล่างสุด",
@@ -177,6 +183,9 @@ export const locales: Record<LocaleKey, LocaleStrings> = {
     tools: {
       copy: "Copy content",
       copied: "Copied!",
+      export: "Export file",
+      export_doc: "Export Word",
+      export_pdf: "Export PDF",
       helpful: "Helpful",
       incorrect: "Incorrect",
       scroll_down: "Scroll to bottom",
