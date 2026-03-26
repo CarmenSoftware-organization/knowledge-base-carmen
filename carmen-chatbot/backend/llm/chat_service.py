@@ -183,6 +183,13 @@ class LLMService(LLMClient):
             total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
             logger.info(f"⏱️ Rewrite Time: {time.time() - t0:.2f}s  |  \"{message}\" → \"{search_query}\"")
 
+        # ── STEP 1.5: Query Translation (non-Thai → Thai for KB search) ──
+        if self._detect_lang(search_query) == "other":
+            trans_query, trans_in, trans_out = await self._translate_query_to_thai(search_query)
+            search_query = trans_query
+            rewrite_in += trans_in
+            rewrite_out += trans_out
+
         # ── STEP 2: Retrieval ──────────────────────────────────────────
         if request and await request.is_disconnected():
             logger.warning("🛑 Client disconnected before retrieval.")
@@ -461,6 +468,13 @@ class LLMService(LLMClient):
             search_query, rewrite_in, rewrite_out = await self._rewrite_query(message, history_text)
             was_rewritten = search_query != message
             total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
+
+        # ── Query Translation (non-Thai → Thai for KB search) ──────────
+        if self._detect_lang(search_query) == "other":
+            trans_query, trans_in, trans_out = await self._translate_query_to_thai(search_query)
+            search_query = trans_query
+            rewrite_in += trans_in
+            rewrite_out += trans_out
 
         # ── Retrieval ──────────────────────────────────────────────────
         passed_docs, source_debug, retrieval_embed_tokens, avg_similarity_score = await retrieval_service.search(search_query, db_schema)

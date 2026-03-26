@@ -45,6 +45,18 @@ BASE_PROMPT: |
     history: "<chat_history>{chat_history}</chat_history>"
     query: "<user_input>{question}</user_input>"
 
+TRANSLATE_PROMPT: |
+  Translate the following search query into Thai for searching a Thai knowledge base.
+
+  Rules:
+  1. OUTPUT: Thai translation only. No explanation, no extra text.
+  2. PRESERVE: Keep technical terms, product names, and untranslatable proper nouns as-is.
+  3. CONCISE: Max 15 words.
+
+  Query: {query}
+
+  Thai Translation:
+
 REWRITE_PROMPT: |
   Rewrite the latest message as a standalone search query for a technical manual.
 
