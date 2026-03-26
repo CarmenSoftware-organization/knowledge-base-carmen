@@ -1,0 +1,120 @@
+# Render Blueprint — Postgres + Go backend + Python chatbot
+# Dashboard → New → Blueprint → เลือก repo นี้
+#
+# หลัง deploy ครั้งแรก: ไปที่ Environment ของแต่ละ service แล้วตั้งค่า (sync: false)
+#   PYTHON_CHATBOT_URL = URL ของ service carmen-chatbot (จาก Dashboard)
+#   GO_BACKEND_URL     = URL ของ service carmen-backend (จาก Dashboard)
+# จากนั้น Redeploy ทั้งสอง service (หรือใช้ค่า RENDER_EXTERNAL_URL จากแต่ละ service เอง)
+#
+# Migrations: ไม่ใส่ preDeploy ที่รัน ./server migrate อัตโนมัติ — ไฟล์หลายตัวต้องใช้ psql
+# ดู backend/migrations/README.md แล้วรันผ่าน Render Shell / PSQL จากหน้า Database
+#
+# Secrets (ตั้งใน Dashboard สำหรับ key ที่ sync: false):
+#   JWT_SECRET, PRIVACY_HMAC_SECRET (ควรเป็นค่าเดียวกันทั้งสอง service ถ้าใช้ privacy),
+#   GITHUB_TOKEN, OPENROUTER_API_KEY
+# Chatbot: ตั้ง LLM_API_KEY (ใช้ค่าเดียวกับ OpenRouter ได้)
+
+databases:
+  - name: carmen-db
+    databaseName: carmen_db
+
+services:
+  - type: web
+    name: carmen-chatbot
+    runtime: docker
+    region: singapore
+    plan: starter
+    dockerfilePath: ./carmen-chatbot/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: carmen-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: carmen-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: carmen-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: carmen-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: carmen-db
+          property: database
+      - key: DB_SSLMODE
+        value: require
+      - key: GO_BACKEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: LLM_API_KEY
+        sync: false
+      - key: PRIVACY_HMAC_SECRET
+        sync: false
+      - key: LLM_EMBED_MODEL
+        value: qwen/qwen3-embedding-8b
+
+  - type: web
+    name: carmen-backend
+    runtime: docker
+    region: singapore
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: carmen-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: carmen-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: carmen-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: carmen-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: carmen-db
+          property: database
+      - key: DB_SSLMODE
+        value: require
+      - key: DB_SCHEMA
+        value: carmen,public
+      - key: ENVIRONMENT
+        value: production
+      - key: PYTHON_CHATBOT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: PRIVACY_HMAC_SECRET
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_EMBED_MODEL
+        value: qwen/qwen3-embedding-8b
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO_OWNER
+        value: Sunshine050
+      - key: GITHUB_REPO_NAME
+        value: new-carmen
+      - key: GITHUB_BRANCH
+        value: main
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: TRANSLATION_ENABLED
+        value: "false"

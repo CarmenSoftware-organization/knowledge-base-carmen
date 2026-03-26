@@ -69,3 +69,17 @@ docker compose --env-file .env.docker exec backend ./server migrate migrations/0
 
 - รัน **reindex** ตาม BU ถ้าโปรเจกต์ใช้ (ดู `README` / `cmd/server` ของ backend)
 - ตั้ง `OPENROUTER_EMBED_MODEL` / `VECTOR_DIMENSION` ให้ตรงกับมิติในฐานข้อมูล
+
+---
+
+## Render (Production)
+
+- **ไม่แนะนำ** ใช้ `preDeployCommand: ./server migrate` แบบรันทุกครั้งที่ deploy — บางไฟล์ (เช่น `0002`) มี PL/pgSQL ที่ binary แยกด้วย `;` ไม่ปลอดภัย
+- รัน migration **ครั้งแรก** ผ่าน **Render Shell** ของ service `carmen-backend` หรือใช้ **PSQL** จากหน้า Database (เมนู Connect) แล้วรันคำสั่งจากไฟล์ `.sql` ตามลำดับในตารางด้านบน
+- หลังได้ URL ของ `carmen-backend` และ `carmen-chatbot` แล้ว ตั้ง `PYTHON_CHATBOT_URL` / `GO_BACKEND_URL` ใน Dashboard แล้ว redeploy (ดูคอมเมนต์ใน `render.yaml`)
+
+## Vercel (Frontend)
+
+- Root Directory: `frontend/user`
+- ตั้ง `NEXT_PUBLIC_API_BASE` = `https://<carmen-backend>.onrender.com` (ไม่มี slash ท้ายก็ได้ — ให้ตรงกับที่ frontend เรียก)
+- โปรเจกต์มี `frontend/user/vercel.json` ตั้ง region **Singapore (`sin1`)**
