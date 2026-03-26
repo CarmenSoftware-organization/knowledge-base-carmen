@@ -1,0 +1,20 @@
+# Root context (e.g. if you add a root-level build later)
+.git
+.github
+**/.git
+.idea
+.vscode
+**/.DS_Store
+**/*.log
+**/.env
+**/.env.*
+!**/.env.example
+
+**/node_modules
+**/.next
+**/dist
+**/__pycache__
+**/*.pyc
+
+carmen-chatbot/**/node_modules
+backend/tmp

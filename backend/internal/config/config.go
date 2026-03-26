@@ -151,7 +151,7 @@ func Load() error {
 
 	AppConfig = &Config{
 		Server: ServerConfig{
-			Port:          getEnv("SERVER_PORT", "8080"),
+			Port:          listenPort(),
 			Host:          getEnv("SERVER_HOST", "localhost"),
 			ChatbotURL:    getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
 			Environment:   getEnv("ENVIRONMENT", "development"),
@@ -263,6 +263,14 @@ func NormalizePath(path string) string {
 		return "./" + clean
 	}
 	return clean
+}
+
+// listenPort returns PORT (container platforms) or SERVER_PORT or default 8080.
+func listenPort() string {
+	if p := strings.TrimSpace(os.Getenv("PORT")); p != "" {
+		return p
+	}
+	return getEnv("SERVER_PORT", "8080")
 }
 
 func getEnv(key, defaultValue string) string {

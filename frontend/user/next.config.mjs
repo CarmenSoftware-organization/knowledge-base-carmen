@@ -1,13 +1,23 @@
+import { dirname } from "path";
+import { fileURLToPath } from "url";
 import createNextIntlPlugin from "next-intl/plugin";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Monorepo: avoid inferring repo root from parent lockfiles (see Next.js turbopack root docs)
+  turbopack: {
+    root: __dirname,
+  },
+  // Docker / self-hosted: set DOCKER_BUILD=1 at build time for standalone bundle
+  ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" } : {}),
   typescript: {
     ignoreBuildErrors: true,
   },
-  images: {
+    images: {
     unoptimized: true,
   },
   async headers() {
