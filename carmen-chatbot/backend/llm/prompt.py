@@ -7,8 +7,11 @@ from ..core.config import settings
 
 BASE_PROMPT = settings.PROMPTS.get("BASE_PROMPT", "")
 REWRITE_PROMPT = settings.PROMPTS.get("REWRITE_PROMPT", "")
+TRANSLATE_PROMPT = settings.PROMPTS.get("TRANSLATE_PROMPT", "")
 
 if not BASE_PROMPT:
     print("⚠️ WARNING: BASE_PROMPT not found in prompts.json")
 if not REWRITE_PROMPT:
     print("⚠️ WARNING: REWRITE_PROMPT not found in prompts.json")
+if not TRANSLATE_PROMPT:
+    print("⚠️ WARNING: TRANSLATE_PROMPT not found in prompts.json")

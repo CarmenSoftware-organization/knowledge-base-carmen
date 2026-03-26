@@ -47,8 +47,13 @@ flowchart TD
     %% ── Tech-support path ──────────────────────────────────────────
     H -- tech_support --> TS1{Conversation\nHistory?}
     TS1 -- Yes --> TS2[[Query Rewrite\n_rewrite_query via LLM]]
-    TS2 --> TS3
-    TS1 -- No --> TS3[[Hybrid Retrieval\nretrieval.search]]
+    TS2 --> LANG
+    TS1 -- No --> LANG
+
+    LANG{Language Detect\n_detect_lang\n≥15% Thai chars?}
+    LANG -- Thai --> TS3[[Hybrid Retrieval\nretrieval.search]]
+    LANG -- Non-Thai --> TRANS[[Translate to Thai\n_translate_query_to_thai\nactive_intent_model]]
+    TRANS --> TS3
 
     subgraph RETRIEVAL ["Hybrid Retrieval Pipeline"]
         direction TB
@@ -118,6 +123,7 @@ flowchart TD
 | Orchestration | `llm/chat_service.py` | Full request lifecycle, metrics |
 | Intent routing | `llm/intent_router.py` | Regex → vector cosine → LLM classifier |
 | Retrieval | `llm/retrieval.py` | Embed → pgvector → FTS → RRF → path boost |
+| Query translation | `llm/llm_client.py` | `_detect_lang` (Thai Unicode ≥15%) → `_translate_query_to_thai` via `active_intent_model` |
 | LLM client | `llm/llm_client.py` | Model creation, retry, fallback, token estimation |
 | Prompt building | `llm/prompt_builder.py` | System + history + context assembly |
 | History & logging | `llm/chat_history.py` | Session cache, DB insert, PII masking |
