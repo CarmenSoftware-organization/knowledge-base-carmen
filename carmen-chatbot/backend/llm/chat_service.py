@@ -26,6 +26,13 @@ from .prompt_builder import get_locale, build_messages, TRUNCATION_NOTICE, EMPTY
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+_CONTEXT_TOKEN_BUFFER = 300   # reserved headroom when budgeting context tokens
+_STREAM_TIMEOUT_S = 90        # per-stream LLM timeout in seconds
+
+# ---------------------------------------------------------------------------
 # Module-level helpers (pure, no class state)
 # ---------------------------------------------------------------------------
 
@@ -115,7 +122,64 @@ def _build_log_payload(
 class LLMService(LLMClient):
     def __init__(self):
         super().__init__()
-        print(f"💬 AI Chat Model Initialization Complete using {self.default_model}")
+        logger.info(f"💬 LLMService initialized — model: {self.default_model}")
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    async def _build_search_query(
+        self,
+        message: str,
+        room_id: str,
+        history_text: str,
+        total_tokens_map: dict,
+        has_history: bool | None = None,
+    ) -> tuple[str, bool, int, int]:
+        """Rewrite query (if history exists) then translate non-Thai to Thai.
+
+        Returns: (search_query, was_rewritten, rewrite_in_tokens, rewrite_out_tokens)
+        """
+        if has_history is None:
+            has_history = chat_history.has_history(room_id)
+
+        search_query, was_rewritten, rewrite_in, rewrite_out = message, False, 0, 0
+
+        if has_history:
+            search_query, rewrite_in, rewrite_out = await self._rewrite_query(message, history_text)
+            was_rewritten = search_query != message
+            total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
+
+        if self._detect_lang(search_query) == "other":
+            trans_query, trans_in, trans_out = await self._translate_query_to_thai(search_query)
+            search_query = trans_query
+            rewrite_in += trans_in
+            rewrite_out += trans_out
+            total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
+
+        return search_query, was_rewritten, rewrite_in, rewrite_out
+
+    def _prepare_llm_messages(
+        self, message: str, lang: str, context_text: str, history_text: str
+    ) -> tuple[list, str]:
+        """Trim context to token budget and build LLM message list.
+
+        Returns: (messages, trimmed_context_text)
+        """
+        system_base = BASE_PROMPT.split("data_input:")[0].strip()
+        context_budget = (
+            settings.MAX_PROMPT_TOKENS
+            - self._estimate_tokens(system_base)
+            - self._estimate_tokens(history_text)
+            - self._estimate_tokens(message)
+            - _CONTEXT_TOKEN_BUFFER
+        )
+        if context_budget > 0:
+            context_text = self._trim_context(context_text, context_budget)
+        messages, _ = build_messages(
+            system_base, get_locale(lang), lang, context_text, history_text, self._sanitize_input(message)
+        )
+        return messages, context_text
 
     # ------------------------------------------------------------------
     # Streaming chat
@@ -128,7 +192,7 @@ class LLMService(LLMClient):
     ):
         start_time = time.time()
         model_name = self.get_active_model(model_name)
-        l = get_locale(lang)
+        locale = get_locale(lang)
         ttft = 0.0
         device_type = _parse_device_type(
             request.headers.get("user-agent", "") if request else ""
@@ -170,32 +234,25 @@ class LLMService(LLMClient):
         logger.info(f"⚡ Processing as TECH_SUPPORT: '{message}'")
 
         # ── STEP 1: Query Rewriting ────────────────────────────────────
-        search_query, was_rewritten, rewrite_in, rewrite_out = message, False, 0, 0
-        if chat_history.has_history(room_id):
+        if have_history:
             if request and await request.is_disconnected():
                 logger.warning("🛑 Client disconnected before rewrite.")
                 return
-            yield json.dumps({"type": "status", "data": l["status_analyzing"]}) + "\n"
+            yield json.dumps({"type": "status", "data": locale["status_analyzing"]}) + "\n"
             await asyncio.sleep(0)
-            t0 = time.time()
-            search_query, rewrite_in, rewrite_out = await self._rewrite_query(message, history_text)
-            was_rewritten = search_query != message
-            total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
-            logger.info(f"⏱️ Rewrite Time: {time.time() - t0:.2f}s  |  \"{message}\" → \"{search_query}\"")
 
-        # ── STEP 1.5: Query Translation (non-Thai → Thai for KB search) ──
-        if self._detect_lang(search_query) == "other":
-            trans_query, trans_in, trans_out = await self._translate_query_to_thai(search_query)
-            search_query = trans_query
-            rewrite_in += trans_in
-            rewrite_out += trans_out
-            total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
+        t0 = time.time()
+        search_query, was_rewritten, rewrite_in, rewrite_out = await self._build_search_query(
+            message, room_id, history_text, total_tokens_map, has_history=have_history
+        )
+        if was_rewritten:
+            logger.info(f"⏱️ Rewrite: {time.time() - t0:.2f}s  |  \"{message}\" → \"{search_query}\"")
 
         # ── STEP 2: Retrieval ──────────────────────────────────────────
         if request and await request.is_disconnected():
             logger.warning("🛑 Client disconnected before retrieval.")
             return
-        yield json.dumps({"type": "status", "data": l["status_searching"]}) + "\n"
+        yield json.dumps({"type": "status", "data": locale["status_searching"]}) + "\n"
         await asyncio.sleep(0)
         passed_docs, source_debug, retrieval_embed_tokens, avg_similarity_score = await retrieval_service.search(search_query, db_schema)
         log_search(search_query, passed_docs)
@@ -226,7 +283,7 @@ class LLMService(LLMClient):
         if request and await request.is_disconnected():
             logger.warning("🛑 Client disconnected before composing answer.")
             return
-        yield json.dumps({"type": "status", "data": l["status_composing"]}) + "\n"
+        yield json.dumps({"type": "status", "data": locale["status_composing"]}) + "\n"
         await asyncio.sleep(0)
 
         # ── STEP 3: LLM Streaming ──────────────────────────────────────
@@ -234,18 +291,7 @@ class LLMService(LLMClient):
         last_chunk = None
         was_truncated = False
         try:
-            system_base = BASE_PROMPT.split("data_input:")[0].strip()
-            context_budget = (
-                settings.MAX_PROMPT_TOKENS
-                - self._estimate_tokens(system_base)
-                - self._estimate_tokens(history_text)
-                - self._estimate_tokens(message)
-                - 300
-            )
-            if context_budget > 0:
-                context_text = self._trim_context(context_text, context_budget)
-
-            messages, _ = build_messages(system_base, l, lang, context_text, history_text, self._sanitize_input(message))
+            messages, context_text = self._prepare_llm_messages(message, lang, context_text, history_text)
 
             models_to_try = [model_name]
             if settings.LLM_FALLBACK_MODEL and settings.LLM_FALLBACK_MODEL != model_name:
@@ -267,64 +313,64 @@ class LLMService(LLMClient):
 
                 try:
                     llm = self._create_llm(streaming=True, model_name=current_model)
-                    async with asyncio.timeout(90):
-                      async for chunk in llm.astream(messages):
-                        if request and await request.is_disconnected():
-                            logger.warning("🛑 Client disconnected during streaming.")
-                            partial_duration = time.time() - start_time
-                            partial_input, partial_output = _extract_token_usage(accumulated)
-                            if partial_input == 0 and partial_output == 0:
-                                partial_input = len((context_text + message).encode('utf-8')) // 3
-                                partial_output = len(full_response.encode('utf-8')) // 3
-                            total_tokens_map["chat_input"] = partial_input
-                            total_tokens_map["chat_output"] = partial_output
-                            log_performance(total_tokens_map, ttft, partial_duration)
-                            await chat_history.save_chat_logs(_build_log_payload(
-                                room_id=room_id, bu=bu, username=username, message=message, response=full_response,
-                                model_name=current_model,
-                                chat_input_tokens=partial_input, chat_output_tokens=partial_output,
-                                intent_tokens=intent_tokens, embed_tokens=embed_tokens,
-                                rewrite_in=rewrite_in, rewrite_out=rewrite_out, source_debug=source_debug,
-                                start_time=start_time, lang=lang, intent_type="tech_support",
-                                was_rewritten=was_rewritten, had_zero_results=False, was_truncated=False,
-                                retrieved_chunks=retrieved_chunks, history_count=history_count,
-                                ttft_ms=round(ttft * 1000),
-                                avg_similarity_score=avg_similarity_score,
-                                device_type=device_type, referrer_page=referrer_page,
-                            ))
-                            return
+                    async with asyncio.timeout(_STREAM_TIMEOUT_S):
+                        async for chunk in llm.astream(messages):
+                            if request and await request.is_disconnected():
+                                logger.warning("🛑 Client disconnected during streaming.")
+                                partial_duration = time.time() - start_time
+                                partial_input, partial_output = _extract_token_usage(accumulated)
+                                if partial_input == 0 and partial_output == 0:
+                                    partial_input = len((context_text + message).encode('utf-8')) // 3
+                                    partial_output = len(full_response.encode('utf-8')) // 3
+                                total_tokens_map["chat_input"] = partial_input
+                                total_tokens_map["chat_output"] = partial_output
+                                log_performance(total_tokens_map, ttft, partial_duration)
+                                await chat_history.save_chat_logs(_build_log_payload(
+                                    room_id=room_id, bu=bu, username=username, message=message, response=full_response,
+                                    model_name=current_model,
+                                    chat_input_tokens=partial_input, chat_output_tokens=partial_output,
+                                    intent_tokens=intent_tokens, embed_tokens=embed_tokens,
+                                    rewrite_in=rewrite_in, rewrite_out=rewrite_out, source_debug=source_debug,
+                                    start_time=start_time, lang=lang, intent_type="tech_support",
+                                    was_rewritten=was_rewritten, had_zero_results=False, was_truncated=False,
+                                    retrieved_chunks=retrieved_chunks, history_count=history_count,
+                                    ttft_ms=round(ttft * 1000),
+                                    avg_similarity_score=avg_similarity_score,
+                                    device_type=device_type, referrer_page=referrer_page,
+                                ))
+                                return
 
-                        if first_token_time is None and chunk.content:
-                            first_token_time = time.time()
-                            ttft = first_token_time - start_time
-                            print(f"⏱️ TTFT: {ttft:.2f}s")
+                            if first_token_time is None and chunk.content:
+                                first_token_time = time.time()
+                                ttft = first_token_time - start_time
+                                logger.debug(f"⏱️ TTFT: {ttft:.2f}s")
 
-                        chunk_meta = getattr(chunk, 'response_metadata', {})
-                        if chunk_finish := chunk_meta.get('finish_reason') or chunk_meta.get('stop_reason'):
-                            stream_finish_reason = chunk_finish
+                            chunk_meta = getattr(chunk, 'response_metadata', {})
+                            if chunk_finish := chunk_meta.get('finish_reason') or chunk_meta.get('stop_reason'):
+                                stream_finish_reason = chunk_finish
 
-                        accumulated = chunk if accumulated is None else accumulated + chunk
-                        if chunk.content:
-                            content_yielded = True
-                            full_response += chunk.content
+                            accumulated = chunk if accumulated is None else accumulated + chunk
+                            if chunk.content:
+                                content_yielded = True
+                                full_response += chunk.content
 
-                            if tag in full_response:
-                                tag_index = full_response.find(tag)
-                                if yielded_text_len < tag_index:
-                                    to_yield = full_response[yielded_text_len:tag_index]
-                                    yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
-                                    yielded_text_len = tag_index
-                            else:
-                                # Hold back partial tag suffix
-                                potential_limit = len(full_response)
-                                for i in range(len(tag), 0, -1):
-                                    if full_response.endswith(tag[:i]):
-                                        potential_limit = len(full_response) - i
-                                        break
-                                to_yield = full_response[yielded_text_len:potential_limit]
-                                if to_yield:
-                                    yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
-                                    yielded_text_len += len(to_yield)
+                                if tag in full_response:
+                                    tag_index = full_response.find(tag)
+                                    if yielded_text_len < tag_index:
+                                        to_yield = full_response[yielded_text_len:tag_index]
+                                        yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
+                                        yielded_text_len = tag_index
+                                else:
+                                    # Hold back partial tag suffix
+                                    potential_limit = len(full_response)
+                                    for i in range(len(tag), 0, -1):
+                                        if full_response.endswith(tag[:i]):
+                                            potential_limit = len(full_response) - i
+                                            break
+                                    to_yield = full_response[yielded_text_len:potential_limit]
+                                    if to_yield:
+                                        yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
+                                        yielded_text_len += len(to_yield)
 
                 except Exception as model_err:
                     if content_yielded:
@@ -371,8 +417,7 @@ class LLMService(LLMClient):
                 yield json.dumps({"type": "chunk", "data": notice}) + "\n"
                 logger.warning(f"⚠️ LLM response truncated (finish_reason={stream_finish_reason})")
             elif not full_response.strip():
-                # LLM produced no answer text (e.g. output [SUGGESTIONS] first without any answer).
-                # Fall back to out_of_scope canned response so the user gets a meaningful reply.
+                # LLM produced no answer text — fall back to out_of_scope canned response.
                 notice = intent_router.canned_responses["out_of_scope"].get(
                     lang, intent_router.canned_responses["out_of_scope"]["th"]
                 )
@@ -427,7 +472,6 @@ class LLMService(LLMClient):
     ) -> dict:
         start_time = time.time()
         model_name = self.get_active_model(model_name)
-        l = get_locale(lang)
         device_type = _parse_device_type(
             request.headers.get("user-agent", "") if request else ""
         )
@@ -464,19 +508,9 @@ class LLMService(LLMClient):
         logger.info(f"⚡ Processing as TECH_SUPPORT: '{message}'")
 
         # ── Query Rewriting ────────────────────────────────────────────
-        search_query, was_rewritten, rewrite_in, rewrite_out = message, False, 0, 0
-        if chat_history.has_history(room_id):
-            search_query, rewrite_in, rewrite_out = await self._rewrite_query(message, history_text)
-            was_rewritten = search_query != message
-            total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
-
-        # ── Query Translation (non-Thai → Thai for KB search) ──────────
-        if self._detect_lang(search_query) == "other":
-            trans_query, trans_in, trans_out = await self._translate_query_to_thai(search_query)
-            search_query = trans_query
-            rewrite_in += trans_in
-            rewrite_out += trans_out
-            total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
+        search_query, was_rewritten, rewrite_in, rewrite_out = await self._build_search_query(
+            message, room_id, history_text, total_tokens_map, has_history=have_history
+        )
 
         # ── Retrieval ──────────────────────────────────────────────────
         passed_docs, source_debug, retrieval_embed_tokens, avg_similarity_score = await retrieval_service.search(search_query, db_schema)
@@ -508,18 +542,7 @@ class LLMService(LLMClient):
         was_truncated = False
         bot_ans = ""
         try:
-            system_base = BASE_PROMPT.split("data_input:")[0].strip()
-            context_budget = (
-                settings.MAX_PROMPT_TOKENS
-                - self._estimate_tokens(system_base)
-                - self._estimate_tokens(history_text)
-                - self._estimate_tokens(message)
-                - 300
-            )
-            if context_budget > 0:
-                context_text = self._trim_context(context_text, context_budget)
-
-            messages, _ = build_messages(system_base, l, lang, context_text, history_text, self._sanitize_input(message))
+            messages, context_text = self._prepare_llm_messages(message, lang, context_text, history_text)
             response = await self._invoke_with_retry(messages, model_name)
             bot_ans = response.content
 
