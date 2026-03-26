@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/new-carmen/backend/internal/config"
 )
@@ -46,15 +47,25 @@ type translateResponse struct {
 func NewTranslationService() *TranslationService {
 	apiKey := ""
 	enabled := false
+	apiBaseURL := config.DefaultTranslationAPIBaseURL()
+	timeoutSec := 30
 	if config.AppConfig != nil {
 		cfg := config.AppConfig.Translation
 		apiKey = cfg.APIKey
 		enabled = cfg.Enabled && cfg.APIKey != ""
+		apiBaseURL = cfg.APIBaseURL
+		timeoutSec = cfg.TimeoutSec
+	}
+	if strings.TrimSpace(apiBaseURL) == "" {
+		apiBaseURL = config.DefaultTranslationAPIBaseURL()
+	}
+	if timeoutSec <= 0 {
+		timeoutSec = 30
 	}
 	return &TranslationService{
 		apiKey:     apiKey,
 		enabled:    enabled,
-		httpClient: &http.Client{},
+		httpClient: &http.Client{Timeout: time.Duration(timeoutSec) * time.Second},
 	}
 }
 
@@ -85,7 +96,14 @@ func (s *TranslationService) Translate(ctx context.Context, text string, source,
 		return "", fmt.Errorf("marshal request: %w", err)
 	}
 
-	apiURL := "https://translation.googleapis.com/language/translate/v2?key=" + url.QueryEscape(s.apiKey)
+	apiBaseURL := ""
+	if config.AppConfig != nil {
+		apiBaseURL = config.AppConfig.Translation.APIBaseURL
+	}
+	if strings.TrimSpace(apiBaseURL) == "" {
+		apiBaseURL = config.DefaultTranslationAPIBaseURL()
+	}
+	apiURL := strings.TrimRight(apiBaseURL, "/") + "?key=" + url.QueryEscape(s.apiKey)
 	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)

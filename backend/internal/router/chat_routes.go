@@ -1,21 +1,19 @@
-// POST /api/chat/ask — บอทถามตอบจาก pgvector + Ollama
 package router
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/api"
+	"github.com/new-carmen/backend/internal/middleware"
 )
 
 func RegisterPublicChat(app *fiber.App) {
 	chatHandler := api.NewChatHandler()
 
-	// Direct routes (Go Backend handles these)
 	app.Post("/api/chat/ask", chatHandler.Ask)
-	app.Post("/api/chat/record-history", chatHandler.RecordHistory)
-	app.Get("/api/chat/history/list", chatHandler.ListHistory)
-	app.Post("/api/chat/route-test", chatHandler.RouteOnly)
+	app.Post("/api/chat/record-history", middleware.RequireInternalAPIKey, chatHandler.RecordHistory)
+	app.Get("/api/chat/history/list", middleware.RequireAdminKey, chatHandler.ListHistory)
+	app.Post("/api/chat/route-test", middleware.RequireAdminKey, chatHandler.RouteOnly)
 
-	// Proxy routes (Forwarded to Python Chatbot)
 	app.Get("/api/chat/rooms/:bu/:username", chatHandler.Proxy)
 	app.Post("/api/chat/rooms", chatHandler.Proxy)
 	app.Delete("/api/chat/rooms/:room_id", chatHandler.Proxy)
@@ -25,6 +23,5 @@ func RegisterPublicChat(app *fiber.App) {
 	app.Post("/api/chat/stream", chatHandler.Proxy)
 	app.Post("/api/chat/feedback/:message_id", chatHandler.Proxy)
 
-	// Image routing (Forwarded to Python Chatbot)
 	app.Get("/images/*", chatHandler.Image)
 }

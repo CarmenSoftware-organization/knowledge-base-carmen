@@ -11,13 +11,14 @@ import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import matter from "gray-matter";
 import { categoryDisplayMap } from "@/configs/sidebar-map";
+import { DEFAULT_BU } from "@/lib/config";
 
 const FAQ_SLUG = "faq";
 
 export default async function FAQHomePage() {
   const t = await getTranslations();
   const cookieStore = await cookies();
-  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+  const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
 
   let data: Awaited<ReturnType<typeof getCategory>>;
   let indexContent: ReturnType<typeof matter> | null = null;
@@ -50,9 +51,16 @@ export default async function FAQHomePage() {
                 ]}
               />
               <p className="mt-8 text-sm text-muted-foreground">
-                ยังไม่มีโฟลเดอร์ FAQ ใน wiki (หรือโหลดไม่สำเร็จ) — ตรวจสอบว่าใน repo มี{" "}
-                <code className="text-xs bg-muted px-1 rounded">carmen_cloud/faq/*.md</code>{" "}
-                และ backend ชี้ <code className="text-xs bg-muted px-1 rounded">WIKI_CONTENT_PATH</code> ถูกต้อง
+                ยังไม่มีโฟลเดอร์ FAQ ใน wiki (หรือโหลดไม่สำเร็จ) — ตรวจสอบว่าใน
+                repo มี{" "}
+                <code className="text-xs bg-muted px-1 rounded">
+                  carmen_cloud/faq/*.md
+                </code>{" "}
+                และ backend ชี้{" "}
+                <code className="text-xs bg-muted px-1 rounded">
+                  WIKI_CONTENT_PATH
+                </code>{" "}
+                ถูกต้อง
               </p>
             </div>
           </div>
@@ -91,16 +99,17 @@ export default async function FAQHomePage() {
                 คำถามที่พบบ่อย — {categoryName}
               </h1>
               <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
-                รายการดึงจากไฟล์ Markdown ใต้โฟลเดอร์ <code className="text-xs bg-muted px-1 rounded">faq/</code> ใน repo (เดียวกับหมวดหมู่เอกสาร) — อัปเดตตาม Wiki.js / Git หลัง sync
+                รายการดึงจากไฟล์ Markdown ใต้โฟลเดอร์{" "}
+                <code className="text-xs bg-muted px-1 rounded">faq/</code> ใน
+                repo (เดียวกับหมวดหมู่เอกสาร) — อัปเดตตาม Wiki.js / Git หลัง
+                sync
               </p>
             </div>
 
             {indexContent && (
               <div className="mt-4 mb-8">
                 <ArticleHeaderInfo
-                  title={
-                    (indexContent.data.title as string) || categoryName
-                  }
+                  title={(indexContent.data.title as string) || categoryName}
                   formattedDate={
                     indexContent.data.date
                       ? new Date(

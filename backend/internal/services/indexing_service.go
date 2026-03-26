@@ -10,7 +10,6 @@ import (
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/security"
 	"github.com/new-carmen/backend/internal/utils"
-	"github.com/new-carmen/backend/pkg/ollama"
 	"github.com/new-carmen/backend/pkg/openrouter"
 )
 
@@ -28,16 +27,9 @@ type IndexingService struct {
 }
 
 func NewIndexingService() *IndexingService {
-	var llm Embedder
-	if config.AppConfig.LLM.APIKey != "" {
-		llm = openrouter.NewClient()
-	} else {
-		llm = ollama.NewEmbedClient()
-	}
-
 	return &IndexingService{
 		wiki:       NewWikiService(),
-		llm:        llm,
+		llm:        openrouter.NewClient(),
 		logService: NewActivityLogService(),
 	}
 }
@@ -47,7 +39,7 @@ func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
 		return fmt.Errorf("invalid schema/bu: %q", bu)
 	}
 	s.logService.Log(bu, "system", "เริ่มดึงข้อมูล ( Re-indexing )", "system", map[string]interface{}{"status": "started"}, "")
-	
+
 	entries, err := s.wiki.ListMarkdown(bu)
 	if err != nil {
 		s.logService.Log(bu, "system", "ดึงข้อมูลไม่สำเร็จ", "system", map[string]interface{}{"status": "failed", "error": err.Error()}, "")
@@ -103,13 +95,13 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 			log.Printf("[indexing] skip %s chunk %d: empty embedding", path, i)
 			continue
 		}
-		
+
 		// 1. Truncate to target dimension (2000)
 		emb = utils.TruncateEmbedding(emb)
-		
+
 		// 2. Normalize to 1.0 magnitude for accurate Cosine Distance
 		emb = utils.NormalizeEmbedding(emb)
-		
+
 		sqlChunk := fmt.Sprintf("INSERT INTO %s.document_chunks (document_id, chunk_index, content, embedding, created_at) VALUES (?, ?, ?, ?::vector, now())", bu)
 		if err := database.DB.Exec(sqlChunk, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)

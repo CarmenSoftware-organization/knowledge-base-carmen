@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"io"
 	"log"
 	"strings"
 	"time"
@@ -31,9 +30,9 @@ type gitHubPushPayload struct {
 		Email string `json:"email"`
 	} `json:"pusher"`
 	Commits []struct {
-		ID        string   `json:"id"`
-		Message   string   `json:"message"`
-		Author    struct {
+		ID      string `json:"id"`
+		Message string `json:"message"`
+		Author  struct {
 			Name  string `json:"name"`
 			Email string `json:"email"`
 		} `json:"author"`
@@ -51,7 +50,6 @@ func NewGitHubWebhookHandler() *GitHubWebhookHandler {
 	}
 }
 
-
 func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 	if c.Get("X-GitHub-Event") != "push" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unsupported event"})
@@ -60,10 +58,11 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 	cfg := config.AppConfig.GitHub
 	rawBody := c.Body()
 
-	if cfg.WebhookSecret != "" {
-		if !verifyGitHubSignature(cfg.WebhookSecret, rawBody, c.Get("X-Hub-Signature-256")) {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid signature"})
-		}
+	if strings.TrimSpace(cfg.WebhookSecret) == "" {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "webhook not configured"})
+	}
+	if !verifyGitHubSignature(cfg.WebhookSecret, rawBody, c.Get("X-Hub-Signature-256")) {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid signature"})
 	}
 
 	var payload gitHubPushPayload
@@ -92,27 +91,31 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 		if len(commit.Added) > 0 {
 			h.logService.Log("", username, "สร้างไฟล์วิกิใหม่", "wiki", map[string]interface{}{
 				"status": "POST",
-				"files": commit.Added,
+				"files":  commit.Added,
 				"author": commit.Author.Name,
 			}, c.Get("User-Agent"))
 		}
 		if len(commit.Modified) > 0 {
 			h.logService.Log("", username, "อัปเดตไฟล์วิกิ", "wiki", map[string]interface{}{
 				"status": "PUT",
-				"files": commit.Modified,
+				"files":  commit.Modified,
 				"author": commit.Author.Name,
 			}, c.Get("User-Agent"))
 		}
 		if len(commit.Removed) > 0 {
 			h.logService.Log("", username, "ลบไฟล์วิกิ", "wiki", map[string]interface{}{
 				"status": "DELETE",
-				"files": commit.Removed,
+				"files":  commit.Removed,
 				"author": commit.Author.Name,
 			}, c.Get("User-Agent"))
 		}
 	}
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		timeout := time.Duration(config.AppConfig.Chat.WebhookIndexTimeoutMin) * time.Minute
+		if timeout <= 0 {
+			timeout = 30 * time.Minute
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		var bus []models.BusinessUnit
@@ -143,8 +146,6 @@ func verifyGitHubSignature(secret string, body []byte, header string) bool {
 		return false
 	}
 	mac := hmac.New(sha256.New, []byte(secret))
-	if _, err := io.Copy(mac, strings.NewReader(string(body))); err != nil {
-		return false
-	}
+	_, _ = mac.Write(body)
 	return hmac.Equal(msgMAC, mac.Sum(nil))
 }

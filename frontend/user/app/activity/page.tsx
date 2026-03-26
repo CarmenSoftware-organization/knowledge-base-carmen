@@ -2,17 +2,20 @@ import { cookies } from "next/headers";
 import { ActivityControls } from "@/components/activity/activity-controls";
 import { ActivityLogTable } from "@/components/activity/activity-log-table";
 import { getTranslations } from "next-intl/server";
+import { DEFAULT_BU } from "@/lib/config";
 
 export default async function ActivityPage() {
   const c = await cookies();
-  const buCookie = c.get("selected_bu")?.value || "carmen";
+  const buCookie = (c.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
   const t = await getTranslations("activity");
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-1">{t("title")}</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">
+            {t("title")}
+          </h1>
           <p className="text-muted-foreground">
             {t("description", { bu: buCookie })}
           </p>

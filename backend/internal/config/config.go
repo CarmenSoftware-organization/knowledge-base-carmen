@@ -1,19 +1,20 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/new-carmen/backend/internal/constants"
 )
 
 type Config struct {
 	Server      ServerConfig
 	Database    DatabaseConfig
 	JWT         JWTConfig
-	Ollama      OllamaConfig
 	GitHub      GitHubConfig
 	Git         GitConfig
 	WikiSearch  WikiSearchConfig
@@ -27,23 +28,28 @@ type Config struct {
 type LLMConfig struct {
 	APIKey     string
 	APIBase    string
+	ChatModel  string
 	EmbedModel string
+	TimeoutSec int
 }
 
-// TranslationConfig holds config for Google Cloud Translation API (wiki content).
 type TranslationConfig struct {
-	APIKey  string // GOOGLE_TRANSLATE_API_KEY
-	Enabled bool   // TRANSLATION_ENABLED
+	APIKey     string
+	Enabled    bool
+	APIBaseURL string
+	TimeoutSec int
 }
 
 type ServerConfig struct {
-	Port         string
-	Host         string
-	ChatbotURL   string
-	Environment  string
-	CORSOrigins  string
-	AdminAPIKey  string // ADMIN_API_KEY — required to access /api/chat/history/list
-	PrivacySecret string // PRIVACY_HMAC_SECRET — HMAC key for hashing user_id
+	Port           string
+	Host           string
+	ChatbotURL     string
+	Environment    string
+	StrictEnvOnly  bool
+	CORSOrigins    string
+	AdminAPIKey    string
+	InternalAPIKey string
+	PrivacySecret  string
 }
 
 type DatabaseConfig struct {
@@ -59,14 +65,6 @@ type DatabaseConfig struct {
 type JWTConfig struct {
 	Secret string
 	Expiry string
-}
-
-type OllamaConfig struct {
-	URL                string
-	ChatModel          string
-	EmbedModel         string
-	VectorDimension    int
-	InsecureSkipVerify bool
 }
 
 type OpenClawConfig struct {
@@ -86,6 +84,8 @@ type GitHubConfig struct {
 	Token         string
 	Owner         string
 	Repo          string
+	RepoBaseURL   string
+	APIBaseURL    string
 	Branch        string
 	WebhookSecret string
 	WebhookBranch string
@@ -97,49 +97,51 @@ type GitConfig struct {
 	ContentPath       string
 	ChunkSize         int
 	ChunkOverlap      int
-	SyncBranch        string   // branch สำหรับ wiki sync (GIT_SYNC_BRANCH)
-	DefaultBU         string   // BU เมื่อ schema ไม่ valid (WIKI_DEFAULT_BU)
-	CarmenContentDirs []string // paths ที่ลองสำหรับ carmen (WIKI_CARMEN_PATHS)
-	CarmenGitPath     string   // prefix ใน GitHub สำหรับ carmen (WIKI_CARMEN_GIT_PATH)
+	SyncBranch        string
+	DefaultBU         string
+	CarmenContentDirs []string
+	CarmenGitPath     string
 }
 
-// WikiSearchConfig holds configurable values for wiki search (avoids hardcoding).
 type WikiSearchConfig struct {
-	SearchLimit       int     // WIKI_SEARCH_LIMIT
-	VectorDistanceMax float64 // WIKI_VECTOR_DISTANCE_MAX
-	SnippetMaxLen     int     // WIKI_SNIPPET_MAX_LEN
+	SearchLimit       int
+	VectorDistanceMax float64
+	SnippetMaxLen     int
 }
 
-// ChatConfig holds configurable values for chat context (avoids hardcoding).
 type ChatConfig struct {
-	ContextLimit               int     // CHAT_CONTEXT_LIMIT
-	MaxContextChars            int     // CHAT_MAX_CONTEXT_CHARS
-	MaxChunkContent            int     // CHAT_MAX_CHUNK_CONTENT
-	HistoryEnabled             bool    // CHAT_HISTORY_ENABLED
-	HistorySimilarityThreshold float64 // CHAT_HISTORY_SIMILARITY_THRESHOLD
+	ContextLimit               int
+	MaxContextChars            int
+	MaxChunkContent            int
+	HistoryEnabled             bool
+	HistorySimilarityThreshold float64
+	IndexingTimeoutMin         int
+	WebhookIndexTimeoutMin     int
 }
 
 var AppConfig *Config
 
-// Default values (ใช้เมื่อ env ไม่ได้ตั้ง — แก้ได้ผ่าน env)
 const (
 	defaultRepoPath      = "./wiki-content"
-	defaultBU            = "carmen"
+	defaultBU            = constants.DefaultBU
 	defaultCarmenPaths   = "../carmen_cloud,./carmen_cloud"
 	defaultCarmenGitPath = "carmen_cloud"
 	defaultGitSyncBranch = "wiki-content"
+	defaultGitHubRepoURL = "https://github.com"
+	defaultGitHubAPIURL  = "https://api.github.com"
+	defaultTranslateURL  = "https://translation.googleapis.com/language/translate/v2"
 )
 
-// DefaultRepoPath returns the default wiki repo path when config is empty.
 func DefaultRepoPath() string { return defaultRepoPath }
 
-// DefaultGitSyncBranch returns the default branch for wiki sync.
-func DefaultGitSyncBranch() string { return defaultGitSyncBranch }
+func DefaultGitSyncBranch() string         { return defaultGitSyncBranch }
+func DefaultGitHubRepoBaseURL() string     { return defaultGitHubRepoURL }
+func DefaultGitHubAPIBaseURL() string      { return defaultGitHubAPIURL }
+func DefaultTranslationAPIBaseURL() string { return defaultTranslateURL }
 
 func Load() error {
 	cwd, _ := os.Getwd()
-	_ = godotenv.Overload(filepath.Join(cwd, ".env"))
-	// Try multiple paths so .env is found whether running from repo root, backend/, or backend/tmp/
+	_ = godotenv.Load(filepath.Join(cwd, ".env"))
 	_ = godotenv.Load(".env")
 	_ = godotenv.Load("../.env")
 	_ = godotenv.Load("backend/.env")
@@ -148,41 +150,52 @@ func Load() error {
 		_ = godotenv.Load(filepath.Join(execDir, ".env"))
 		_ = godotenv.Load(filepath.Join(execDir, "..", ".env"))
 	}
+	strictEnvOnly := getEnvAsBool("STRICT_ENV_ONLY", false)
+	if strictEnvOnly {
+		if err := ensureStrictEnv(); err != nil {
+			return err
+		}
+	}
+	environment := getEnv("ENVIRONMENT", "development")
+	isProd := strings.EqualFold(environment, "production")
+	defaultCORS := "*"
+	defaultSSLMode := "disable"
+	if isProd {
+		defaultCORS = ""
+		defaultSSLMode = "require"
+	}
 
 	AppConfig = &Config{
 		Server: ServerConfig{
-			Port:          listenPort(),
-			Host:          getEnv("SERVER_HOST", "localhost"),
-			ChatbotURL:    getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
-			Environment:   getEnv("ENVIRONMENT", "development"),
-			CORSOrigins:   getEnv("CORS_ORIGINS", "*"),
-			AdminAPIKey:   getEnv("ADMIN_API_KEY", ""),
-			PrivacySecret: getEnv("PRIVACY_HMAC_SECRET", "carmen-privacy-default"),
+			Port:           listenPort(),
+			Host:           getEnv("SERVER_HOST", "localhost"),
+			ChatbotURL:     getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
+			Environment:    environment,
+			StrictEnvOnly:  strictEnvOnly,
+			CORSOrigins:    getEnv("CORS_ORIGINS", defaultCORS),
+			AdminAPIKey:    getEnv("ADMIN_API_KEY", ""),
+			InternalAPIKey: getEnv("INTERNAL_API_KEY", ""),
+			PrivacySecret:  getEnv("PRIVACY_HMAC_SECRET", ""),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
 			User:     getEnv("DB_USER", "postgres"),
-			Password: getEnv("DB_PASSWORD", "postgres"),
+			Password: getEnv("DB_PASSWORD", ""),
 			Name:     getEnv("DB_NAME", "carmen_db"),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			SSLMode:  getEnv("DB_SSLMODE", defaultSSLMode),
 			Schema:   getEnv("DB_SCHEMA", "public"),
 		},
 		JWT: JWTConfig{
-			Secret: getEnv("JWT_SECRET", "change-me-in-production"),
+			Secret: getEnv("JWT_SECRET", ""),
 			Expiry: getEnv("JWT_EXPIRY", "24h"),
-		},
-		Ollama: OllamaConfig{
-			URL:                getEnv("OLLAMA_URL", "http://localhost:11434"),
-			ChatModel:          getEnv("OLLAMA_CHAT_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
-			EmbedModel:         getEnv("OLLAMA_EMBED_MODEL", getEnv("OLLAMA_MODEL", "llama2")),
-			VectorDimension:    getEnvAsInt("VECTOR_DIMENSION", 1536),
-			InsecureSkipVerify: getEnvAsBool("OLLAMA_INSECURE_SKIP_VERIFY", false),
 		},
 		GitHub: GitHubConfig{
 			Token:         getEnv("GITHUB_TOKEN", ""),
 			Owner:         getEnv("GITHUB_REPO_OWNER", ""),
 			Repo:          getEnv("GITHUB_REPO_NAME", ""),
+			RepoBaseURL:   getEnv("GITHUB_REPO_BASE_URL", defaultGitHubRepoURL),
+			APIBaseURL:    getEnv("GITHUB_API_BASE_URL", defaultGitHubAPIURL),
 			Branch:        getEnv("GITHUB_BRANCH", "main"),
 			WebhookSecret: getEnv("GITHUB_WEBHOOK_SECRET", ""),
 			WebhookBranch: getEnv("GITHUB_WEBHOOK_BRANCH", getEnv("GITHUB_BRANCH", "main")),
@@ -209,6 +222,8 @@ func Load() error {
 			MaxChunkContent:            getEnvAsInt("CHAT_MAX_CHUNK_CONTENT", 2000),
 			HistoryEnabled:             getEnvAsBool("CHAT_HISTORY_ENABLED", true),
 			HistorySimilarityThreshold: getEnvAsFloat("CHAT_HISTORY_SIMILARITY_THRESHOLD", 0.15),
+			IndexingTimeoutMin:         getEnvAsInt("INDEXING_TIMEOUT_MINUTES", 60),
+			WebhookIndexTimeoutMin:     getEnvAsInt("WEBHOOK_INDEXING_TIMEOUT_MINUTES", 30),
 		},
 		OpenClaw: OpenClawConfig{
 			URL:     getEnv("OPENCLAW_URL", ""),
@@ -222,17 +237,127 @@ func Load() error {
 			UseForQuestionRouter: getEnvAsBool("MAKE_USE_FOR_ROUTER", false),
 		},
 		Translation: TranslationConfig{
-			APIKey:  getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
-			Enabled: getEnvAsBool("TRANSLATION_ENABLED", true),
+			APIKey:     getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
+			Enabled:    getEnvAsBool("TRANSLATION_ENABLED", true),
+			APIBaseURL: getEnv("TRANSLATION_API_BASE_URL", defaultTranslateURL),
+			TimeoutSec: getEnvAsInt("TRANSLATION_TIMEOUT_SECONDS", 30),
 		},
 		LLM: LLMConfig{
-			// OPENROUTER_* accepted as aliases so .env can use one naming style
 			APIKey:     getEnvFirst([]string{"LLM_API_KEY", "OPENROUTER_API_KEY"}, ""),
 			APIBase:    getEnv("LLM_API_BASE", "https://openrouter.ai/api/v1"),
+			ChatModel:  getEnvFirst([]string{"LLM_CHAT_MODEL", "OPENROUTER_CHAT_MODEL"}, "openai/gpt-4o-mini"),
 			EmbedModel: getEnvFirst([]string{"LLM_EMBED_MODEL", "OPENROUTER_EMBED_MODEL"}, "qwen/qwen3-embedding-8b"),
+			TimeoutSec: getEnvAsInt("LLM_TIMEOUT_SECONDS", 60),
 		},
 	}
 
+	return nil
+}
+
+func ensureStrictEnv() error {
+	required := []string{
+		"ENVIRONMENT",
+		"SERVER_HOST",
+		"SERVER_PORT",
+		"PYTHON_CHATBOT_URL",
+		"CORS_ORIGINS",
+		"ADMIN_API_KEY",
+		"INTERNAL_API_KEY",
+		"PRIVACY_HMAC_SECRET",
+		"DB_HOST",
+		"DB_PORT",
+		"DB_USER",
+		"DB_PASSWORD",
+		"DB_NAME",
+		"DB_SSLMODE",
+		"DB_SCHEMA",
+		"JWT_SECRET",
+		"JWT_EXPIRY",
+		"VECTOR_DIMENSION",
+		"GITHUB_TOKEN",
+		"GITHUB_REPO_OWNER",
+		"GITHUB_REPO_NAME",
+		"GITHUB_REPO_BASE_URL",
+		"GITHUB_API_BASE_URL",
+		"GITHUB_BRANCH",
+		"GITHUB_WEBHOOK_SECRET",
+		"GITHUB_WEBHOOK_BRANCH",
+		"GIT_REPO_PATH",
+		"GIT_REPO_URL",
+		"WIKI_CONTENT_PATH",
+		"WIKI_CHUNK_SIZE",
+		"WIKI_CHUNK_OVERLAP",
+		"GIT_SYNC_BRANCH",
+		"WIKI_DEFAULT_BU",
+		"WIKI_CARMEN_PATHS",
+		"WIKI_CARMEN_GIT_PATH",
+		"WIKI_SEARCH_LIMIT",
+		"WIKI_VECTOR_DISTANCE_MAX",
+		"WIKI_SNIPPET_MAX_LEN",
+		"CHAT_CONTEXT_LIMIT",
+		"CHAT_MAX_CONTEXT_CHARS",
+		"CHAT_MAX_CHUNK_CONTENT",
+		"CHAT_HISTORY_ENABLED",
+		"CHAT_HISTORY_SIMILARITY_THRESHOLD",
+		"INDEXING_TIMEOUT_MINUTES",
+		"WEBHOOK_INDEXING_TIMEOUT_MINUTES",
+		"OPENCLAW_URL",
+		"OPENCLAW_TOKEN",
+		"OPENCLAW_MODEL",
+		"OPENCLAW_ENABLED",
+		"MAKE_WEBHOOK_URL",
+		"MAKE_WEBHOOK_API_KEY",
+		"MAKE_USE_FOR_ROUTER",
+		"GOOGLE_TRANSLATE_API_KEY",
+		"TRANSLATION_ENABLED",
+		"TRANSLATION_API_BASE_URL",
+		"TRANSLATION_TIMEOUT_SECONDS",
+		"LLM_API_KEY",
+		"OPENROUTER_API_KEY",
+		"LLM_API_BASE",
+		"LLM_CHAT_MODEL",
+		"OPENROUTER_CHAT_MODEL",
+		"LLM_EMBED_MODEL",
+		"OPENROUTER_EMBED_MODEL",
+		"LLM_TIMEOUT_SECONDS",
+	}
+	missing := make([]string, 0)
+	for _, key := range required {
+		if _, ok := os.LookupEnv(key); !ok {
+			missing = append(missing, key)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("STRICT_ENV_ONLY=true but missing env keys: %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+func Validate() error {
+	if AppConfig == nil {
+		return fmt.Errorf("config not loaded")
+	}
+	if !strings.EqualFold(AppConfig.Server.Environment, "production") {
+		return nil
+	}
+	if strings.TrimSpace(AppConfig.JWT.Secret) == "" {
+		return fmt.Errorf("JWT_SECRET is required in production")
+	}
+	if strings.TrimSpace(AppConfig.Server.PrivacySecret) == "" {
+		return fmt.Errorf("PRIVACY_HMAC_SECRET is required in production")
+	}
+	if strings.TrimSpace(AppConfig.Server.AdminAPIKey) == "" {
+		return fmt.Errorf("ADMIN_API_KEY is required in production")
+	}
+	if strings.TrimSpace(AppConfig.Server.InternalAPIKey) == "" {
+		return fmt.Errorf("INTERNAL_API_KEY is required in production")
+	}
+	if strings.TrimSpace(AppConfig.Database.Password) == "" {
+		return fmt.Errorf("DB_PASSWORD is required in production")
+	}
+	if strings.TrimSpace(AppConfig.Server.CORSOrigins) == "" || strings.TrimSpace(AppConfig.Server.CORSOrigins) == "*" {
+		return fmt.Errorf("CORS_ORIGINS must be explicit in production")
+	}
 	return nil
 }
 
@@ -250,7 +375,6 @@ func GetWikiContentPath() string {
 	return NormalizePath(basePath)
 }
 
-// NormalizePath cleans and normalizes a path (used for wiki content paths).
 func NormalizePath(path string) string {
 	if path == "" {
 		return defaultRepoPath
@@ -265,7 +389,6 @@ func NormalizePath(path string) string {
 	return clean
 }
 
-// listenPort returns PORT (container platforms) or SERVER_PORT or default 8080.
 func listenPort() string {
 	if p := strings.TrimSpace(os.Getenv("PORT")); p != "" {
 		return p
@@ -280,7 +403,6 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// getEnvFirst returns the first non-empty env among keys, else defaultValue.
 func getEnvFirst(keys []string, defaultValue string) string {
 	for _, k := range keys {
 		if v := os.Getenv(k); v != "" {

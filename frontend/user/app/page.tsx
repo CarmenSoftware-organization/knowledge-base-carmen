@@ -4,11 +4,12 @@ import { HeroSection } from "@/components/kb/hero-section";
 import { CategoryCards } from "@/components/kb/category-cards";
 import { QuickHelp } from "@/components/kb/quick-help";
 import { getCategories, getCategory } from "@/lib/wiki-api";
+import { DEFAULT_BU } from "@/lib/config";
 import { cookies } from "next/headers";
 
 export default async function HomePage() {
   const cookieStore = await cookies();
-  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+  const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
 
   // ดึงหมวดจริงจาก backend
   const { items: categories } = await getCategories(bu);

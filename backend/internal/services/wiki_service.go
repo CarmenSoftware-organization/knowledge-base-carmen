@@ -17,7 +17,7 @@ import (
 	"github.com/new-carmen/backend/internal/security"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/github"
-	"github.com/new-carmen/backend/pkg/ollama"
+	"github.com/new-carmen/backend/pkg/openrouter"
 )
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
@@ -77,13 +77,13 @@ type SearchResult struct {
 
 type WikiService struct {
 	githubClient *github.Client
-	embedLLM     *ollama.Client
+	embedLLM     *openrouter.Client
 }
 
 func NewWikiService() *WikiService {
 	return &WikiService{
 		githubClient: github.NewClient(),
-		embedLLM:     ollama.NewEmbedClient(),
+		embedLLM:     openrouter.NewClient(),
 	}
 }
 
@@ -543,67 +543,8 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 		entries = append(entries, entry)
 		return nil
 	})
-	// If BU-specific path not found and BU is not carmen, fallback to carmen_cloud
-	if err != nil || len(entries) == 0 {
-		if bu != "" && bu != "carmen" {
-			carmenRoot := s.getRepoPath("carmen")
-			if !filepath.IsAbs(carmenRoot) {
-				absRoot, errAbs := filepath.Abs(carmenRoot)
-				if errAbs == nil {
-					carmenRoot = absRoot
-				}
-			}
-			carmenRoot = filepath.Clean(carmenRoot)
-
-			carmenErr := filepath.Walk(carmenRoot, func(path string, info os.FileInfo, errWalk error) error {
-				if errWalk != nil {
-					if os.IsNotExist(errWalk) {
-						return nil
-					}
-					return errWalk
-				}
-				if info.IsDir() || strings.ToLower(filepath.Ext(info.Name())) != ".md" {
-					return nil
-				}
-
-				rel, errRel := filepath.Rel(carmenRoot, path)
-				if errRel != nil {
-					return nil
-				}
-				rel = filepath.ToSlash(rel)
-				entry := WikiEntry{Path: rel, Title: slugToTitle(info.Name()), Weight: 999}
-
-				data, errRead := os.ReadFile(path)
-				if errRead == nil && len(data) > 0 {
-					if len(data) > maxFrontmatterRead {
-						data = data[:maxFrontmatterRead]
-					}
-					meta, _ := parseFrontmatter(data)
-					if t := meta["title"]; t != "" {
-						entry.Title = t
-					}
-					entry.Description = meta["description"]
-					entry.Published = metaBool(meta, "published")
-					entry.Date = meta["date"]
-					entry.DateCreated = meta["dateCreated"]
-					entry.Editor = meta["editor"]
-					entry.Tags = metaToTags(meta)
-					entry.Weight = parseWeight(meta, data)
-					if entry.Date != "" {
-						entry.PublishedAt = entry.Date
-					} else if entry.DateCreated != "" {
-						entry.PublishedAt = entry.DateCreated
-					}
-				}
-				entries = append(entries, entry)
-				return nil
-			})
-			if carmenErr != nil {
-				return nil, carmenErr
-			}
-		} else if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	sort.Slice(entries, func(i, j int) bool {
@@ -615,9 +556,18 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 	return entries, nil
 }
 
-func (s *WikiService) GetLocalAssetPath(bu, relPath string) string {
+func (s *WikiService) GetLocalAssetPath(bu, relPath string) (string, error) {
+	relPath = filepath.Clean(filepath.FromSlash(relPath))
+	if relPath == "." || relPath == ".." || strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
+		return "", os.ErrNotExist
+	}
 	root := s.getRepoPath(bu)
-	return filepath.Clean(filepath.Join(root, filepath.FromSlash(relPath)))
+	full := filepath.Clean(filepath.Join(root, relPath))
+	relCheck, err := filepath.Rel(filepath.Clean(root), full)
+	if err != nil || strings.HasPrefix(relCheck, "..") {
+		return "", os.ErrNotExist
+	}
+	return full, nil
 }
 
 func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, error) {

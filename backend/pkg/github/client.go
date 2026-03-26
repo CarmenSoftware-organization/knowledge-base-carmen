@@ -13,11 +13,12 @@ import (
 )
 
 type Client struct {
-	Token  string
-	Owner  string
-	Repo   string
-	Branch string
-	client *http.Client
+	Token      string
+	Owner      string
+	Repo       string
+	Branch     string
+	APIBaseURL string
+	client     *http.Client
 }
 
 type FileContent struct {
@@ -35,17 +36,23 @@ type TreeItem struct {
 func NewClient() *Client {
 	cfg := config.AppConfig.GitHub
 	return &Client{
-		Token:  cfg.Token,
-		Owner:  cfg.Owner,
-		Repo:   cfg.Repo,
-		Branch: cfg.Branch,
-		client: &http.Client{},
+		Token:      cfg.Token,
+		Owner:      cfg.Owner,
+		Repo:       cfg.Repo,
+		Branch:     cfg.Branch,
+		APIBaseURL: strings.TrimRight(cfg.APIBaseURL, "/"),
+		client:     &http.Client{},
 	}
 }
 
 func (c *Client) GetFileContent(path string) (*FileContent, error) {
+	base := c.APIBaseURL
+	if base == "" {
+		base = config.DefaultGitHubAPIBaseURL()
+	}
 	url := fmt.Sprintf(
-		"https://api.github.com/repos/%s/%s/contents/%s?ref=%s",
+		"%s/repos/%s/%s/contents/%s?ref=%s",
+		base,
 		c.Owner, c.Repo, path, c.Branch,
 	)
 
@@ -98,8 +105,13 @@ func (c *Client) GetFileContent(path string) (*FileContent, error) {
 }
 
 func (c *Client) ListMarkdownFiles() ([]string, error) {
+	base := c.APIBaseURL
+	if base == "" {
+		base = config.DefaultGitHubAPIBaseURL()
+	}
 	url := fmt.Sprintf(
-		"https://api.github.com/repos/%s/%s/git/trees/%s?recursive=1",
+		"%s/repos/%s/%s/git/trees/%s?recursive=1",
+		base,
 		c.Owner, c.Repo, c.Branch,
 	)
 

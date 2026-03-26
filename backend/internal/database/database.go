@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/new-carmen/backend/internal/config"
+	"github.com/new-carmen/backend/internal/security"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -23,21 +24,43 @@ func Connect() error {
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent), 
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Set default schema search path
 	if cfg.Schema != "" {
-		if err := DB.Exec(fmt.Sprintf("SET search_path TO %s", cfg.Schema)).Error; err != nil {
+		searchPath, err := normalizeSearchPath(cfg.Schema)
+		if err != nil {
+			return err
+		}
+		if err := DB.Exec("SELECT set_config('search_path', ?, false)", searchPath).Error; err != nil {
 			return fmt.Errorf("failed to set search_path: %w", err)
 		}
 	}
 
 	return nil
+}
+
+func normalizeSearchPath(schemaCSV string) (string, error) {
+	parts := strings.Split(schemaCSV, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		s := strings.TrimSpace(p)
+		if s == "" {
+			continue
+		}
+		if !security.ValidateSchema(s) {
+			return "", fmt.Errorf("invalid schema in DB_SCHEMA: %q", s)
+		}
+		out = append(out, s)
+	}
+	if len(out) == 0 {
+		return "", fmt.Errorf("DB_SCHEMA is empty after normalization")
+	}
+	return strings.Join(out, ","), nil
 }
 
 func Close() error {
@@ -55,14 +78,12 @@ func Migrate(models ...interface{}) error {
 	return nil
 }
 
-// RunSQLFile reads a .sql file and executes each statement (split by ;)
 func RunSQLFile(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("read migration file: %w", err)
 	}
 	sql := string(data)
-	// ลบบรรทัด comment
 	lines := strings.Split(sql, "\n")
 	var filtered []string
 	for _, line := range lines {
@@ -86,11 +107,8 @@ func RunSQLFile(path string) error {
 	return nil
 }
 
-// ClearPublicTables truncates all user tables in the `public` schema while
-// preserving extensions, functions and types. It restarts identity (sequences)
-// and cascades to dependent tables. Use with care and always back up first.
 func ClearPublicTables() error {
-		sql := `DO $$
+	sql := `DO $$
 DECLARE
 	tbls text;
 BEGIN
@@ -108,16 +126,13 @@ BEGIN
 	EXECUTE 'TRUNCATE TABLE ' || tbls || ' RESTART IDENTITY CASCADE';
 END$$;`
 
-		return DB.Exec(sql).Error
+	return DB.Exec(sql).Error
 }
 
-// TruncateBUTables truncates documents and document_chunks for a BU schema.
-// Use before reindex to start fresh.
 func TruncateBUTables(bu string) error {
 	if bu == "" {
 		return fmt.Errorf("bu cannot be empty")
 	}
-	// document_chunks has FK to documents, so CASCADE on documents will delete chunks
 	sql := fmt.Sprintf("TRUNCATE TABLE %s.documents RESTART IDENTITY CASCADE", bu)
 	return DB.Exec(sql).Error
 }

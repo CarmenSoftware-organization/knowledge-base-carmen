@@ -1,0 +1,682 @@
+basePath: /
+definitions:
+  models.ChatAskRequest:
+    properties:
+      preferredPath:
+        type: string
+      question:
+        type: string
+    type: object
+  models.ChatAskResponse:
+    properties:
+      answer:
+        type: string
+      needDisambiguation:
+        type: boolean
+      options:
+        items:
+          $ref: '#/definitions/models.DisambiguationOption'
+        type: array
+      sources:
+        items:
+          $ref: '#/definitions/models.ChatSource'
+        type: array
+    type: object
+  models.ChatSource:
+    properties:
+      articleId:
+        type: string
+      title:
+        type: string
+    type: object
+  models.DisambiguationOption:
+    properties:
+      path:
+        type: string
+      reason:
+        type: string
+      score:
+        type: number
+      title:
+        type: string
+    type: object
+  models.RecordHistoryRequest:
+    properties:
+      answer:
+        type: string
+      bu:
+        type: string
+      question:
+        type: string
+      sources:
+        items:
+          $ref: '#/definitions/models.ChatSource'
+        type: array
+      user_id:
+        type: string
+    type: object
+  models.RouteCandidate:
+    properties:
+      path:
+        type: string
+      reason:
+        type: string
+      score:
+        type: number
+    type: object
+  models.RouteResult:
+    properties:
+      candidates:
+        items:
+          $ref: '#/definitions/models.RouteCandidate'
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: API
+  description: REST API for wiki, FAQ, chat (Go handler + Python proxy), indexing,
+    activity, and GitHub webhooks. Most routes accept optional `bu` query or `X-BU-Slug`
+    header (default from server config).
+  license:
+    name: Proprietary
+  termsOfService: https://swagger.io/terms/
+  title: New Carmen Backend API
+  version: "1.0"
+paths:
+  /api/activity/list:
+    get:
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Activity log list
+      tags:
+      - activity
+  /api/activity/summary:
+    get:
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Activity summary
+      tags:
+      - activity
+  /api/business-units:
+    get:
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List business units
+      tags:
+      - wiki
+  /api/chat/ask:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      - description: Question
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChatAskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ChatAskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Ask the knowledge-base chat (Go path)
+      tags:
+      - chat
+  /api/chat/clear/{room_id}:
+    delete:
+      responses: {}
+      summary: Clear room (proxy)
+      tags:
+      - chat
+  /api/chat/feedback/{message_id}:
+    post:
+      responses: {}
+      summary: Message feedback (proxy)
+      tags:
+      - chat
+  /api/chat/history:
+    delete:
+      responses: {}
+      summary: Clear history (proxy)
+      tags:
+      - chat
+  /api/chat/history/list:
+    get:
+      parameters:
+      - description: Filter by BU
+        in: query
+        name: bu
+        type: string
+      - default: 50
+        description: Max rows
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - AdminKey: []
+      summary: List chat history (admin)
+      tags:
+      - chat
+  /api/chat/record-history:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: History row
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.RecordHistoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - InternalKey: []
+      summary: Record chat turn (internal)
+      tags:
+      - chat
+  /api/chat/room-history/{room_id}:
+    get:
+      responses: {}
+      summary: Room history (proxy)
+      tags:
+      - chat
+  /api/chat/rooms:
+    post:
+      responses: {}
+      summary: Create chat room (proxy)
+      tags:
+      - chat
+  /api/chat/rooms/{bu}/{username}:
+    get:
+      description: Forwards to CHATBOT_URL; path and method vary.
+      responses: {}
+      summary: Proxy to Python chatbot
+      tags:
+      - chat
+  /api/chat/rooms/{room_id}:
+    delete:
+      responses: {}
+      summary: Delete room (proxy)
+      tags:
+      - chat
+  /api/chat/route-test:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      - description: Question
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChatAskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RouteResult'
+      security:
+      - AdminKey: []
+      summary: Route-only debug (admin)
+      tags:
+      - chat
+  /api/chat/stream:
+    post:
+      responses: {}
+      summary: Stream chat (proxy)
+      tags:
+      - chat
+  /api/documents:
+    get:
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List indexed documents
+      tags:
+      - documents
+  /api/faq/{module}:
+    get:
+      parameters:
+      - description: Module key
+        in: path
+        name: module
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: FAQ module detail
+      tags:
+      - faq
+  /api/faq/{module}/{sub}/{category}:
+    get:
+      parameters:
+      - description: Module key
+        in: path
+        name: module
+        required: true
+        type: string
+      - description: Sub-module
+        in: path
+        name: sub
+        required: true
+        type: string
+      - description: Category
+        in: path
+        name: category
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: FAQ by category
+      tags:
+      - faq
+  /api/faq/entry/{id}:
+    get:
+      parameters:
+      - description: Entry id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: FAQ entry by id
+      tags:
+      - faq
+  /api/faq/modules:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: FAQ module list
+      tags:
+      - faq
+  /api/index/rebuild:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Business unit slug
+        in: query
+        name: bu
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - AdminKey: []
+      summary: Rebuild search index (admin)
+      tags:
+      - indexing
+  /api/system/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: System status
+      tags:
+      - system
+  /api/wiki/categories:
+    get:
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List wiki categories
+      tags:
+      - wiki
+  /api/wiki/category/{slug}:
+    get:
+      parameters:
+      - description: Category slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Wiki category detail
+      tags:
+      - wiki
+  /api/wiki/content/{path}:
+    get:
+      parameters:
+      - description: Path under wiki root
+        in: path
+        name: path
+        required: true
+        type: string
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Markdown body
+          schema:
+            type: string
+      summary: Wiki markdown content
+      tags:
+      - wiki
+  /api/wiki/list:
+    get:
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List wiki articles
+      tags:
+      - wiki
+  /api/wiki/search:
+    get:
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Full-text / vector wiki search
+      tags:
+      - wiki
+  /api/wiki/sync:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - AdminKey: []
+      summary: Sync wiki from Git (admin)
+      tags:
+      - wiki
+  /health:
+    get:
+      description: Liveness probe
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
+  /images/{path}:
+    get:
+      parameters:
+      - description: Image path
+        in: path
+        name: path
+        required: true
+        type: string
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/octet-stream
+      responses: {}
+      summary: Chat / wiki image
+      tags:
+      - chat
+  /webhook/github:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: GitHub push webhook
+      tags:
+      - webhooks
+  /wiki-assets/{path}:
+    get:
+      parameters:
+      - description: Asset path
+        in: path
+        name: path
+        required: true
+        type: string
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: Static wiki asset
+      tags:
+      - wiki
+schemes:
+- http
+- https
+securityDefinitions:
+  AdminKey:
+    in: header
+    name: X-Admin-Key
+    type: apiKey
+  InternalKey:
+    in: header
+    name: X-Internal-API-Key
+    type: apiKey
+swagger: "2.0"
