@@ -189,6 +189,7 @@ class LLMService(LLMClient):
             search_query = trans_query
             rewrite_in += trans_in
             rewrite_out += trans_out
+            total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
 
         # ── STEP 2: Retrieval ──────────────────────────────────────────
         if request and await request.is_disconnected():
@@ -475,6 +476,7 @@ class LLMService(LLMClient):
             search_query = trans_query
             rewrite_in += trans_in
             rewrite_out += trans_out
+            total_tokens_map["rewrite"] = (rewrite_in, rewrite_out)
 
         # ── Retrieval ──────────────────────────────────────────────────
         passed_docs, source_debug, retrieval_embed_tokens, avg_similarity_score = await retrieval_service.search(search_query, db_schema)

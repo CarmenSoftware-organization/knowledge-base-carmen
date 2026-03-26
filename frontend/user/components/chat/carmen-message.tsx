@@ -20,6 +20,12 @@ interface Props {
   t: any;
 }
 
+const ALLOWED_IFRAME_ORIGINS = [
+  "https://www.youtube.com",
+  "https://www.youtube-nocookie.com",
+  "https://player.vimeo.com",
+];
+
 const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, onSelect, theme = "#34558b", t }: Props) {
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
@@ -74,16 +80,27 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     return text.replace(/<[a-z]*[^>]*$/i, "");
   };
 
-    const processedContent = useMemo(() => {
+  const processedContent = useMemo(() => {
     const cleaned = stripIncompleteTags(rawContent);
     // Sanitize HTML to prevent XSS from LLM prompt injection
     if (typeof window !== "undefined") {
-      return DOMPurify.sanitize(cleaned, {
+      DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+        if (node.tagName === "IFRAME") {
+          const src = node.getAttribute("src") ?? "";
+          const trusted = ALLOWED_IFRAME_ORIGINS.some((origin) =>
+            src.startsWith(origin)
+          );
+          if (!trusted) node.parentNode?.removeChild(node);
+        }
+      });
+      const result = DOMPurify.sanitize(cleaned, {
         USE_PROFILES: { html: true },
         ADD_TAGS: ["iframe"],
         ADD_ATTR: ["data-lightbox", "target", "rel", "src", "allow", "allowfullscreen", "frameborder"],
         ALLOWED_URI_REGEXP: /^(?:https?:|\/|images\/)/i,
       });
+      DOMPurify.removeHooks("afterSanitizeAttributes");
+      return result;
     }
     return cleaned;
   }, [rawContent]);
@@ -172,7 +189,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
           <div className="flex items-center gap-2 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={handleCopy}
-              className="p-1 text-slate-400 dark:text-slate-500 transition-colors hover:text-blue-500"
+              className="p-1 text-slate-400 dark:text-slate-500 transition-all duration-200 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:scale-110 rounded"
               title={copied ? t("tools.copied") : t("tools.copy")}
             >
               {copied ? (
