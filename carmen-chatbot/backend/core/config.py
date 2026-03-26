@@ -50,6 +50,8 @@ class Settings:
         # Go backend URL for recording chat history to DB (optional)
         # When set, save_chat_logs will POST to /api/chat/record-history
         self.GO_BACKEND_URL: str = os.getenv("GO_BACKEND_URL", "").rstrip("/")
+        # Must match Go INTERNAL_API_KEY when that route is protected
+        self.GO_BACKEND_INTERNAL_API_KEY: str = os.getenv("GO_BACKEND_INTERNAL_API_KEY", "").strip()
 
         # --- Privacy ---
         # HMAC secret used to hash user_id before storing/logging.
