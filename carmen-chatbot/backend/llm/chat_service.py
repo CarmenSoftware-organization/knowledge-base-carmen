@@ -363,10 +363,14 @@ class LLMService(LLMClient):
                 yield json.dumps({"type": "chunk", "data": notice}) + "\n"
                 logger.warning(f"⚠️ LLM response truncated (finish_reason={stream_finish_reason})")
             elif not full_response.strip():
-                notice = EMPTY_RESPONSE_NOTICE.get(lang, EMPTY_RESPONSE_NOTICE["th"])
+                # LLM produced no answer text (e.g. output [SUGGESTIONS] first without any answer).
+                # Fall back to out_of_scope canned response so the user gets a meaningful reply.
+                notice = intent_router.canned_responses["out_of_scope"].get(
+                    lang, intent_router.canned_responses["out_of_scope"]["th"]
+                )
                 full_response = notice
                 yield json.dumps({"type": "chunk", "data": notice}) + "\n"
-                logger.warning("⚠️ LLM returned empty response")
+                logger.warning("⚠️ LLM returned empty response (possible [SUGGESTIONS]-first output)")
 
         except Exception as e:
             error_msg = self._format_error(e, lang)
