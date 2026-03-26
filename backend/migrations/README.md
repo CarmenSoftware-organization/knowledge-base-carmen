@@ -72,6 +72,11 @@ docker compose --env-file .env.docker exec backend ./server migrate migrations/0
 
 ---
 
+## Fly.io (backend)
+
+- รายการ env ที่ควรตั้ง: `backend/.env.fly.example` (คัดลอกเป็น `.env.fly.local` แล้ว `fly secrets import`)
+- รัน migration ครั้งแรกด้วย **PSQL / Beekeeper / Neon SQL Editor** ชี้ไป DB เดียวกับที่ใส่ใน `DB_*` — ลำดับไฟล์ตามตารางด้านบน
+
 ## Render (Production)
 
 - **ไม่แนะนำ** ใช้ `preDeployCommand: ./server migrate` แบบรันทุกครั้งที่ deploy — บางไฟล์ (เช่น `0002`) มี PL/pgSQL ที่ binary แยกด้วย `;` ไม่ปลอดภัย
@@ -81,5 +86,5 @@ docker compose --env-file .env.docker exec backend ./server migrate migrations/0
 ## Vercel (Frontend)
 
 - Root Directory: `frontend/user`
-- ตั้ง `NEXT_PUBLIC_API_BASE` = `https://<carmen-backend>.onrender.com` (ไม่มี slash ท้ายก็ได้ — ให้ตรงกับที่ frontend เรียก)
+- ตั้ง `NEXT_PUBLIC_API_BASE` = URL ของ Go backend (`https://xxx.fly.dev` หรือ Render ฯลฯ — ให้ตรงกับที่ browser เรียก)
 - โปรเจกต์มี `frontend/user/vercel.json` ตั้ง region **Singapore (`sin1`)**

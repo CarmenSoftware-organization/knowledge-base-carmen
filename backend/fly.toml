@@ -1,0 +1,27 @@
+# ใช้เมื่อ deploy จากโฟลเดอร์ backend (Working directory = backend)
+# CLI: cd backend && fly deploy
+#
+# Environment ครบชุด — ดู .env.fly.example แล้วคัดลอกเป็น secrets / Dashboard
+#   fly secrets import -a new-carmen < .env.fly.local
+#
+# หลัง deploy: migration ไปที่ DB จริง — backend/migrations/README.md
+
+app = "new-carmen"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  grace_period = "15s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/health"
