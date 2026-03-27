@@ -3,6 +3,8 @@
 
 root = "."
 tmp_dir = "tmp"
+# Inject backend/.env into the runner process (helps when cwd/exe path breaks Go-side discovery on Windows).
+env_files = [".env"]
 
 [build]
   # สำหรับ Windows ต้อง build เป็น .exe

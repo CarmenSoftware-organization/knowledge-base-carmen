@@ -6,12 +6,10 @@ import (
 	"context"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
-	"github.com/joho/godotenv"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/router"
@@ -22,13 +20,6 @@ import (
 )
 
 func main() {
-	if execPath, err := os.Executable(); err == nil {
-		backendDir := filepath.Dir(filepath.Dir(execPath))
-		envPath := filepath.Join(backendDir, ".env")
-		if _, err := os.Stat(envPath); err == nil {
-			_ = godotenv.Load(envPath)
-		}
-	}
 	if err := config.Load(); err != nil {
 		log.Fatal("Failed to load config:", err)
 	}

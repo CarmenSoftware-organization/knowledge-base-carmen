@@ -124,17 +124,86 @@ func DefaultGitHubRepoBaseURL() string     { return defaultGitHubRepoURL }
 func DefaultGitHubAPIBaseURL() string      { return defaultGitHubAPIURL }
 func DefaultTranslationAPIBaseURL() string { return defaultTranslateURL }
 
-func Load() error {
-	cwd, _ := os.Getwd()
-	_ = godotenv.Load(filepath.Join(cwd, ".env"))
-	_ = godotenv.Load(".env")
-	_ = godotenv.Load("../.env")
-	_ = godotenv.Load("backend/.env")
-	if execPath, err := os.Executable(); err == nil {
-		execDir := filepath.Dir(execPath)
-		_ = godotenv.Load(filepath.Join(execDir, ".env"))
-		_ = godotenv.Load(filepath.Join(execDir, "..", ".env"))
+// findDirContaining walks from startDir upward for a file named name (e.g. go.mod).
+func findDirContaining(startDir, name string) string {
+	dir := startDir
+	for i := 0; i < 20; i++ {
+		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
 	}
+	return ""
+}
+
+// discoverBackendDotEnv returns absolute paths to .env files to load (deduped, stable order).
+// Uses go.mod next to the module; also parent-of-exe/.env for Air (backend/tmp/main.exe -> backend/.env).
+// On Windows, Executable() may point outside the repo; EvalSymlinks + ../.env still fixes the common case.
+func discoverBackendDotEnvPaths() []string {
+	seen := make(map[string]struct{})
+	var out []string
+	add := func(p string) {
+		if p == "" {
+			return
+		}
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return
+		}
+		st, err := os.Stat(abs)
+		if err != nil || st.IsDir() {
+			return
+		}
+		if _, ok := seen[abs]; ok {
+			return
+		}
+		seen[abs] = struct{}{}
+		out = append(out, abs)
+	}
+
+	if cwd, err := os.Getwd(); err == nil {
+		add(filepath.Join(cwd, ".env"))
+		if modDir := findDirContaining(cwd, "go.mod"); modDir != "" {
+			add(filepath.Join(modDir, ".env"))
+		}
+		add(filepath.Join(cwd, "backend", ".env"))
+	}
+	if exe, err := os.Executable(); err == nil {
+		if r, err := filepath.EvalSymlinks(exe); err == nil {
+			exe = r
+		}
+		exeDir := filepath.Dir(exe)
+		// Air: .../backend/tmp/main.exe -> .../backend/.env (works even if cwd is wrong)
+		add(filepath.Join(exeDir, "..", ".env"))
+		add(filepath.Join(exeDir, ".env"))
+		if modDir := findDirContaining(exeDir, "go.mod"); modDir != "" {
+			add(filepath.Join(modDir, ".env"))
+		}
+	}
+
+	return out
+}
+
+func loadDotEnv() {
+	// Overload so file wins over pre-set OS/IDE env (e.g. DB_* on Windows).
+	for _, p := range discoverBackendDotEnvPaths() {
+		_ = godotenv.Overload(p)
+	}
+	if p := strings.TrimSpace(os.Getenv("BACKEND_DOTENV")); p != "" {
+		if abs, err := filepath.Abs(p); err == nil {
+			if st, err := os.Stat(abs); err == nil && !st.IsDir() {
+				_ = godotenv.Overload(abs)
+			}
+		}
+	}
+}
+
+func Load() error {
+	loadDotEnv()
 	strictEnvOnly := getEnvAsBool("STRICT_ENV_ONLY", false)
 	if strictEnvOnly {
 		if err := ensureStrictEnv(); err != nil {
