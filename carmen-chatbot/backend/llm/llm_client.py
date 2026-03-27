@@ -11,6 +11,16 @@ from ..core.config import settings
 logger = logging.getLogger(__name__)
 
 
+def sanitize_input(text: str) -> str:
+    """Strip XML-like tags to prevent prompt injection tag breakout."""
+    if not text:
+        return ""
+    return re.sub(
+        r'</?(user_input|context|history|chat_history|manual|system_instruction)[^>]*>',
+        '', text, flags=re.IGNORECASE
+    )
+
+
 class LLMClient:
     """Low-level LLM operations: creation, invocation, retry, utilities."""
 
@@ -30,11 +40,12 @@ class LLMClient:
     # ------------------------------------------------------------------
     def _create_llm(self, streaming: bool = False, model_name: str = None, max_tokens: int = None) -> ChatOpenAI:
         """Create a ChatOpenAI instance with provider-specific settings."""
+        temperature = float(settings.TUNING.get("llm", {}).get("temperature", 0.82))
         kwargs = dict(
             model=model_name or self.default_model,
             openai_api_key=self.api_key,
             openai_api_base=self.api_base,
-            temperature=0.82,
+            temperature=temperature,
             max_tokens=max_tokens,
             streaming=streaming,
             extra_body={
@@ -50,13 +61,7 @@ class LLMClient:
     # Security
     # ------------------------------------------------------------------
     def _sanitize_input(self, text: str) -> str:
-        """Strip XML-like tags to prevent prompt injection tag breakout."""
-        if not text:
-            return ""
-        return re.sub(
-            r'</?(user_input|context|history|chat_history|manual|system_instruction)[^>]*>',
-            '', text, flags=re.IGNORECASE
-        )
+        return sanitize_input(text)
 
     # ------------------------------------------------------------------
     # Error formatting

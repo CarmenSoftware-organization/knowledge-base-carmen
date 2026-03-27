@@ -1,4 +1,7 @@
+import logging
 from ..core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # ==========================================
 # 📝 PROMPT TEMPLATES (Externalized)
@@ -10,8 +13,8 @@ REWRITE_PROMPT = settings.PROMPTS.get("REWRITE_PROMPT", "")
 TRANSLATE_PROMPT = settings.PROMPTS.get("TRANSLATE_PROMPT", "")
 
 if not BASE_PROMPT:
-    print("⚠️ WARNING: BASE_PROMPT not found in prompts.json")
+    logger.warning("BASE_PROMPT not found in prompts.yaml")
 if not REWRITE_PROMPT:
-    print("⚠️ WARNING: REWRITE_PROMPT not found in prompts.json")
+    logger.warning("REWRITE_PROMPT not found in prompts.yaml")
 if not TRANSLATE_PROMPT:
-    print("⚠️ WARNING: TRANSLATE_PROMPT not found in prompts.json")
+    logger.warning("TRANSLATE_PROMPT not found in prompts.yaml")

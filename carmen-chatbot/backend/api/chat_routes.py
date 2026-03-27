@@ -1,7 +1,10 @@
 import json
+import logging
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse, JSONResponse
+
+logger = logging.getLogger(__name__)
 
 from ..core.schemas import ChatRequest, FeedbackRequest
 from ..llm.chat_service import chat_service
@@ -113,16 +116,16 @@ async def save_feedback(request: Request, message_id: int, body: FeedbackRequest
                 text("""
                     UPDATE public.chat_history
                     SET metrics = jsonb_set(COALESCE(metrics, '{}'), '{feedback}', to_jsonb(:score))
-                    WHERE extract(epoch FROM created_at)::bigint BETWEEN :mid - 3 AND :mid + 3
+                    WHERE id = :mid
                       AND bu_id = :bu_id
                       AND user_id = :user_id
                 """).bindparams(bindparam("score", type_=Integer())),
                 {"mid": message_id, "score": body.score, "bu_id": bu_id, "user_id": hashed_user},
             )
             await db.commit()
-            print(f"[feedback] Updated {result.rowcount} row(s) message_id={message_id} score={body.score}")
+            logger.info(f"Feedback updated {result.rowcount} row(s) message_id={message_id} score={body.score}")
         except Exception as e:
             await db.rollback()
-            print(f"[feedback] Save failed: {e}")
+            logger.error(f"Feedback save failed: {e}")
 
     return {"status": "ok"}

@@ -43,3 +43,9 @@ retrieval:
 history:
   context_limit: 4               # messages injected into LLM prompt (4 = 2 full Q&A pairs)
   memory_limit: 20               # messages kept in LRU cache per room (buffer for limit increases)
+
+# -----------------------------------------------------------------------------
+# LLM Generation — controls chat response generation behaviour
+# -----------------------------------------------------------------------------
+llm:
+  temperature: 0.82              # creativity level (0.0 = deterministic, 1.0 = creative)

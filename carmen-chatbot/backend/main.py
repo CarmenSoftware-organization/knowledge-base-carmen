@@ -56,7 +56,7 @@ async def build_image_index():
         new_index = await asyncio.to_thread(_scan)
         IMAGE_INDEX.clear()
         IMAGE_INDEX.update(new_index)
-        print(f"✅ Image Index Built: {len(IMAGE_INDEX)} images found.")
+        logging.getLogger(__name__).info("Image index built: %d images found.", len(IMAGE_INDEX))
 
 async def _image_index_refresh_loop():
     """Periodically rebuild IMAGE_INDEX and clear the lru_cache."""
@@ -233,5 +233,5 @@ async def get_image(filename: str, request: Request):
 
 
 if __name__ == "__main__":
-    print("🚀 Starting Carmen Server (Template Version)...")
+    logging.getLogger(__name__).info("Starting Carmen Server...")
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

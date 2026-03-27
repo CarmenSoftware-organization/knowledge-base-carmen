@@ -15,6 +15,15 @@ from ..core.database import AsyncSessionLocal
 logger = logging.getLogger(__name__)
 
 
+def _is_thai_query(text: str) -> bool:
+    """Return True if the query is predominantly Thai characters (≥15% of non-whitespace)."""
+    non_space = [c for c in text if not c.isspace()]
+    if not non_space:
+        return True
+    thai_count = sum(1 for c in non_space if '\u0e00' <= c <= '\u0e7f')
+    return (thai_count / len(non_space)) >= 0.15
+
+
 def _sql_like_to_regex(pattern: str) -> str:
     """Convert SQL LIKE pattern to a file-path-safe regex.
 
@@ -174,32 +183,36 @@ class RetrievalService:
 
                 # --- 2. Keyword Search (PostgreSQL Full-Text Search / BM25-like) ---
                 # Works well for English terms, codes, product names.
-                # Thai-only queries may return fewer hits but won't break anything.
+                # Thai-only queries are skipped — 'simple' FTS dictionary cannot tokenize Thai
+                # (Thai has no whitespace between words), so it would return 0 hits anyway.
                 keyword_rows = []
-                try:
-                    keyword_sql = text(f"""
-                        SELECT
-                            d.path,
-                            d.title,
-                            dc.content,
-                            ts_rank_cd(
-                                to_tsvector('simple', dc.content),
-                                plainto_tsquery('simple', :query)
-                            ) AS kw_score
-                        FROM {db_schema}.document_chunks dc
-                        JOIN {db_schema}.documents d ON dc.document_id = d.id
-                        WHERE to_tsvector('simple', dc.content) @@ plainto_tsquery('simple', :query)
-                          AND d.path NOT LIKE '%index.md'
-                        ORDER BY kw_score DESC
-                        LIMIT :fetch_limit
-                    """)
-                    keyword_rows = (await db.execute(keyword_sql, {
-                        "query": query,
-                        "fetch_limit": self.FETCH_K,
-                    })).fetchall()
-                    logger.debug(f"🔍 Keyword search: {len(keyword_rows)} hits")
-                except Exception as e:
-                    logger.warning(f"⚠️ Keyword search failed, using vector-only: {e}")
+                if _is_thai_query(query):
+                    logger.debug("🔍 Keyword search skipped (Thai-dominant query)")
+                else:
+                    try:
+                        keyword_sql = text(f"""
+                            SELECT
+                                d.path,
+                                d.title,
+                                dc.content,
+                                ts_rank_cd(
+                                    to_tsvector('simple', dc.content),
+                                    plainto_tsquery('simple', :query)
+                                ) AS kw_score
+                            FROM {db_schema}.document_chunks dc
+                            JOIN {db_schema}.documents d ON dc.document_id = d.id
+                            WHERE to_tsvector('simple', dc.content) @@ plainto_tsquery('simple', :query)
+                              AND d.path NOT LIKE '%index.md'
+                            ORDER BY kw_score DESC
+                            LIMIT :fetch_limit
+                        """)
+                        keyword_rows = (await db.execute(keyword_sql, {
+                            "query": query,
+                            "fetch_limit": self.FETCH_K,
+                        })).fetchall()
+                        logger.debug(f"🔍 Keyword search: {len(keyword_rows)} hits")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Keyword search failed, using vector-only: {e}")
 
             # --- 3. Reciprocal Rank Fusion (RRF) ---
             # Merges vector and keyword rankings into a single score.

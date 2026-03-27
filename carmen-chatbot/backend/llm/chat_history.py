@@ -87,7 +87,7 @@ def restore_history(room_id: str, frontend_history: list[dict] = None):
         _request_history[room_id] = _request_history[room_id][-HISTORY_MEMORY_LIMIT:]
 
 
-async def _save_to_db_direct(data: dict) -> bool:
+async def _save_to_db_direct(data: dict) -> int:
     """Save Q&A directly to public.chat_history. Returns True on success."""
     from sqlalchemy import text
     from .retrieval import retrieval_service
@@ -149,7 +149,7 @@ async def _save_to_db_direct(data: dict) -> bool:
             row = result.fetchone()
             if not row:
                 logger.warning(f"bu '{bu}' not found in business_units")
-                return False
+                return 0
             bu_id = row[0]
 
             # Create question_embedding + capture save embed tokens
@@ -224,7 +224,7 @@ async def _save_to_db_direct(data: dict) -> bool:
 
             if emb_str:
                 params["emb_str"] = emb_str
-                await db.execute(
+                result = await db.execute(
                     text("""
                         INSERT INTO public.chat_history
                         (bu_id, user_id, question, answer, sources, question_embedding,
@@ -242,11 +242,12 @@ async def _save_to_db_direct(data: dict) -> bool:
                                 :total_tokens, :cost_usd, CAST(:metrics_json AS jsonb),
                                 :avg_similarity_score, :answer_length, :device_type, :referrer_page,
                                 :embed_model, :intent_model, now())
+                        RETURNING id
                     """),
                     params,
                 )
             else:
-                await db.execute(
+                result = await db.execute(
                     text("""
                         INSERT INTO public.chat_history
                         (bu_id, user_id, question, answer, sources,
@@ -263,16 +264,19 @@ async def _save_to_db_direct(data: dict) -> bool:
                                 :total_tokens, :cost_usd, CAST(:metrics_json AS jsonb),
                                 :avg_similarity_score, :answer_length, :device_type, :referrer_page,
                                 :embed_model, :intent_model, now())
+                        RETURNING id
                     """),
                     params,
                 )
+            row = result.fetchone()
+            row_id = row[0] if row else 0
             await db.commit()
-            logger.info(f"Saved to DB (bu={bu}, total_tokens={total_tokens}, cost_usd={cost_usd})")
-            return True
+            logger.info(f"Saved to DB id={row_id} (bu={bu}, total_tokens={total_tokens}, cost_usd={cost_usd})")
+            return row_id
         except Exception as e:
             await db.rollback()
             logger.error(f"Save failed: {e}")
-            return False
+            return 0
 
 
 async def save_chat_logs(data: dict) -> int:
@@ -321,13 +325,15 @@ async def save_chat_logs(data: dict) -> int:
 
             status = await asyncio.to_thread(_do_request)
             if status in (200, 201):
-                return ts  # success
+                # Go backend doesn't return DB row ID — fall through to direct DB
+                # so we can get the real ID for feedback linking.
+                pass
         except urllib.error.HTTPError as e:
             logger.warning(f"Go backend failed: {e.code}, using direct DB")
         except Exception as e:
             logger.warning(f"Go backend error: {e}, using direct DB")
 
-    # 2) Fallback: save directly to DB (works when running carmen-chatbot standalone)
-    await _save_to_db_direct(data)
-    return ts
+    # 2) Save directly to DB to get the actual row ID for feedback linking.
+    row_id = await _save_to_db_direct(data)
+    return row_id if row_id else ts
 

@@ -10,6 +10,7 @@ from typing import Tuple, List
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from ..core.config import settings
+from .llm_client import sanitize_input
 
 logger = logging.getLogger(__name__)
 
@@ -268,6 +269,12 @@ class IntentRouter:
                 self.canned_responses[category] = data.get("responses", {})
 
     # ------------------------------------------------------------------
+    # Input sanitization (delegates to shared module-level function)
+    # ------------------------------------------------------------------
+    def _sanitize_input(self, text: str) -> str:
+        return sanitize_input(text)
+
+    # ------------------------------------------------------------------
     # Async init — called from app lifespan (non-blocking startup)
     # ------------------------------------------------------------------
     async def async_init(self):
@@ -275,15 +282,6 @@ class IntentRouter:
         if self.vector_matrix is None and settings.LLM_API_KEY:
             logger.info("🔄 IntentRouter: starting async full index...")
             await asyncio.to_thread(self._load_and_index_intents)
-
-    # ------------------------------------------------------------------
-    # Input sanitization
-    # ------------------------------------------------------------------
-    def _sanitize_input(self, text: str) -> str:
-        """Strip XML-like tags to prevent prompt injection tag breakout."""
-        if not text:
-            return ""
-        return re.sub(r'</?(user_input|context|history|chat_history|manual|system_instruction)[^>]*>', '', text, flags=re.IGNORECASE)
 
     # ------------------------------------------------------------------
     # Main detection pipeline
@@ -403,7 +401,7 @@ class IntentRouter:
                     f"(score={vec_best_score:.2f}) — confirm or override if clearly wrong.]"
                 )
 
-            sanitized_message = self._sanitize_input(message)
+            sanitized_message = sanitize_input(message)
             prompt = f"""Classify this user query for a hotel accounting software support chatbot.
 Reply with ONE WORD only — the category name.
 

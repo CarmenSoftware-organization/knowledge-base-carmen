@@ -1,6 +1,9 @@
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Base Directory Setup
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -89,7 +92,7 @@ class Settings:
 
         # --- Daily Budget Cap ---
         # Max chat requests allowed per day across all users (0 = unlimited)
-        self.DAILY_REQUEST_LIMIT: int = int(os.getenv("DAILY_REQUEST_LIMIT", "500"))
+        self.DAILY_REQUEST_LIMIT: int = int(os.getenv("DAILY_REQUEST_LIMIT", "1000"))
 
         # --- Image Index ---
         # How often (seconds) to rescan WIKI_DIR for new images (0 = disable periodic refresh)
@@ -130,7 +133,7 @@ class Settings:
                 import json
                 return json.load(f)
         except Exception as e:
-            print(f"⚠️ Error loading config from {path}: {e}")
+            logger.warning("Error loading config from %s: %s", path, e)
             return None
 
     @property
@@ -160,4 +163,4 @@ settings = Settings()
 settings.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 if not settings.is_llm_ready:
-    print("WARNING: LLM_API_KEY is missing in .env")
+    logger.warning("LLM_API_KEY is missing in .env")
