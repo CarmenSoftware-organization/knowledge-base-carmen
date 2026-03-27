@@ -202,7 +202,6 @@ class RetrievalService:
                             FROM {db_schema}.document_chunks dc
                             JOIN {db_schema}.documents d ON dc.document_id = d.id
                             WHERE to_tsvector('simple', dc.content) @@ plainto_tsquery('simple', :query)
-                              AND d.path NOT LIKE '%index.md'
                             ORDER BY kw_score DESC
                             LIMIT :fetch_limit
                         """)

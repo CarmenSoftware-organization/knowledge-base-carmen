@@ -65,7 +65,7 @@ async def calculate_request_cost(
     prices = await _get_prices()
 
     def _cost(model: str, inp: int, out: int) -> Decimal | None:
-        if not model:
+        if not model or (not inp and not out):
             return Decimal("0")
         if model not in prices:
             return None  # ไม่รู้ราคา

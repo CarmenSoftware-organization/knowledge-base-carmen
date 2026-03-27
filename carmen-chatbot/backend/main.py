@@ -1,6 +1,7 @@
 import uvicorn
 import os
 import asyncio
+import logging
 
 from .core.logging_config import setup_logging, log_startup
 setup_logging()
