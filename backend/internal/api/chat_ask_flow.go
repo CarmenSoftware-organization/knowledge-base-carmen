@@ -118,7 +118,7 @@ func (h *ChatHandler) tryCachedAnswer(bu string, emb []float32, threshold float6
 }
 
 func isRouterEnabled() bool {
-	return config.AppConfig.OpenClaw.Enabled || (config.AppConfig.Make.UseForQuestionRouter && config.AppConfig.Make.WebhookURL != "")
+	return false
 }
 
 func (h *ChatHandler) tryRouterAnswer(req models.ChatAskRequest, bu, question, userID string, emb []float32, historyEnabled bool) (models.ChatAskResponse, bool, error) {
