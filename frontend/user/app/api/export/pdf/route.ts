@@ -122,6 +122,32 @@ ${html}
 
     try {
       const page = await browser.newPage();
+
+      // Block file:// protocol and requests to private/internal networks to prevent SSRF
+      await page.setRequestInterception(true);
+      page.on("request", (request) => {
+        const url = request.url();
+        if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("data:")) {
+          request.abort();
+          return;
+        }
+        try {
+          const { hostname } = new URL(url);
+          const isInternal =
+            hostname === "localhost" ||
+            hostname === "127.0.0.1" ||
+            hostname === "::1" ||
+            /^10\./.test(hostname) ||
+            /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+            /^192\.168\./.test(hostname);
+          if (isInternal) { request.abort(); return; }
+        } catch {
+          request.abort();
+          return;
+        }
+        request.continue();
+      });
+
       await page.setContent(fullHtml, { waitUntil: "networkidle0", timeout: 30000 });
 
       const pdfBuffer = await page.pdf({
@@ -130,7 +156,7 @@ ${html}
         margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" },
       });
 
-      return new NextResponse(pdfBuffer, {
+      return new NextResponse(Buffer.from(pdfBuffer), {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",

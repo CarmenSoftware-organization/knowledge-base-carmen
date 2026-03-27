@@ -203,6 +203,8 @@ class LLMService(LLMClient):
         total_tokens_map = {"intent": (0, 0), "rewrite": (0, 0), "chat_input": 0, "chat_output": 0}
 
         # ── STEP 0: Intent Detection ──────────────────────────────────
+        if history:
+            chat_history.restore_history(room_id, history)
         have_history = chat_history.has_history(room_id)
         intent_type, quick_reply, intent_tokens, intent_embed_tokens = await intent_router.detect_intent(
             message, lang, have_history=have_history
@@ -228,8 +230,6 @@ class LLMService(LLMClient):
             log_performance(total_tokens_map, duration, duration)
             return
 
-        if history:
-            chat_history.restore_history(room_id, history)
         history_text = chat_history.get_history_text(room_id)
         logger.info(f"⚡ Processing as TECH_SUPPORT: '{message}'")
 
@@ -449,7 +449,7 @@ class LLMService(LLMClient):
 
         log_id = await chat_history.save_chat_logs(_build_log_payload(
             room_id=room_id, bu=bu, username=username, message=message, response=full_response,
-            model_name=model_name, chat_input_tokens=input_tokens, chat_output_tokens=output_tokens,
+            model_name=current_model, chat_input_tokens=input_tokens, chat_output_tokens=output_tokens,
             intent_tokens=intent_tokens, embed_tokens=embed_tokens,
             rewrite_in=rewrite_in, rewrite_out=rewrite_out, source_debug=source_debug,
             start_time=start_time, lang=lang, intent_type="tech_support",
@@ -480,6 +480,8 @@ class LLMService(LLMClient):
         total_tokens_map = {"intent": (0, 0), "rewrite": (0, 0), "chat_input": 0, "chat_output": 0}
 
         # ── Intent Detection ───────────────────────────────────────────
+        if history:
+            chat_history.restore_history(room_id, history)
         have_history = chat_history.has_history(room_id)
         intent_type, quick_reply, intent_tokens, intent_embed_tokens = await intent_router.detect_intent(
             message, lang, have_history=have_history
@@ -502,8 +504,6 @@ class LLMService(LLMClient):
             log_performance(total_tokens_map, 0, time.time() - start_time)
             return {"reply": quick_reply, "sources": [], "room_id": room_id, "message_id": log_id}
 
-        if history:
-            chat_history.restore_history(room_id, history)
         history_text = chat_history.get_history_text(room_id)
         logger.info(f"⚡ Processing as TECH_SUPPORT: '{message}'")
 
