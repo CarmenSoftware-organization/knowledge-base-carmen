@@ -7,6 +7,7 @@ import {
   setSelectedBU, 
   type BusinessUnit 
 } from "@/lib/wiki-api";
+import { DEFAULT_BU } from "@/lib/config";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import { Building2 } from "lucide-react";
 
 export function BUSwitcher() {
   const [bus, setBus] = useState<BusinessUnit[]>([]);
-  const [selected, setSelected] = useState<string>("carmen");
+  const [selected, setSelected] = useState<string>(DEFAULT_BU);
 
   useEffect(() => {
     async function load() {

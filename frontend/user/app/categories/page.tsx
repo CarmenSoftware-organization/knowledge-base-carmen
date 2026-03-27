@@ -3,6 +3,7 @@ import { KBFooter } from "@/components/kb/footer";
 import { KBSidebar } from "@/components/kb/sidebar";
 import { Breadcrumb } from "@/components/kb/breadcrumb";
 import { getCategories } from "@/lib/wiki-api";
+import { DEFAULT_BU } from "@/lib/config";
 import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { CategoryGrid } from "@/components/kb/category-grid";
 import { cookies } from "next/headers";
@@ -11,7 +12,7 @@ import { getTranslations } from "next-intl/server";
 export default async function CategoriesPage() {
   const t = await getTranslations();
   const cookieStore = await cookies();
-  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+  const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
 
   let data;
   try {

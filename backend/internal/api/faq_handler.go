@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/new-carmen/backend/internal/constants"
 	"github.com/new-carmen/backend/internal/services"
 )
 
@@ -17,7 +18,7 @@ func NewFAQHandler() *FAQHandler {
 
 // ListModules returns FAQ modules for a BU. GET /api/faq/modules?bu=...
 func (h *FAQHandler) ListModules(c *fiber.Ctx) error {
-	bu := c.Query("bu", "carmen")
+	bu := c.Query("bu", constants.DefaultBU)
 	mods, err := h.faqService.ListModules(bu)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -31,7 +32,7 @@ func (h *FAQHandler) GetModuleDetail(c *fiber.Ctx) error {
 	if moduleSlug == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "module is required"})
 	}
-	bu := c.Query("bu", "carmen")
+	bu := c.Query("bu", constants.DefaultBU)
 	data, err := h.faqService.GetModuleWithChildren(bu, moduleSlug)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -47,7 +48,7 @@ func (h *FAQHandler) ListByCategory(c *fiber.Ctx) error {
 	if moduleSlug == "" || subSlug == "" || catSlug == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "module, sub, category are required"})
 	}
-	bu := c.Query("bu", "carmen")
+	bu := c.Query("bu", constants.DefaultBU)
 	q := c.Query("q", "")
 
 	resp, err := h.faqService.ListByCategory(bu, moduleSlug, subSlug, catSlug, q)
@@ -63,11 +64,10 @@ func (h *FAQHandler) GetEntry(c *fiber.Ctx) error {
 	if id == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id is required"})
 	}
-	bu := c.Query("bu", "carmen")
+	bu := c.Query("bu", constants.DefaultBU)
 	entry, err := h.faqService.GetEntryByID(bu, id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(entry)
 }
-

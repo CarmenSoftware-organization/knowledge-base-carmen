@@ -37,23 +37,26 @@ export async function getBusinessUnits(): Promise<{ items: BusinessUnit[] }> {
 }
 
 export function getSelectedBUClient(): string {
-  if (typeof window === "undefined") return "carmen";
+  if (typeof window === "undefined") return DEFAULT_BU;
   const match = document.cookie.match(/(^| )selected_bu=([^;]+)/);
   if (match) {
     try {
-      return decodeURIComponent(match[2]);
+      return decodeURIComponent(match[2]).trim().toLowerCase();
     } catch {
-      return match[2];
+      return match[2].trim().toLowerCase();
     }
   }
-  return "carmen";
+  return DEFAULT_BU;
 }
 
 export function setSelectedBU(slug: string) {
   if (typeof window !== "undefined") {
+    const normalized = (slug || DEFAULT_BU).trim().toLowerCase();
     const maxAge = 60 * 60 * 24 * 30;
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = `selected_bu=${encodeURIComponent(slug)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
+    document.cookie = `selected_bu=${encodeURIComponent(
+      normalized
+    )}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
     window.dispatchEvent(new Event("bu-changed"));
   }
 }
@@ -79,7 +82,10 @@ export async function getCategories(bu?: string): Promise<{
 }
 
 // GET /api/wiki/category/:slug
-export async function getCategory(slug: string, bu?: string): Promise<{
+export async function getCategory(
+  slug: string,
+  bu?: string
+): Promise<{
   category: string;
   items: (WikiListItem & { slug: string })[];
 }> {
@@ -151,7 +157,10 @@ export function wikiPathToRoute(path: string): string {
 
 // หาบทความที่ตรงกับคำค้นมากที่สุดคืนทั้ง item และ route
 
-export async function findBestArticleForQuery(query: string, bu?: string): Promise<{
+export async function findBestArticleForQuery(
+  query: string,
+  bu?: string
+): Promise<{
   item: WikiListItem | null;
   route: string | null;
 }> {
@@ -184,7 +193,10 @@ export async function findBestArticleForQuery(query: string, bu?: string): Promi
     .sort((a, b) => b.score - a.score);
 
   if (scored.length > 0) {
-    return { item: scored[0].item, route: wikiPathToRoute(scored[0].item.path) };
+    return {
+      item: scored[0].item,
+      route: wikiPathToRoute(scored[0].item.path),
+    };
   }
 
   // 3. Fuzzy fallback (พิมผิด / พิมไม่ครบ)
@@ -287,7 +299,12 @@ export async function askChat(
     data = JSON.parse(raw) as ChatAskResponse;
   } catch {
     throw new Error(
-      `Chat API returned non-JSON (HTTP ${res.status}). Check NEXT_PUBLIC_API_BASE (${API_BASE}) and that the Go backend is running. Body starts with: ${raw.slice(0, 120)}`
+      `Chat API returned non-JSON (HTTP ${
+        res.status
+      }). Check NEXT_PUBLIC_API_BASE (${API_BASE}) and that the Go backend is running. Body starts with: ${raw.slice(
+        0,
+        120
+      )}`
     );
   }
   if (!res.ok) {
@@ -301,26 +318,34 @@ export type SearchResultItem = WikiListItem & {
 };
 
 function normalizeQuery(q: string): string {
-  return q
-    .trim()
-    .toLowerCase()
-    .normalize("NFC")
-    // ✅ ตัดจุดระหว่างตัวอักษรไทยออก: ภ.ง.ด. → ภงด
-    .replace(/(\p{L})\.(?=\p{L})/gu, "$1")
-    // ✅ ตัดจุดท้ายคำออก: ภ.ง.ด. → ภ.ง.ด
-    .replace(/\.$/, "")
-    .replace(/\s+/g, " ");
+  return (
+    q
+      .trim()
+      .toLowerCase()
+      .normalize("NFC")
+      // ✅ ตัดจุดระหว่างตัวอักษรไทยออก: ภ.ง.ด. → ภงด
+      .replace(/(\p{L})\.(?=\p{L})/gu, "$1")
+      // ✅ ตัดจุดท้ายคำออก: ภ.ง.ด. → ภ.ง.ด
+      .replace(/\.$/, "")
+      .replace(/\s+/g, " ")
+  );
 }
 
-export async function searchWiki(query: string, bu?: string): Promise<SearchResultItem[]> {
-    const q = normalizeQuery(query); 
-  if (q.length < 1) return [];    
+export async function searchWiki(
+  query: string,
+  bu?: string
+): Promise<SearchResultItem[]> {
+  const q = normalizeQuery(query);
+  if (q.length < 1) return [];
 
   const selectedBU = bu || getSelectedBUClient();
   try {
-    const res = await fetch(`${API_BASE}/api/wiki/search?q=${encodeURIComponent(q)}&bu=${selectedBU}`, {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${API_BASE}/api/wiki/search?q=${encodeURIComponent(q)}&bu=${selectedBU}`,
+      {
+        cache: "no-store",
+      }
+    );
 
     if (!res.ok) return [];
     const data = await res.json();
@@ -353,7 +378,12 @@ export async function getActivityLogs(
   limit: number = 20,
   offset: number = 0,
   source: "all" | "user" | "admin" = "all"
-): Promise<{ items: ActivityLog[]; total: number; limit: number; offset: number }> {
+): Promise<{
+  items: ActivityLog[];
+  total: number;
+  limit: number;
+  offset: number;
+}> {
   const selectedBU = bu || getSelectedBUClient();
   const params = new URLSearchParams({
     bu: selectedBU,

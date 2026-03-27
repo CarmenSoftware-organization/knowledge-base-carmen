@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/constants"
 	"github.com/new-carmen/backend/internal/security"
@@ -8,15 +10,16 @@ import (
 
 func BUContext() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		bu := c.Query("bu")
+		bu := strings.TrimSpace(c.Query("bu"))
 		if bu == "" {
-			bu = c.Get("X-BU-Slug")
+			bu = strings.TrimSpace(c.Get("X-BU-Slug"))
 		}
 		if bu == "" {
 			bu = constants.DefaultBU
 		}
+		bu = strings.ToLower(bu)
 		if !security.ValidateSchema(bu) {
-			bu = constants.DefaultBU
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu"})
 		}
 		c.Locals("bu", bu)
 		return c.Next()

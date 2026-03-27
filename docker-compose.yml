@@ -33,8 +33,8 @@ services:
 
   chatbot:
     build:
-      context: ./carmen-chatbot
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: carmen-chatbot/Dockerfile
     restart: unless-stopped
     ports:
       - "${CHATBOT_PORT:-8000}:8000"

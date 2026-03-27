@@ -33,7 +33,7 @@ backend/
 │   ├── middleware/         # HTTP middleware
 │   └── utils/              # Utilities
 ├── pkg/
-│   ├── ollama/             # Ollama client
+│   ├── openrouter/         # OpenRouter client
 │   └── github/             # GitHub integration
 ├── migrations/             # Database migrations
 ├── .env.example
@@ -45,7 +45,7 @@ backend/
 - 🔐 Authentication & Authorization (Role-based)
 - 📄 Document Management
 - 🔍 AI-Powered Semantic Search
-- 🤖 Ollama Integration
+- 🤖 OpenRouter Integration
 - 📚 GitHub Integration (for wiki.js content)
 - 🐘 PostgreSQL Database
 
@@ -54,6 +54,18 @@ backend/
 1. Copy `.env.example` to `.env` and configure
 2. Run migrations: `make migrate-up`
 3. Start server: `go run cmd/server/main.go`
+
+## Swagger (OpenAPI)
+
+- UI: เปิด `http://localhost:8080/swagger/index.html` หลังรันเซิร์ฟเวอร์ (พอร์ตตาม `SERVER_PORT` / `PORT`)
+- Regenerate หลังแก้คอมเมนต์ใน `internal/apidoc/swagger_routes.go` หรือ `cmd/server/main.go`:
+
+```bash
+cd cmd/server
+go run github.com/swaggo/swag/cmd/swag@v1.16.4 init -g main.go -o ../../docs -d .,../../internal/apidoc,../../internal/models
+```
+
+หรือจากรากโมดูล: `go generate ./cmd/server/...`
 
 ## Development Plan
 

@@ -6,16 +6,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/new-carmen/backend/internal/config"
 )
 
-
 type WikiSyncService struct {
-	repoPath    string
-	repoURL     string
-	branch      string
-	logService  *ActivityLogService
+	repoPath   string
+	repoURL    string
+	branch     string
+	logService *ActivityLogService
 }
 
 func NewWikiSyncService() *WikiSyncService {
@@ -26,7 +26,11 @@ func NewWikiSyncService() *WikiSyncService {
 	}
 	repoURL := cfg.Git.RepoURL
 	if repoURL == "" && cfg.GitHub.Owner != "" && cfg.GitHub.Repo != "" {
-		repoURL = fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Owner, cfg.GitHub.Repo)
+		base := strings.TrimRight(cfg.GitHub.RepoBaseURL, "/")
+		if base == "" {
+			base = config.DefaultGitHubRepoBaseURL()
+		}
+		repoURL = fmt.Sprintf("%s/%s/%s.git", base, cfg.GitHub.Owner, cfg.GitHub.Repo)
 	}
 	branch := cfg.Git.SyncBranch
 	if branch == "" {

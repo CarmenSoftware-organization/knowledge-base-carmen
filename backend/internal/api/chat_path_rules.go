@@ -2,8 +2,6 @@ package api
 
 import "strings"
 
-// topicPathRules maps keyword signals to ILIKE path patterns for vector search
-// pre-filtering. Adding a new topic = add one entry here; no handler changes needed.
 var topicPathRules = []struct {
 	Keywords []string
 	Patterns []string
@@ -46,8 +44,6 @@ var topicPathRules = []struct {
 	},
 }
 
-// buildPathFilterFromQuestion returns (whereClause, args) for a parameterized
-// vector-search query. Returns ("", nil) when no rule matches.
 func buildPathFilterFromQuestion(question string) (string, []any) {
 	qLower := strings.ToLower(question)
 	for _, rule := range topicPathRules {

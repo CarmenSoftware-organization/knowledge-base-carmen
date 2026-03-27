@@ -5,8 +5,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/api"
+	"github.com/new-carmen/backend/internal/constants"
+	"github.com/new-carmen/backend/internal/middleware"
 )
-
 
 func RegisterWiki(app *fiber.App) {
 	h := api.NewWikiHandler()
@@ -15,13 +16,13 @@ func RegisterWiki(app *fiber.App) {
 	app.Get("/api/wiki/category/:slug", h.GetCategory)
 	app.Get("/api/wiki/content/*", h.GetContent)
 	app.Get("/api/wiki/search", h.Search)
-	app.Post("/api/wiki/sync", h.Sync)
+	app.Post("/api/wiki/sync", middleware.RequireAdminKey, h.Sync)
 	app.Get("/wiki-assets/*", func(c *fiber.Ctx) error {
 		bu := c.Query("bu")
 		if bu == "" {
-			bu = "carmen"
+			bu = constants.DefaultBU
 		}
-		
+
 		relPath := c.Params("*")
 		if relPath == "" {
 			return c.SendStatus(fiber.StatusNotFound)
@@ -31,7 +32,10 @@ func RegisterWiki(app *fiber.App) {
 		}
 
 		wikiSvc := h.GetWikiService()
-		fullPath := wikiSvc.GetLocalAssetPath(bu, relPath)
+		fullPath, err := wikiSvc.GetLocalAssetPath(bu, relPath)
+		if err != nil {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
 		return c.SendFile(fullPath)
 	})
 }

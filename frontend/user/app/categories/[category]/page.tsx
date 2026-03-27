@@ -12,6 +12,7 @@ import matter from "gray-matter";
 import { ArticleGridTransition } from "@/components/kb/article-grid-client";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
+import { DEFAULT_BU } from "@/lib/config";
 
 export default async function CategoryPage({
   params,
@@ -24,7 +25,7 @@ export default async function CategoryPage({
   if (!category) notFound();
 
   const cookieStore = await cookies();
-  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+  const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
 
   let data;
   let indexContent = null;

@@ -12,6 +12,7 @@ import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
+import { DEFAULT_BU } from "@/lib/config";
 
 type Props = {
   params: Promise<{
@@ -28,7 +29,7 @@ export default async function ArticlePage({ params }: Props) {
   }
 
   const cookieStore = await cookies();
-  const bu = cookieStore.get("selected_bu")?.value || "carmen";
+  const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
 
   // changelog ใช้ภาษาอังกฤษตรง ๆ (ไม่ผ่าน translate)

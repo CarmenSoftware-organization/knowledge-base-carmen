@@ -301,10 +301,14 @@ async def save_chat_logs(data: dict) -> int:
             "answer": bot_response,
             "sources": sources,
         }).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        internal_key = getattr(settings, "GO_BACKEND_INTERNAL_API_KEY", "") or ""
+        if internal_key:
+            headers["X-Internal-API-Key"] = internal_key
         req = urllib.request.Request(
             f"{go_url}/api/chat/record-history",
             data=payload,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             method="POST",
         )
         try:
