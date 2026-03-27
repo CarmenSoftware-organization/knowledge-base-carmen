@@ -2,8 +2,11 @@ import re
 import time
 import json
 import asyncio
+import logging
 import urllib.request
 import urllib.error
+
+logger = logging.getLogger(__name__)
 
 # ==========================================
 # 💬 CHAT HISTORY (Frontend-Only / Stateless)
@@ -145,7 +148,7 @@ async def _save_to_db_direct(data: dict) -> bool:
             )
             row = result.fetchone()
             if not row:
-                print(f"[chat_history] bu '{bu}' not found in business_units")
+                logger.warning(f"bu '{bu}' not found in business_units")
                 return False
             bu_id = row[0]
 
@@ -157,7 +160,7 @@ async def _save_to_db_direct(data: dict) -> bool:
                     emb, save_embed_tokens = await retrieval_service.get_embedding(user_query)
                     emb_str = retrieval_service.format_pgvector(emb)
                 except Exception as e:
-                    print(f"[chat_history] embedding failed: {e}")
+                    logger.warning(f"embedding failed: {e}")
 
             # รวม embed tokens ทั้งหมด (retrieval + intent + save)
             embed_tokens = (data.get("embed_tokens") or 0) + save_embed_tokens
@@ -264,11 +267,11 @@ async def _save_to_db_direct(data: dict) -> bool:
                     params,
                 )
             await db.commit()
-            print(f"[chat_history] Saved to DB (bu={bu}, total_tokens={total_tokens}, cost_usd={cost_usd})")
+            logger.info(f"Saved to DB (bu={bu}, total_tokens={total_tokens}, cost_usd={cost_usd})")
             return True
         except Exception as e:
             await db.rollback()
-            print(f"[chat_history] Save failed: {e}")
+            logger.error(f"Save failed: {e}")
             return False
 
 
@@ -284,7 +287,7 @@ async def save_chat_logs(data: dict) -> int:
     if not user_query or not bot_response:
         return ts
 
-    print(f"[chat_history] Saving (bu={bu}, q_len={len(user_query)})")
+    logger.debug(f"Saving (bu={bu}, q_len={len(user_query)})")
 
     # 1) Try Go backend first (when Go is running)
     go_url = getattr(settings, "GO_BACKEND_URL", "") or ""
@@ -320,9 +323,9 @@ async def save_chat_logs(data: dict) -> int:
             if status in (200, 201):
                 return ts  # success
         except urllib.error.HTTPError as e:
-            print(f"[chat_history] Go backend failed: {e.code}, using direct DB")
+            logger.warning(f"Go backend failed: {e.code}, using direct DB")
         except Exception as e:
-            print(f"[chat_history] Go backend error: {e}, using direct DB")
+            logger.warning(f"Go backend error: {e}, using direct DB")
 
     # 2) Fallback: save directly to DB (works when running carmen-chatbot standalone)
     await _save_to_db_direct(data)

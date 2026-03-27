@@ -144,6 +144,7 @@ class RetrievalService:
             logger.error("Embeddings not initialized")
             return passed_docs, source_debug, 0, None
 
+        selected_vec_distances: list[float] = []
         try:
             query_embedding, embed_tokens = await self.get_embedding(query)
             emb_str = self.format_pgvector(query_embedding)
@@ -251,7 +252,6 @@ class RetrievalService:
             candidates.sort(key=lambda x: x["effective_rrf"], reverse=True)
 
             # --- 5. Deduplicate and build result ---
-            selected_vec_distances: list[float] = []
             seen_hashes: set[int] = set()
             for item in candidates:
                 if len(passed_docs) >= self.TOP_K:
