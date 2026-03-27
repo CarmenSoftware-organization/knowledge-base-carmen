@@ -11,9 +11,14 @@ export default async function HomePage() {
   const cookieStore = await cookies();
   const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
 
-  // ดึงหมวดจริงจาก backend
-  const { items: categories } = await getCategories(bu);
-  console.log(categories)
+  let categories: { slug: string; title: string }[] = [];
+  try {
+    const data = await getCategories(bu);
+    categories = data.items;
+  } catch {
+    // Vercel / misconfigured NEXT_PUBLIC_API_BASE / backend down — still render shell
+  }
+
   //  ดึงจำนวนบทความแต่ละหมวด
   const categoriesWithCount = await Promise.all(
     categories.map(async (cat) => {

@@ -2,8 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "regions": ["sin1"],
-  "env": {
-    "NEXT_PUBLIC_API_BASE": "https://example.invalid"
-  }
+  "regions": ["sin1"]
 }
