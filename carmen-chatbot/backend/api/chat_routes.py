@@ -3,14 +3,17 @@ import logging
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse, JSONResponse
-
-logger = logging.getLogger(__name__)
+from sqlalchemy import text, bindparam, Integer
 
 from ..core.schemas import ChatRequest, FeedbackRequest
+from ..core.database import AsyncSessionLocal
+from ..core.pii import hash_user_id
 from ..llm.chat_service import chat_service
 from ..core.rate_limit import limiter
 from ..core.config import settings
 from ..core.budget import check_and_increment
+
+logger = logging.getLogger(__name__)
 
 _BUDGET_MSG = {
     "th": "_(ขออภัยครับ ระบบมีการใช้งานเกินกำหนดสำหรับวันนี้ กรุณาลองใหม่ในวันพรุ่งนี้)_",
@@ -94,10 +97,6 @@ async def clear_chat_history(request: Request, room_id: str):
 @router.post("/feedback/{message_id}", summary="Save user feedback on a bot message")
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def save_feedback(request: Request, message_id: int, body: FeedbackRequest):
-    from sqlalchemy import text, bindparam, Integer
-    from ..core.database import AsyncSessionLocal
-    from ..core.pii import hash_user_id
-
     hashed_user = hash_user_id(body.username, settings.PRIVACY_HMAC_SECRET)
 
     async with AsyncSessionLocal() as db:

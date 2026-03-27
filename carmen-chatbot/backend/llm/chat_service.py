@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 _CONTEXT_TOKEN_BUFFER = 300   # reserved headroom when budgeting context tokens
 _STREAM_TIMEOUT_S = 90        # per-stream LLM timeout in seconds
+_QUICK_REPLY_INTENTS = frozenset(["greeting", "thanks", "out_of_scope", "company_info", "capabilities"])
 
 # ---------------------------------------------------------------------------
 # Module-level helpers (pure, no class state)
@@ -212,7 +213,7 @@ class LLMService(LLMClient):
         log_intent(intent_type, settings.active_intent_model, intent_tokens)
         total_tokens_map["intent"] = intent_tokens
 
-        if intent_type in ["greeting", "thanks", "out_of_scope", "company_info", "capabilities"]:
+        if intent_type in _QUICK_REPLY_INTENTS:
             duration = time.time() - start_time
             yield json.dumps({"type": "chunk", "data": quick_reply}) + "\n"
             log_id = await chat_history.save_chat_logs(_build_log_payload(
@@ -489,7 +490,7 @@ class LLMService(LLMClient):
         log_intent(intent_type, settings.active_intent_model, intent_tokens)
         total_tokens_map["intent"] = intent_tokens
 
-        if intent_type in ["greeting", "thanks", "out_of_scope", "company_info", "capabilities"]:
+        if intent_type in _QUICK_REPLY_INTENTS:
             log_id = await chat_history.save_chat_logs(_build_log_payload(
                 room_id=room_id, bu=bu, username=username, message=message, response=quick_reply,
                 model_name=settings.active_intent_model,

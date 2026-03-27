@@ -171,7 +171,8 @@ async def health_check(request: Request):
         return JSONResponse(status_code=503, content={"status": "error", "db": "unavailable"})
 
 # Static Files
-if not settings.IMAGES_DIR.exists(): os.makedirs(settings.IMAGES_DIR)
+if not settings.IMAGES_DIR.exists():
+    os.makedirs(settings.IMAGES_DIR)
 
 # Pre-resolve base directories once at module load time for path jail checks
 _WIKI_DIR_RESOLVED = settings.WIKI_DIR.resolve()

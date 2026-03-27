@@ -64,6 +64,23 @@ class LLMClient:
         return sanitize_input(text)
 
     # ------------------------------------------------------------------
+    # Token extraction
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _extract_token_usage(response) -> tuple[int, int]:
+        """Extract (input_tokens, output_tokens) from a LangChain response."""
+        if not response:
+            return 0, 0
+        resp_meta = getattr(response, 'response_metadata', {})
+        if resp_meta and 'token_usage' in resp_meta:
+            tu = resp_meta['token_usage']
+            return tu.get('prompt_tokens', 0), tu.get('completion_tokens', 0)
+        usage = getattr(response, 'usage_metadata', None)
+        if usage and isinstance(usage, dict):
+            return usage.get('input_tokens', 0), usage.get('output_tokens', 0)
+        return 0, 0
+
+    # ------------------------------------------------------------------
     # Error formatting
     # ------------------------------------------------------------------
     def _format_error(self, e: Exception, lang: str = "th") -> str:
@@ -186,17 +203,7 @@ class LLMClient:
             messages = [HumanMessage(content=prompt)]
             response = await llm.ainvoke(messages)
 
-            input_tokens = output_tokens = 0
-            resp_meta = getattr(response, 'response_metadata', {})
-            if resp_meta and 'token_usage' in resp_meta:
-                tu = resp_meta['token_usage']
-                input_tokens = tu.get('prompt_tokens', 0)
-                output_tokens = tu.get('completion_tokens', 0)
-            else:
-                usage = getattr(response, 'usage_metadata', None)
-                if usage and isinstance(usage, dict):
-                    input_tokens = usage.get('input_tokens', 0)
-                    output_tokens = usage.get('output_tokens', 0)
+            input_tokens, output_tokens = self._extract_token_usage(response)
 
             translated = response.content.strip().strip('"').strip("'")
             if len(translated) < 2 or len(translated) > 200:
@@ -227,17 +234,7 @@ class LLMClient:
             messages = [SystemMessage(content=system_part), HumanMessage(content=human_part)]
             response = await llm.ainvoke(messages)
 
-            input_tokens = output_tokens = 0
-            resp_meta = getattr(response, 'response_metadata', {})
-            if resp_meta and 'token_usage' in resp_meta:
-                tu = resp_meta['token_usage']
-                input_tokens = tu.get('prompt_tokens', 0)
-                output_tokens = tu.get('completion_tokens', 0)
-            else:
-                usage = getattr(response, 'usage_metadata', None)
-                if usage and isinstance(usage, dict):
-                    input_tokens = usage.get('input_tokens', 0)
-                    output_tokens = usage.get('output_tokens', 0)
+            input_tokens, output_tokens = self._extract_token_usage(response)
 
             rewritten = response.content.strip().strip('"').strip("'")
             if len(rewritten) < 3 or len(rewritten) > 200:
