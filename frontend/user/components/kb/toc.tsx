@@ -2,10 +2,13 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useLocale, useTranslations } from "next-intl";
 
 export function TableOfContents({ isMobile = false, onClose }: { isMobile?: boolean, onClose?: () => void }) {
   const [headings, setHeadings] = useState<{ id: string; text: string }[]>([]);
   const [activeId, setActiveId] = useState("");
+  const locale = useLocale();
+  const t = useTranslations("article");
 
   useEffect(() => {
     const sections = Array.from(document.querySelectorAll("article h2")) as HTMLElement[];
@@ -15,6 +18,7 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
       text: elem.textContent || "",
     }));
     setHeadings(elements);
+    setActiveId("");
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -38,7 +42,7 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, []);
+  }, [locale]);
 
   if (headings.length === 0) return null;
 
@@ -49,7 +53,7 @@ export function TableOfContents({ isMobile = false, onClose }: { isMobile?: bool
       <div className={cn(!isMobile && "border-l-2 border-gray-100 pl-4 relative")}>
         {!isMobile && (
           <p className="text-[11px] font-bold uppercase text-muted-foreground/50 mb-4 tracking-widest">
-            On this page
+            {t("onThisPage")}
           </p>
         )}
 

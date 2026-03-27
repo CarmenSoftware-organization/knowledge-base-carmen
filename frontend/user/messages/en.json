@@ -1,4 +1,7 @@
 {
+  "article": {
+    "onThisPage": "On this page"
+  },
   "common": {
     "categories": "Categories",
     "categoriesAll": "All Categories",
