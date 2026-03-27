@@ -41,11 +41,11 @@ flowchart TD
     INTENT --> H{Intent\nCategory?}
 
     %% ── Canned-response intents ────────────────────────────────────
-    H -- greeting / thanks\nout_of_scope\ncompany_info\ncapabilities\nconfusion --> CANNED[Return canned\nresponse immediately]
+    H -- greeting / thanks\nout_of_scope\ncompany_info\ncapabilities --> CANNED[Return canned\nresponse immediately]
     CANNED --> LOG
 
-    %% ── Tech-support path ──────────────────────────────────────────
-    H -- tech_support --> TS1{Conversation\nHistory?}
+    %% ── Tech-support path (incl. confusion — no canned response) ───
+    H -- tech_support / confusion --> TS1{Conversation\nHistory?}
     TS1 -- Yes --> TS2[[Query Rewrite\n_rewrite_query via LLM]]
     TS2 --> LANG
     TS1 -- No --> LANG
@@ -58,7 +58,7 @@ flowchart TD
     subgraph RETRIEVAL ["Hybrid Retrieval Pipeline"]
         direction TB
         R1[[Embed query\nOpenRouter Embedding API]] --> R2
-        R2[[Vector Search\npgvector cosine distance < 0.45]] & R3[[Keyword Search\nPostgreSQL FTS ts_rank_cd]]
+        R2[[Vector Search\npgvector cosine distance < 0.45]] & R3[[Keyword Search\nPostgreSQL FTS ts_rank_cd\nSkipped for Thai queries]]
         R2 --> R4[[Reciprocal Rank Fusion\nRRF score = 1÷60+rank_v + 1÷60+rank_k]]
         R3 --> R4
         R4 --> R5[[Path Boost\npath_rules.yaml keyword rules\n+0.02 RRF bonus]]
@@ -139,4 +139,5 @@ flowchart TD
 | out_of_scope | 0.88 |
 | company_info | 0.82 (most lenient) |
 | Soft zone (any) | 0.75 – threshold |
-```
+
+> **หมายเหตุ:** `confusion` ถูก detect ได้ผ่าน 3 stages แต่ไม่ return canned response — จะ fall through ไปยัง tech_support path แทน (ค่า threshold ยังมีผลต่อการ classify)

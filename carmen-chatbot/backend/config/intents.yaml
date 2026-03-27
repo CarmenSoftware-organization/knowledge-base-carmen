@@ -74,8 +74,8 @@ thanks:
 
 company_info:
   responses:
-    th: "🏢 **บริษัท คาร์เมน ซอฟต์แวร์ จำกัด (Carmen Software Co., Ltd.)**\n\n📍 **ที่อยู่:** 891/24-25 โครงการธนาพัฒน์ 360, ถนนพระราม 3 (สะพานภูมิพล), แขวงบางโพงพาง, เขตยานนาวา, กรุงเทพมหานคร 10120\n\n📞 **เบอร์โทรศัพท์:** +66 2 284 0429, +66 092 256 4588, +66 092 774 4588\n📧 **Email:** support@carmensoftware.com\n💬 **Line:** @carmensoftware\n🌐 **Website:** [carmensoftware.com](https://www.carmensoftware.com/)\n\nผู้เชี่ยวชาญด้านระบบบริหารจัดการการเงินและบัญชีสำหรับอุตสาหกรรมโรงแรม (Hotel Accounting SaaS Cloud Software)"
-    en: "🏢 **Carmen Software Co., Ltd.**\n\n📍 **Address:** 891/24-25 Thanapat 360 Project, Rama 3 Road, Bang Phong Phang, Yan Nawa, Bangkok 10120\n\n📞 **Phone:** +66 2 284 0429, +66 092 256 4588, +66 092 774 4588\n📧 **Email:** support@carmensoftware.com\n💬 **Line:** @carmensoftware\n🌐 **Website:** [carmensoftware.com](https://www.carmensoftware.com/)\n\nExpert in Hotel Accounting SaaS Cloud Software solutions."
+    th: "🏢 **บริษัท คาร์เมน ซอฟต์แวร์ จำกัด (Carmen Software Co., Ltd.)**\n\n📍 **ที่อยู่:** 891/24-25 โครงการธนาพัฒน์ 360, ถนนพระราม 3 (สะพานภูมิพล), แขวงบางโพงพาง, เขตยานนาวา, กรุงเทพมหานคร 10120\n\n📞 **เบอร์โทรศัพท์:** +66 2 284 0429\n📧 **Email:** support@carmensoftware.com\n💬 **Line:** @carmensoftware\n🌐 **Website:** [carmensoftware.com](https://www.carmensoftware.com/)\n\nผู้เชี่ยวชาญด้านระบบบริหารจัดการการเงินและบัญชีสำหรับอุตสาหกรรมโรงแรม (Hotel Accounting SaaS Cloud Software)"
+    en: "🏢 **Carmen Software Co., Ltd.**\n\n📍 **Address:** 891/24-25 Thanapat 360 Project, Rama 3 Road, Bang Phong Phang, Yan Nawa, Bangkok 10120\n\n📞 **Phone:** +66 2 284 0429\n📧 **Email:** support@carmensoftware.com\n💬 **Line:** @carmensoftware\n🌐 **Website:** [carmensoftware.com](https://www.carmensoftware.com/)\n\nExpert in Hotel Accounting SaaS Cloud Software solutions."
   examples:
     # Contact channels — Thai
     - "ติดต่อยังไง"
