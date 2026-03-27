@@ -19,8 +19,6 @@ type Config struct {
 	Git         GitConfig
 	WikiSearch  WikiSearchConfig
 	Chat        ChatConfig
-	OpenClaw    OpenClawConfig
-	Make        MakeConfig
 	Translation TranslationConfig
 	LLM         LLMConfig
 }
@@ -65,19 +63,6 @@ type DatabaseConfig struct {
 type JWTConfig struct {
 	Secret string
 	Expiry string
-}
-
-type OpenClawConfig struct {
-	URL     string
-	Token   string
-	Model   string
-	Enabled bool
-}
-
-type MakeConfig struct {
-	WebhookURL           string
-	WebhookAPIKey        string
-	UseForQuestionRouter bool
 }
 
 type GitHubConfig struct {
@@ -225,17 +210,6 @@ func Load() error {
 			IndexingTimeoutMin:         getEnvAsInt("INDEXING_TIMEOUT_MINUTES", 60),
 			WebhookIndexTimeoutMin:     getEnvAsInt("WEBHOOK_INDEXING_TIMEOUT_MINUTES", 30),
 		},
-		OpenClaw: OpenClawConfig{
-			URL:     getEnv("OPENCLAW_URL", ""),
-			Token:   getEnv("OPENCLAW_TOKEN", ""),
-			Model:   getEnv("OPENCLAW_MODEL", ""),
-			Enabled: getEnvAsBool("OPENCLAW_ENABLED", false),
-		},
-		Make: MakeConfig{
-			WebhookURL:           getEnv("MAKE_WEBHOOK_URL", ""),
-			WebhookAPIKey:        getEnv("MAKE_WEBHOOK_API_KEY", ""),
-			UseForQuestionRouter: getEnvAsBool("MAKE_USE_FOR_ROUTER", false),
-		},
 		Translation: TranslationConfig{
 			APIKey:     getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
 			Enabled:    getEnvAsBool("TRANSLATION_ENABLED", true),
@@ -301,13 +275,6 @@ func ensureStrictEnv() error {
 		"CHAT_HISTORY_SIMILARITY_THRESHOLD",
 		"INDEXING_TIMEOUT_MINUTES",
 		"WEBHOOK_INDEXING_TIMEOUT_MINUTES",
-		"OPENCLAW_URL",
-		"OPENCLAW_TOKEN",
-		"OPENCLAW_MODEL",
-		"OPENCLAW_ENABLED",
-		"MAKE_WEBHOOK_URL",
-		"MAKE_WEBHOOK_API_KEY",
-		"MAKE_USE_FOR_ROUTER",
 		"GOOGLE_TRANSLATE_API_KEY",
 		"TRANSLATION_ENABLED",
 		"TRANSLATION_API_BASE_URL",
