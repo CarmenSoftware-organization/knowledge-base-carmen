@@ -1,12 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer";
 
+/** Fetch each image (absolute https:// or relative /) server-side and replace with
+ *  base64 data URI so puppeteer can render them without hitting the SSRF block on localhost. */
+async function embedImages(html: string, baseUrl: string): Promise<string> {
+  const imgPattern = /(<img[^>]+src=")(?!data:|blob:)((?:https?:\/\/|\/)[^"]+)(")/gi;
+  const matches = [...html.matchAll(imgPattern)];
+  await Promise.all(
+    matches.map(async (m) => {
+      const raw = m[2];
+      const url = raw.startsWith("/") ? `${baseUrl}${raw}` : raw;
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) return;
+        const buf = Buffer.from(await res.arrayBuffer());
+        const mime = res.headers.get("content-type") ?? "image/png";
+        const dataUri = `data:${mime};base64,${buf.toString("base64")}`;
+        html = html.replace(m[0], `${m[1]}${dataUri}${m[3]}`);
+      } catch {
+        // keep original src if fetch fails
+      }
+    })
+  );
+  return html;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { html } = await req.json();
     if (!html || typeof html !== "string") {
       return NextResponse.json({ error: "html is required" }, { status: 400 });
     }
+
+    // Embed images as base64 before puppeteer renders — puppeteer blocks localhost requests (SSRF guard)
+    const baseUrl = req.nextUrl.origin;
+    const embeddedHtml = await embedImages(html, baseUrl);
 
     const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -106,7 +134,7 @@ export async function POST(req: NextRequest) {
 </style>
 </head>
 <body>
-${html}
+${embeddedHtml}
 </body>
 </html>`;
 
