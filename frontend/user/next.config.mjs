@@ -8,6 +8,9 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // html-to-docx imports Node.js built-ins (fs, crypto, path) — tell Turbopack
+  // not to bundle it so it can be require()'d at Node.js runtime instead.
+  serverExternalPackages: ["html-to-docx", "puppeteer"],
   // Monorepo: avoid inferring repo root from parent lockfiles (see Next.js turbopack root docs)
   turbopack: {
     root: __dirname,

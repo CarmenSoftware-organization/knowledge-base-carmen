@@ -54,6 +54,12 @@ const IconPdf = (
   </svg>
 );
 
+const IconSpinner = (
+  <svg className="animate-spin" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <path d="M12 2a10 10 0 0 1 10 10" />
+  </svg>
+);
+
 const IconThumbUp = (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
@@ -144,6 +150,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportLoading, setExportLoading] = useState<"docx" | "pdf" | null>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const isBot = msg.role === "bot";
@@ -215,111 +222,62 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     document.body.removeChild(ta);
   }
 
-  /** Grab already-rendered images from the DOM and convert to base64 via canvas. */
-  function embedImagesFromDom(html: string): string {
-    // Get the real rendered images from the content ref
-    const renderedImgs = contentRef.current?.querySelectorAll("img");
-    if (!renderedImgs || renderedImgs.length === 0) return html;
-
-    const div = document.createElement("div");
-    div.innerHTML = html;
-    const exportImgs = div.querySelectorAll("img");
-
-    renderedImgs.forEach((rendered, i) => {
-      if (i >= exportImgs.length) return;
-      const imgEl = rendered as HTMLImageElement;
-      if (!imgEl.complete || imgEl.naturalWidth === 0) return;
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = imgEl.naturalWidth;
-        canvas.height = imgEl.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        ctx.drawImage(imgEl, 0, 0);
-        exportImgs[i].setAttribute("src", canvas.toDataURL("image/png"));
-      } catch {
-        // keep original src if canvas is tainted (cross-origin)
-      }
-    });
-    return div.innerHTML;
-  }
-
-  function handleExportDocx() {
+  async function handleExportDocx() {
     setShowExportMenu(false);
-    const embeddedHtml = embedImagesFromDom(processedContent);
-    const header = [
-      '<html xmlns:o="urn:schemas-microsoft-com:office:office"',
-      ' xmlns:w="urn:schemas-microsoft-com:office:word"',
-      ' xmlns="http://www.w3.org/TR/REC-html40">',
-      "<head><meta charset='utf-8'>",
-      "<style>",
-      "body { font-family: 'Sarabun', 'TH SarabunPSK', 'Tahoma', sans-serif; font-size: 14pt; line-height: 1.6; padding: 20px; }",
-      "img { max-width: 100%; height: auto; }",
-      "table { border-collapse: collapse; width: 100%; }",
-      "td, th { border: 1px solid #ccc; padding: 6px 10px; }",
-      "</style></head><body>",
-    ].join("");
-    const footer = "</body></html>";
-    const blob = new Blob(["\ufeff", header + embeddedHtml + footer], {
-      type: "application/msword",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `carmen-export-${Date.now()}.doc`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function handleExportPdf() {
-    setShowExportMenu(false);
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.write([
-      "<!DOCTYPE html><html><head><meta charset='utf-8'>",
-      "<title>Carmen Export</title>",
-      "<style>",
-      "@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');",
-      "body { font-family: 'Sarabun', 'TH SarabunPSK', 'Tahoma', sans-serif; font-size: 14pt; line-height: 1.8; padding: 40px; color: #1e293b; }",
-      "img { max-width: 100%; height: auto; }",
-      "table { border-collapse: collapse; width: 100%; margin: 12px 0; }",
-      "td, th { border: 1px solid #cbd5e1; padding: 8px 12px; }",
-      "th { background: #f1f5f9; }",
-      "a { color: #2563eb; }",
-      "pre { background: #f8fafc; padding: 12px; border-radius: 6px; overflow-x: auto; }",
-      "code { font-size: 12pt; }",
-      "@media print { body { padding: 0; } }",
-      "</style></head><body>",
-      processedContent,
-      "</body></html>",
-    ].join(""));
-    printWindow.document.close();
-
-    // Wait for images to load before printing
-    const images = printWindow.document.querySelectorAll("img");
-    if (images.length === 0) {
-      printWindow.focus();
-      printWindow.print();
-      return;
+    setExportLoading("docx");
+    try {
+      // Send raw HTML — server-side embedImages() fetches each https:// image
+      // without CORS restrictions and converts to base64 before passing to html-to-docx.
+      const res = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html: processedContent }),
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `carmen-export-${Date.now()}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("DOCX export failed", err);
+    } finally {
+      setExportLoading(null);
     }
-    let loaded = 0;
-    const onLoad = () => {
-      loaded++;
-      if (loaded >= images.length) {
-        printWindow.focus();
-        printWindow.print();
-      }
-    };
-    images.forEach((img) => {
-      if (img.complete) {
-        onLoad();
-      } else {
-        img.addEventListener("load", onLoad);
-        img.addEventListener("error", onLoad);
-      }
-    });
+  }
+
+  async function handleExportPdf() {
+    setShowExportMenu(false);
+    if (!contentRef.current) return;
+    setExportLoading("pdf");
+    try {
+      // Server-side PDF via puppeteer — no main-thread blocking, no freeze.
+      // Send the raw content HTML; the API route wraps it in a clean styled page
+      // and renders it with headless Chromium (supports oklch/lab natively).
+      const res = await fetch("/api/export/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html: processedContent }),
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `carmen-export-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF export failed", err);
+    } finally {
+      setExportLoading(null);
+    }
   }
 
   function handleFeedback(score: number) {
@@ -423,11 +381,12 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
             <div className="relative" ref={exportMenuRef}>
               <button
                 type="button"
-                onClick={() => setShowExportMenu((v) => !v)}
-                className="p-1 text-slate-400 dark:text-slate-500 transition-all duration-200 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:scale-110 rounded"
+                onClick={() => { if (exportLoading === null) setShowExportMenu((v) => !v); }}
+                disabled={exportLoading !== null}
+                className="p-1 text-slate-400 dark:text-slate-500 transition-all duration-200 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:scale-110 rounded disabled:opacity-70 disabled:cursor-not-allowed"
                 title={t("tools.export")}
               >
-                {IconExport}
+                {exportLoading !== null ? IconSpinner : IconExport}
               </button>
 
               <AnimatePresence>
@@ -442,17 +401,19 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                     <button
                       type="button"
                       onClick={handleExportDocx}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      disabled={exportLoading !== null}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {IconDocx}
+                      {exportLoading === "docx" ? IconSpinner : IconDocx}
                       {t("tools.export_doc")}
                     </button>
                     <button
                       type="button"
                       onClick={handleExportPdf}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      disabled={exportLoading !== null}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {IconPdf}
+                      {exportLoading === "pdf" ? IconSpinner : IconPdf}
                       {t("tools.export_pdf")}
                     </button>
                   </motion.div>
