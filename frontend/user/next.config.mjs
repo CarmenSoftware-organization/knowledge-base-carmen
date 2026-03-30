@@ -1,37 +1,42 @@
-import { dirname } from "path";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const appRoot = __dirname;
+const appNodeModules = (...parts) => join(__dirname, "node_modules", ...parts);
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // html-to-docx imports Node.js built-ins (fs, crypto, path) — tell Turbopack
-  // not to bundle it so it can be require()'d at Node.js runtime instead.
-  serverExternalPackages: ["html-to-docx", "puppeteer"],
-  // Monorepo: avoid inferring repo root from parent lockfiles (see Next.js turbopack root docs)
   turbopack: {
-    root: __dirname,
+    root: appRoot,
+    resolveAlias: {
+      tailwindcss: appNodeModules("tailwindcss"),
+      "tw-animate-css": appNodeModules("tw-animate-css"),
+    },
   },
+  // Next.js 16+: top-level (no longer under experimental)
+  outputFileTracingRoot: appRoot,
   // Docker / self-hosted: set DOCKER_BUILD=1 at build time for standalone bundle
   ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" } : {}),
   typescript: {
     ignoreBuildErrors: true,
   },
-    images: {
+  images: {
     unoptimized: true,
   },
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
 
-    // Production: strict script-src — no 'unsafe-inline' / 'unsafe-eval' (blocks inline script injection).
-    // If you add inline scripts later, use CSP nonce or hash instead of opening unsafe-inline.
-    // Dev: allow unsafe-eval/unsafe-inline for Next HMR.
+    // Next.js injects inline bootstrap/hydration scripts — without 'unsafe-inline' (or a nonce-based
+    // CSP via middleware) production renders a blank page. We keep 'unsafe-eval' out of production.
+    // Dev: unsafe-eval + unsafe-inline for Next HMR.
     const scriptSrc = isDev
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com"
-      : "script-src 'self' https://va.vercel-scripts.com";
+      // Vercel Toolbar / Live: vercel.live; inline scripts required for Next.js runtime.
+      : "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live";
 
     // Keep this CSP reasonably strict but compatible with the app:
     // - allow YouTube embeds in KB markdown renderer

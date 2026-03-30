@@ -1,4 +1,7 @@
 {
+  "article": {
+    "onThisPage": "ในหน้านี้"
+  },
   "common": {
     "categories": "หมวดหมู่",
     "categoriesAll": "หมวดหมู่ทั้งหมด",
@@ -29,7 +32,9 @@
     "articlesCount": "{count} บทความ",
     "documents": "หมวดหมู่เอกสาร",
     "articlesInCategory": "รายการบทความในหมวดนี้",
-    "allArticlesInCategory": "รวมบทความทั้งหมดในหมวดนี้"
+    "allArticlesInCategory": "รวมบทความทั้งหมดในหมวดนี้",
+    "emptyList": "ยังไม่มีหมวดหมู่ให้แสดง",
+    "emptyListHint": "ฝั่งเซิร์ฟเวอร์อาจยังไม่มีไฟล์คู่มือ หรือการตั้งค่า API บน Vercel ไม่ตรงกับเครื่อง local — ตรวจสอบ NEXT_PUBLIC_API_BASE และว่า backend มี wiki content ติด deploy แล้ว"
   },
   "errors": {
     "loadFailed": "ไม่สามารถโหลดข้อมูลได้",

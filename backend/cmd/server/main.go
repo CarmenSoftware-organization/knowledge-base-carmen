@@ -6,12 +6,11 @@ import (
 	"context"
 	"log"
 	"os"
-	"path/filepath"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
-	"github.com/joho/godotenv"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/router"
@@ -22,18 +21,21 @@ import (
 )
 
 func main() {
-	if execPath, err := os.Executable(); err == nil {
-		backendDir := filepath.Dir(filepath.Dir(execPath))
-		envPath := filepath.Join(backendDir, ".env")
-		if _, err := os.Stat(envPath); err == nil {
-			_ = godotenv.Load(envPath)
-		}
-	}
 	if err := config.Load(); err != nil {
 		log.Fatal("Failed to load config:", err)
 	}
 	if err := config.Validate(); err != nil {
 		log.Fatal("Invalid configuration:", err)
+	}
+	if config.AppConfig != nil && strings.EqualFold(config.AppConfig.Server.Environment, "production") {
+		u := strings.TrimSpace(config.AppConfig.Server.ChatbotURL)
+		low := strings.ToLower(u)
+		if strings.Contains(u, "localhost") || strings.Contains(u, "127.0.0.1") {
+			log.Println("WARNING: PYTHON_CHATBOT_URL still points to loopback; POST /api/chat/* will fail until you set it to the public URL of the carmen-chatbot service (Render/Fly/etc.).")
+		}
+		if strings.Contains(low, "your-chatbot-url") || strings.Contains(low, "example.com") {
+			log.Println("WARNING: PYTHON_CHATBOT_URL looks like a placeholder; deploy the Python carmen-chatbot service and set this env to its real HTTPS URL (see render.yaml). Chat stream will not work until then.")
+		}
 	}
 	if config.AppConfig == nil || config.AppConfig.Translation.APIKey == "" {
 		log.Println("Translation: disabled (GOOGLE_TRANSLATE_API_KEY not set or empty)")

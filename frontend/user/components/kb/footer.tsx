@@ -43,8 +43,7 @@ export function KBFooter() {
     >
       <motion.div
         initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
+        animate="visible"
         variants={footerVariants}
         className="mx-auto max-w-6xl px-6 py-8 md:py-10"
       >

@@ -71,6 +71,7 @@ services:
       - key: WIKI_CONTENT_PATH
         value: /opt/render/project/src/carmen_cloud
 
+      # Must match Go backend VECTOR_DIMENSION and pgvector column (2000 if migrations/0006_vector_2000.sql was applied)
       - key: VECTOR_DIMENSION
         value: "1536"
 

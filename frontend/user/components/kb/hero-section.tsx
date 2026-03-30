@@ -56,8 +56,8 @@ export function HeroSection() {
       className="relative bg-gradient-to-b from-primary/5 via-background to-background py-16 sm:py-24"
       variants={staggerContainer}
       initial="hidden"
-      whileInView="show"
-      viewport={{ once: true }}
+      // animate (not whileInView): above-the-fold; IO บน Vercel/บางเบราว์เซอร์ไม่ยิงทัน → ข้อความค้าง opacity 0
+      animate="show"
     >
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <motion.div

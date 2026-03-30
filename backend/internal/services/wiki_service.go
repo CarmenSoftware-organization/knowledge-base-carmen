@@ -111,6 +111,9 @@ func (s *WikiService) getRepoPath(bu string) string {
 				}
 			}
 		}
+		if discovered := config.DiscoverCarmenWikiRoot(); discovered != "" {
+			return discovered
+		}
 		fallback := "."
 		if len(dirs) > 0 {
 			fallback = dirs[0]

@@ -74,6 +74,12 @@ async def _image_index_refresh_loop():
 
 _PRICING_SYNC_INTERVAL = 86400  # 24 ชั่วโมง
 
+
+async def _background_pricing_sync():
+    """Run first OpenRouter pricing sync without blocking app startup (PaaS port/health probes)."""
+    await sync_pricing_from_openrouter()
+
+
 async def _pricing_sync_loop():
     """Re-sync OpenRouter pricing every 24 hours while server is running."""
     while True:
@@ -92,7 +98,8 @@ async def lifespan(app: FastAPI):
     )
     await build_image_index()
     await intent_router.async_init()
-    await sync_pricing_from_openrouter()
+    # Pricing sync touches OpenRouter + hundreds of DB upserts — do not block bind/health checks (Render, etc.).
+    asyncio.create_task(_background_pricing_sync())
     asyncio.create_task(_pricing_sync_loop())
     if settings.IMAGE_INDEX_REFRESH_SECONDS > 0:
         asyncio.create_task(_image_index_refresh_loop())

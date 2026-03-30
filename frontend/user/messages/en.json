@@ -1,4 +1,7 @@
 {
+  "article": {
+    "onThisPage": "On this page"
+  },
   "common": {
     "categories": "Categories",
     "categoriesAll": "All Categories",
@@ -29,7 +32,9 @@
     "articlesCount": "{count} articles",
     "documents": "Document Categories",
     "articlesInCategory": "Articles in this category",
-    "allArticlesInCategory": "All articles in this category"
+    "allArticlesInCategory": "All articles in this category",
+    "emptyList": "No categories to show",
+    "emptyListHint": "The API returned an empty list. Check NEXT_PUBLIC_API_BASE on Vercel and that your hosted backend includes the same wiki markdown files as local."
   },
   "errors": {
     "loadFailed": "Unable to load data",

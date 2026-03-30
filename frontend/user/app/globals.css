@@ -1,5 +1,10 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* จำกัดการสแกนคลาส — ไม่ให้ไล่ทั้ง monorepo (ช่วยให้ dev เร็วขึ้น) */
+@source "../**/*.{js,ts,jsx,tsx,mdx}";
+@source not "../node_modules";
+@source not "../.next";
 
 @custom-variant dark (&:is(.dark *));
 

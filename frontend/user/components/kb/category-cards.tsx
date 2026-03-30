@@ -47,8 +47,7 @@ export function CategoryCards({ categories }: Props) {
         {/* Header Animation */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
           <h2 className="text-3xl font-bold text-foreground">
@@ -63,8 +62,7 @@ export function CategoryCards({ categories }: Props) {
         <motion.div
           variants={containerVariants}
           initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          animate="visible"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           {categories.map((category) => {
