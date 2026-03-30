@@ -140,9 +140,46 @@ func findDirContaining(startDir, name string) string {
 	return ""
 }
 
-// discoverBackendDotEnv returns absolute paths to .env files to load (deduped, stable order).
-// Uses go.mod next to the module; also parent-of-exe/.env for Air (backend/tmp/main.exe -> backend/.env).
-// On Windows, Executable() may point outside the repo; EvalSymlinks + ../.env still fixes the common case.
+
+func DiscoverCarmenWikiRoot() string {
+	try := func(start string) string {
+		dir := start
+		for i := 0; i < 20; i++ {
+			for _, rel := range []string{"carmen_cloud", filepath.Join("contents", "carmen_cloud")} {
+				cand := filepath.Join(dir, rel)
+				abs, err := filepath.Abs(cand)
+				if err != nil {
+					continue
+				}
+				if info, err := os.Stat(abs); err == nil && info.IsDir() {
+					return abs
+				}
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+		return ""
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		if p := try(cwd); p != "" {
+			return p
+		}
+	}
+	if exe, err := os.Executable(); err == nil {
+		if r, err := filepath.EvalSymlinks(exe); err == nil {
+			exe = r
+		}
+		if p := try(filepath.Dir(exe)); p != "" {
+			return p
+		}
+	}
+	return ""
+}
+
+
 func discoverBackendDotEnvPaths() []string {
 	seen := make(map[string]struct{})
 	var out []string
