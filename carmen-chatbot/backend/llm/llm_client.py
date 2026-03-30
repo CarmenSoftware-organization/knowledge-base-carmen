@@ -37,9 +37,9 @@ class LLMClient:
             temperature=0.82,
             max_tokens=max_tokens,
             streaming=streaming,
+            # OpenRouter: require_parameters + no fallbacks often yields 404 "No endpoints found"
             extra_body={
-                "include_reasoning": False,
-                "provider": {"allow_fallbacks": False, "require_parameters": True},
+                "provider": {"allow_fallbacks": True},
             },
         )
         if streaming:
@@ -76,6 +76,12 @@ class LLMClient:
                 "Too many requests. Please slow down and try again in a moment."
                 if lang == "en" else
                 "มีการเรียกใช้งานมากเกินไป กรุณาลองใหม่ในภายหลัง"
+            )
+        if "404" in error_str and ("no endpoints" in error_str.lower() or "endpoints found" in error_str.lower()):
+            return (
+                "No AI model accepted this request on OpenRouter. Try another LLM_CHAT_MODEL or check your API key."
+                if lang == "en" else
+                "ไม่มี provider รับคำขอนี้บน OpenRouter — ลองเปลี่ยน LLM_CHAT_MODEL หรือตรวจสอบ API key"
             )
         if any(code in error_str for code in ["500", "502", "503"]):
             return (
