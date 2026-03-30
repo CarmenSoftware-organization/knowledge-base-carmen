@@ -133,8 +133,12 @@ export async function executeStream(
       const raw = await response.text();
       let msg: string;
       try {
-        const j = JSON.parse(raw) as { message?: string; error?: string; detail?: string };
-        msg = [j.message, j.detail, j.error].filter(Boolean).join(" — ") || raw;
+        const j = JSON.parse(raw) as { message?: string; error?: string; detail?: unknown };
+        // FastAPI validation errors return detail as an array of objects — flatten to string
+        const detailStr = Array.isArray(j.detail)
+          ? j.detail.map((d: any) => d.msg ?? JSON.stringify(d)).filter(Boolean).join("; ")
+          : typeof j.detail === "string" ? j.detail : undefined;
+        msg = [j.message, detailStr, j.error].filter(Boolean).join(" — ") || raw;
         if (!msg.trim()) msg = summarizeProxyOrHtmlError(raw, response.status);
       } catch {
         msg = summarizeProxyOrHtmlError(raw, response.status);
@@ -209,7 +213,7 @@ export async function executeStream(
           } else if (parsed.type === "suggestions") {
             bufferedSuggestions = parsed.data;
           } else if (parsed.type === "done") {
-            finalMsgId = parsed.id;
+            finalMsgId = String(parsed.id);
             const finalTimestamp = new Date().toISOString();
             setMessages((prev) =>
               prev.map((m) => m.id === botMsgId
@@ -230,7 +234,7 @@ export async function executeStream(
       try {
         const parsed = JSON.parse(lineBuffer.trim());
         if (parsed.type === "chunk") { typingBuffer += parsed.data; accumulated += parsed.data; }
-        else if (parsed.type === "done" && !finalMsgId) { finalMsgId = parsed.id; }
+        else if (parsed.type === "done" && !finalMsgId) { finalMsgId = String(parsed.id); }
         else if (parsed.type === "suggestions") { bufferedSuggestions = parsed.data; }
       } catch {
         // malformed final line — skip
@@ -264,7 +268,9 @@ export async function executeStream(
       if (abortController.current === controller) {
         statusTimers.current.forEach(clearTimeout);
         statusTimers.current = [];
-        const detail = sanitizeErrorMessageForUi(String(e?.message ?? e ?? "").trim());
+        const detail = sanitizeErrorMessageForUi(
+          (e instanceof Error ? e.message : typeof e === "string" ? e : String(e?.message ?? "")).trim()
+        );
         setMessages((prev) =>
           prev.map((m) =>
             m.id === botMsgId

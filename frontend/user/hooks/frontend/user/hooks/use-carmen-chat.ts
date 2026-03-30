@@ -562,7 +562,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
             } else if (parsed.type === "suggestions") {
               bufferedSuggestions = parsed.data;
             } else if (parsed.type === "done") {
-              finalMsgId = parsed.id;
+              finalMsgId = String(parsed.id);
               const finalSources = parsed.sources || null;
               const finalTimestamp = new Date().toISOString();
               setMessages((prev) =>
@@ -583,7 +583,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
             typingBuffer += parsed.data;
             accumulated += parsed.data;
           } else if (parsed.type === "done" && !finalMsgId) {
-             finalMsgId = parsed.id;
+             finalMsgId = String(parsed.id);
           } else if (parsed.type === "suggestions") {
              bufferedSuggestions = parsed.data;
           }

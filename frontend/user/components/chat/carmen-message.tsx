@@ -475,18 +475,21 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
             variants={suggestionContainerVariants}
             className="flex flex-wrap items-start justify-start gap-2 mb-1 overflow-hidden p-1 -ml-1"
           >
-            {msg.suggestions.map((s, i) => (
-              <motion.button
-                key={`${msg.id}-sugg-${i}`}
-                variants={suggestionItemVariants}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onSelect?.(s, msg.id)}
-                className="text-[13px] px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-medium transition-all shadow-sm hover:shadow-md outline-none cursor-pointer text-left w-fit"
-              >
-                {s}
-              </motion.button>
-            ))}
+            {msg.suggestions.map((s, i) => {
+              const text = typeof s === 'string' ? s : (s as any).question || (s as any).text || (s as any).title || String(s);
+              return (
+                <motion.button
+                  key={`${msg.id}-sugg-${i}`}
+                  variants={suggestionItemVariants}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onSelect?.(text, msg.id)}
+                  className="text-[13px] px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 font-medium transition-all shadow-sm hover:shadow-md outline-none cursor-pointer text-left w-fit"
+                >
+                  {text}
+                </motion.button>
+              );
+            })}
           </motion.div>
         )}
       </AnimatePresence>

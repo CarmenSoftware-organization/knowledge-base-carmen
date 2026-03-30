@@ -214,7 +214,7 @@ class LLMService(LLMClient):
                 retrieved_chunks=0, history_count=history_count,
                 device_type=device_type, referrer_page=referrer_page,
             ))
-            yield json.dumps({"type": "done", "id": log_id}) + "\n"
+            yield json.dumps({"type": "done", "id": str(log_id)}) + "\n"
             log_performance(total_tokens_map, duration, duration)
             return
 
@@ -262,7 +262,7 @@ class LLMService(LLMClient):
                 retrieved_chunks=0, history_count=history_count,
                 device_type=device_type, referrer_page=referrer_page,
             ))
-            yield json.dumps({"type": "done", "id": log_id}) + "\n"
+            yield json.dumps({"type": "done", "id": str(log_id)}) + "\n"
             log_performance(total_tokens_map, 0, duration)
             return
 
@@ -378,19 +378,45 @@ class LLMService(LLMClient):
 
             # ── Extract suggestions ────────────────────────────────────
             suggestions: list = []
+            
+            def _normalize_sugg(s_raw):
+                res = []
+                if isinstance(s_raw, dict):
+                    # In case of {"suggestions": ["q1..."]}
+                    for v in s_raw.values():
+                        if isinstance(v, list):
+                            s_raw = v
+                            break
+                    if not isinstance(s_raw, list):
+                        s_raw = list(s_raw.values())
+                if isinstance(s_raw, list):
+                    for item in s_raw:
+                        if isinstance(item, dict):
+                            val = item.get("question", item.get("title", item.get("text", list(item.values())[0] if item else "")))
+                            res.append(str(val))
+                        elif isinstance(item, list) and item:
+                            res.append(str(item[0]))
+                        else:
+                            res.append(str(item))
+                elif isinstance(s_raw, str):
+                    res.append(s_raw)
+                return [s.strip() for s in res if str(s).strip()]
+
             suggestion_match = re.search(r'\[SUGGESTIONS\]\s*(\{.*\}|\[.*\])', full_response, re.DOTALL)
             if suggestion_match:
                 tag_start = full_response.find(tag)
                 full_response = full_response[:tag_start].strip()
                 try:
-                    suggestions = json.loads(suggestion_match.group(1).replace("```json", "").replace("```", "").strip())
+                    raw_sugg = json.loads(suggestion_match.group(1).replace("```json", "").replace("```", "").strip())
+                    suggestions = _normalize_sugg(raw_sugg)
                 except Exception as e:
                     logger.warning(f"⚠️ Failed to parse suggestions (regex): {e}")
             elif tag in full_response:
                 parts = full_response.split(tag)
                 full_response = parts[0].strip()
                 try:
-                    suggestions = json.loads(parts[1].replace("```json", "").replace("```", "").strip())
+                    raw_sugg = json.loads(parts[1].replace("```json", "").replace("```", "").strip())
+                    suggestions = _normalize_sugg(raw_sugg)
                 except Exception as e:
                     logger.warning(f"⚠️ Failed to parse suggestions (split): {e}")
 
@@ -421,7 +447,7 @@ class LLMService(LLMClient):
                 else f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {error_msg}"
             )
             yield json.dumps({"type": "chunk", "data": fallback}) + "\n"
-            yield json.dumps({"type": "done", "id": 0}) + "\n"
+            yield json.dumps({"type": "done", "id": "0"}) + "\n"
             return
 
         # ── Token accounting + log ─────────────────────────────────────
@@ -447,7 +473,7 @@ class LLMService(LLMClient):
             avg_similarity_score=avg_similarity_score,
             device_type=device_type, referrer_page=referrer_page,
         ))
-        yield json.dumps({"type": "done", "id": log_id}) + "\n"
+        yield json.dumps({"type": "done", "id": str(log_id)}) + "\n"
 
     # ------------------------------------------------------------------
     # Non-streaming chat
@@ -490,7 +516,7 @@ class LLMService(LLMClient):
                 device_type=device_type, referrer_page=referrer_page,
             ))
             log_performance(total_tokens_map, 0, time.time() - start_time)
-            return {"reply": quick_reply, "sources": [], "room_id": room_id, "message_id": log_id}
+            return {"reply": quick_reply, "sources": [], "room_id": room_id, "message_id": str(log_id)}
 
         history_text = chat_history.get_history_text(room_id)
         logger.info(f"⚡ Processing as TECH_SUPPORT: '{message}'")
@@ -521,7 +547,7 @@ class LLMService(LLMClient):
                 device_type=device_type, referrer_page=referrer_page,
             ))
             log_performance(total_tokens_map, 0, time.time() - start_time)
-            return {"reply": reply, "sources": [], "room_id": room_id, "message_id": log_id}
+            return {"reply": reply, "sources": [], "room_id": room_id, "message_id": str(log_id)}
 
         context_text = "\n\n".join([d.page_content for d in passed_docs])
 
@@ -568,7 +594,7 @@ class LLMService(LLMClient):
         total_tokens_map["chat_input"] = input_tokens
         total_tokens_map["chat_output"] = output_tokens
         log_performance(total_tokens_map, 0, time.time() - start_time)
-        return {"reply": bot_ans, "sources": source_debug, "room_id": room_id, "message_id": log_id}
+        return {"reply": bot_ans, "sources": source_debug, "room_id": room_id, "message_id": str(log_id)}
 
     def clear_history(self, room_id: str):
         chat_history.clear_history(room_id)
