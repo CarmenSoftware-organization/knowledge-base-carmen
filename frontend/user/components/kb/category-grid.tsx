@@ -6,6 +6,7 @@ import { Folder, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCategoryColor } from "@/lib/wiki-utils";
 import { categoryDisplayMap } from "@/configs/sidebar-map";
+import { useTranslations } from "next-intl";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -25,6 +26,20 @@ const itemVariants: Variants = {
 };
 
 export function CategoryGrid({ items }: { items: any[] }) {
+  const t = useTranslations("category");
+  const visible = items.filter((c: { slug: string }) => c.slug !== "changelog");
+
+  if (visible.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-14 text-center">
+        <p className="text-lg font-semibold text-foreground">{t("emptyList")}</p>
+        <p className="mt-3 text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          {t("emptyListHint")}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       variants={containerVariants}
@@ -32,7 +47,7 @@ export function CategoryGrid({ items }: { items: any[] }) {
       animate="visible"
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full"
     >
-      {items.filter((c: { slug: string }) => c.slug !== "changelog").map((c: { slug: string }) => {
+      {visible.map((c: { slug: string }) => {
         const color = getCategoryColor(c.slug);
         const displayName = categoryDisplayMap[c.slug] || c.slug.toUpperCase();
 

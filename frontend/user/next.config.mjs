@@ -3,19 +3,22 @@ import { fileURLToPath } from "url";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// Repo root (…/new-carmen) — ต้องตรงกับ outputFileTracingRoot ที่ Vercel/Next ใช้ใน monorepo
-const monorepoRoot = join(__dirname, "..", "..");
+const appRoot = __dirname;
+const appNodeModules = (...parts) => join(__dirname, "node_modules", ...parts);
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Monorepo: turbopack.root และ outputFileTracingRoot ต้องเป็นค่าเดียวกัน (Next 16 + Vercel)
   turbopack: {
-    root: monorepoRoot,
+    root: appRoot,
+    resolveAlias: {
+      tailwindcss: appNodeModules("tailwindcss"),
+      "tw-animate-css": appNodeModules("tw-animate-css"),
+    },
   },
   // Next.js 16+: top-level (no longer under experimental)
-  outputFileTracingRoot: monorepoRoot,
+  outputFileTracingRoot: appRoot,
   // Docker / self-hosted: set DOCKER_BUILD=1 at build time for standalone bundle
   ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" } : {}),
   typescript: {
