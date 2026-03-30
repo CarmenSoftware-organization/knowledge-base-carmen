@@ -10,6 +10,39 @@ import { formatCarmenMessage } from "@/lib/carmen-formatter";
 import { CarmenApi } from "./use-carmen-api";
 import { CarmenChatConfig, DisplayMessage } from "./use-carmen-chat";
 
+/** CDN/proxy often returns HTML (e.g. Render 502 page); never show that whole blob in the UI. */
+function summarizeProxyOrHtmlError(raw: string, httpStatus: number): string {
+  const t = raw.trim();
+  if (!t) {
+    return httpStatus === 502
+      ? "502 Bad Gateway — backend หรือ chatbot บน Render ไม่ตอบชั่วคราว (deploy, sleep, หรือ PYTHON_CHATBOT_URL ผิด)"
+      : `HTTP ${httpStatus}`;
+  }
+  const looksHtml =
+    /^<!DOCTYPE/i.test(t) ||
+    /^<html/i.test(t) ||
+    (t.includes("<head") && t.includes("<body"));
+  if (looksHtml) {
+    if (httpStatus === 502 || /\b502\b|Bad Gateway/i.test(t)) {
+      return "502 Bad Gateway — proxy ไม่ถึง Go หรือ Python chatbot; ลองใหม่ใน 1–2 นาที หรือเช็ค Render Dashboard (service + PYTHON_CHATBOT_URL)";
+    }
+    if (httpStatus === 503 || /\b503\b/i.test(t)) {
+      return "503 — บริการไม่พร้อมชั่วคราว; ลองใหม่ในไม่กี่นาที";
+    }
+    return `ได้รับหน้า HTML จากเซิร์ฟเวอร์ (HTTP ${httpStatus}) แทน JSON — มักเป็นปัญหา deploy/proxy`;
+  }
+  return t.length > 500 ? `${t.slice(0, 500)}…` : t;
+}
+
+function sanitizeErrorMessageForUi(message: string): string {
+  const s = message.trim();
+  if (!s) return s;
+  if (/^<!DOCTYPE/i.test(s) || /^<html/i.test(s)) {
+    return summarizeProxyOrHtmlError(s, 0);
+  }
+  return s.length > 800 ? `${s.slice(0, 800)}…` : s;
+}
+
 // ---------------------------------------------------------------------------
 // Dependency interface — passed from useCarmenChat into executeStream
 // ---------------------------------------------------------------------------
@@ -94,12 +127,13 @@ export async function executeStream(
 
     if (!response.ok) {
       const raw = await response.text();
-      let msg = raw;
+      let msg: string;
       try {
         const j = JSON.parse(raw) as { message?: string; error?: string; detail?: string };
         msg = [j.message, j.detail, j.error].filter(Boolean).join(" — ") || raw;
+        if (!msg.trim()) msg = summarizeProxyOrHtmlError(raw, response.status);
       } catch {
-        /* use raw */
+        msg = summarizeProxyOrHtmlError(raw, response.status);
       }
       throw new Error(msg.trim() || `HTTP ${response.status}`);
     }
@@ -227,7 +261,7 @@ export async function executeStream(
       if (abortController.current === controller) {
         statusTimers.current.forEach(clearTimeout);
         statusTimers.current = [];
-        const detail = String(e?.message ?? e ?? "").trim();
+        const detail = sanitizeErrorMessageForUi(String(e?.message ?? e ?? "").trim());
         setMessages((prev) =>
           prev.map((m) =>
             m.id === botMsgId
