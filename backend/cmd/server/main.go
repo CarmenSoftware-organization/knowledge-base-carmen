@@ -6,6 +6,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -25,6 +26,12 @@ func main() {
 	}
 	if err := config.Validate(); err != nil {
 		log.Fatal("Invalid configuration:", err)
+	}
+	if config.AppConfig != nil && strings.EqualFold(config.AppConfig.Server.Environment, "production") {
+		u := strings.TrimSpace(config.AppConfig.Server.ChatbotURL)
+		if strings.Contains(u, "localhost") || strings.Contains(u, "127.0.0.1") {
+			log.Println("WARNING: PYTHON_CHATBOT_URL still points to loopback; POST /api/chat/* will fail until you set it to the public URL of the carmen-chatbot service (Render/Fly/etc.).")
+		}
 	}
 	if config.AppConfig == nil || config.AppConfig.Translation.APIKey == "" {
 		log.Println("Translation: disabled (GOOGLE_TRANSLATE_API_KEY not set or empty)")

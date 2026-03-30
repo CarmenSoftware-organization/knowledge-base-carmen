@@ -16,6 +16,8 @@ export interface DisplayMessage {
   sources?: (string | { source: string; title?: string; score?: number })[] | null;
   isError?: boolean;
   errorText?: string;
+  /** Short server/network message shown under the generic connection error title */
+  errorDetail?: string;
   statusText?: string;
   timestamp?: string;
   suggestions?: string[];

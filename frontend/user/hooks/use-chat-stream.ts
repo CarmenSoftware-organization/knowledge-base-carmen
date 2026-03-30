@@ -92,6 +92,18 @@ export async function executeStream(
       signal,
     });
 
+    if (!response.ok) {
+      const raw = await response.text();
+      let msg = raw;
+      try {
+        const j = JSON.parse(raw) as { message?: string; error?: string; detail?: string };
+        msg = [j.message, j.detail, j.error].filter(Boolean).join(" — ") || raw;
+      } catch {
+        /* use raw */
+      }
+      throw new Error(msg.trim() || `HTTP ${response.status}`);
+    }
+
     const reader = response.body!.getReader();
     const decoder = new TextDecoder("utf-8");
     let lineBuffer = "";
@@ -191,7 +203,13 @@ export async function executeStream(
 
     // Wait for typing animation to drain
     await new Promise<void>((resolve) => {
-      const check = () => (typingBuffer.length === 0 && !isStreamingActive) || signal.aborted ? resolve() : setTimeout(check, 20);
+      function check(): void {
+        if ((typingBuffer.length === 0 && !isStreamingActive) || signal.aborted) {
+          resolve();
+        } else {
+          setTimeout(check, 20);
+        }
+      }
       check();
     });
 
@@ -209,10 +227,17 @@ export async function executeStream(
       if (abortController.current === controller) {
         statusTimers.current.forEach(clearTimeout);
         statusTimers.current = [];
+        const detail = String(e?.message ?? e ?? "").trim();
         setMessages((prev) =>
           prev.map((m) =>
             m.id === botMsgId
-              ? { ...m, html: "⚠️ Error occurred, please try again", isError: true, errorText: msgText }
+              ? {
+                  ...m,
+                  html: "",
+                  isError: true,
+                  errorText: msgText,
+                  errorDetail: detail || undefined,
+                }
               : m
           )
         );

@@ -360,6 +360,11 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
               {IconError}
               {t("chat.error_title")}
             </div>
+            {msg.errorDetail && (
+              <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-snug whitespace-pre-wrap break-words">
+                {msg.errorDetail}
+              </p>
+            )}
             {onRetry && msg.errorText && (
               <button
                 type="button"

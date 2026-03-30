@@ -34,12 +34,23 @@ func NewChatHandler() *ChatHandler {
 }
 
 func (h *ChatHandler) Proxy(c *fiber.Ctx) error {
-	chatbotURL := config.AppConfig.Server.ChatbotURL
+	chatbotURL := strings.TrimRight(strings.TrimSpace(config.AppConfig.Server.ChatbotURL), "/")
+	if chatbotURL == "" {
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
+			"error":   "chatbot_proxy_failed",
+			"message": "PYTHON_CHATBOT_URL is not set; deploy the Python chatbot service and set this env on the Go backend.",
+		})
+	}
 
 	target := chatbotURL + c.OriginalURL()
 
 	if err := proxy.Do(c, target); err != nil {
-		return err
+		// Proxy failures often omit CORS on the error path → browser shows generic "Failed to fetch".
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
+			"error":   "chatbot_proxy_failed",
+			"message": "Could not reach the chat service at PYTHON_CHATBOT_URL. Check that carmen-chatbot is deployed and the URL is correct.",
+			"detail":  err.Error(),
+		})
 	}
 
 	origin := c.Get("Origin")
