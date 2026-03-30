@@ -19,6 +19,7 @@ from .retrieval import retrieval_service
 from .prompt import BASE_PROMPT
 from . import chat_history
 from .intent_router import intent_router
+from ..core.utils import parse_device_type
 from ..core.logging_config import log_query, log_intent, log_search, log_performance
 from .llm_client import LLMClient
 from .prompt_builder import get_locale, build_messages, TRUNCATION_NOTICE, EMPTY_RESPONSE_NOTICE
@@ -37,19 +38,56 @@ _QUICK_REPLY_INTENTS = frozenset(["greeting", "thanks", "out_of_scope", "company
 # Module-level helpers (pure, no class state)
 # ---------------------------------------------------------------------------
 
-def _parse_device_type(user_agent: str) -> str:
-    """Classify User-Agent string into mobile / tablet / desktop / unknown."""
-    if not user_agent:
-        return "unknown"
-    ua = user_agent.lower()
-    if "tablet" in ua or "ipad" in ua:
-        return "tablet"
-    if any(x in ua for x in ("mobile", "android", "iphone", "ipod", "windows phone")):
-        return "mobile"
-    if any(x in ua for x in ("mozilla", "chrome", "safari", "gecko", "windows", "macintosh", "linux")):
-        return "desktop"
-    return "unknown"
+def _format_stream_event(event_type: str, data: any) -> str:
+    """Helper to format SSE/NDJSON stream chunks."""
+    return json.dumps({"type": event_type, "data": data}) + "\n"
 
+
+def _extract_suggestions(full_response: str, tag: str = "[SUGGESTIONS]") -> tuple[str, list]:
+    """Extract and parse suggestions from the LLM response. Returns (cleaned_response, suggestions)."""
+    suggestions = []
+    
+    def _normalize_sugg(s_raw):
+        res = []
+        if isinstance(s_raw, dict):
+            for v in s_raw.values():
+                if isinstance(v, list):
+                    s_raw = v
+                    break
+            if not isinstance(s_raw, list):
+                s_raw = list(s_raw.values())
+        if isinstance(s_raw, list):
+            for item in s_raw:
+                if isinstance(item, dict):
+                    val = item.get("question", item.get("title", item.get("text", list(item.values())[0] if item else "")))
+                    res.append(str(val))
+                elif isinstance(item, list) and item:
+                    res.append(str(item[0]))
+                else:
+                    res.append(str(item))
+        elif isinstance(s_raw, str):
+            res.append(s_raw)
+        return [s.strip() for s in res if str(s).strip()]
+
+    suggestion_match = re.search(r'\[SUGGESTIONS\]\s*(\{.*\}|\[.*\])', full_response, re.DOTALL)
+    if suggestion_match:
+        tag_start = full_response.find(tag)
+        full_response = full_response[:tag_start].strip()
+        try:
+            raw_sugg = json.loads(suggestion_match.group(1).replace("```json", "").replace("```", "").strip())
+            suggestions = _normalize_sugg(raw_sugg)
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to parse suggestions (regex): {e}")
+    elif tag in full_response:
+        parts = full_response.split(tag)
+        full_response = parts[0].strip()
+        try:
+            raw_sugg = json.loads(parts[1].replace("```json", "").replace("```", "").strip())
+            suggestions = _normalize_sugg(raw_sugg)
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to parse suggestions (split): {e}")
+            
+    return full_response, suggestions
 
 
 def _build_log_payload(
@@ -182,7 +220,7 @@ class LLMService(LLMClient):
         model_name = self.get_active_model(model_name)
         locale = get_locale(lang)
         ttft = 0.0
-        device_type = _parse_device_type(
+        device_type = parse_device_type(
             request.headers.get("user-agent", "") if request else ""
         )
 
@@ -202,7 +240,7 @@ class LLMService(LLMClient):
 
         if intent_type in _QUICK_REPLY_INTENTS:
             duration = time.time() - start_time
-            yield json.dumps({"type": "chunk", "data": quick_reply}) + "\n"
+            yield _format_stream_event("chunk", quick_reply)
             log_id = await chat_history.save_chat_logs(_build_log_payload(
                 room_id=room_id, bu=bu, username=username, message=message, response=quick_reply,
                 model_name=settings.active_intent_model,
@@ -214,7 +252,7 @@ class LLMService(LLMClient):
                 retrieved_chunks=0, history_count=history_count,
                 device_type=device_type, referrer_page=referrer_page,
             ))
-            yield json.dumps({"type": "done", "id": str(log_id)}) + "\n"
+            yield _format_stream_event("done", str(log_id))
             log_performance(total_tokens_map, duration, duration)
             return
 
@@ -226,7 +264,7 @@ class LLMService(LLMClient):
             if request and await request.is_disconnected():
                 logger.warning("🛑 Client disconnected before rewrite.")
                 return
-            yield json.dumps({"type": "status", "data": locale["status_analyzing"]}) + "\n"
+            yield _format_stream_event("status", locale["status_analyzing"])
             await asyncio.sleep(0)
 
         t0 = time.time()
@@ -240,7 +278,7 @@ class LLMService(LLMClient):
         if request and await request.is_disconnected():
             logger.warning("🛑 Client disconnected before retrieval.")
             return
-        yield json.dumps({"type": "status", "data": locale["status_searching"]}) + "\n"
+        yield _format_stream_event("status", locale["status_searching"])
         await asyncio.sleep(0)
         passed_docs, source_debug, retrieval_embed_tokens, avg_similarity_score = await retrieval_service.search(search_query, db_schema)
         log_search(search_query, passed_docs)
@@ -251,7 +289,7 @@ class LLMService(LLMClient):
         if not passed_docs:
             duration = time.time() - start_time
             reply = intent_router.canned_responses["out_of_scope"].get(lang, intent_router.canned_responses["out_of_scope"]["th"])
-            yield json.dumps({"type": "chunk", "data": reply}) + "\n"
+            yield _format_stream_event("chunk", reply)
             log_id = await chat_history.save_chat_logs(_build_log_payload(
                 room_id=room_id, bu=bu, username=username, message=message, response=reply,
                 model_name="zero_result_safeguard", chat_input_tokens=0, chat_output_tokens=0,
@@ -262,16 +300,16 @@ class LLMService(LLMClient):
                 retrieved_chunks=0, history_count=history_count,
                 device_type=device_type, referrer_page=referrer_page,
             ))
-            yield json.dumps({"type": "done", "id": str(log_id)}) + "\n"
+            yield _format_stream_event("done", str(log_id))
             log_performance(total_tokens_map, 0, duration)
             return
 
         context_text = "\n\n".join([d.page_content for d in passed_docs])
-        yield json.dumps({"type": "sources", "data": source_debug}) + "\n"
+        yield _format_stream_event("sources", source_debug)
         if request and await request.is_disconnected():
             logger.warning("🛑 Client disconnected before composing answer.")
             return
-        yield json.dumps({"type": "status", "data": locale["status_composing"]}) + "\n"
+        yield _format_stream_event("status", locale["status_composing"])
         await asyncio.sleep(0)
 
         # ── STEP 3: LLM Streaming ──────────────────────────────────────
@@ -346,7 +384,7 @@ class LLMService(LLMClient):
                                     tag_index = full_response.find(tag)
                                     if yielded_text_len < tag_index:
                                         to_yield = full_response[yielded_text_len:tag_index]
-                                        yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
+                                        yield _format_stream_event("chunk", to_yield)
                                         yielded_text_len = tag_index
                                 else:
                                     # Hold back partial tag suffix
@@ -357,7 +395,7 @@ class LLMService(LLMClient):
                                             break
                                     to_yield = full_response[yielded_text_len:potential_limit]
                                     if to_yield:
-                                        yield json.dumps({"type": "chunk", "data": to_yield}) + "\n"
+                                        yield _format_stream_event("chunk", to_yield)
                                         yielded_text_len += len(to_yield)
 
                 except Exception as model_err:
@@ -372,63 +410,21 @@ class LLMService(LLMClient):
             # Yield any remaining text (when tag was never found)
             if tag not in full_response and yielded_text_len < len(full_response):
                 remaining = full_response[yielded_text_len:]
-                yield json.dumps({"type": "chunk", "data": remaining}) + "\n"
+                yield _format_stream_event("chunk", remaining)
 
             last_chunk = accumulated
 
             # ── Extract suggestions ────────────────────────────────────
-            suggestions: list = []
-            
-            def _normalize_sugg(s_raw):
-                res = []
-                if isinstance(s_raw, dict):
-                    # In case of {"suggestions": ["q1..."]}
-                    for v in s_raw.values():
-                        if isinstance(v, list):
-                            s_raw = v
-                            break
-                    if not isinstance(s_raw, list):
-                        s_raw = list(s_raw.values())
-                if isinstance(s_raw, list):
-                    for item in s_raw:
-                        if isinstance(item, dict):
-                            val = item.get("question", item.get("title", item.get("text", list(item.values())[0] if item else "")))
-                            res.append(str(val))
-                        elif isinstance(item, list) and item:
-                            res.append(str(item[0]))
-                        else:
-                            res.append(str(item))
-                elif isinstance(s_raw, str):
-                    res.append(s_raw)
-                return [s.strip() for s in res if str(s).strip()]
-
-            suggestion_match = re.search(r'\[SUGGESTIONS\]\s*(\{.*\}|\[.*\])', full_response, re.DOTALL)
-            if suggestion_match:
-                tag_start = full_response.find(tag)
-                full_response = full_response[:tag_start].strip()
-                try:
-                    raw_sugg = json.loads(suggestion_match.group(1).replace("```json", "").replace("```", "").strip())
-                    suggestions = _normalize_sugg(raw_sugg)
-                except Exception as e:
-                    logger.warning(f"⚠️ Failed to parse suggestions (regex): {e}")
-            elif tag in full_response:
-                parts = full_response.split(tag)
-                full_response = parts[0].strip()
-                try:
-                    raw_sugg = json.loads(parts[1].replace("```json", "").replace("```", "").strip())
-                    suggestions = _normalize_sugg(raw_sugg)
-                except Exception as e:
-                    logger.warning(f"⚠️ Failed to parse suggestions (split): {e}")
-
+            full_response, suggestions = _extract_suggestions(full_response, tag)
             if suggestions:
-                yield json.dumps({"type": "suggestions", "data": suggestions}) + "\n"
+                yield _format_stream_event("suggestions", suggestions)
 
             # ── Truncation / empty response notice ─────────────────────
             if stream_finish_reason in ("length", "max_tokens"):
                 was_truncated = True
                 notice = TRUNCATION_NOTICE.get(lang, TRUNCATION_NOTICE["th"])
                 full_response += notice
-                yield json.dumps({"type": "chunk", "data": notice}) + "\n"
+                yield _format_stream_event("chunk", notice)
                 logger.warning(f"⚠️ LLM response truncated (finish_reason={stream_finish_reason})")
             elif not full_response.strip():
                 # LLM produced no answer text — fall back to out_of_scope canned response.
@@ -436,7 +432,7 @@ class LLMService(LLMClient):
                     lang, intent_router.canned_responses["out_of_scope"]["th"]
                 )
                 full_response = notice
-                yield json.dumps({"type": "chunk", "data": notice}) + "\n"
+                yield _format_stream_event("chunk", notice)
                 logger.warning("⚠️ LLM returned empty response (possible [SUGGESTIONS]-first output)")
 
         except Exception as e:
@@ -446,8 +442,8 @@ class LLMService(LLMClient):
                 f"Error processing request: {error_msg}" if lang == "en"
                 else f"ขออภัยครับ เกิดข้อผิดพลาดในการประมวลผล: {error_msg}"
             )
-            yield json.dumps({"type": "chunk", "data": fallback}) + "\n"
-            yield json.dumps({"type": "done", "id": "0"}) + "\n"
+            yield _format_stream_event("chunk", fallback)
+            yield _format_stream_event("done", "0")
             return
 
         # ── Token accounting + log ─────────────────────────────────────
@@ -473,7 +469,7 @@ class LLMService(LLMClient):
             avg_similarity_score=avg_similarity_score,
             device_type=device_type, referrer_page=referrer_page,
         ))
-        yield json.dumps({"type": "done", "id": str(log_id)}) + "\n"
+        yield _format_stream_event("done", str(log_id))
 
     # ------------------------------------------------------------------
     # Non-streaming chat
@@ -486,7 +482,7 @@ class LLMService(LLMClient):
     ) -> dict:
         start_time = time.time()
         model_name = self.get_active_model(model_name)
-        device_type = _parse_device_type(
+        device_type = parse_device_type(
             request.headers.get("user-agent", "") if request else ""
         )
         history_count = len(history) if history else 0

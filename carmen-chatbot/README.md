@@ -142,6 +142,11 @@ Key variables in `.env`:
 | `GET` | `/api/health` | Health check |
 | `GET` | `/images/{path}` | Serve images from Wiki or Local directory |
 
+## 🏗️ Architecture Philosophy
+This project intentionally uses **Pure Python Orchestration** instead of heavy frameworks like LangGraph or LCEL (LangChain Expression Language). LangChain is used strictly as a "toolbox" (for embeddings or document structuring) rather than a controlling orchestration framework. 
+- **Why?** This approach provides extreme flexibility, enabling custom chunk streaming (e.g. intercepting `[SUGGESTIONS]`), precise token accounting across multiple stages (Intent, Rewrite, RAG, Chat), tailored database logging, and ultra-fast conditional routing without the overhead of heavy framework abstractions.
+
+
 ## 🧠 RAG Pipeline
 
 1. **Intent Detection (3-stage):** Regex fast-track → vector cosine similarity (per-category thresholds) → LLM fallback. Greetings, thanks, out-of-scope, company_info, and capabilities return canned responses immediately. `tech_support` and `confusion` continue to retrieval.
