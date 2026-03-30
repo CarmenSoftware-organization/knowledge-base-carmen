@@ -21,7 +21,6 @@ class ChatRequest(BaseModel):
     db_schema: Optional[str] = Field("carmen", pattern=_SLUG_PATTERN)
     lang: Optional[Literal["th", "en"]] = "th"
     referrer_page: Optional[str] = Field(None, max_length=500)  # หน้า docs ที่ user ถามมาจาก (ส่งจาก frontend)
-    prompt_extend: Optional[str] = Field(None, max_length=500)
 
 
 class FeedbackRequest(BaseModel):

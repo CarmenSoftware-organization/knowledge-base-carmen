@@ -51,19 +51,6 @@ def _parse_device_type(user_agent: str) -> str:
     return "unknown"
 
 
-def _extract_token_usage(response) -> tuple[int, int]:
-    """Extract (input_tokens, output_tokens) from any LangChain response/chunk."""
-    if not response:
-        return 0, 0
-    usage = getattr(response, 'usage_metadata', None)
-    if usage and isinstance(usage, dict):
-        return usage.get('input_tokens', 0), usage.get('output_tokens', 0)
-    resp_meta = getattr(response, 'response_metadata', {})
-    if resp_meta and 'token_usage' in resp_meta:
-        tu = resp_meta['token_usage']
-        return tu.get('prompt_tokens', 0), tu.get('completion_tokens', 0)
-    return 0, 0
-
 
 def _build_log_payload(
     *,
@@ -319,7 +306,7 @@ class LLMService(LLMClient):
                             if request and await request.is_disconnected():
                                 logger.warning("🛑 Client disconnected during streaming.")
                                 partial_duration = time.time() - start_time
-                                partial_input, partial_output = _extract_token_usage(accumulated)
+                                partial_input, partial_output = self._extract_token_usage(accumulated)
                                 if partial_input == 0 and partial_output == 0:
                                     partial_input = len((context_text + message).encode('utf-8')) // 3
                                     partial_output = len(full_response.encode('utf-8')) // 3
@@ -439,7 +426,7 @@ class LLMService(LLMClient):
 
         # ── Token accounting + log ─────────────────────────────────────
         duration = time.time() - start_time
-        input_tokens, output_tokens = _extract_token_usage(last_chunk)
+        input_tokens, output_tokens = self._extract_token_usage(last_chunk)
         if input_tokens == 0 and output_tokens == 0:
             input_tokens = len((context_text + message).encode('utf-8')) // 3
             output_tokens = len(full_response.encode('utf-8')) // 3
@@ -557,7 +544,7 @@ class LLMService(LLMClient):
                 bot_ans = EMPTY_RESPONSE_NOTICE.get(lang, EMPTY_RESPONSE_NOTICE["th"])
                 logger.warning("⚠️ LLM returned empty response")
 
-            input_tokens, output_tokens = _extract_token_usage(response)
+            input_tokens, output_tokens = self._extract_token_usage(response)
 
         except Exception as e:
             error_msg = self._format_error(e, lang)

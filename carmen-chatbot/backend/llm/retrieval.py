@@ -154,8 +154,6 @@ class RetrievalService:
         if not self.embeddings:
             logger.error("Embeddings not initialized")
             return passed_docs, source_debug, 0, None
-
-        selected_vec_distances: list[float] = []
         try:
             query_embedding, embed_tokens = await self.get_embedding(query)
             emb_str = self.format_pgvector(query_embedding)

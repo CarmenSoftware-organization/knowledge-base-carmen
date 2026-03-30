@@ -1,4 +1,3 @@
-import uvicorn
 import os
 import asyncio
 import logging
@@ -178,7 +177,6 @@ async def health_check(request: Request):
             await db.execute(text("SELECT 1"))
         return {"status": "ok", "db": "ok"}
     except Exception as e:
-        import logging
         logging.getLogger(__name__).error("Health check DB error: %s", e)
         return JSONResponse(status_code=503, content={"status": "error", "db": "unavailable"})
 
@@ -229,22 +227,12 @@ def find_image_path(filename: str) -> Path | None:
 @app.get("/images/{filename:path}")
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def get_image(filename: str, request: Request):
-    # ⚡ Pass the full filename (path) to find_image_path instead of just the basename
-    # ⚡ Use LRU Cache to find the resolved path instantly
     resolved_path = find_image_path(filename)
-    
+
     if resolved_path:
-        # Add cache-control headers to prevent browser from serving stale images
-        # This fixes issues where old code cached wrong images for generic filenames like image-12.png
+        # no-cache prevents browser from serving stale images for generic filenames like image-12.png
         response = FileResponse(resolved_path)
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
         return response
-        
+
     raise HTTPException(status_code=404, detail="Image not found")
-
-# Specific Pages serving using Templates
-
-
-if __name__ == "__main__":
-    logging.getLogger(__name__).info("Starting Carmen Server...")
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

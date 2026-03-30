@@ -88,7 +88,7 @@ def restore_history(room_id: str, frontend_history: list[dict] = None):
 
 
 async def _save_to_db_direct(data: dict) -> int:
-    """Save Q&A directly to public.chat_history. Returns True on success."""
+    """Save Q&A directly to public.chat_history. Returns the new row id, or 0 on failure."""
     from sqlalchemy import text
     from .retrieval import retrieval_service
     from . import pricing
@@ -100,7 +100,7 @@ async def _save_to_db_direct(data: dict) -> int:
     sources_raw = data.get("sources") or []
 
     if not user_query or not bot_response:
-        return False
+        return 0
 
     # Analytics fields
     lang = data.get("lang") or None
