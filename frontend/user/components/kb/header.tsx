@@ -171,7 +171,8 @@ export function KBHeader() {
               alt="Carmen Logo"
               width={140}
               height={40}
-              className="rounded transition-opacity duration-200"
+              className="h-auto w-auto max-h-10 rounded transition-opacity duration-200"
+              style={{ width: "auto", height: "auto" }}
               priority
             />
           </Link>
