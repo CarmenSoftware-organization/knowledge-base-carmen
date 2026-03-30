@@ -8,7 +8,6 @@ import { ChatHeader } from "./chat-header";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
 import ImageLightbox from "./image-lightbox";
-import DOMPurify from "dompurify";
 
 type ChatState = ReturnType<typeof useCarmenChat>;
 interface ContentProps {
@@ -16,11 +15,10 @@ interface ContentProps {
     theme: string;
     isResizing: boolean;
     onDragStart?: (e: React.PointerEvent) => void;
-    isInputFocused: boolean;
     setIsInputFocused: (val: boolean) => void;
 }
 
-export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocused, setIsInputFocused }: ContentProps) {
+export function ChatContent({ state, theme, isResizing, onDragStart, setIsInputFocused }: ContentProps) {
     const {
         isExpanded, messages, rooms, currentRoomId,
         isProcessing, inputValue, imageBase64,
@@ -45,6 +43,13 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const lastProgrammaticScrollTime = useRef(0);
 
+    // Reset scroll state when expand/collapse so scroll button disappears
+    useEffect(() => {
+        setUserHasScrolledUp(false);
+        const el = bodyRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+    }, [isExpanded]);
+
     // Esc key closes the chat (unless a modal/panel is open)
     useEffect(() => {
         const handleGlobalEsc = (e: globalThis.KeyboardEvent) => {
@@ -56,13 +61,6 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
         return () => window.removeEventListener('keydown', handleGlobalEsc);
     }, [deleteModal.open, clearModal, alertModal.open, showRoomDropdown, toggleOpen]);
 
-    const safeHtmlToText = (html: string) => {
-        // For the sticky queue UI we only need a safe, plain-text snippet.
-        const cleaned = DOMPurify.sanitize(html, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
-        const tmp = document.createElement("div");
-        tmp.innerHTML = cleaned;
-        return (tmp.textContent || tmp.innerText || "").trim();
-    };
 
     // Delegation for images and links
     useEffect(() => {
@@ -298,39 +296,40 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 t={t}
             />
 
-            <MessageList
-                bodyRef={bodyRef}
-                messages={messages}
-                showSuggestions={showSuggestions}
-                suggestions={suggestions}
-                sendMessage={sendMessage}
-                sendFeedback={sendFeedback}
-                retryMessage={retryMessage}
-                theme={theme}
-                isResizing={isResizing}
-                t={t}
-            />
+            <div className="relative flex-1 min-h-0 flex flex-col">
+                <MessageList
+                    bodyRef={bodyRef}
+                    messages={messages}
+                    showSuggestions={showSuggestions}
+                    suggestions={suggestions}
+                    sendMessage={sendMessage}
+                    sendFeedback={sendFeedback}
+                    retryMessage={retryMessage}
+                    theme={theme}
+                    isResizing={isResizing}
+                    t={t}
+                />
 
-            <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+                <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
 
-
-            <AnimatePresence>
-                {userHasScrolledUp && (
-                    <motion.button
-                        initial={{ opacity: 0, scale: 0.5, x: "-50%" }}
-                        animate={{ opacity: 1, scale: 1, x: "-50%" }}
-                        exit={{ opacity: 0, scale: 0.5, x: "-50%", transition: { duration: 0.15 } }}
-                        onClick={() => scrollToBottom(true, false)}
-                        className="absolute bottom-[125px] left-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg z-50 transition-transform hover:scale-110 active:scale-95"
-                        style={{ background: `linear-gradient(135deg, ${theme}, ${theme}dd)` }}
-                        title={t("tools.scroll_down")}
-                    >
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                            <path d="M11 4v12.59l-3.3-3.29L6.29 14.7l5 5 .09.08.09.06.06.03.11.04h.12.12l.11-.04.06-.03.09-.06.09-.08 5-5-1.42-1.41-3.3 3.29V4h-2z" />
-                        </svg>
-                    </motion.button>
-                )}
-            </AnimatePresence>
+                <AnimatePresence>
+                    {userHasScrolledUp && (
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.5, x: "-50%" }}
+                            animate={{ opacity: 1, scale: 1, x: "-50%" }}
+                            exit={{ opacity: 0, scale: 0.5, x: "-50%", transition: { duration: 0.15 } }}
+                            onClick={() => scrollToBottom(true, false)}
+                            className="absolute bottom-4 left-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-lg z-50 transition-transform hover:scale-110 active:scale-95"
+                            style={{ background: `linear-gradient(135deg, ${theme}, ${theme}dd)` }}
+                            title={t("tools.scroll_down")}
+                        >
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M11 4v12.59l-3.3-3.29L6.29 14.7l5 5 .09.08.09.06.06.03.11.04h.12.12l.11-.04.06-.03.09-.06.09-.08 5-5-1.42-1.41-3.3 3.29V4h-2z" />
+                            </svg>
+                        </motion.button>
+                    )}
+                </AnimatePresence>
+            </div>
 
             <ChatInput
                 isResizing={isResizing}
@@ -343,7 +342,6 @@ export function ChatContent({ state, theme, isResizing, onDragStart, isInputFocu
                 handleKeyDown={handleKeyDown}
                 setIsInputFocused={setIsInputFocused}
                 sendMessage={sendMessage}
-                theme={theme}
                 imageBase64={imageBase64}
                 setImageBase64={setImageBase64}
                 isProcessing={isProcessing()}

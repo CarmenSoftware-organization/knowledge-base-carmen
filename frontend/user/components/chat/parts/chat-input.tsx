@@ -13,7 +13,6 @@ interface ChatInputProps {
     handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
     setIsInputFocused: (val: boolean) => void;
     sendMessage: () => void;
-    theme: string;
     imageBase64: string | null;
     setImageBase64: (val: string | null) => void;
     isProcessing?: boolean;
@@ -23,7 +22,7 @@ interface ChatInputProps {
 }
 
 export const ChatInput = React.memo(({
-    isResizing, config, fileInputRef, handleFileChange, inputRef, inputValue, handleInput, handleKeyDown, setIsInputFocused, sendMessage, theme, imageBase64, setImageBase64, isProcessing, stopGeneration, forceScrollToBottom, t
+    isResizing, config, fileInputRef, handleFileChange, inputRef, inputValue, handleInput, handleKeyDown, setIsInputFocused, sendMessage, imageBase64, setImageBase64, isProcessing, stopGeneration, forceScrollToBottom, t
 }: ChatInputProps) => {
     return (
         <>
@@ -64,19 +63,26 @@ export const ChatInput = React.memo(({
                     </>
                 )}
 
-                <textarea
-                    ref={inputRef}
-                    value={inputValue}
-                    onChange={handleInput}
-                    onKeyDown={handleKeyDown}
-                    rows={1}
-                    maxLength={2000}
-                    placeholder={isProcessing ? t("chat.status_processing") + "..." : t("chat.placeholder")}
-                    className={`flex-1 px-6 py-[16px] rounded-[24px] border outline-none resize-none transition-all bg-white/60 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-600/50 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 min-h-[56px] max-h-[120px] font-['Sarabun',_sans-serif] text-[15px] leading-[1.5] border-[color:var(--input-border-color,transparent)] [box-shadow:var(--input-focus-shadow,none)] backdrop-blur-xl carmen-slim-scrollbar shadow-inner ${isProcessing ? "opacity-90" : ""}`}
-                    disabled={false}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
-                />
+                <div className="relative flex-1">
+                    <textarea
+                        ref={inputRef}
+                        value={inputValue}
+                        onChange={handleInput}
+                        onKeyDown={handleKeyDown}
+                        rows={1}
+                        maxLength={2000}
+                        placeholder={isProcessing ? t("chat.status_processing") + "..." : t("chat.placeholder")}
+                        className={`w-full px-6 py-[16px] rounded-[24px] border outline-none resize-none transition-all bg-white/60 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-600/50 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 min-h-[56px] max-h-[120px] font-['Sarabun',_sans-serif] text-[15px] leading-[1.5] border-[color:var(--input-border-color,transparent)] [box-shadow:var(--input-focus-shadow,none)] backdrop-blur-xl overflow-hidden shadow-inner ${isProcessing ? "opacity-90" : ""}`}
+                        disabled={false}
+                        onFocus={() => setIsInputFocused(true)}
+                        onBlur={() => setIsInputFocused(false)}
+                    />
+                    {inputValue.length > 0 && (
+                        <span className={`absolute bottom-2.5 right-4 text-[9px] font-mono tracking-wide pointer-events-none select-none transition-colors ${inputValue.length > 1800 ? "text-red-400" : "text-slate-400 dark:text-slate-600"}`}>
+                            {inputValue.length}/2000
+                        </span>
+                    )}
+                </div>
 
                 <div className="relative w-12 h-12 flex-shrink-0">
                     <AnimatePresence mode="popLayout">
