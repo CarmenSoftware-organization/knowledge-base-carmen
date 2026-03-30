@@ -135,6 +135,8 @@ class RetrievalService:
         """Hybrid search. Returns (docs, source_debug, embed_tokens, avg_similarity_score)."""
         passed_docs = []
         source_debug = []
+        embed_tokens = 0
+        selected_vec_distances: list[float] = []
 
         if not db_schema or not self.SAFE_SCHEMA_PATTERN.match(db_schema):
             logger.warning(f"🛡️ Security: Invalid or suspicious schema name blocked: '{db_schema}'")
@@ -251,7 +253,6 @@ class RetrievalService:
             candidates.sort(key=lambda x: x["effective_rrf"], reverse=True)
 
             # --- 5. Deduplicate and build result ---
-            selected_vec_distances: list[float] = []
             seen_hashes: set[int] = set()
             for item in candidates:
                 if len(passed_docs) >= self.TOP_K:
@@ -324,6 +325,12 @@ class RetrievalService:
         except Exception as e:
             logger.exception(f"Search error: {e}")
             embed_tokens = 0
+            err_s = str(e).lower()
+            if "different vector dimensions" in err_s:
+                logger.error(
+                    "Vector dimension mismatch: set VECTOR_DIMENSION on the chatbot to match "
+                    "carmen.document_chunks.embedding (e.g. 2000 after migration 0006_vector_2000.sql, or 1536 otherwise)."
+                )
 
         avg_sim_score: float | None = None
         if selected_vec_distances:
