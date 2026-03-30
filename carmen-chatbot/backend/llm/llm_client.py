@@ -37,10 +37,8 @@ class LLMClient:
             temperature=0.82,
             max_tokens=max_tokens,
             streaming=streaming,
-            # OpenRouter: require_parameters + no fallbacks often yields 404 "No endpoints found"
-            extra_body={
-                "provider": {"allow_fallbacks": True},
-            },
+            # No extra_body — OpenRouter defaults route reliably; custom provider flags often cause 404
+            # "No endpoints found that can handle the requested parameters".
         )
         if streaming:
             kwargs["stream_usage"] = True
