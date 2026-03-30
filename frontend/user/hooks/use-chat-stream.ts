@@ -5,7 +5,7 @@
 // All React state lives in the parent hook (use-carmen-chat.ts); this file
 // receives only what it needs through StreamDeps, keeping concerns separate.
 
-import { MutableRefObject } from "react";
+import { RefObject } from "react";
 import { formatCarmenMessage } from "@/lib/carmen-formatter";
 import { CarmenApi } from "./use-carmen-api";
 import { CarmenChatConfig, DisplayMessage } from "./use-carmen-chat";
@@ -18,10 +18,10 @@ export interface StreamDeps {
   config: CarmenChatConfig;
   locale: string;
   t: (key: string) => string;
-  isProcessingRef: MutableRefObject<boolean>;
-  abortController: MutableRefObject<AbortController | null>;
-  isUserStopRef: MutableRefObject<boolean>;
-  statusTimers: MutableRefObject<NodeJS.Timeout[]>;
+  isProcessingRef: RefObject<boolean>;
+  abortController: RefObject<AbortController | null>;
+  isUserStopRef: RefObject<boolean>;
+  statusTimers: RefObject<NodeJS.Timeout[]>;
   setMessages: React.Dispatch<React.SetStateAction<DisplayMessage[]>>;
   setIsTyping: (v: boolean) => void;
   setTypingStatus: (v: string) => void;
@@ -69,6 +69,9 @@ export async function executeStream(
   abortController.current = controller;
   const { signal } = controller;
 
+  // Abort if backend is silent for 90 seconds
+  const timeoutId = setTimeout(() => controller.abort(), 90_000);
+
   let accumulated = "";
   let finalMsgId: string | null = null;
   let didSave = false;
@@ -91,6 +94,7 @@ export async function executeStream(
       }),
       signal,
     });
+    clearTimeout(timeoutId);
 
     const reader = response.body!.getReader();
     const decoder = new TextDecoder("utf-8");
@@ -169,8 +173,8 @@ export async function executeStream(
             );
             await loadRoomList();
           }
-        } catch (err) {
-          console.warn("JSON parse error on line:", line, err);
+        } catch {
+          // malformed JSON line — skip
         }
       }
     }
@@ -182,8 +186,8 @@ export async function executeStream(
         if (parsed.type === "chunk") { typingBuffer += parsed.data; accumulated += parsed.data; }
         else if (parsed.type === "done" && !finalMsgId) { finalMsgId = parsed.id; }
         else if (parsed.type === "suggestions") { bufferedSuggestions = parsed.data; }
-      } catch (e) {
-        console.warn("Final lineBuffer parse error:", e);
+      } catch {
+        // malformed final line — skip
       }
     }
 
@@ -205,7 +209,6 @@ export async function executeStream(
         return;
       }
     } else {
-      console.warn("Stream error:", e.message ?? e);
       if (abortController.current === controller) {
         statusTimers.current.forEach(clearTimeout);
         statusTimers.current = [];
@@ -219,6 +222,7 @@ export async function executeStream(
       }
     }
   } finally {
+    clearTimeout(timeoutId);
     if (abortController.current === controller || isUserStopRef.current) {
       statusTimers.current.forEach(clearTimeout);
       statusTimers.current = [];
@@ -253,9 +257,9 @@ export async function executeStream(
 // stopGeneration — abort the active stream (user-initiated)
 // ---------------------------------------------------------------------------
 export function stopGeneration(
-  isProcessingRef: MutableRefObject<boolean>,
-  abortController: MutableRefObject<AbortController | null>,
-  isUserStopRef: MutableRefObject<boolean>,
+  isProcessingRef: RefObject<boolean>,
+  abortController: RefObject<AbortController | null>,
+  isUserStopRef: RefObject<boolean>,
 ): void {
   if (isProcessingRef.current && abortController.current) {
     isUserStopRef.current = true;

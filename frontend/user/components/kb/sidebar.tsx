@@ -38,7 +38,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
           });
         }
         setCategories(loaded);
-      } catch (err) { console.error(err); }
+      } catch { /* sidebar load failed — show empty */ }
     }
     loadSidebar();
   }, [bu]);

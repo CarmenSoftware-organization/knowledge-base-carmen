@@ -27,8 +27,8 @@ export function BUSwitcher() {
         const data = await getBusinessUnits();
         setBus(data.items);
         setSelected(getSelectedBUClient());
-      } catch (e) {
-        console.error("Failed to load BUs", e);
+      } catch {
+        // BU list unavailable — show empty selector
       }
     }
     load();

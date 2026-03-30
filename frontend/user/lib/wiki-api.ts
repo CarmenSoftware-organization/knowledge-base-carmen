@@ -173,8 +173,8 @@ export async function findBestArticleForQuery(
     if (aiResults?.length > 0) {
       return { item: aiResults[0], route: wikiPathToRoute(aiResults[0].path) };
     }
-  } catch (err) {
-    console.error("Vector search failed:", err);
+  } catch {
+    // vector search unavailable — fall through to keyword match
   }
 
   const items = await getAllArticles(bu);
@@ -350,8 +350,7 @@ export async function searchWiki(
     if (!res.ok) return [];
     const data = await res.json();
     return data.items ?? [];
-  } catch (error) {
-    console.error("Search Wiki Error:", error);
+  } catch {
     return [];
   }
 }

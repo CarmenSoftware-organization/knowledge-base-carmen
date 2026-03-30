@@ -1,7 +1,7 @@
 import json
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy import text, bindparam, Integer
 
@@ -46,10 +46,11 @@ async def chat_stream_endpoint(request: Request, req: ChatRequest):
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    history_dicts = [h.model_dump() for h in req.history] if req.history else None
     return StreamingResponse(
         chat_service.stream_chat(
             message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
-            model_name=req.model, history=req.history,
+            model_name=req.model, history=history_dicts,
             db_schema=req.db_schema, lang=req.lang, request=request,
             referrer_page=req.referrer_page,
         ),
@@ -74,9 +75,10 @@ async def chat_endpoint(request: Request, req: ChatRequest):
             content={"reply": msg, "sources": [], "room_id": req.room_id, "message_id": 0}
         )
 
+    history_dicts = [h.model_dump() for h in req.history] if req.history else None
     return await chat_service.invoke_chat(
         message=req.text, bu=req.bu, room_id=req.room_id, username=req.username,
-        model_name=req.model, history=req.history,
+        model_name=req.model, history=history_dicts,
         db_schema=req.db_schema, lang=req.lang,
         request=request, referrer_page=req.referrer_page,
     )
@@ -126,5 +128,6 @@ async def save_feedback(request: Request, message_id: int, body: FeedbackRequest
         except Exception as e:
             await db.rollback()
             logger.error(f"Feedback save failed: {e}")
+            raise HTTPException(status_code=500, detail="Failed to save feedback")
 
     return {"status": "ok"}

@@ -42,6 +42,20 @@ export interface CarmenRoomHistory {
   messages: CarmenMessage[];
 }
 
+function isCarmenRoomArray(value: unknown): value is CarmenRoom[] {
+  return Array.isArray(value) && value.every(
+    (v) => v && typeof v === "object" && typeof (v as CarmenRoom).room_id === "string"
+  );
+}
+
+function isCarmenRoomHistory(value: unknown): value is CarmenRoomHistory {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    Array.isArray((value as CarmenRoomHistory).messages)
+  );
+}
+
 const ROOMS_KEY = "carmen_rooms";
 const MAX_ROOMS = 15;           // สูงสุด 15 ห้อง
 const MAX_MESSAGES = 100;       // สูงสุด 100 messages ต่อห้อง
@@ -53,7 +67,9 @@ export function createCarmenApi(baseUrl: string) {
   async function getRooms(): Promise<CarmenRoom[]> {
     try {
       const raw = localStorage.getItem(ROOMS_KEY);
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      return isCarmenRoomArray(parsed) ? parsed : [];
     } catch {
       return [];
     }
@@ -105,8 +121,8 @@ export function createCarmenApi(baseUrl: string) {
         localStorage.removeItem(`carmen_history_${removed.room_id}`);
       }
       localStorage.setItem(ROOMS_KEY, JSON.stringify(rooms));
-    } catch (e) {
-      console.error("createRoom Error:", e);
+    } catch {
+      // localStorage unavailable — return room without persisting
     }
     return room;
   }
@@ -115,7 +131,9 @@ export function createCarmenApi(baseUrl: string) {
     try {
       if (!roomId) return { messages: [] };
       const raw = localStorage.getItem(`carmen_history_${roomId}`);
-      return raw ? JSON.parse(raw) : { messages: [] };
+      if (!raw) return { messages: [] };
+      const parsed: unknown = JSON.parse(raw);
+      return isCarmenRoomHistory(parsed) ? parsed : { messages: [] };
     } catch {
       return { messages: [] };
     }
@@ -194,8 +212,7 @@ export function createCarmenApi(baseUrl: string) {
       localStorage.removeItem(`carmen_history_${roomId}`);
       await clearHistory(roomId);
       return { status: "success" };
-    } catch (e) {
-      console.error("deleteRoom Error:", e);
+    } catch {
       return { status: "error" };
     }
   }
@@ -218,8 +235,8 @@ export function createCarmenApi(baseUrl: string) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ score, bu, username }),
       });
-    } catch (e) {
-      console.error("Feedback Error:", e);
+    } catch {
+      // best-effort feedback — no action needed on failure
     }
   }
 

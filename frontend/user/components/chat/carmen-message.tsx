@@ -216,8 +216,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     try {
       document.execCommand("copy");
       cb();
-    } catch (err) {
-      console.error("Fallback copy failed", err);
+    } catch {
+      // fallback copy not supported in this browser
     }
     document.body.removeChild(ta);
   }
@@ -243,8 +243,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("DOCX export failed", err);
+    } catch {
+      // export failed — user sees no download, no action needed
     } finally {
       setExportLoading(null);
     }
@@ -273,8 +273,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("PDF export failed", err);
+    } catch {
+      // export failed — user sees no download, no action needed
     } finally {
       setExportLoading(null);
     }

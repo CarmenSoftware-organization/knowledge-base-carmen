@@ -61,11 +61,15 @@ async def build_image_index():
 
 async def _image_index_refresh_loop():
     """Periodically rebuild IMAGE_INDEX and clear the lru_cache."""
+    _log = logging.getLogger(__name__)
     interval = settings.IMAGE_INDEX_REFRESH_SECONDS
     while True:
         await asyncio.sleep(interval)
-        await build_image_index()
-        find_image_path.cache_clear()
+        try:
+            await asyncio.wait_for(build_image_index(), timeout=60)
+            find_image_path.cache_clear()
+        except asyncio.TimeoutError:
+            _log.error("Image index build timed out after 60s — skipping this cycle")
 
 
 _PRICING_SYNC_INTERVAL = 86400  # 24 ชั่วโมง

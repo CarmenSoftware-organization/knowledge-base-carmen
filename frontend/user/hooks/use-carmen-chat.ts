@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { formatCarmenMessage } from "@/lib/carmen-formatter";
 import { CarmenApi, CarmenRoom, createCarmenApi } from "./use-carmen-api";
-import { locales, LocaleKey, LocaleStrings } from "@/configs/locales";
+import { locales, LocaleKey } from "@/configs/locales";
 import { executeStream, stopGeneration } from "./use-chat-stream";
 
 export interface DisplayMessage {
@@ -37,13 +37,6 @@ export interface CarmenChatConfig {
   referrer_page?: string;
 }
 
-const DEFAULT_SUGGESTIONS = [
-  "กดปุ่ม refresh ใน workbook ไม่ได้ ทำยังไง",
-  "บันทึกใบกำกับภาษีซื้อ ใน excel แล้ว import ได้หรือไม่",
-  "program carmen สามารถ upload file เข้า program RDPrep ของสรรพากรได้ หรือไม่",
-  "ฉันสามารถสร้าง ใบเสร็จรับเงิน โดยไม่เลือก Invoice ได้หรือไม่",
-  "ฉันสามารถบันทึก JV โดยที่ debit และ credit ไม่เท่ากันได้หรือไม่",
-];
 
 export interface UseCarmenChatReturn {
   isOpen: boolean;
@@ -52,6 +45,7 @@ export interface UseCarmenChatReturn {
   rooms: CarmenRoom[];
   currentRoomId: string | null;
   isTyping: boolean;
+  isRoomActionLoading: boolean;
   isProcessing: () => boolean;
   typingStatus: string;
   inputValue: string;
@@ -126,12 +120,12 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const [rooms, setRooms] = useState<CarmenRoom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [isRoomActionLoading, setIsRoomActionLoading] = useState(false);
   const [typingStatus, setTypingStatus] = useState(t("chat.status_thinking"));
   const [inputValue, setInputValue] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   
   const locale = config.locale || "th";
-  const localT = locales[locale];
   
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showRoomDropdown, setShowRoomDropdown] = useState(false);
@@ -383,19 +377,29 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     if (!deleteModal.roomId) return;
     const rid = deleteModal.roomId;
     setDeleteModal({ open: false, roomId: null });
-    await api.deleteRoom(rid);
-    if (currentRoomId === rid) {
-      await createNewChat();
-    } else {
-      await loadRoomList();
+    setIsRoomActionLoading(true);
+    try {
+      await api.deleteRoom(rid);
+      if (currentRoomId === rid) {
+        await createNewChat();
+      } else {
+        await loadRoomList();
+      }
+    } finally {
+      setIsRoomActionLoading(false);
     }
   }
 
   async function confirmClearHistory() {
     setClearModal(false);
     if (!currentRoomId) return;
-    await api.clearHistory(currentRoomId);
-    await loadHistory(currentRoomId);
+    setIsRoomActionLoading(true);
+    try {
+      await api.clearHistory(currentRoomId);
+      await loadHistory(currentRoomId);
+    } finally {
+      setIsRoomActionLoading(false);
+    }
   }
 
   async function retryMessage(errorText: string) {
@@ -452,7 +456,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     };
   }
 
-  async function sendMessage(text?: string, sourceMsgId?: string) {
+  async function sendMessage(text?: string, _sourceMsgId?: string) {
     if (isProcessingRef.current) return;
 
     // Clear ALL suggestions from previous messages
@@ -565,6 +569,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     rooms,
     currentRoomId,
     isTyping,
+    isRoomActionLoading,
     isProcessing: () => isProcessingRef.current,
     typingStatus,
     inputValue,
