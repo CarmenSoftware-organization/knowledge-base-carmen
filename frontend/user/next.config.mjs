@@ -27,12 +27,13 @@ const nextConfig = {
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
 
-    // Production: strict script-src — no 'unsafe-inline' / 'unsafe-eval' (blocks inline script injection).
-    // If you add inline scripts later, use CSP nonce or hash instead of opening unsafe-inline.
-    // Dev: allow unsafe-eval/unsafe-inline for Next HMR.
+    // Next.js injects inline bootstrap/hydration scripts — without 'unsafe-inline' (or a nonce-based
+    // CSP via middleware) production renders a blank page. We keep 'unsafe-eval' out of production.
+    // Dev: unsafe-eval + unsafe-inline for Next HMR.
     const scriptSrc = isDev
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com"
-      : "script-src 'self' https://va.vercel-scripts.com";
+      // Vercel Toolbar / Live: vercel.live; inline scripts required for Next.js runtime.
+      : "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live";
 
     // Keep this CSP reasonably strict but compatible with the app:
     // - allow YouTube embeds in KB markdown renderer
