@@ -71,6 +71,19 @@ func (h *WikiHandler) ListCategories(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"items": items})
 }
 
+// Sidebar returns the full sidebar tree (all categories + articles) in one call. GET /api/wiki/sidebar
+func (h *WikiHandler) Sidebar(c *fiber.Ctx) error {
+	bu := middleware.GetBU(c)
+	categories, err := h.wikiService.ListSidebarTree(bu)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	if categories == nil {
+		categories = []services.SidebarCategory{}
+	}
+	return c.JSON(fiber.Map{"categories": categories})
+}
+
 // GetCategory returns articles within a category. GET /api/wiki/category/:slug
 func (h *WikiHandler) GetCategory(c *fiber.Ctx) error {
 	slug := c.Params("slug")
