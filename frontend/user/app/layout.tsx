@@ -17,10 +17,10 @@ export const metadata: Metadata = {
   description: 'ศูนย์รวมความรู้และคู่มือการใช้งานสำหรับ Carmen Chatbot',
   icons: {
     icon: [
-      { url: '/carmen-logo.jpeg' },
-      { url: '/placeholder-logo.svg', type: 'image/svg+xml' },
+      { url: '/carmen-favicon-circle-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/carmen-favicon-circle-16.png', sizes: '16x16', type: 'image/png' },
     ],
-    apple: '/carmen-logo.jpeg',
+    apple: '/carmen-favicon-circle-180.png',
   },
 }
 
