@@ -49,7 +49,7 @@
 |--------|-------------|
 | `ENVIRONMENT` | production: ใส่ `production` |
 | `STRICT_ENV_ONLY` | ถ้าใช้ strict: `true` (ต้องมีครบทุก key ที่โค้ดกำหนด) |
-| `CORS_ORIGINS` | URL Vercel จริง `https://xxx.vercel.app` (production ห้าม `*`) |
+| `CORS_ORIGINS` | Go Fiber: ใส่ `https://*.vercel.app` ให้ครบทุกโปรเจกต์/preview บน Vercel ได้ในค่าเดียว; หรือคั่นหลาย URL; โดเมนส่วนตัวให้เติมเอง (production ห้าม `*` อย่างเดียว) |
 | `PORT` | บน Fly มักไม่ต้องใส่ (แพลตฟอร์มใส่ให้); ที่อื่นให้ตรงพอร์ตที่รัน |
 | `PYTHON_CHATBOT_URL` | `https://...` ของ FastAPI หลัง deploy |
 | `ADMIN_API_KEY` | สุ่มใหม่ `openssl rand -hex 32` (อย่าใช้ค่าตัวอย่างใน repo) |

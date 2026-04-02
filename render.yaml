@@ -92,7 +92,8 @@ services:
         sync: false   # openssl rand -hex 32 — must match backend value
 
       # ── CORS ─────────────────────────────────────────────────────────────
-      # TODO: after first Vercel deploy, change to https://your-app.vercel.app
+      # FastAPI uses exact origin strings only (no https://*.vercel.app wildcard).
+      # Tighten to your Vercel URL(s) in the dashboard when ready; * keeps previews working.
       - key: CORS_ORIGINS
         value: "*"
 
@@ -178,9 +179,10 @@ services:
         sync: false   # openssl rand -hex 32 — must match chatbot value
 
       # ── CORS ───────────────────────────────────────────────────────────────
-      # TODO: after first Vercel deploy, change to https://your-app.vercel.app
+      # Go Fiber CORS: https://*.vercel.app allows any Vercel deployment (see middleware/cors).
+      # Append custom domains in the dashboard if you use a non-Vercel host.
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://*.vercel.app"
 
       # ── Inter-service ──────────────────────────────────────────────────────
       - key: PYTHON_CHATBOT_URL
