@@ -32,7 +32,7 @@ export function KBFooter() {
 
   const logoSrc =
     mounted && resolvedTheme === "dark"
-      ? "/Carmen-logo-light.png"
+      ? "/carmen-logo-light.png"
       : "/carmen02-logo.png";
 
 
