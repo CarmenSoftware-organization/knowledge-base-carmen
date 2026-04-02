@@ -11,19 +11,21 @@ import (
 func CORS() fiber.Handler {
 	origins := config.AppConfig.Server.CORSOrigins
 	allowAll := strings.TrimSpace(origins) == "" || origins == "*"
+	allowOrigins := "*"
+	if !allowAll {
+		parts := make([]string, 0)
+		for _, o := range strings.Split(origins, ",") {
+			if t := strings.TrimSpace(o); t != "" {
+				parts = append(parts, t)
+			}
+		}
+		if len(parts) > 0 {
+			allowOrigins = strings.Join(parts, ",")
+		}
+	}
 
 	return cors.New(cors.Config{
-		AllowOriginsFunc: func(origin string) bool {
-			if allowAll || origin == "" {
-				return true
-			}
-			for _, o := range strings.Split(origins, ",") {
-				if strings.TrimSpace(o) == origin {
-					return true
-				}
-			}
-			return false
-		},
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     "GET,POST,PUT,DELETE,PATCH,OPTIONS",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
 		AllowCredentials: !allowAll,
