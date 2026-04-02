@@ -40,6 +40,12 @@
     "loadFailed": "Unable to load data",
     "systemError": "Temporary system error. Please try again later."
   },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "This page may have been removed, renamed, or never existed.",
+    "backHome": "Back to Home",
+    "browseCategories": "Browse Categories"
+  },
   "activity": {
     "title": "Activity Logs",
     "description": "Usage and search history within the system (Business Unit: {bu})"

@@ -40,7 +40,8 @@ export default async function ArticlePage({ params }: Props) {
   let raw;
 
   try {
-    raw = await getContent(path, bu, locale);
+    // no-store: ต้องสอดคล้องกับ cookie BU — หลีกเลี่ยง Data Cache ปนกันเมื่อสลับหน่วยงาน
+    raw = await getContent(path, bu, locale, { cache: "no-store" });
   } catch {
     notFound();
   }

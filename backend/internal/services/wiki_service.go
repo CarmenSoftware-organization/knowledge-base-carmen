@@ -73,6 +73,13 @@ type SearchResult struct {
 	Snippet string `json:"snippet"`
 }
 
+type SidebarCategory struct {
+	Slug     string         `json:"slug"`
+	Title    string         `json:"title"`
+	Weight   int            `json:"weight,omitempty"`
+	Articles []CategoryItem `json:"articles"`
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 type WikiService struct {
@@ -324,6 +331,91 @@ func (s *WikiService) ListByCategory(bu, slug string) (string, []CategoryItem, e
 		return list[i].Path < list[j].Path
 	})
 	return slug, list, nil
+}
+
+// ListSidebarTree returns the full sidebar tree in a single filesystem walk.
+// Excludes "changelog" category (used separately in header nav).
+func (s *WikiService) ListSidebarTree(bu string) ([]SidebarCategory, error) {
+	entries, err := s.ListMarkdown(bu)
+	if err != nil {
+		return nil, err
+	}
+
+	type catMeta struct {
+		weight   int
+		title    string
+		articles []CategoryItem
+	}
+	order := []string{}
+	seen := make(map[string]*catMeta)
+
+	for _, e := range entries {
+		parts := strings.Split(e.Path, "/")
+		if len(parts) < 2 {
+			continue
+		}
+		slug := parts[0]
+		if slug == "changelog" {
+			continue
+		}
+
+		info, exists := seen[slug]
+		if !exists {
+			info = &catMeta{weight: e.Weight, title: slug, articles: []CategoryItem{}}
+			seen[slug] = info
+			order = append(order, slug)
+		}
+
+		isIndex := strings.HasSuffix(e.Path, "/index.md")
+		if isIndex || e.Weight < info.weight {
+			info.weight = e.Weight
+			info.title = e.Title
+		}
+
+		tags := e.Tags
+		if tags == nil {
+			tags = []string{}
+		}
+		info.articles = append(info.articles, CategoryItem{
+			Slug:        strings.TrimSuffix(filepath.Base(e.Path), filepath.Ext(e.Path)),
+			Title:       e.Title,
+			Description: e.Description,
+			Published:   e.Published,
+			Date:        e.Date,
+			Path:        e.Path,
+			Tags:        tags,
+			Editor:      e.Editor,
+			DateCreated: e.DateCreated,
+			PublishedAt: e.PublishedAt,
+			Weight:      e.Weight,
+		})
+	}
+
+	out := make([]SidebarCategory, 0, len(seen))
+	for _, slug := range order {
+		info := seen[slug]
+		sort.Slice(info.articles, func(i, j int) bool {
+			if info.articles[i].Weight != info.articles[j].Weight {
+				return info.articles[i].Weight < info.articles[j].Weight
+			}
+			return info.articles[i].Path < info.articles[j].Path
+		})
+		out = append(out, SidebarCategory{
+			Slug:     slug,
+			Title:    info.title,
+			Weight:   info.weight,
+			Articles: info.articles,
+		})
+	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Weight != out[j].Weight {
+			return out[i].Weight < out[j].Weight
+		}
+		return strings.ToLower(out[i].Title) < strings.ToLower(out[j].Title)
+	})
+
+	return out, nil
 }
 
 // GetContent reads article content for a BU from local first, falling back to GitHub.

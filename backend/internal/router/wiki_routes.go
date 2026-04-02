@@ -13,6 +13,7 @@ func RegisterWiki(app *fiber.App) {
 	h := api.NewWikiHandler()
 	app.Get("/api/wiki/list", h.List)
 	app.Get("/api/wiki/categories", h.ListCategories)
+	app.Get("/api/wiki/sidebar", h.Sidebar)
 	app.Get("/api/wiki/category/:slug", h.GetCategory)
 	app.Get("/api/wiki/content/*", h.GetContent)
 	app.Get("/api/wiki/search", h.Search)

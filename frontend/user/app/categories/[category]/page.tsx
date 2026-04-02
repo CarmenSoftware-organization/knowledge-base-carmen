@@ -28,19 +28,27 @@ export default async function CategoryPage({
   const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
 
   let data;
-  let indexContent = null;
-
   try {
-    data = await getCategory(category, bu);
-
-    try {
-      const rawIndex = await getContent(`${category}/index.md`, bu);
-      if (rawIndex) {
-        indexContent = matter(rawIndex.content);
-      }
-    } catch (e) {}
-  } catch (err) {
+    data = await getCategory(category, bu, { cache: "no-store" });
+  } catch {
     notFound();
+  }
+
+  // BU อื่นอาจไม่มีหมวดนี้ — backend คืน 200 + items: [] ต้องเป็น 404 ไม่ใช่หน้าว่าง
+  if (!data.items?.length) {
+    notFound();
+  }
+
+  let indexContent = null;
+  try {
+    const rawIndex = await getContent(`${category}/index.md`, bu, undefined, {
+      cache: "no-store",
+    });
+    if (rawIndex) {
+      indexContent = matter(rawIndex.content);
+    }
+  } catch {
+    // ไม่มี index.md แต่มีบทความอื่น — โอเค
   }
 
   const categoryName =
