@@ -109,8 +109,8 @@ var AppConfig *Config
 const (
 	defaultRepoPath      = "./wiki-content"
 	defaultBU            = constants.DefaultBU
-	defaultCarmenPaths   = "../carmen_cloud,./carmen_cloud"
-	defaultCarmenGitPath = "carmen_cloud"
+	defaultCarmenPaths   = ""
+	defaultCarmenGitPath = ""
 	defaultGitSyncBranch = "wiki-content"
 	defaultGitHubRepoURL = "https://github.com"
 	defaultGitHubAPIURL  = "https://api.github.com"
@@ -294,11 +294,13 @@ func Load() error {
 		Git: GitConfig{
 			RepoPath:          getEnv("GIT_REPO_PATH", defaultRepoPath),
 			RepoURL:           getEnv("GIT_REPO_URL", ""),
+			// Deprecated: keep for backward compatibility, but runtime path now uses GIT_REPO_PATH/<bu>.
 			ContentPath:       getEnv("WIKI_CONTENT_PATH", ""),
 			ChunkSize:         getEnvAsInt("WIKI_CHUNK_SIZE", 500),
 			ChunkOverlap:      getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
 			SyncBranch:        getEnv("GIT_SYNC_BRANCH", getEnv("GITHUB_BRANCH", defaultGitSyncBranch)),
 			DefaultBU:         getEnv("WIKI_DEFAULT_BU", defaultBU),
+			// Deprecated: legacy carmen-only path overrides.
 			CarmenContentDirs: getEnvAsStringSlice("WIKI_CARMEN_PATHS", defaultCarmenPaths),
 			CarmenGitPath:     getEnv("WIKI_CARMEN_GIT_PATH", defaultCarmenGitPath),
 		},
@@ -364,13 +366,10 @@ func ensureStrictEnv() error {
 		"GITHUB_WEBHOOK_BRANCH",
 		"GIT_REPO_PATH",
 		"GIT_REPO_URL",
-		"WIKI_CONTENT_PATH",
 		"WIKI_CHUNK_SIZE",
 		"WIKI_CHUNK_OVERLAP",
 		"GIT_SYNC_BRANCH",
 		"WIKI_DEFAULT_BU",
-		"WIKI_CARMEN_PATHS",
-		"WIKI_CARMEN_GIT_PATH",
 		"WIKI_SEARCH_LIMIT",
 		"WIKI_VECTOR_DISTANCE_MAX",
 		"WIKI_SNIPPET_MAX_LEN",

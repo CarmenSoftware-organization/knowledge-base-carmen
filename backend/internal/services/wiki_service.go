@@ -100,34 +100,6 @@ func (s *WikiService) getRepoPath(bu string) string {
 	if !security.ValidateSchema(bu) {
 		bu = cfg.DefaultBU
 	}
-	if bu == cfg.DefaultBU {
-		// WIKI_CONTENT_PATH override ได้ถ้าต้องการ
-		if cfg.ContentPath != "" {
-			p := config.NormalizePath(cfg.ContentPath)
-			if abs, err := filepath.Abs(p); err == nil {
-				if info, err := os.Stat(abs); err == nil && info.IsDir() {
-					return abs
-				}
-			}
-		}
-		dirs := cfg.CarmenContentDirs
-		for _, p := range dirs {
-			if abs, err := filepath.Abs(p); err == nil {
-				if info, err := os.Stat(abs); err == nil && info.IsDir() {
-					return abs
-				}
-			}
-		}
-		if discovered := config.DiscoverCarmenWikiRoot(); discovered != "" {
-			return discovered
-		}
-		fallback := "."
-		if len(dirs) > 0 {
-			fallback = dirs[0]
-		}
-		abs, _ := filepath.Abs(fallback)
-		return abs
-	}
 	repoBase := cfg.RepoPath
 	if repoBase == "" || repoBase == "." {
 		repoBase = config.DefaultRepoPath()
@@ -424,11 +396,8 @@ func (s *WikiService) GetContent(bu, relPath string) (*WikiContent, error) {
 		return content, nil
 	}
 
-	cfg := config.AppConfig.Git
 	gitPath := relPath
-	if bu == cfg.DefaultBU && cfg.CarmenGitPath != "" {
-		gitPath = strings.TrimSuffix(cfg.CarmenGitPath, "/") + "/" + relPath
-	} else if bu != "" {
+	if bu != "" {
 		gitPath = bu + "/" + relPath
 	}
 	return s.getContentFromGitHub(gitPath)
