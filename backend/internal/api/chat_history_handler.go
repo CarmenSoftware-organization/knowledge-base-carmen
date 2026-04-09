@@ -49,11 +49,12 @@ func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
 		sources = []models.ChatSource{}
 	}
 
-	if err := h.historyService.Save(buID, userID, q, a, sources, emb); err != nil {
+	id, err := h.historyService.SaveWithID(buID, userID, q, a, sources, emb)
+	if err != nil {
 		log.Printf("[chat] record-history save failed: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(fiber.Map{"ok": true})
+	return c.JSON(fiber.Map{"ok": true, "id": id})
 }
 
 func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {

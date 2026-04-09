@@ -14,12 +14,12 @@ CREATE TABLE IF NOT EXISTS public.business_units (
 -- 2. Insert initial business units
 INSERT INTO public.business_units (name, slug, description) 
 VALUES ('Carmen Cloud', 'carmen', 'System for Carmen Cloud documents and Wiki'),
-       ('Inventory', 'inventory', 'System for Inventory management and Wiki')
+       ('Blueledgers', 'blueledgers', 'Wiki / KB documents for Blueledgers')
 ON CONFLICT (slug) DO NOTHING;
 
 -- 3. Create Schemas for each BU
 CREATE SCHEMA IF NOT EXISTS carmen;
-CREATE SCHEMA IF NOT EXISTS inventory;
+CREATE SCHEMA IF NOT EXISTS blueledgers;
 
 -- 4. Enable pgvector extension (if not already enabled)
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -53,7 +53,7 @@ $$ LANGUAGE plpgsql;
 
 -- 6. Execute for existing schemas
 SELECT create_bu_tables('carmen');
-SELECT create_bu_tables('inventory');
+SELECT create_bu_tables('blueledgers');
 
 -- 7. Migrate data from public.documents to carmen.documents if they exist
 -- (This assumes existing data belongs to Carmen Cloud by default)

@@ -321,13 +321,20 @@ async def save_chat_logs(data: dict) -> int:
         try:
             def _do_request():
                 with urllib.request.urlopen(req, timeout=5) as resp:
-                    return resp.status
+                    body = resp.read().decode("utf-8", errors="replace")
+                    return resp.status, body
 
-            status = await asyncio.to_thread(_do_request)
+            status, body = await asyncio.to_thread(_do_request)
             if status in (200, 201):
-                # Go backend doesn't return DB row ID — fall through to direct DB
-                # so we can get the real ID for feedback linking.
-                pass
+                try:
+                    payload = json.loads(body) if body else {}
+                except Exception:
+                    payload = {}
+                row_id = int(payload.get("id") or 0)
+                if row_id > 0:
+                    # Go save succeeded and returned real DB id; do not insert again.
+                    return row_id
+                logger.warning("Go backend save succeeded but no id returned, falling back to direct DB insert")
         except urllib.error.HTTPError as e:
             logger.warning(f"Go backend failed: {e.code}, using direct DB")
         except Exception as e:

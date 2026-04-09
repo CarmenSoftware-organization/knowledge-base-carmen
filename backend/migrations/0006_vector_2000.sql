@@ -11,12 +11,12 @@ CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding
   ON carmen.document_chunks USING ivfflat (embedding vector_l2_ops)
   WITH (lists = 100);
 
--- 2. inventory.document_chunks
-DROP INDEX IF EXISTS inventory.idx_document_chunks_embedding;
-ALTER TABLE inventory.document_chunks
+-- 2. blueledgers.document_chunks
+DROP INDEX IF EXISTS blueledgers.idx_document_chunks_embedding;
+ALTER TABLE blueledgers.document_chunks
   ALTER COLUMN embedding TYPE vector(2000);
 CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding
-  ON inventory.document_chunks USING ivfflat (embedding vector_l2_ops)
+  ON blueledgers.document_chunks USING ivfflat (embedding vector_l2_ops)
   WITH (lists = 100);
 
 -- 3. public.chat_history
