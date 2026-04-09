@@ -13,7 +13,7 @@ import { useTheme } from "next-themes";
 import { BUSwitcher } from "./bu-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { useTranslations } from "next-intl";
-import { getCategory } from "@/lib/wiki-api";
+import { getBusinessUnits, getCategory, setSelectedBU } from "@/lib/wiki-api";
 
 // ─── Animation variants ────────────────────────────────────────────────────────
 
@@ -104,7 +104,7 @@ const changelogTitleMap: Record<string, string> = {
   may2024: "May 2024 Release Information",
 };
 
-function sortChangelog(items: { slug: string; title: string }[]) {
+function sortChangelog(items: { slug: string; title: string; buSlug: string }[]) {
   return [...items].sort((a, b) => {
     const ai = CHANGELOG_ORDER.indexOf(a.slug);
     const bi = CHANGELOG_ORDER.indexOf(b.slug);
@@ -124,7 +124,9 @@ export function KBHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileChangelogOpen, setMobileChangelogOpen] = useState(false);
   const [desktopChangelogOpen, setDesktopChangelogOpen] = useState(false);
-  const [changelogItems, setChangelogItems] = useState<{ slug: string; title: string }[]>([]);
+  const [changelogItems, setChangelogItems] = useState<
+    { slug: string; title: string; buSlug: string }[]
+  >([]);
 
   const changelogRef = useRef<HTMLDivElement>(null);
 
@@ -137,12 +139,48 @@ export function KBHeader() {
 
   useEffect(() => {
     if ((!desktopChangelogOpen && !mobileChangelogOpen) || changelogItems.length > 0) return;
-    getCategory("changelog")
-      .then((data) => setChangelogItems(data.items || []))
+    Promise.all([
+      getBusinessUnits().catch(() => ({ items: [] })),
+    ])
+      .then(async ([buData]) => {
+        const bus = buData.items || [];
+        if (bus.length === 0) {
+          setChangelogItems([]);
+          return;
+        }
+
+        const perBU = await Promise.all(
+          bus.map(async (bu) => {
+            try {
+              const data = await getCategory("changelog", bu.slug);
+              return (data.items || []).map((item) => ({
+                slug: item.slug,
+                title: item.title || changelogTitleMap[item.slug] || item.slug,
+                buSlug: bu.slug,
+              }));
+            } catch {
+              return [];
+            }
+          })
+        );
+
+        const merged = perBU.flat();
+        const unique = new Map<string, { slug: string; title: string; buSlug: string }>();
+        for (const item of merged) {
+          // keep first BU occurrence for each release slug
+          if (!unique.has(item.slug)) unique.set(item.slug, item);
+        }
+        setChangelogItems(Array.from(unique.values()));
+      })
       .catch(() => setChangelogItems([]));
   }, [desktopChangelogOpen, mobileChangelogOpen, changelogItems.length]);
 
   const sortedChangelog = sortChangelog(changelogItems);
+  const handleChangelogClick = (buSlug: string) => {
+    setSelectedBU(buSlug);
+    closeMobile();
+  };
+
 
   const logoSrc =
     mounted && resolvedTheme === "dark"
@@ -198,7 +236,7 @@ export function KBHeader() {
           {/* ── Desktop nav ── */}
           <nav className="hidden xl:flex items-center gap-0.5">
             <NavLink href="/">{t("home")}</NavLink>
-            <NavLink href="/categories">{t("categories")}</NavLink>
+            {!isHome && <NavLink href="/categories">{t("categories")}</NavLink>}
 
             {/* Changelog dropdown */}
             <div
@@ -236,6 +274,7 @@ export function KBHeader() {
                           <Link
                             key={item.slug}
                             href={`/categories/changelog/${encodeURIComponent(item.slug)}`}
+                            onClick={() => handleChangelogClick(item.buSlug)}
                             className="flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors duration-100 group"
                           >
                             <span>{label}</span>
@@ -253,13 +292,13 @@ export function KBHeader() {
               </AnimatePresence>
             </div>
 
-            <NavLink href="/faq">FAQ</NavLink>
+            {!isHome && <NavLink href="/faq">FAQ</NavLink>}
           </nav>
 
           {/* ── Desktop utilities ── */}
           <div className="hidden xl:flex items-center gap-1 pl-2 border-l border-border/60">
             <LanguageSwitcher />
-            <BUSwitcher />
+            {!isHome && <BUSwitcher />}
             <ThemeToggle />
           </div>
 
@@ -318,7 +357,11 @@ export function KBHeader() {
 
               <div className="pt-2 flex flex-col">
                 <MobileNavLink href="/" onClick={closeMobile}>{t("home")}</MobileNavLink>
-                <MobileNavLink href="/categories" onClick={closeMobile}>{t("categories")}</MobileNavLink>
+                {!isHome && (
+                  <MobileNavLink href="/categories" onClick={closeMobile}>
+                    {t("categories")}
+                  </MobileNavLink>
+                )}
 
                 {/* Changelog accordion */}
                 <div>
@@ -357,7 +400,7 @@ export function KBHeader() {
                                 <Link
                                   key={item.slug}
                                   href={`/categories/changelog/${encodeURIComponent(item.slug)}`}
-                                  onClick={closeMobile}
+                                  onClick={() => handleChangelogClick(item.buSlug)}
                                   className="flex items-center justify-between px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors"
                                 >
                                   <span>{label}</span>
@@ -376,13 +419,17 @@ export function KBHeader() {
                   </AnimatePresence>
                 </div>
 
-                <MobileNavLink href="/faq" onClick={closeMobile}>FAQ</MobileNavLink>
+                {!isHome && (
+                  <MobileNavLink href="/faq" onClick={closeMobile}>
+                    FAQ
+                  </MobileNavLink>
+                )}
               </div>
 
-              {/* Utilities row — Language, BU switcher, Theme */}
+              {/* Utilities row — Language, BU switcher (non-home), Theme */}
               <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2 px-3">
                 <LanguageSwitcher />
-                <BUSwitcher />
+                {!isHome && <BUSwitcher />}
                 <div className="ml-auto">
                   <ThemeToggle />
                 </div>

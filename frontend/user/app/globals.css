@@ -120,6 +120,54 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* หน้า Home BU: เต็มความสูงใต้ sticky header (h-14 = 3.5rem) — vh → svh → dvh */
+@layer utilities {
+  .min-h-bu-landing {
+    min-height: calc(100vh - 3.5rem);
+    min-height: calc(100svh - 3.5rem);
+    min-height: calc(100dvh - 3.5rem);
+  }
+
+  /* BU hero: หัวข้อไล่สีเคลื่อน (Carmen Cloud / Learning Center) */
+  .bu-title-shift {
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bu-title-line-1 {
+    background-image: linear-gradient(
+      90deg,
+      var(--primary),
+      oklch(0.72 0.14 230),
+      var(--primary),
+      oklch(0.65 0.18 280)
+    );
+    animation: bu-gradient-flow 6s ease-in-out infinite;
+  }
+  .bu-title-line-2 {
+    background-image: linear-gradient(
+      90deg,
+      var(--foreground),
+      var(--primary),
+      oklch(0.7 0.12 200),
+      var(--foreground)
+    );
+    animation: bu-gradient-flow 6.5s ease-in-out infinite reverse;
+    animation-delay: -2.5s;
+  }
+}
+
+@keyframes bu-gradient-flow {
+  0%,
+  100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

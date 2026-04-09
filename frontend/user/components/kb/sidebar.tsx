@@ -116,10 +116,12 @@ const CategoryItemRow = memo(function CategoryItemRow({
 // ─── Enrich categories with display names ────────────────────────────────────
 
 function enrichCategories(raw: SidebarCategory[]): SidebarCategoryWithName[] {
-  return raw.map((cat) => ({
-    ...cat,
-    name: categoryDisplayMap[cat.slug] || cat.title || cat.slug.toUpperCase(),
-  }));
+  return raw
+    .filter((cat) => cat.slug !== "faq")
+    .map((cat) => ({
+      ...cat,
+      name: categoryDisplayMap[cat.slug] || cat.title || cat.slug.toUpperCase(),
+    }));
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────

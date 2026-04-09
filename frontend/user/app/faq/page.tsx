@@ -19,6 +19,7 @@ export default async function FAQHomePage() {
   const t = await getTranslations();
   const cookieStore = await cookies();
   const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
+  const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
 
   let data: Awaited<ReturnType<typeof getCategory>>;
   let indexContent: ReturnType<typeof matter> | null = null;
@@ -26,7 +27,7 @@ export default async function FAQHomePage() {
   try {
     data = await getCategory(FAQ_SLUG, bu);
     try {
-      const rawIndex = await getContent(`${FAQ_SLUG}/index.md`, bu);
+      const rawIndex = await getContent(`${FAQ_SLUG}/index.md`, bu, cookieLocale);
       if (rawIndex) {
         indexContent = matter(rawIndex.content);
       }
