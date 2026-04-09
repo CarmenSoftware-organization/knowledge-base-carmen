@@ -4,8 +4,10 @@ import { MessageCircle, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, Variants } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 export function QuickHelp() {
+  const t = useTranslations("quickHelp");
 
   const scrollToFooter = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -51,13 +53,13 @@ export function QuickHelp() {
                 {/* Left */}
                 <motion.div variants={itemVariants} className="text-center lg:text-left">
                   <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-                    ต้องการความช่วยเหลือเพิ่มเติม?
+                    {t("title")}
                   </h2>
 
                   <p className="mt-4 text-muted-foreground leading-relaxed text-lg">
-                    หากคุณไม่พบคำตอบที่ต้องการในคู่มือ
+                    {t("subtitleLine1")}
                     <br className="hidden lg:block" />
-                    ทีมสนับสนุนของเราพร้อมช่วยเหลือคุณตลอด 24 ชั่วโมง
+                    {t("subtitleLine2")}
                   </p>
 
                   <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-4">
@@ -65,7 +67,7 @@ export function QuickHelp() {
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button size="lg" className="gap-2 rounded-xl h-12 px-8 font-bold shadow">
                         <MessageCircle className="h-4 w-4" />
-                        แชทกับเรา
+                        {t("chatButton")}
                       </Button>
                     </motion.div>
 
@@ -77,7 +79,7 @@ export function QuickHelp() {
                         className="gap-2 rounded-xl px-8 h-12 font-bold"
                       >
                         <Mail className="h-4 w-4" />
-                        ส่งอีเมล
+                        {t("emailButton")}
                       </Button>
                     </motion.div>
 
@@ -100,10 +102,10 @@ export function QuickHelp() {
                       <Phone className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
                     </motion.div>
 
-                    <h3 className="font-bold text-foreground text-lg">โทรหาเรา</h3>
+                    <h3 className="font-bold text-foreground text-lg">{t("phoneTitle")}</h3>
                     <p className="mt-1 text-sm font-black text-foreground">02-284-0429</p>
                     <p className="text-[10px] text-muted-foreground uppercase mt-1 font-bold tracking-wider">
-                      จ-ศ 9:00-18:00 น.
+                      {t("phoneHours")}
                     </p>
                   </motion.div>
 
@@ -120,12 +122,12 @@ export function QuickHelp() {
                       <Mail className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
                     </motion.div>
 
-                    <h3 className="font-bold text-foreground text-lg">อีเมล</h3>
+                    <h3 className="font-bold text-foreground text-lg">{t("emailTitle")}</h3>
                     <p className="mt-1 text-xs font-black text-foreground">
                       support@carmensoftware.com
                     </p>
                     <p className="text-[10px] text-muted-foreground uppercase mt-1 font-bold tracking-wider">
-                      ตอบกลับภายใน 24 ชม.
+                      {t("emailReplyTime")}
                     </p>
                   </motion.div>
 

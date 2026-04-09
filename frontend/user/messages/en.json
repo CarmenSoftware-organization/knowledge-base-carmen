@@ -11,12 +11,48 @@
     "articles": "articles",
     "search": "Search"
   },
+  "buLanding": {
+    "flairBadge": "Knowledge hub",
+    "brandLine1": "Carmen Cloud",
+    "brandLine2": "Learning Center",
+    "brandLine3": "Self Learning Portal",
+    "introLead": "Welcome to Carmen’s self-learning portal. Content is organized by business unit so you can find guides and articles that match the product you actually use without mixing unrelated topics.",
+    "introPoint1": "Pick the business unit that applies to you from the cards below.",
+    "introPoint2": "You’ll land on that unit’s full category list and document structure.",
+    "introPoint3": "Open a category, then a guide, to follow steps, details, and screenshots.",
+    "cardsSectionTitle": "Choose your business unit",
+    "cardsSectionSubtitle": "Each card shows the unit name and a short description. Click once to open that unit’s categories, then pick a topic to read the full guide.",
+    "scrollHint": "Scroll down to see business units",
+    "cardFallback": "Click the card to browse document categories for this unit.",
+    "empty": "No business units are available right now.",
+    "whatIsTitle": "What is KB Carmen",
+    "whatIsLead": "KB Carmen is built to help hotel teams access practical finance and accounting knowledge faster, aligned with the same Carmen principles: accuracy, operational efficiency, and auditability.",
+    "whatIsSubLead": "Its goal is simple: reduce trial-and-error, speed up onboarding, and keep teams working with one consistent operational standard.",
+    "whatIsPoint1": "Knowledge is organized by business unit and document category to reduce search time.",
+    "whatIsPoint2": "Guides explain connected workflows across PMS, API-ready integration, and accounting operations.",
+    "whatIsPoint3": "Supports cloud-based working and reporting habits teams already use in daily operations.",
+    "whatIsPoint4": "Helps new staff ramp up faster while keeping existing teams aligned to shared standards."
+  },
   "hero": {
     "badge": "Knowledge Base",
     "title": "Knowledge Hub",
     "titleFor": "for {buName}",
     "subtitle": "Search guides, articles, and answers for every question about using {buName} accounting management system",
-    "popular": "Popular:"
+    "popular": "Popular:",
+    "compactBadge": "Search",
+    "compactTitle": "Already know the topic or guide name?",
+    "compactSubtitle": "Type your search below. You don’t have to pick a business unit first."
+  },
+  "quickHelp": {
+    "title": "Need more help?",
+    "subtitleLine1": "If you can’t find the answer in the guide,",
+    "subtitleLine2": "our support team is ready to help you 24/7.",
+    "chatButton": "Chat with us",
+    "emailButton": "Send email",
+    "phoneTitle": "Call us",
+    "phoneHours": "Mon-Fri 9:00-18:00",
+    "emailTitle": "Email",
+    "emailReplyTime": "Reply within 24 hours"
   },
   "search": {
     "placeholderHeader": "Search guides...",

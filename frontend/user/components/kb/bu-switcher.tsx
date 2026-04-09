@@ -8,6 +8,7 @@ import {
   type BusinessUnit 
 } from "@/lib/wiki-api";
 import { DEFAULT_BU } from "@/lib/config";
+import { usePathname } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -20,6 +21,7 @@ import { Building2 } from "lucide-react";
 export function BUSwitcher() {
   const [bus, setBus] = useState<BusinessUnit[]>([]);
   const [selected, setSelected] = useState<string>(DEFAULT_BU);
+  const pathname = usePathname();
 
   useEffect(() => {
     async function load() {
@@ -37,7 +39,13 @@ export function BUSwitcher() {
   const handleChange = (val: string) => {
     setSelected(val);
     setSelectedBU(val);
-    // Refresh the page to update all data with new BU context
+    // If user is inside an article path, go to that category in new BU to avoid 404.
+    const match = pathname.match(/^\/categories\/([^/]+)\/[^/]+$/);
+    if (match?.[1]) {
+      window.location.assign(`/categories/${match[1]}`);
+      return;
+    }
+    // Refresh current page for all other routes.
     window.location.reload();
   };
 
