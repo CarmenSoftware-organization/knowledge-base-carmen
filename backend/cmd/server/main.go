@@ -1,5 +1,4 @@
 
-//go:generate go run github.com/swaggo/swag/cmd/swag@v1.16.4 init -g main.go -o ../../docs -d .,../../internal/apidoc,../../internal/models
 package main
 
 import (
@@ -13,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/router"
 	"github.com/new-carmen/backend/internal/security"
 	"github.com/new-carmen/backend/internal/services"
@@ -81,13 +81,32 @@ func main() {
 		log.Fatal("Usage: go run cmd/server/main.go reset index <bu> | reset all")
 	}
 	if len(args) >= 2 && args[0] == "reindex" {
-		bu := args[1]
-		if !security.ValidateSchema(bu) {
-			log.Fatalf("Invalid BU: %q", bu)
-		}
-		log.Printf("Starting manual reindex for BU: %s...", bu)
+		buArg := args[1]
 		idx := services.NewIndexingService()
-		if err := idx.IndexAll(context.Background(), bu); err != nil {
+		ctx := context.Background()
+		if strings.EqualFold(buArg, "all") {
+			var bus []models.BusinessUnit
+			if err := database.DB.Table("public.business_units").Find(&bus).Error; err != nil {
+				log.Fatalf("List business_units: %v", err)
+			}
+			for _, bu := range bus {
+				slug := strings.TrimSpace(bu.Slug)
+				if slug == "" || !security.ValidateSchema(slug) {
+					continue
+				}
+				log.Printf("Reindex BU: %s...", slug)
+				if err := idx.IndexAll(ctx, slug); err != nil {
+					log.Fatalf("Reindex failed (%s): %v", slug, err)
+				}
+			}
+			log.Println("Reindex all completed.")
+			return
+		}
+		if !security.ValidateSchema(buArg) {
+			log.Fatalf("Invalid BU: %q (use slug or \"all\")", buArg)
+		}
+		log.Printf("Starting manual reindex for BU: %s...", buArg)
+		if err := idx.IndexAll(ctx, buArg); err != nil {
 			log.Fatalf("Reindex failed: %v", err)
 		}
 		log.Println("Reindex completed successfully.")

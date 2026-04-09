@@ -215,12 +215,7 @@ func applyMeta(out *WikiContent, meta map[string]string, body []byte) {
 }
 
 func (s *WikiService) ListMarkdown(bu string) ([]WikiEntry, error) {
-	entries, err := s.listFromLocal(bu)
-	if err != nil {
-		fmt.Println("listFromLocal error:", err)
-		return []WikiEntry{}, nil
-	}
-	return entries, nil
+	return s.listFromLocal(bu)
 }
 
 func (s *WikiService) ListCategories(bu string) ([]CategoryEntry, error) {
@@ -561,13 +556,18 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 	}
 	root = filepath.Clean(root)
 
+	st, err := os.Stat(root)
+	if err != nil {
+		return nil, fmt.Errorf("wiki content path for bu %q: %w (%s)", bu, err, root)
+	}
+	if !st.IsDir() {
+		return nil, fmt.Errorf("wiki content path for bu %q is not a directory: %s", bu, root)
+	}
+
 	var entries []WikiEntry
 
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
 			return err
 		}
 		if info.IsDir() || strings.ToLower(filepath.Ext(info.Name())) != ".md" {

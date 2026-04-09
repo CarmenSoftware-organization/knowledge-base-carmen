@@ -33,7 +33,7 @@ docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db -
 | ลำดับ | ไฟล์ | หมายเหตุ |
 |------|------|----------|
 | 1 | `0001_init_documents.sql` | extension `vector`, ตาราง `public.documents` / `document_chunks` |
-| 2 | `0002_setup_multi_bu.sql` | schema `carmen` / `inventory`, `business_units`, ฟังก์ชัน `create_bu_tables`, ย้ายข้อมูลจาก `public` |
+| 2 | `0002_setup_multi_bu.sql` | schema `carmen` / `blueledgers`, `business_units`, ฟังก์ชัน `create_bu_tables`, ย้ายข้อมูลจาก `public` |
 | 3 | `0003_create_activity_logs.sql` | `activity_logs` |
 | 4 | `0004_chat_history.sql` | `chat_history` (vector 1536) |
 | 5 | `0005_chat_history_privacy.sql` | hardening + `expires_at` + `purge_expired_chat_history()` |
@@ -50,6 +50,7 @@ docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db -
 |------|----------|
 | `0005b_create_bu_tables_1536.sql` | หลัง `0005_vector_4096_qwen.sql` (ตามคอมเมนต์ในไฟล์ 0005_vector) — อัปเดตฟังก์ชัน `create_bu_tables` ให้สอดคล้อง 1536 |
 | `0008_clear_faq_carmen.sql` | **ไม่บังคับ** — ลบข้อมูล FAQ ของ BU `carmen` เท่านั้น (เตรียมข้อมูลใหม่) |
+| `0010_inventory_to_blueledgers_clear_bu_indexes.sql` | **เฉพาะ DB เก่าที่ยังมี schema `inventory`** — ลบ inventory แล้วสร้าง `blueledgers` + truncate wiki index |
 
 ---
 

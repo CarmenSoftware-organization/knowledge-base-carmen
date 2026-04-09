@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// BusinessUnit represents a business unit in the system (e.g., carmen, inventory)
+// BusinessUnit represents a business unit in the system (e.g., carmen, blueledgers)
 type BusinessUnit struct {
 	ID          uint           `gorm:"primaryKey" json:"id"`
 	Name        string         `gorm:"unique;not null" json:"name"`

@@ -14,16 +14,16 @@ ADD COLUMN embedding vector(1536);
 CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding ON carmen.document_chunks USING ivfflat (embedding vector_l2_ops)
 WITH (lists = 100);
 
--- 2. inventory.document_chunks
-DROP INDEX IF EXISTS inventory.idx_document_chunks_embedding;
+-- 2. blueledgers.document_chunks
+DROP INDEX IF EXISTS blueledgers.idx_document_chunks_embedding;
 
-ALTER TABLE inventory.document_chunks
+ALTER TABLE blueledgers.document_chunks
 DROP COLUMN IF EXISTS embedding;
 
-ALTER TABLE inventory.document_chunks
+ALTER TABLE blueledgers.document_chunks
 ADD COLUMN embedding vector(1536);
 
-CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding ON inventory.document_chunks USING ivfflat (embedding vector_l2_ops)
+CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding ON blueledgers.document_chunks USING ivfflat (embedding vector_l2_ops)
 WITH (lists = 100);
 
 -- 3. public.chat_history
