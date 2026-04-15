@@ -1,4 +1,4 @@
--- generated at 2026-04-15T20:37:15Z
+-- generated at 2026-04-15T20:57:43Z
 -- bu: blueledgers
 BEGIN;
 
@@ -1013,16 +1013,16 @@ SELECT c.id, 'การดูสินค้าคงเหลือในระ
 1\.Inventory Balance  
 ช่อง Balance Qty คือจำนวนสินค้าคงเหลือ หากไม่มีสินค้าหรือสินค้าเป็น 0 จะไม่แสดงที่ Report นี้
 
-![](_images/report-general-การดสนคาคงเหลอในระบบ/img-001.png)
+![](_images/report-การดสนคาคงเหลอในระบบ/img-001.png)
 
   
 2\. Inventory Movement Detail
 
-ช่อง Closing Qty คือจำนวนสินค้า ตาม Period ที่เลือก![](_images/report-general-การดสนคาคงเหลอในระบบ/img-002.png)  
+ช่อง Closing Qty คือจำนวนสินค้า ตาม Period ที่เลือก![](_images/report-การดสนคาคงเหลอในระบบ/img-002.png)  
 
 
 3\. Stock Card Detailed  
-ช่อง Quantity คือจำนวนสินค้าคงเหลือ ตามเอกสารที่ทำในระบบ Date from ที่เลือก![](_images/report-general-การดสนคาคงเหลอในระบบ/img-003.png)', '# การดูสินค้าคงเหลือในระบบ
+ช่อง Quantity คือจำนวนสินค้าคงเหลือ ตามเอกสารที่ทำในระบบ Date from ที่เลือก![](_images/report-การดสนคาคงเหลอในระบบ/img-003.png)', '# การดูสินค้าคงเหลือในระบบ
 
 ## Sample case
 
@@ -1035,16 +1035,16 @@ Solutions : ตรวจสอบได้จาก function Report
 1\.Inventory Balance  
 ช่อง Balance Qty คือจำนวนสินค้าคงเหลือ หากไม่มีสินค้าหรือสินค้าเป็น 0 จะไม่แสดงที่ Report นี้
 
-![](_images/report-general-การดสนคาคงเหลอในระบบ/img-001.png)
+![](_images/report-การดสนคาคงเหลอในระบบ/img-001.png)
 
   
 2\. Inventory Movement Detail
 
-ช่อง Closing Qty คือจำนวนสินค้า ตาม Period ที่เลือก![](_images/report-general-การดสนคาคงเหลอในระบบ/img-002.png)  
+ช่อง Closing Qty คือจำนวนสินค้า ตาม Period ที่เลือก![](_images/report-การดสนคาคงเหลอในระบบ/img-002.png)  
 
 
 3\. Stock Card Detailed  
-ช่อง Quantity คือจำนวนสินค้าคงเหลือ ตามเอกสารที่ทำในระบบ Date from ที่เลือก![](_images/report-general-การดสนคาคงเหลอในระบบ/img-003.png)
+ช่อง Quantity คือจำนวนสินค้าคงเหลือ ตามเอกสารที่ทำในระบบ Date from ที่เลือก![](_images/report-การดสนคาคงเหลอในระบบ/img-003.png)
 
 ## Tags
 

@@ -14,7 +14,8 @@ Folder names use "-" to encode hierarchy:
 Output:
   contents/blueledgers/faq/
     index.md
-    Material-Procedure-Closing_Balance_<article>.md
+    Material-Procedure-Closing Balance/
+      <article>.md
     _images/<article-slug>/*
 """
 
@@ -61,6 +62,17 @@ def safe_component(text: str, *, keep_dash: bool = True, sep: str = "_") -> str:
     return value or "untitled"
 
 
+def safe_path_name(text: str) -> str:
+    value = normalize_spaces(text)
+    value = re.sub(r'[<>:"/\\|?*]', "", value)
+    value = value.strip().strip(".")
+    return value or "untitled"
+
+
+def safe_file_stem(text: str) -> str:
+    return safe_path_name(text)
+
+
 def safe_slug(text: str) -> str:
     value = normalize_spaces(text).lower()
     value = re.sub(r"[^\w\-\s]", "", value)
@@ -92,6 +104,19 @@ def parse_hierarchy(rel_path: Path) -> tuple[str, str, str]:
 
     direct_parts = [normalize_spaces(x) for x in parent_parts if normalize_spaces(x)]
     return split_hierarchy(direct_parts[:3])
+
+
+def resolve_folder_name(rel_path: Path, module: str, submodule: str, category: str) -> str:
+    parent_parts = [normalize_spaces(x) for x in rel_path.parent.parts if normalize_spaces(x)]
+    if parent_parts:
+        folder = safe_path_name(parent_parts[0])
+        if folder:
+            return folder
+
+    parts = [module, submodule]
+    if category.casefold() != "general":
+        parts.append(category)
+    return safe_path_name("-".join(parts))
 
 
 def read_markdown_without_frontmatter(path: Path) -> str:
@@ -340,15 +365,17 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     images_root = output_dir / "_images"
     if args.clean_output:
-        for old_md in output_dir.glob("*.md"):
-            if old_md.name.lower() != "index.md":
-                old_md.unlink(missing_ok=True)
-        if images_root.exists():
-            shutil.rmtree(images_root)
+        for child in output_dir.iterdir():
+            if child.name.lower() == "index.md":
+                continue
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink(missing_ok=True)
     images_root.mkdir(parents=True, exist_ok=True)
 
     docs = list(iter_source_docs(source_dir))
-    used_bases: set[str] = set()
+    used_names_by_folder: dict[str, set[str]] = {}
     modules: list[str] = []
     written = 0
 
@@ -357,19 +384,15 @@ def main() -> None:
         module, submodule, category = parse_hierarchy(rel)
         modules.append(module)
 
-        hierarchy_parts = [module, submodule]
-        if category.casefold() != "general":
-            hierarchy_parts.append(category)
-        hierarchy_raw = "-".join(hierarchy_parts)
-        hierarchy_name = safe_component(hierarchy_raw, keep_dash=True, sep="_")
-        stem_name = safe_component(src.stem, keep_dash=True, sep="_")
+        folder_name = resolve_folder_name(rel, module, submodule, category)
+        out_dir = output_dir / folder_name
+        out_dir.mkdir(parents=True, exist_ok=True)
 
-        base_name = hierarchy_name
-        if stem_name.casefold() not in {hierarchy_name.casefold(), "index"}:
-            base_name = f"{hierarchy_name}_{stem_name}"
-        base_name = ensure_unique_name(base_name, used_bases)
+        folder_key = folder_name.casefold()
+        used_stems = used_names_by_folder.setdefault(folder_key, set())
+        file_stem = ensure_unique_name(safe_file_stem(src.stem), used_stems)
 
-        article_slug = safe_slug(base_name)
+        article_slug = safe_slug(f"{folder_name}-{file_stem}")
         image_target_dir = images_root / article_slug
 
         if src.suffix.lower() == ".docx":
@@ -385,7 +408,7 @@ def main() -> None:
         title, body = normalize_faq_body(body, fallback_title)
         frontmatter = render_frontmatter(title, module, submodule, category)
 
-        out_path = output_dir / f"{base_name}.md"
+        out_path = out_dir / f"{file_stem}.md"
         out_path.write_text(frontmatter + body.strip() + "\n", encoding="utf-8")
         written += 1
         log_line(f"{rel} -> {out_path}")

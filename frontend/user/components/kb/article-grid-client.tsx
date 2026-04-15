@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
@@ -10,8 +10,8 @@ const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05 }
-  }
+    transition: { staggerChildren: 0.05 },
+  },
 };
 
 const itemVariants: Variants = {
@@ -19,13 +19,27 @@ const itemVariants: Variants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3 }
-  }
+    transition: { duration: 0.3 },
+  },
 };
 
-export function ArticleGridTransition({ items, category }: { items: any[], category: string }) {
+function normalizeRelativePath(itemPath: string, category: string): string {
+  const normalized = (itemPath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+  const prefix = `${category}/`;
+  if (normalized.startsWith(prefix)) {
+    return normalized.slice(prefix.length);
+  }
+  return normalized;
+}
 
-  const filteredItems = items.filter(item => item.slug !== 'index');
+export function ArticleGridTransition({
+  items,
+  category,
+}: {
+  items: any[];
+  category: string;
+}) {
+  const filteredItems = items.filter((item) => item.slug !== "index");
 
   return (
     <motion.div
@@ -36,11 +50,19 @@ export function ArticleGridTransition({ items, category }: { items: any[], categ
       className="grid gap-4 sm:grid-cols-2 mb-10"
     >
       {filteredItems.map((item: any) => {
-        const displayTitle = articleDisplayMap[item.slug] || cleanTitle(item.title);
+        const displayTitle =
+          articleDisplayMap[item.slug] || cleanTitle(item.title);
+        const relPath = normalizeRelativePath(item.path, category);
+        const slugFromPath =
+          relPath.split("/").pop()?.replace(/\.md$/i, "") || item.slug;
+        const hasNestedPath = relPath.includes("/");
+        const href = hasNestedPath
+          ? `/categories/${encodeURIComponent(category)}/${encodeURIComponent(slugFromPath)}?path=${encodeURIComponent(relPath)}`
+          : `/categories/${encodeURIComponent(category)}/${encodeURIComponent(slugFromPath)}`;
 
         return (
           <motion.div key={item.path} variants={itemVariants}>
-            <Link href={`/categories/${category}/${item.slug}`} className="group block h-full">
+            <Link href={href} className="group block h-full">
               <Card className="h-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/40 active:scale-[0.98]">
                 <CardContent className="p-5 flex items-center justify-between">
                   <div className="flex-1 pr-4">
@@ -48,7 +70,9 @@ export function ArticleGridTransition({ items, category }: { items: any[], categ
                       {displayTitle}
                     </h2>
                     <div className="flex items-center gap-1.5 mt-2 text-primary/0 group-hover:text-primary transition-all duration-300 -translate-x-2 group-hover:translate-x-0">
-                      <span className="text-[10px] font-bold uppercase tracking-wider">อ่านบทความ</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">
+                        อ่านบทความ
+                      </span>
                       <ArrowRight className="h-3 w-3" />
                     </div>
                   </div>

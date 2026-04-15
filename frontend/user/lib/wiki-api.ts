@@ -55,7 +55,7 @@ export function setSelectedBU(slug: string) {
     const maxAge = 60 * 60 * 24 * 30;
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `selected_bu=${encodeURIComponent(
-      normalized
+      normalized,
     )}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
     clearWikiClientCaches();
     window.dispatchEvent(new Event("bu-changed"));
@@ -69,7 +69,7 @@ export function setSelectedBU(slug: string) {
 // GET /api/wiki/categories
 export async function getCategories(
   bu?: string,
-  fetchOptions?: RequestInit
+  fetchOptions?: RequestInit,
 ): Promise<{
   items: { slug: string; title: string }[];
 }> {
@@ -105,7 +105,8 @@ export type SidebarCategory = {
 };
 
 const SIDEBAR_TTL = 5 * 60 * 1000; // 5 minutes
-let sidebarCache: { [bu: string]: { data: SidebarCategory[]; ts: number } } = {};
+let sidebarCache: { [bu: string]: { data: SidebarCategory[]; ts: number } } =
+  {};
 
 // GET /api/wiki/sidebar — returns full sidebar tree in a single request
 export async function getSidebarTree(bu?: string): Promise<SidebarCategory[]> {
@@ -135,7 +136,7 @@ export function invalidateSidebarCache(bu?: string) {
 export async function getCategory(
   slug: string,
   bu?: string,
-  fetchOptions?: RequestInit
+  fetchOptions?: RequestInit,
 ): Promise<{
   category: string;
   items: (WikiListItem & { slug: string })[];
@@ -143,7 +144,7 @@ export async function getCategory(
   const selectedBU = bu || getSelectedBUClient();
   const res = await fetch(
     `${API_BASE}/api/wiki/category/${slug}?bu=${selectedBU}`,
-    { cache: "no-store", ...fetchOptions }
+    { cache: "no-store", ...fetchOptions },
   );
 
   if (!res.ok) {
@@ -202,11 +203,16 @@ export function wikiPathToRoute(path: string): string {
   }
 
   const category = encodeURIComponent(parts[0]);
+  const relPath = parts.slice(1).join("/");
   const file = parts[parts.length - 1];
   const slug = encodeURIComponent(file.replace(/\.md$/i, ""));
 
   if (slug === "index") {
     return `/categories/${category}`;
+  }
+
+  if (parts.length > 2) {
+    return `/categories/${category}/${slug}?path=${encodeURIComponent(relPath)}`;
   }
 
   return `/categories/${category}/${slug}`;
@@ -216,7 +222,7 @@ export function wikiPathToRoute(path: string): string {
 
 export async function findBestArticleForQuery(
   query: string,
-  bu?: string
+  bu?: string,
 ): Promise<{
   item: WikiListItem | null;
   route: string | null;
@@ -286,7 +292,7 @@ export async function getContent(
   path: string,
   bu?: string,
   locale?: string,
-  fetchOptions?: RequestInit
+  fetchOptions?: RequestInit,
 ): Promise<{
   path: string;
   title: string;
@@ -304,7 +310,7 @@ export async function getContent(
   if (locale) params.set("locale", locale);
   const res = await fetch(
     `${API_BASE}/api/wiki/content/${path}?${params.toString()}`,
-    { cache: "no-store", ...fetchOptions }
+    { cache: "no-store", ...fetchOptions },
   );
 
   if (!res.ok) {
@@ -339,7 +345,7 @@ export type ChatAskResponse = {
 export async function askChat(
   question: string,
   preferredPath?: string,
-  bu?: string
+  bu?: string,
 ): Promise<ChatAskResponse> {
   const selectedBU = bu || getSelectedBUClient();
   const res = await fetch(`${API_BASE}/api/chat/ask?bu=${selectedBU}`, {
@@ -361,8 +367,8 @@ export async function askChat(
         res.status
       }). Check NEXT_PUBLIC_API_BASE (${API_BASE}) and that the Go backend is running. Body starts with: ${raw.slice(
         0,
-        120
-      )}`
+        120,
+      )}`,
     );
   }
   if (!res.ok) {
@@ -391,7 +397,7 @@ function normalizeQuery(q: string): string {
 
 export async function searchWiki(
   query: string,
-  bu?: string
+  bu?: string,
 ): Promise<SearchResultItem[]> {
   const q = normalizeQuery(query);
   if (q.length < 1) return [];
@@ -402,7 +408,7 @@ export async function searchWiki(
       `${API_BASE}/api/wiki/search?q=${encodeURIComponent(q)}&bu=${selectedBU}`,
       {
         cache: "no-store",
-      }
+      },
     );
 
     if (!res.ok) return [];
@@ -434,7 +440,7 @@ export async function getActivityLogs(
   bu?: string,
   limit: number = 20,
   offset: number = 0,
-  source: "all" | "user" | "admin" = "all"
+  source: "all" | "user" | "admin" = "all",
 ): Promise<{
   items: ActivityLog[];
   total: number;

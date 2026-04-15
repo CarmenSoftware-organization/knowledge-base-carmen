@@ -5,14 +5,15 @@
 ```bash
 python scripts/blueledgers_faq_from_drive.py \
   --source-dir "C:/Users/thinnakorn/Downloads/drive-download-20260415T200848Z-3-001" \
-  --output-dir "contents/blueledgers/faq"
+  --output-dir "contents/blueledgers/faq" \
+  --clean-output
 ```
 
 What this does:
 
 - Reads `.docx` and `.md` recursively from source
 - Parses hierarchy from folder name `Module-Submodule-Category`
-- Writes FAQ markdown into `contents/blueledgers/faq/*.md`
+- Writes FAQ markdown into subfolders, e.g. `contents/blueledgers/faq/Material-Procedure-Closing Balance/<article>.md`
 - Copies/rewrites images into `contents/blueledgers/faq/_images/<article-slug>/...`
 - Adds frontmatter fields: `faq_module`, `faq_submodule`, `faq_category`
 

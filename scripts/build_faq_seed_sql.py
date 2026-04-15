@@ -3,7 +3,7 @@
 Generate FAQ seed SQL from markdown files.
 
 Default target is Blueledgers FAQ markdown:
-  contents/blueledgers/faq/*.md
+  contents/blueledgers/faq/**/*.md
 """
 
 from __future__ import annotations
@@ -138,12 +138,21 @@ class Entry:
     tags: list[str]
 
 
-def parse_hierarchy_from_meta_or_stem(meta: dict[str, str], stem: str) -> Hierarchy:
+def parse_hierarchy_from_meta_or_stem(meta: dict[str, str], stem: str, parent_folder: str = "") -> Hierarchy:
     mod = meta.get("faq_module", "").strip()
     sub = meta.get("faq_submodule", "").strip()
     cat = meta.get("faq_category", "").strip()
     if mod and sub and cat:
         return Hierarchy(mod, sub, cat)
+
+    if parent_folder:
+        from_folder = [p.strip() for p in parent_folder.split("-") if p.strip()]
+        if len(from_folder) >= 3:
+            return Hierarchy(from_folder[0], from_folder[1], "-".join(from_folder[2:]))
+        if len(from_folder) == 2:
+            return Hierarchy(from_folder[0], from_folder[1], "General")
+        if len(from_folder) == 1:
+            return Hierarchy(from_folder[0], "General", "General")
 
     parts = [p.strip() for p in stem.replace("_", " ").split("-") if p.strip()]
     if len(parts) >= 3:
@@ -157,12 +166,19 @@ def parse_hierarchy_from_meta_or_stem(meta: dict[str, str], stem: str) -> Hierar
 
 def build_entries(faq_dir: Path) -> list[Entry]:
     entries: list[Entry] = []
-    for md in sorted(faq_dir.glob("*.md")):
+    for md in sorted(faq_dir.rglob("*.md")):
         if md.name.lower() == "index.md":
             continue
         raw = md.read_text(encoding="utf-8")
         meta, body = split_frontmatter(raw)
-        hierarchy = parse_hierarchy_from_meta_or_stem(meta, md.stem)
+        parent_folder = ""
+        try:
+            rel = md.relative_to(faq_dir)
+            if len(rel.parts) > 1:
+                parent_folder = rel.parts[0]
+        except ValueError:
+            parent_folder = md.parent.name
+        hierarchy = parse_hierarchy_from_meta_or_stem(meta, md.stem, parent_folder)
         labeled = parse_labeled_sections(body)
 
         title = (
