@@ -20,6 +20,9 @@ type Props = {
     category: string;
     article: string[];
   }>;
+  searchParams: Promise<{
+    path?: string;
+  }>;
 };
 
 function humanizeSegment(seg: string): string {
@@ -38,7 +41,9 @@ export default async function ArticlePage({ params }: Props) {
   }
 
   const cookieStore = await cookies();
-  const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
+  const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU)
+    .trim()
+    .toLowerCase();
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
 
   const locale = category.toLowerCase() === "changelog" ? "en" : cookieLocale;
