@@ -5,7 +5,6 @@ export default function ArticleLoading() {
 
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex gap-10 items-start">
-          {/* Sidebar skeleton */}
           <aside className="hidden xl:block w-64 shrink-0 space-y-2">
             {[90, 70, 85, 60, 75, 80, 65].map((w, i) => (
               <div key={i} className="space-y-1.5">
@@ -13,7 +12,11 @@ export default function ArticleLoading() {
                 {i % 3 === 0 && (
                   <div className="ml-4 space-y-1.5 border-l-2 border-muted pl-2">
                     {[65, 80].map((aw, j) => (
-                      <div key={j} className="h-6 rounded-md bg-muted/60" style={{ width: `${aw}%` }} />
+                      <div
+                        key={j}
+                        className="h-6 rounded-md bg-muted/60"
+                        style={{ width: `${aw}%` }}
+                      />
                     ))}
                   </div>
                 )}
@@ -21,9 +24,7 @@ export default function ArticleLoading() {
             ))}
           </aside>
 
-          {/* Article content skeleton */}
           <div className="flex-1 min-w-0 max-w-4xl space-y-6">
-            {/* Breadcrumb */}
             <div className="flex items-center gap-2">
               <div className="h-4 w-16 rounded bg-muted" />
               <div className="h-4 w-2 rounded bg-muted" />
@@ -32,7 +33,6 @@ export default function ArticleLoading() {
               <div className="h-4 w-40 rounded bg-muted" />
             </div>
 
-            {/* Article title + meta */}
             <div className="space-y-3">
               <div className="h-10 w-3/4 rounded-lg bg-muted" />
               <div className="h-5 w-full rounded bg-muted/60" />
@@ -45,7 +45,6 @@ export default function ArticleLoading() {
 
             <div className="border-b border-border" />
 
-            {/* Article body */}
             <div className="space-y-4">
               {[100, 93, 87, 100, 76].map((w, i) => (
                 <div key={i} className="h-4 rounded bg-muted/50" style={{ width: `${w}%` }} />
@@ -57,7 +56,6 @@ export default function ArticleLoading() {
             </div>
           </div>
 
-          {/* TOC skeleton */}
           <aside className="hidden xl:block w-52 shrink-0 space-y-2">
             <div className="h-5 w-28 rounded bg-muted mb-3" />
             {[80, 65, 72, 55, 68].map((w, i) => (

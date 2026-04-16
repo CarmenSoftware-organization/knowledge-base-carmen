@@ -203,13 +203,28 @@ export function wikiPathToRoute(path: string): string {
 
   const category = encodeURIComponent(parts[0]);
   const file = parts[parts.length - 1];
-  const slug = encodeURIComponent(file.replace(/\.md$/i, ""));
+  const baseName = file.replace(/\.md$/i, "");
 
-  if (slug === "index") {
-    return `/categories/${category}`;
+  if (baseName === "index") {
+    if (parts.length === 2) {
+      return `/categories/${category}`;
+    }
+    const middle = parts
+      .slice(1, -1)
+      .map((p) => encodeURIComponent(p))
+      .join("/");
+    return `/categories/${category}/${middle}`;
   }
 
-  return `/categories/${category}/${slug}`;
+  const slug = encodeURIComponent(baseName);
+  if (parts.length === 2) {
+    return `/categories/${category}/${slug}`;
+  }
+  const middle = parts
+    .slice(1, -1)
+    .map((p) => encodeURIComponent(p))
+    .join("/");
+  return `/categories/${category}/${middle}/${slug}`;
 }
 
 // หาบทความที่ตรงกับคำค้นมากที่สุดคืนทั้ง item และ route

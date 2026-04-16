@@ -3,7 +3,7 @@ import { KBFooter } from "@/components/kb/footer";
 import { KBSidebar } from "@/components/kb/sidebar";
 import { Breadcrumb } from "@/components/kb/breadcrumb";
 import { getCategory, getContent } from "@/lib/wiki-api";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { categoryDisplayMap } from "@/configs/sidebar-map";
 import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
@@ -23,6 +23,10 @@ export default async function CategoryPage({
   const category = resolvedParams.category;
 
   if (!category) notFound();
+
+  if (category.toLowerCase() === "faq") {
+    redirect("/faq");
+  }
 
   const cookieStore = await cookies();
   const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();

@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { articleDisplayMap, cleanTitle } from "@/configs/sidebar-map";
 import { ArrowRight } from "lucide-react";
+import { wikiPathToRoute } from "@/lib/wiki-api";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -23,9 +24,8 @@ const itemVariants: Variants = {
   }
 };
 
-export function ArticleGridTransition({ items, category }: { items: any[], category: string }) {
-
-  const filteredItems = items.filter(item => item.slug !== 'index');
+export function ArticleGridTransition({ items }: { items: any[]; category?: string }) {
+  const filteredItems = items.filter((item) => item.slug !== "index");
 
   return (
     <motion.div
@@ -40,7 +40,7 @@ export function ArticleGridTransition({ items, category }: { items: any[], categ
 
         return (
           <motion.div key={item.path} variants={itemVariants}>
-            <Link href={`/categories/${category}/${item.slug}`} className="group block h-full">
+            <Link href={wikiPathToRoute(item.path)} className="group block h-full">
               <Card className="h-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/40 active:scale-[0.98]">
                 <CardContent className="p-5 flex items-center justify-between">
                   <div className="flex-1 pr-4">
