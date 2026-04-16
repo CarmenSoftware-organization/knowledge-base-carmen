@@ -8,12 +8,14 @@ import { notFound } from "next/navigation";
 import matter from "gray-matter";
 import { TableOfContents } from "@/components/kb/toc";
 import { MobileSidebar } from "@/components/kb/mobile-sidebar";
+import { FaqSidebar } from "@/components/kb/faq-sidebar";
 import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { DEFAULT_BU } from "@/lib/config";
 import { faqSegmentLabel } from "@/lib/faq-nav";
+import { getCachedFaqNavItems } from "@/lib/faq-cache";
 
 type Props = {
   params: Promise<{
@@ -58,6 +60,10 @@ export default async function ArticlePage({ params }: Props) {
     notFound();
   }
 
+  const catLower = category.toLowerCase();
+  const isFaqArticle = catLower === "faq";
+  const faqNavItems = isFaqArticle ? await getCachedFaqNavItems(bu) : [];
+
   const { data: frontmatter, content } = matter(raw.content);
 
   const title =
@@ -99,7 +105,6 @@ export default async function ArticlePage({ params }: Props) {
     { label: t("common.categories"), href: "/categories" },
   ];
 
-  const catLower = category.toLowerCase();
   if (catLower === "faq") {
     breadcrumbItems.push({ label: formatCategoryName(category), href: "/faq" });
   } else {
@@ -129,15 +134,25 @@ export default async function ArticlePage({ params }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <KBHeader />
-      <MobileSidebar />
+      <MobileSidebar
+        faqItems={
+          isFaqArticle && faqNavItems.length > 0 ? faqNavItems : undefined
+        }
+      />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex gap-10 items-start">
-          <div className="hidden xl:block shrink-0">
-            <KBSidebar />
-          </div>
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10 flex gap-8 lg:gap-10 items-start">
+          {!isFaqArticle && (
+            <div className="hidden xl:block shrink-0">
+              <KBSidebar />
+            </div>
+          )}
 
-          <div className="flex-1 min-w-0 w-full max-w-4xl">
+          {isFaqArticle && faqNavItems.length > 0 && (
+            <FaqSidebar items={faqNavItems} />
+          )}
+
+          <div className="min-w-0 w-full max-w-4xl flex-1">
             <Breadcrumb items={breadcrumbItems} />
 
             <ArticleHeaderInfo
@@ -154,7 +169,7 @@ export default async function ArticlePage({ params }: Props) {
               <TableOfContents />
             </div>
 
-            <MarkdownRender content={fixedContent} category={category} />
+            <MarkdownRender content={fixedContent} category={category} bu={bu} />
           </div>
 
           <div className="hidden xl:block shrink-0">

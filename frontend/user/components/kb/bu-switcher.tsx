@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  getBusinessUnits, 
-  getSelectedBUClient, 
-  setSelectedBU, 
-  type BusinessUnit 
+import {
+  getBusinessUnits,
+  getSelectedBUClient,
+  setSelectedBU,
+  type BusinessUnit,
 } from "@/lib/wiki-api";
 import { DEFAULT_BU } from "@/lib/config";
 import { usePathname } from "next/navigation";
@@ -17,8 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Building2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function BUSwitcher() {
+  const t = useTranslations("common");
   const [bus, setBus] = useState<BusinessUnit[]>([]);
   const [selected, setSelected] = useState<string>(DEFAULT_BU);
   const pathname = usePathname();
@@ -52,15 +54,26 @@ export function BUSwitcher() {
   if (bus.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+    <div
+      className="flex items-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-2 py-1 shadow-sm dark:border-primary/45 dark:bg-primary/15"
+      title={t("buSwitcherHint")}
+    >
+      <div className="flex items-center gap-1.5 text-primary shrink-0">
+        <Building2 className="size-4" aria-hidden />
+        <span className="hidden min-[1200px]:inline text-[11px] font-bold uppercase tracking-wide text-primary">
+          {t("buSwitcherLabel")}
+        </span>
+      </div>
       <Select value={selected} onValueChange={handleChange}>
-        <SelectTrigger className="h-9 px-3 w-[160px] bg-muted/50 border-none rounded-xl focus:ring-0">
-          <SelectValue placeholder="เลือกหน่วยงาน" />
+        <SelectTrigger
+          aria-label={t("buSwitcherLabel")}
+          className="h-8 min-w-[7.5rem] w-[min(11rem,38vw)] rounded-lg border border-primary/25 bg-background/95 px-2.5 text-sm font-semibold text-foreground shadow-sm ring-0 hover:bg-background focus:ring-2 focus:ring-primary/35 dark:border-primary/35 dark:bg-background/90"
+        >
+          <SelectValue placeholder={t("buSwitcherPlaceholder")} />
         </SelectTrigger>
-        <SelectContent className="rounded-xl border-slate-200">
+        <SelectContent className="rounded-xl">
           {bus.map((bu) => (
-            <SelectItem key={bu.id} value={bu.slug} className="rounded-lg">
+            <SelectItem key={bu.id} value={bu.slug} className="rounded-lg font-medium">
               {bu.name}
             </SelectItem>
           ))}

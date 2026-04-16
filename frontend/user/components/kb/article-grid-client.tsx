@@ -24,22 +24,12 @@ const itemVariants: Variants = {
   },
 };
 
-function normalizeRelativePath(itemPath: string, category: string): string {
-  const normalized = (itemPath || "").replace(/\\/g, "/").replace(/^\/+/, "");
-  const prefix = `${category}/`;
-  if (normalized.startsWith(prefix)) {
-    return normalized.slice(prefix.length);
-  }
-  return normalized;
-}
-
-export function ArticleGridTransition({
-  items,
-  category,
-}: {
+export function ArticleGridTransition(props: {
   items: any[];
-  category: string;
+  /** Kept for call-site compatibility; links use item.path via wikiPathToRoute */
+  category?: string;
 }) {
+  const { items } = props;
   const filteredItems = items.filter((item) => item.slug !== "index");
 
   return (
@@ -53,13 +43,7 @@ export function ArticleGridTransition({
       {filteredItems.map((item: any) => {
         const displayTitle =
           articleDisplayMap[item.slug] || cleanTitle(item.title);
-        const relPath = normalizeRelativePath(item.path, category);
-        const slugFromPath =
-          relPath.split("/").pop()?.replace(/\.md$/i, "") || item.slug;
-        const hasNestedPath = relPath.includes("/");
-        const href = hasNestedPath
-          ? `/categories/${encodeURIComponent(category)}/${encodeURIComponent(slugFromPath)}?path=${encodeURIComponent(relPath)}`
-          : `/categories/${encodeURIComponent(category)}/${encodeURIComponent(slugFromPath)}`;
+        const href = wikiPathToRoute(item.path);
 
         return (
           <motion.div key={item.path} variants={itemVariants}>

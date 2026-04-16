@@ -110,6 +110,7 @@ export default async function CategoryPage({
                     .toString()
                     .replace(/\n##/g, "\n\n##")}
                   category={category}
+                  bu={bu}
                 />
 
                 {/* Section divider with label */}

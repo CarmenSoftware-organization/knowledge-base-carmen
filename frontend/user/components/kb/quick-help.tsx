@@ -65,7 +65,11 @@ export function QuickHelp() {
                   <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-4">
 
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button size="lg" className="gap-2 rounded-xl h-12 px-8 font-bold shadow">
+                      <Button
+                        onClick={scrollToFooter}
+                        size="lg"
+                        className="gap-2 rounded-xl h-12 px-8 font-bold shadow"
+                      >
                         <MessageCircle className="h-4 w-4" />
                         {t("chatButton")}
                       </Button>

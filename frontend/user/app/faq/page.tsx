@@ -1,9 +1,9 @@
 import { KBHeader } from "@/components/kb/header";
 import { KBFooter } from "@/components/kb/footer";
-import { KBSidebar } from "@/components/kb/sidebar";
+import { MobileSidebar } from "@/components/kb/mobile-sidebar";
+import { FaqSidebar } from "@/components/kb/faq-sidebar";
 import { Breadcrumb } from "@/components/kb/breadcrumb";
 import { getCategory, getContent } from "@/lib/wiki-api";
-import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { ArticleGridTransition } from "@/components/kb/article-grid-client";
 import { FaqFolderGrid } from "@/components/kb/faq-folder-grid";
 import { buildFaqNav } from "@/lib/faq-nav";
@@ -42,11 +42,8 @@ export default async function FAQHomePage() {
         <KBHeader />
         <MobileSidebar />
         <main className="flex-1">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
-            <aside className="hidden md:block w-64 shrink-0">
-              <KBSidebar />
-            </aside>
-            <div className="flex-1">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+            <div className="w-full min-w-0">
               <Breadcrumb
                 items={[
                   { label: t("common.categories"), href: "/categories" },
@@ -79,15 +76,12 @@ export default async function FAQHomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <KBHeader />
-      <MobileSidebar />
+      <MobileSidebar faqItems={data.items} />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex gap-10 items-start relative">
-          <aside className="hidden lg:block sticky top-24 shrink-0">
-            <KBSidebar />
-          </aside>
-
-          <div className="flex-1 min-w-0">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex gap-8 lg:gap-10 items-start">
+          <FaqSidebar items={data.items} />
+          <div className="flex-1 min-w-0 w-full">
             <Breadcrumb
               items={[
                 { label: t("common.categories"), href: "/categories" },
@@ -136,6 +130,7 @@ export default async function FAQHomePage() {
                     .toString()
                     .replace(/\n##/g, "\n\n##")}
                   category={FAQ_SLUG}
+                  bu={bu}
                 />
               </div>
             )}

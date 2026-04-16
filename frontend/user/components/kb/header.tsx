@@ -236,7 +236,21 @@ export function KBHeader() {
           {/* ── Desktop nav ── */}
           <nav className="hidden xl:flex items-center gap-0.5">
             <NavLink href="/">{t("home")}</NavLink>
-            {!isHome && <NavLink href="/categories">{t("categories")}</NavLink>}
+            {!isHome && (
+              <div className="flex items-center gap-0.5">
+                <NavLink href="/categories">{t("categories")}</NavLink>
+                <NavLink
+                  href="/faq"
+                  isActive={
+                    pathname === "/faq" ||
+                    pathname.startsWith("/faq/") ||
+                    pathname.startsWith("/categories/faq")
+                  }
+                >
+                  FAQ
+                </NavLink>
+              </div>
+            )}
 
             {/* Changelog dropdown */}
             <div
@@ -291,8 +305,6 @@ export function KBHeader() {
                 )}
               </AnimatePresence>
             </div>
-
-            {!isHome && <NavLink href="/faq">FAQ</NavLink>}
           </nav>
 
           {/* ── Desktop utilities ── */}
@@ -358,9 +370,22 @@ export function KBHeader() {
               <div className="pt-2 flex flex-col">
                 <MobileNavLink href="/" onClick={closeMobile}>{t("home")}</MobileNavLink>
                 {!isHome && (
-                  <MobileNavLink href="/categories" onClick={closeMobile}>
-                    {t("categories")}
-                  </MobileNavLink>
+                  <div className="grid grid-cols-2 gap-2">
+                    <MobileNavLink href="/categories" onClick={closeMobile}>
+                      {t("categories")}
+                    </MobileNavLink>
+                    <MobileNavLink
+                      href="/faq"
+                      onClick={closeMobile}
+                      isActive={
+                        pathname === "/faq" ||
+                        pathname.startsWith("/faq/") ||
+                        pathname.startsWith("/categories/faq")
+                      }
+                    >
+                      FAQ
+                    </MobileNavLink>
+                  </div>
                 )}
 
                 {/* Changelog accordion */}
@@ -419,11 +444,6 @@ export function KBHeader() {
                   </AnimatePresence>
                 </div>
 
-                {!isHome && (
-                  <MobileNavLink href="/faq" onClick={closeMobile}>
-                    FAQ
-                  </MobileNavLink>
-                )}
               </div>
 
               {/* Utilities row — Language, BU switcher (non-home), Theme */}
@@ -444,9 +464,17 @@ export function KBHeader() {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function NavLink({
+  href,
+  children,
+  isActive: isActiveOverride,
+}: {
+  href: string;
+  children: React.ReactNode;
+  isActive?: boolean;
+}) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive = isActiveOverride ?? pathname === href;
   return (
     <Link
       href={href}
@@ -465,13 +493,15 @@ function MobileNavLink({
   href,
   onClick,
   children,
+  isActive: isActiveOverride,
 }: {
   href: string;
   onClick?: () => void;
   children: React.ReactNode;
+  isActive?: boolean;
 }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive = isActiveOverride ?? pathname === href;
   return (
     <Link
       href={href}

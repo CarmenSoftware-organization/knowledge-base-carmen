@@ -9,7 +9,12 @@
     "forStaff": "สำหรับเจ้าหน้าที่",
     "viewCategory": "ดูหมวดหมู่",
     "articles": "บทความ",
-    "search": "ค้นหา"
+    "search": "ค้นหา",
+    "buSwitcherLabel": "หน่วยงาน",
+    "buSwitcherHint": "เลือกหน่วยธุรกิจเพื่อแสดงคู่มือที่ตรงกับระบบของคุณ",
+    "buSwitcherPlaceholder": "เลือกหน่วยงาน",
+    "languageLabel": "ภาษา",
+    "languageHint": "สลับภาษาไทย / อังกฤษสำหรับเนื้อหาที่รองรับ"
   },
   "buLanding": {
     "flairBadge": "ศูนย์ความรู้",

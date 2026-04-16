@@ -17,6 +17,8 @@ import DOMPurify from "dompurify";
 interface MarkdownRenderProps {
   content: string;
   category: string;
+  /** ส่งจากหน้า server (cookie BU) เพื่อให้ URL รูปตรงกันระหว่าง SSR กับ hydrate — ถ้าไม่ส่งจะอ่านจาก cookie บน client เท่านั้น */
+  bu?: string;
 }
 
 function MermaidDiagram({ chart }: { chart: string }) {
@@ -78,7 +80,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
   );
 }
 
-export function MarkdownRender({ content, category }: MarkdownRenderProps) {
+export function MarkdownRender({ content, category, bu: buProp }: MarkdownRenderProps) {
   return (
     <article
       className="
@@ -229,7 +231,10 @@ export function MarkdownRender({ content, category }: MarkdownRenderProps) {
 
           img: ({ src, alt = "", ...props }) => {
             if (!src || typeof src !== "string") return null;
-            const bu = getSelectedBUClient() || DEFAULT_BU;
+            const bu =
+              (buProp?.trim() && buProp.trim().toLowerCase()) ||
+              getSelectedBUClient() ||
+              DEFAULT_BU;
 
             // Absolute http(s) / data — leave as-is
             if (/^(https?:|data:)/i.test(src)) {

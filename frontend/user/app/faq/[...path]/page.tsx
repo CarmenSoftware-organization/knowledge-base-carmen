@@ -1,9 +1,9 @@
 import { KBHeader } from "@/components/kb/header";
 import { KBFooter } from "@/components/kb/footer";
-import { KBSidebar } from "@/components/kb/sidebar";
+import { MobileSidebar } from "@/components/kb/mobile-sidebar";
+import { FaqSidebar } from "@/components/kb/faq-sidebar";
 import { Breadcrumb } from "@/components/kb/breadcrumb";
 import { getCategory, getContent } from "@/lib/wiki-api";
-import { MobileSidebar } from "@/components/kb/mobile-sidebar";
 import { ArticleGridTransition } from "@/components/kb/article-grid-client";
 import { FaqFolderGrid } from "@/components/kb/faq-folder-grid";
 import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
@@ -13,7 +13,11 @@ import { getTranslations } from "next-intl/server";
 import matter from "gray-matter";
 import { categoryDisplayMap } from "@/configs/sidebar-map";
 import { DEFAULT_BU } from "@/lib/config";
-import { buildFaqNav, faqSegmentLabel } from "@/lib/faq-nav";
+import {
+  buildFaqNav,
+  faqIndexTitlesByFolderKey,
+  faqSegmentLabel,
+} from "@/lib/faq-nav";
 import { notFound } from "next/navigation";
 
 const FAQ_SLUG = "faq";
@@ -62,8 +66,12 @@ export default async function FAQSubPage({ params }: Props) {
     notFound();
   }
 
+  const folderIndexTitles = faqIndexTitlesByFolderKey(data.items);
   const categoryName = categoryDisplayMap[FAQ_SLUG] || "FAQ";
-  const leafTitle = faqSegmentLabel(pathSegments[pathSegments.length - 1] ?? "");
+  const leafKey = pathSegments.join("/");
+  const leafTitle =
+    folderIndexTitles.get(leafKey) ||
+    faqSegmentLabel(pathSegments[pathSegments.length - 1] ?? "");
 
   const breadcrumbItems: { label: string; href?: string }[] = [
     { label: t("common.categories"), href: "/categories" },
@@ -71,8 +79,10 @@ export default async function FAQSubPage({ params }: Props) {
   ];
 
   for (let i = 0; i < pathSegments.length; i++) {
-    const seg = pathSegments[i];
-    const label = faqSegmentLabel(seg);
+    const crumbKey = pathSegments.slice(0, i + 1).join("/");
+    const labelFromFolderIndex = folderIndexTitles.get(crumbKey);
+    const label =
+      labelFromFolderIndex || faqSegmentLabel(pathSegments[i] ?? "");
     const isLast = i === pathSegments.length - 1;
     if (isLast) {
       const titleFromIndex =
@@ -92,15 +102,12 @@ export default async function FAQSubPage({ params }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <KBHeader />
-      <MobileSidebar />
+      <MobileSidebar faqItems={data.items} />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex gap-10 items-start relative">
-          <aside className="hidden lg:block sticky top-24 shrink-0">
-            <KBSidebar />
-          </aside>
-
-          <div className="flex-1 min-w-0">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex gap-8 lg:gap-10 items-start">
+          <FaqSidebar items={data.items} />
+          <div className="flex-1 min-w-0 w-full">
             <Breadcrumb items={breadcrumbItems} />
 
             <div className="mt-6 mb-6">
@@ -108,13 +115,15 @@ export default async function FAQSubPage({ params }: Props) {
                 FAQ
               </p>
               <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-                {indexContent
-                  ? ((indexContent.data.title as string) || leafTitle)
+                {indexContent && typeof indexContent.data.title === "string"
+                  ? indexContent.data.title
                   : leafTitle}
               </h1>
-              {indexContent?.data.description ? (
+              {indexContent &&
+              typeof indexContent.data.description === "string" &&
+              indexContent.data.description ? (
                 <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
-                  {indexContent.data.description as string}
+                  {indexContent.data.description}
                 </p>
               ) : null}
             </div>
@@ -146,6 +155,7 @@ export default async function FAQSubPage({ params }: Props) {
                     .toString()
                     .replace(/\n##/g, "\n\n##")}
                   category={FAQ_SLUG}
+                  bu={bu}
                 />
               </div>
             )}

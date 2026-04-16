@@ -9,7 +9,12 @@
     "forStaff": "For Staff",
     "viewCategory": "View Category",
     "articles": "articles",
-    "search": "Search"
+    "search": "Search",
+    "buSwitcherLabel": "Business unit",
+    "buSwitcherHint": "Choose your business unit to show guides for your product",
+    "buSwitcherPlaceholder": "Select unit",
+    "languageLabel": "Language",
+    "languageHint": "Switch Thai / English for supported content"
   },
   "buLanding": {
     "flairBadge": "Knowledge hub",

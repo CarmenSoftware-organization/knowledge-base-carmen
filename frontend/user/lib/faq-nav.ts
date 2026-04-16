@@ -6,7 +6,7 @@ export type FaqFolder = { slug: string; title: string };
 
 export type FaqNavResult = { folders: FaqFolder[]; articles: FaqWikiItem[] };
 
-/** Synthetic groups for flat files faq/7_*.md, 8_*, 9_* (matches faq/index.md copy). */
+/** Synthetic groups for flat files faq/7_*.md, 8_*, 9_* (only when no real nested folders exist). */
 const LEVEL_SLUG: Record<string, string> = {
   "7": "level-7",
   "8": "level-8",
@@ -41,9 +41,43 @@ export function faqPathTail(path: string): string[] | null {
 }
 
 /**
+ * True when any FAQ entry lives under a real folder (e.g. faq/Category/article.md).
+ * If true, numeric-prefix synthetic grouping (7_/8_/9_) is disabled.
+ */
+export function faqHasRealNestedFolders(items: FaqWikiItem[]): boolean {
+  for (const item of items) {
+    const raw = faqPathTail(item.path);
+    if (!raw?.length) continue;
+    if (raw.length === 1 && raw[0].toLowerCase() === "index.md") continue;
+    if (raw.length === 1 && raw[0].endsWith(".md")) continue;
+    if (raw.length >= 2 && !raw[0].endsWith(".md")) return true;
+  }
+  return false;
+}
+
+/**
+ * Map folder path (segments under faq/ joined by "/") → title from that folder's index.md.
+ * Example: "Procurement-Product" → title from faq/Procurement-Product/index.md
+ */
+export function faqIndexTitlesByFolderKey(items: FaqWikiItem[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const item of items) {
+    const tail = faqPathTail(item.path);
+    if (!tail?.length) continue;
+    const last = tail[tail.length - 1];
+    if (last.toLowerCase() !== "index.md") continue;
+    if (tail.length < 2) continue;
+    const key = tail.slice(0, -1).join("/");
+    const t = item.title?.trim();
+    if (t) map.set(key, t);
+  }
+  return map;
+}
+
+/**
  * Normalize so flat `faq/7_foo.md` becomes `level-7/7_foo.md` for navigation only.
  */
-export function normalizeFaqTail(tail: string[]): string[] {
+export function normalizeFaqTailFlatNumeric(tail: string[]): string[] {
   if (tail.length !== 1 || !tail[0].endsWith(".md")) return tail;
   const base = tail[0];
   if (base === "index.md") return tail;
@@ -69,6 +103,9 @@ function remainderTail(tail: string[], prefix: string[]): string[] {
  * Build folder list + articles at `prefix` (segments under faq/, e.g. [] or ["procurement"]).
  */
 export function buildFaqNav(prefix: string[], items: FaqWikiItem[]): FaqNavResult {
+  const useSyntheticFlatNumeric = !faqHasRealNestedFolders(items);
+  const indexTitles = faqIndexTitlesByFolderKey(items);
+
   const folderOrder: string[] = [];
   const folderTitles = new Map<string, string>();
   const articles: FaqWikiItem[] = [];
@@ -77,7 +114,9 @@ export function buildFaqNav(prefix: string[], items: FaqWikiItem[]): FaqNavResul
     if (item.slug === "index") continue;
     const rawTail = faqPathTail(item.path);
     if (!rawTail?.length) continue;
-    const tail = normalizeFaqTail(rawTail);
+    const tail = useSyntheticFlatNumeric
+      ? normalizeFaqTailFlatNumeric(rawTail)
+      : rawTail;
     if (!prefixMatches(tail, prefix)) continue;
 
     const rem = remainderTail(tail, prefix);
@@ -89,7 +128,9 @@ export function buildFaqNav(prefix: string[], items: FaqWikiItem[]): FaqNavResul
     } else {
       if (!folderTitles.has(head)) {
         folderOrder.push(head);
-        folderTitles.set(head, faqSegmentLabel(head));
+        const folderKey = [...prefix, head].join("/");
+        const titleFromIndex = indexTitles.get(folderKey);
+        folderTitles.set(head, titleFromIndex || faqSegmentLabel(head));
       }
     }
   }
