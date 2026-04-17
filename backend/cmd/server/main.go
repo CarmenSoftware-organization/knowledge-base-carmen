@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -111,6 +110,16 @@ func main() {
 		}
 		log.Println("Reindex completed successfully.")
 		return
+	}
+
+	// In production, try to sync wiki content once on boot so /api/wiki/* does not
+	// immediately fail when the local repo path is still empty.
+	if config.AppConfig != nil && strings.EqualFold(config.AppConfig.Server.Environment, "production") {
+		if err := services.NewWikiSyncService().Sync(); err != nil {
+			log.Printf("WARNING: startup wiki sync failed: %v", err)
+		} else {
+			log.Println("Startup wiki sync completed.")
+		}
 	}
 
 	app := fiber.New(fiber.Config{
