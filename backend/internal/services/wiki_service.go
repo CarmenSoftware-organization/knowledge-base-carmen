@@ -104,7 +104,20 @@ func (s *WikiService) getRepoPath(bu string) string {
 	if repoBase == "" || repoBase == "." {
 		repoBase = config.DefaultRepoPath()
 	}
-	return filepath.Join(filepath.Clean(repoBase), bu)
+	base := filepath.Clean(repoBase)
+	directPath := filepath.Join(base, bu)
+	if st, err := os.Stat(directPath); err == nil && st.IsDir() {
+		return directPath
+	}
+
+	// Compatibility path for monorepo layout where BU content lives under "contents/<bu>".
+	contentsPath := filepath.Join(base, "contents", bu)
+	if st, err := os.Stat(contentsPath); err == nil && st.IsDir() {
+		return contentsPath
+	}
+
+	// Fall back to direct path so the caller gets an explicit, useful path-not-found error.
+	return directPath
 }
 
 // ─── Frontmatter Helpers ─────────────────────────────────────────────────────
