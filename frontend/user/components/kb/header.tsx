@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { GlobalSearch } from "@/components/search/global-search";
 import Image from "next/image";
@@ -22,7 +22,13 @@ const headerVariants: Variants = {
   show: {
     y: 0,
     opacity: 1,
+    pointerEvents: "auto",
     transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  },
+  scrollHidden: {
+    y: "-100%",
+    pointerEvents: "none",
+    transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
@@ -119,6 +125,7 @@ export function KBHeader() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const { resolvedTheme } = useTheme();
+  const reduceMotion = useReducedMotion();
 
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -127,10 +134,74 @@ export function KBHeader() {
   const [changelogItems, setChangelogItems] = useState<
     { slug: string; title: string; buSlug: string }[]
   >([]);
+  const [scrollHidden, setScrollHidden] = useState(false);
 
   const changelogRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
+  const scrollRaf = useRef<number>(0);
+  const menuOpenRef = useRef({
+    mobile: false,
+    mobileChangelog: false,
+    desktopChangelog: false,
+  });
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    menuOpenRef.current = {
+      mobile: mobileMenuOpen,
+      mobileChangelog: mobileChangelogOpen,
+      desktopChangelog: desktopChangelogOpen,
+    };
+  }, [mobileMenuOpen, mobileChangelogOpen, desktopChangelogOpen]);
+
+  useEffect(() => {
+    if (mobileMenuOpen || mobileChangelogOpen || desktopChangelogOpen) {
+      setScrollHidden(false);
+    }
+  }, [mobileMenuOpen, mobileChangelogOpen, desktopChangelogOpen]);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+
+    const TOP_SHOW = 32;
+    const DELTA = 8;
+
+    const onScroll = () => {
+      cancelAnimationFrame(scrollRaf.current);
+      scrollRaf.current = requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const m = menuOpenRef.current;
+        if (m.mobile || m.mobileChangelog || m.desktopChangelog) {
+          setScrollHidden(false);
+          lastScrollY.current = y;
+          return;
+        }
+
+        const prev = lastScrollY.current;
+        if (y < TOP_SHOW) {
+          setScrollHidden(false);
+        } else if (y > prev + DELTA) {
+          setScrollHidden(true);
+        } else if (y < prev - DELTA) {
+          setScrollHidden(false);
+        }
+        lastScrollY.current = y;
+      });
+    };
+
+    lastScrollY.current = window.scrollY;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(scrollRaf.current);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [reduceMotion]);
+
+  useEffect(() => {
+    lastScrollY.current = typeof window !== "undefined" ? window.scrollY : 0;
+    setScrollHidden(false);
+  }, [pathname]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -192,12 +263,15 @@ export function KBHeader() {
     setMobileChangelogOpen(false);
   };
 
+  const headerAnimate =
+    reduceMotion || !scrollHidden ? "show" : "scrollHidden";
+
   return (
     <motion.header
       variants={headerVariants}
       initial="hidden"
-      animate="show"
-      className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-md"
+      animate={headerAnimate}
+      className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-md will-change-transform"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center gap-3">
