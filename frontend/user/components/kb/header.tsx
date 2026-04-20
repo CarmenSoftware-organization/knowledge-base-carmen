@@ -13,7 +13,13 @@ import { useTheme } from "next-themes";
 import { BUSwitcher } from "./bu-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { useTranslations } from "next-intl";
-import { getBusinessUnits, getCategory, setSelectedBU } from "@/lib/wiki-api";
+import {
+  getBusinessUnits,
+  getCategories,
+  getCategory,
+  getSelectedBUClient,
+  setSelectedBU,
+} from "@/lib/wiki-api";
 import { cn } from "@/lib/utils";
 import { notifyKbHeaderScrollHidden } from "@/lib/kb-scroll-chrome";
 
@@ -132,11 +138,32 @@ const changelogTitleMap: Record<string, string> = {
   may2024: "May 2024 Release Information",
 };
 
-function sortChangelog(items: { slug: string; title: string; buSlug: string }[]) {
+function sortChangelog(
+  items: {
+    slug: string;
+    title: string;
+    buSlug: string;
+    categorySlug: string;
+  }[],
+) {
   return [...items].sort((a, b) => {
     const ai = CHANGELOG_ORDER.indexOf(a.slug);
     const bi = CHANGELOG_ORDER.indexOf(b.slug);
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+}
+
+function prioritizeSelectedBU<
+  T extends {
+    slug: string;
+  },
+>(bus: T[], selected: string): T[] {
+  const selectedSlug = (selected || "").trim().toLowerCase();
+  if (!selectedSlug) return bus;
+  return [...bus].sort((a, b) => {
+    const aIsSelected = a.slug.toLowerCase() === selectedSlug ? 0 : 1;
+    const bIsSelected = b.slug.toLowerCase() === selectedSlug ? 0 : 1;
+    return aIsSelected - bIsSelected;
   });
 }
 
@@ -154,7 +181,7 @@ export function KBHeader() {
   const [mobileChangelogOpen, setMobileChangelogOpen] = useState(false);
   const [desktopChangelogOpen, setDesktopChangelogOpen] = useState(false);
   const [changelogItems, setChangelogItems] = useState<
-    { slug: string; title: string; buSlug: string }[]
+    { slug: string; title: string; buSlug: string; categorySlug: string }[]
   >([]);
   const [scrollHidden, setScrollHidden] = useState(false);
 
@@ -264,7 +291,8 @@ export function KBHeader() {
       getBusinessUnits().catch(() => ({ items: [] })),
     ])
       .then(async ([buData]) => {
-        const bus = buData.items || [];
+        const selectedBU = getSelectedBUClient();
+        const bus = prioritizeSelectedBU(buData.items || [], selectedBU);
         if (bus.length === 0) {
           setChangelogItems([]);
           return;
@@ -273,11 +301,19 @@ export function KBHeader() {
         const perBU = await Promise.all(
           bus.map(async (bu) => {
             try {
-              const data = await getCategory("changelog", bu.slug);
+              const categories = await getCategories(bu.slug);
+              const changelogCategory = (categories.items || []).find(
+                (c) =>
+                  c.slug?.toLowerCase() === "changelog" ||
+                  c.slug?.toLowerCase().includes("changelog"),
+              );
+              if (!changelogCategory?.slug) return [];
+              const data = await getCategory(changelogCategory.slug, bu.slug);
               return (data.items || []).map((item) => ({
                 slug: item.slug,
                 title: item.title || changelogTitleMap[item.slug] || item.slug,
                 buSlug: bu.slug,
+                categorySlug: changelogCategory.slug,
               }));
             } catch {
               return [];
@@ -286,7 +322,10 @@ export function KBHeader() {
         );
 
         const merged = perBU.flat();
-        const unique = new Map<string, { slug: string; title: string; buSlug: string }>();
+        const unique = new Map<
+          string,
+          { slug: string; title: string; buSlug: string; categorySlug: string }
+        >();
         for (const item of merged) {
           // keep first BU occurrence for each release slug
           if (!unique.has(item.slug)) unique.set(item.slug, item);
@@ -413,7 +452,7 @@ export function KBHeader() {
                         return (
                           <Link
                             key={item.slug}
-                            href={`/categories/changelog/${encodeURIComponent(item.slug)}`}
+                            href={`/categories/${encodeURIComponent(item.categorySlug)}/${encodeURIComponent(item.slug)}`}
                             onClick={() => handleChangelogClick(item.buSlug)}
                             className="flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors duration-100 group"
                           >
@@ -591,7 +630,7 @@ export function KBHeader() {
                               return (
                                 <Link
                                   key={item.slug}
-                                  href={`/categories/changelog/${encodeURIComponent(item.slug)}`}
+                                  href={`/categories/${encodeURIComponent(item.categorySlug)}/${encodeURIComponent(item.slug)}`}
                                   onClick={() => handleChangelogClick(item.buSlug)}
                                   className="flex items-center justify-between px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors"
                                 >
