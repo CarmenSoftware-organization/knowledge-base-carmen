@@ -28,7 +28,14 @@ func Connect() error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		hint := ""
+		if cfg.Host == "localhost" || cfg.Host == "127.0.0.1" {
+			hint = " Defaults (localhost/postgres/5432) usually mean backend/.env was not loaded — save the file on disk or set BACKEND_DOTENV to its absolute path."
+		}
+		return fmt.Errorf(
+			"failed to connect to database%s (host=%s port=%s dbname=%s user=%s sslmode=%s): %w",
+			hint, cfg.Host, cfg.Port, cfg.Name, cfg.User, cfg.SSLMode, err,
+		)
 	}
 
 	if cfg.Schema != "" {
