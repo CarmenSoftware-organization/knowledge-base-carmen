@@ -8,7 +8,6 @@ import { ChatContent } from "./parts/chat-content";
 type ChatState = ReturnType<typeof useCarmenChat>;
 interface Props { state: ChatState }
 
-// Desktop popup จาก bottom-right
 const desktopVariants = {
   hidden: { opacity: 0, scale: 0.9, y: 20, filter: "blur(4px)", transformOrigin: "bottom right" },
   visible: {
@@ -53,7 +52,6 @@ export default function CarmenChatWindow({ state }: Props) {
     }
   }, [isExpanded]);
 
-  // LERP logic for smoothing (ความหน่วง)
   const dragState = useRef({
     startX: 0, startY: 0, startB: 0, startR: 0,
     currentB: 0, currentR: 0,
@@ -66,7 +64,7 @@ export default function CarmenChatWindow({ state }: Props) {
     if (!d.isMoving || !windowRef.current) return;
 
     // LERP calculation for smoothing
-    d.currentB += (d.targetB - d.currentB) * 0.15; // 0.15 (หน่วงหนึบๆ กว่าเดิม)
+    d.currentB += (d.targetB - d.currentB) * 0.15;
     d.currentR += (d.targetR - d.currentR) * 0.15;
 
     windowRef.current.style.setProperty("--chat-bottom", d.currentB + "px");

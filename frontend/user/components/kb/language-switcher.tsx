@@ -3,15 +3,16 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { setLocaleCookie } from "@/lib/locale";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type LanguageSwitcherProps = {
-  /** Smaller EN/TH for tight header rows (mobile) */
+  /** @deprecated Ignored; single style at all breakpoints */
   dense?: boolean;
+  /** @deprecated Ignored; single style at all breakpoints */
+  toolbar?: boolean;
 };
 
-export function LanguageSwitcher({ dense }: LanguageSwitcherProps) {
+export function LanguageSwitcher(_props: LanguageSwitcherProps = {}) {
   const t = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
@@ -24,12 +25,11 @@ export function LanguageSwitcher({ dense }: LanguageSwitcherProps) {
 
   const segmentClass = (active: boolean) =>
     cn(
-      dense
-        ? "h-7 min-w-[1.75rem] rounded px-1.5 text-[10px] font-semibold transition-all"
-        : "h-8 min-w-[2.25rem] rounded-md px-2 text-[11px] font-semibold transition-all",
+      "flex flex-1 items-center justify-center rounded-full px-2 text-xs font-bold transition-colors duration-150 min-w-[2rem] sm:min-w-[2.25rem]",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       active
-        ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
-        : "text-muted-foreground hover:bg-background/90 hover:text-foreground dark:hover:bg-background/50"
+        ? "bg-primary text-primary-foreground shadow-sm"
+        : "text-foreground/85 hover:bg-primary/15 dark:text-muted-foreground dark:hover:bg-primary/20",
     );
 
   return (
@@ -38,28 +38,25 @@ export function LanguageSwitcher({ dense }: LanguageSwitcherProps) {
       aria-label={t("languageHint")}
       title={t("languageHint")}
       className={cn(
-        "flex items-center gap-0.5 rounded-lg bg-background/70 ring-1 ring-primary/20 dark:bg-background/50 dark:ring-primary/30",
-        dense ? "p-px" : "p-0.5",
+        "inline-flex h-9 shrink-0 items-stretch gap-px rounded-full border border-primary/35 bg-primary/10 p-0.5 dark:border-primary/45 dark:bg-primary/15",
       )}
     >
-      <Button
+      <button
         type="button"
-        variant="ghost"
-        size="sm"
-        className={segmentClass(locale === "en")}
-        onClick={() => handleSwitch("en")}
-      >
-        EN
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
         className={segmentClass(locale === "th")}
+        aria-pressed={locale === "th"}
         onClick={() => handleSwitch("th")}
       >
         TH
-      </Button>
+      </button>
+      <button
+        type="button"
+        className={segmentClass(locale === "en")}
+        aria-pressed={locale === "en"}
+        onClick={() => handleSwitch("en")}
+      >
+        EN
+      </button>
     </div>
   );
 }

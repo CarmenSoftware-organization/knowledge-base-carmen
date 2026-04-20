@@ -170,7 +170,6 @@ export function BULandingCards({ items }: Props) {
 
   return (
     <section className="relative flex flex-col">
-      {/* ฮีโร่เต็มหน้าจอ (หัก header) */}
       <div
         id="bu-landing"
         className="relative flex min-h-0 scroll-mt-14 flex-col overflow-hidden border-b border-border/50 xl:min-h-bu-landing"
@@ -244,7 +243,6 @@ export function BULandingCards({ items }: Props) {
                   </div>
                 </div>
 
-                {/* โลโก้แสดงตั้งแต่ xl (1280px) — ซ่อนบนมือถือ / แท็บเล็ก (<1280px) */}
                 <div className="hidden w-full justify-center xl:flex xl:pl-6 xl:pr-8">
                   <motion.div
                     variants={logoPop}

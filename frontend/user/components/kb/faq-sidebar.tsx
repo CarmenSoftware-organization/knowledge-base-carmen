@@ -24,7 +24,7 @@ function safeDecode(seg: string): string {
   }
 }
 
-/** ใช้ไฮไลต์โฟลเดอร์/บทความจาก URL ปัจจุบัน */
+/** Active folder/article from current URL */
 export function parseFaqSidebarContext(pathname: string): {
   folderPrefix: string[];
   inArticle: boolean;
@@ -70,7 +70,7 @@ function pathsMatch(a: string, b: string) {
   }
 }
 
-/** คีย์โฟลเดอร์ที่ต้องขยายให้ตรงกับ URL — รองรับกลุ่ม synthetic level-7/8/9 ที่ไม่อยู่ใน path จริง */
+/** Folder keys to expand for URL (incl. synthetic FAQ levels) */
 function faqExpandedFolderKeys(pathname: string, items: FaqWikiItem[]): string[] {
   const p = (pathname.split("?")[0] || "").replace(/\/$/, "") || "/";
   const useSynthetic = !faqHasRealNestedFolders(items);
@@ -138,7 +138,7 @@ type FaqLevelProps = {
   pathname: string;
 };
 
-/** ระดับหนึ่งของต้นไม้ FAQ — รูปแบบเดียวกับ KBSidebar (ปุ่มหมวด + chevron + บทความ) */
+/** One FAQ tree level (KBSidebar-style) */
 const FaqLevel = memo(function FaqLevel({
   items,
   prefix,
@@ -252,7 +252,7 @@ const FaqLevel = memo(function FaqLevel({
   );
 });
 
-/** รายการลิงก์ FAQ — ใช้ทั้ง desktop sidebar และ drawer มือถือ */
+/** FAQ link list (desktop + mobile drawer) */
 export function FaqSidebarNav({
   items,
   className,
@@ -320,7 +320,7 @@ export function FaqSidebarNav({
   );
 }
 
-/** Sidebar ซ้ายบน desktop — โครงเดียวกับ KBSidebar (aside + nav scroll) */
+/** Desktop left aside (KBSidebar layout) */
 export function FaqSidebar({ items }: { items: FaqWikiItem[] }) {
   if (!items?.length) return null;
 

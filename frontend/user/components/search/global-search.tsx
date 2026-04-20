@@ -65,7 +65,7 @@ function normalizeThai(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFC")
-    .replace(/(\p{L})\.(?=\p{L})/gu, "$1") // ภ.ง.ด. → ภงด
+    .replace(/(\p{L})\.(?=\p{L})/gu, "$1") // Thai dotted abbreviations
     .replace(/\.$/, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -115,12 +115,9 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        // 1. Vector search
         const results = await searchWiki(q, bu);
 
-        // 2. Fuzzy search บน title list (สำหรับ typo)
         const allItems = await getAllArticles(bu);
-        // ✅ ใหม่ — Thai-aware
         const isThaiQuery = /[\u0E00-\u0E7F]/.test(q);
 
         const fuse = new Fuse(allItems, {
@@ -134,7 +131,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
           useExtendedSearch: true,
           getFn: (obj, path) => {
             const val = Fuse.config.getFn(obj, path);
-            if (typeof val === "string") return normalizeThai(val); // ✅ normalize title ด้วย
+            if (typeof val === "string") return normalizeThai(val);
             if (Array.isArray(val)) return val.map(v =>
               typeof v === "string" ? normalizeThai(v) : v
             );
@@ -148,7 +145,6 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
           snippet: r.item.description || "",
         }));
 
-        // 3. Merge: vector results ก่อน, fuzzy เติมถ้าไม่ซ้ำ path
         const existingPaths = new Set(results.map((r) => r.path.replace(/\\/g, "/")));
         const merged = [
           ...results,

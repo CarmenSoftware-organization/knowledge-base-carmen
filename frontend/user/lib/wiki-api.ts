@@ -155,7 +155,7 @@ export async function getCategory(
 }
 
 /* =========================
-   List + Search (สำหรับ hero search)
+   List + search (hero / global)
  ========================= */
 
 let cachedList: { [bu: string]: WikiListItem[] } = {};
@@ -184,7 +184,7 @@ export async function getAllArticles(bu?: string): Promise<WikiListItem[]> {
   return cachedList[selectedBU];
 }
 
-// แปลง path จาก wiki → route ของหน้า content
+/** Wiki filesystem path → app route */
 export function wikiPathToRoute(path: string): string {
   const normalizedPath = path.replace(/\\/g, "/");
   const parts = normalizedPath
@@ -229,8 +229,6 @@ export function wikiPathToRoute(path: string): string {
   return `/categories/${category}/${middle}/${slug}`;
 }
 
-// หาบทความที่ตรงกับคำค้นมากที่สุดคืนทั้ง item และ route
-
 export async function findBestArticleForQuery(
   query: string,
   bu?: string,
@@ -241,7 +239,6 @@ export async function findBestArticleForQuery(
   const q = query.trim().toLowerCase();
   if (!q) return { item: null, route: null };
 
-  // 1. Vector Search ก่อน (แม่นสุด)
   try {
     const aiResults = await searchWiki(query, bu);
     if (aiResults?.length > 0) {
@@ -273,7 +270,6 @@ export async function findBestArticleForQuery(
     };
   }
 
-  // 3. Fuzzy fallback (พิมผิด / พิมไม่ครบ)
   const fuse = new Fuse(items, {
     keys: [
       { name: "title", weight: 0.7 },
@@ -398,9 +394,7 @@ function normalizeQuery(q: string): string {
       .trim()
       .toLowerCase()
       .normalize("NFC")
-      // ✅ ตัดจุดระหว่างตัวอักษรไทยออก: ภ.ง.ด. → ภงด
       .replace(/(\p{L})\.(?=\p{L})/gu, "$1")
-      // ✅ ตัดจุดท้ายคำออก: ภ.ง.ด. → ภ.ง.ด
       .replace(/\.$/, "")
       .replace(/\s+/g, " ")
   );

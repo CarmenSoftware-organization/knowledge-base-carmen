@@ -76,9 +76,9 @@ const mobileBackdropVariants: Variants = {
   },
 };
 
-/** Mobile: slightly smaller to fit row; sm+ matches desktop utility size */
-const contactIconHeaderClass =
-  "inline-flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-md sm:rounded-lg border border-primary/35 bg-primary/10 text-primary hover:bg-primary/15 hover:border-primary/50 transition-colors dark:border-primary/45 dark:bg-primary/15 active:scale-[0.98]";
+/** Support button: same pill style as language switcher (h-9) */
+const headerSupportButtonClass =
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/10 text-primary transition-colors hover:bg-primary/15 hover:border-primary/50 dark:border-primary/45 dark:bg-primary/15 active:scale-[0.98]";
 
 const accordionVariants: Variants = {
   hidden: { height: 0, opacity: 0 },
@@ -95,7 +95,7 @@ const accordionVariants: Variants = {
 };
 
 // ─── Changelog config ──────────────────────────────────────────────────────────
-// เรียงจากล่าสุด → เก่าสุด
+// Newest first
 const CHANGELOG_ORDER: string[] = [
   "mar2026",
   "feb2026",
@@ -321,7 +321,6 @@ export function KBHeader() {
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative z-10 flex h-14 items-center gap-1.5 sm:gap-3 min-w-0 isolate">
 
-          {/* ── Logo — เล็กบนมือถือ + z-index กันทับกับ UI อื่นในแถว ── */}
           <Link href="/" className="relative z-[2] shrink-0 min-w-0 max-w-[42%] sm:max-w-none">
             <Image
               src={logoSrc}
@@ -334,31 +333,31 @@ export function KBHeader() {
             />
           </Link>
 
-
-          {/* ── Search bar: sm–xl (tablet / iPad) — min-w-0 กันบีบเกิน ── */}
           {!isHome && (
             <div className="hidden sm:flex xl:hidden flex-1 min-w-0 mx-2 md:mx-3">
               <GlobalSearch variant="header" className="w-full min-w-0" />
             </div>
           )}
 
-          {/* Desktop: search หลัง logo */}
           {!isHome && (
             <div className="hidden xl:flex flex-1 max-w-xl min-w-0 mx-2">
               <GlobalSearch variant="header" className="w-full min-w-0" />
             </div>
           )}
 
-          {/* Spacer: home — tablet / phone ใช้กับปุ่มขวาแทน search */}
           {isHome && <div className="flex-1 min-w-0 xl:flex-1" />}
 
-          {/* ── Desktop nav ── */}
-          <nav className="hidden xl:flex items-center gap-0.5">
-            <NavLink href="/">{t("home")}</NavLink>
+          <nav className="hidden xl:flex items-center gap-1">
+            <NavLink compact href="/">
+              {t("home")}
+            </NavLink>
             {!isHome && (
-              <div className="flex items-center gap-0.5">
-                <NavLink href="/categories">{t("categories")}</NavLink>
+              <>
+                <NavLink compact href="/categories">
+                  {t("categories")}
+                </NavLink>
                 <NavLink
+                  compact
                   href="/faq"
                   isActive={
                     pathname === "/faq" ||
@@ -368,7 +367,7 @@ export function KBHeader() {
                 >
                   FAQ
                 </NavLink>
-              </div>
+              </>
             )}
 
             {/* Changelog dropdown */}
@@ -378,10 +377,18 @@ export function KBHeader() {
               onMouseEnter={() => setDesktopChangelogOpen(true)}
               onMouseLeave={() => setDesktopChangelogOpen(false)}
             >
-              <button className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors duration-150">
+              <button
+                type="button"
+                className={cn(
+                  "inline-flex h-9 items-center gap-0.5 rounded-full px-3 text-xs font-medium transition-colors duration-150",
+                  desktopChangelogOpen
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground",
+                )}
+              >
                 Changelog
                 <ChevronDown
-                  className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
                     desktopChangelogOpen ? "rotate-180" : ""
                   }`}
                 />
@@ -427,32 +434,31 @@ export function KBHeader() {
           </nav>
 
           {/* ── Desktop utilities ── */}
-          <div className="hidden xl:flex items-center gap-1.5 pl-2 border-l border-border/60">
+          <div className="hidden xl:flex items-center gap-2 pl-2 border-l border-border/60 min-w-0">
             <LanguageSwitcher />
-            {!isHome && <BUSwitcher />}
+            {!isHome && <BUSwitcher toolbar />}
             <a
               href={ZOHO_CONTACT_CENTER_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/35 bg-primary/10 text-primary hover:bg-primary/15 hover:border-primary/50 transition-colors dark:border-primary/45 dark:bg-primary/15"
+              className={headerSupportButtonClass}
               aria-label={t("contactCenter")}
               title={t("contactCenter")}
             >
-              <Headset className="size-4" aria-hidden />
+              <Headset className="size-4 shrink-0" aria-hidden />
             </a>
-            <ThemeToggle />
+            <ThemeToggle compact />
           </div>
 
-          {/* ── Tablet / phone: ดันกลุ่มปุ่มไปขวา (กันชิดโลโก้/ทับ) + dense ภาษา ── */}
-          <div className="xl:hidden ml-auto flex items-center justify-end gap-0.5 sm:gap-1.5 shrink-0">
+          <div className="xl:hidden ml-auto flex items-center justify-end gap-2 shrink-0">
             <div className="shrink-0 hidden min-[360px]:block">
-              <LanguageSwitcher dense />
+              <LanguageSwitcher />
             </div>
             <a
               href={ZOHO_CONTACT_CENTER_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className={cn(contactIconHeaderClass, "relative z-[2]")}
+              className={cn(headerSupportButtonClass, "relative z-[2]")}
               aria-label={t("contactCenter")}
               title={t("contactCenter")}
             >
@@ -520,7 +526,6 @@ export function KBHeader() {
                 aria-modal="true"
                 aria-label="Main menu"
               >
-              {/* Search — เฉพาะโทรศัพท์ (iPad มีช่องค้นหาในแถบแล้ว) */}
               {!isHome && (
                 <div className="px-3 pt-3 pb-2 sm:hidden">
                   <GlobalSearch variant="header" className="w-full min-w-0" />
@@ -608,10 +613,9 @@ export function KBHeader() {
 
               </div>
 
-              {/* Drawer footer: ภาษา (จอแคบ <360px) + BU + ธีม */}
               <div className="mt-2 pt-3 border-t border-border/60 space-y-3 px-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <div className="min-[360px]:hidden">
-                  <LanguageSwitcher dense />
+                  <LanguageSwitcher />
                 </div>
                 {!isHome && <BUSwitcher fluid />}
                 <div className="flex items-center justify-end gap-2">
@@ -633,21 +637,28 @@ function NavLink({
   href,
   children,
   isActive: isActiveOverride,
+  compact,
 }: {
   href: string;
   children: React.ReactNode;
   isActive?: boolean;
+  /** Desktop nav: pill style */
+  compact?: boolean;
 }) {
   const pathname = usePathname();
   const isActive = isActiveOverride ?? pathname === href;
   return (
     <Link
       href={href}
-      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150 ${
+      className={cn(
+        "font-medium transition-colors duration-150",
+        compact
+          ? "inline-flex h-9 items-center rounded-full px-3 text-xs"
+          : "rounded-md px-3 py-1.5 text-sm",
         isActive
-          ? "text-white bg-accent dark:text-foreground"
-          : "text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent"
-      }`}
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground",
+      )}
     >
       {children}
     </Link>
@@ -671,10 +682,10 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex min-h-11 items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 touch-manipulation active:scale-[0.99] ${
+      className={`flex min-h-11 items-center rounded-full px-3 py-2.5 text-sm font-medium transition-colors duration-150 touch-manipulation active:scale-[0.99] ${
         isActive
-          ? "text-white bg-accent dark:text-foreground"
-          : "text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent"
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground"
       }`}
     >
       {children}

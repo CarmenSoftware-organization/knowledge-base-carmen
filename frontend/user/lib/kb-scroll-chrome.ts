@@ -1,4 +1,4 @@
-/** แจ้งสถานะ “พับ header ตอนเลื่อนลง” ให้คอมโพเนนต์อื่น (เช่นแถบ Menu มือถือ) ซิงก์กับ KBHeader */
+/** Pub/sub: KBHeader scroll-hide state for mobile chrome sync */
 
 type Listener = (scrollHidden: boolean) => void;
 

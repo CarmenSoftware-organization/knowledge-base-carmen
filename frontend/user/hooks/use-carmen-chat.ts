@@ -238,7 +238,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       setPosition(ui.pos);
     }
 
-    api.housekeep();   // ลบห้องเก่า + orphan keys ตอน mount
+    api.housekeep();
     loadRoomList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

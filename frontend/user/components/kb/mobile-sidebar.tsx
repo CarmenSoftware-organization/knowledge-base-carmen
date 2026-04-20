@@ -11,11 +11,11 @@ import { usePathname, useParams } from "next/navigation";
 import type { FaqWikiItem } from "@/lib/faq-nav";
 import { subscribeKbHeaderScrollHidden } from "@/lib/kb-scroll-chrome";
 
-/** h-14 (56) + h-12 (48) + ช่องว่าง — ดันแถบ Menu ออกนอกจอคู่กับ KBHeader */
+/** Sub-bar offset: header (56) + bar (48) + gap — sync hide with KBHeader */
 const MOBILE_SUBBAR_HIDE_Y = -(56 + 48 + 6);
 
 type MobileSidebarProps = {
-  /** รายการ FAQ จาก server — ถ้ามี จะแสดงเมนู FAQ แทนเมนูคู่มือเมื่ออยู่ในโซน FAQ */
+  /** FAQ nav from server; in FAQ zone shows FAQ menu instead of manual */
   faqItems?: FaqWikiItem[];
 };
 
@@ -27,7 +27,7 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
   const params = useParams();
   const isArticlePage = !!params.article;
 
-  /** FAQ ใช้ navigation แยก — ไม่แสดงเมนูคู่มือ (KBSidebar) บนมือถือ */
+  /** FAQ routes: separate nav, no KBSidebar on mobile */
   const hideKbManualMenu =
     pathname === "/faq" ||
     pathname.startsWith("/faq/") ||
@@ -55,7 +55,6 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
 
   return (
     <>
-      {/* 📱 Sticky Sub-Header — ซ่อนทั้งแถบบน /faq ที่ไม่ใช่บทความ; บทความ FAQ ยังมีปุ่ม TOC */}
       {showMobileSubBar && (
         <motion.div
           className="lg:hidden sticky top-14 z-40 w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-700/60 will-change-transform"
@@ -120,8 +119,7 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
         )} 
         onClick={closeDrawer} 
       />
-      
-      {/* Drawer Menu — คู่มือ หรือ FAQ */}
+
       {openMenuDrawer && (
         <div className={cn(
           "fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-zinc-900 z-[120] shadow-2xl dark:shadow-black/50 transition-transform duration-300 ease-in-out",

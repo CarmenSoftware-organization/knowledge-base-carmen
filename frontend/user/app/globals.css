@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* จำกัดการสแกนคลาส — ไม่ให้ไล่ทั้ง monorepo (ช่วยให้ dev เร็วขึ้น) */
+/* Scope Tailwind scan to this app (faster dev) */
 @source "../**/*.{js,ts,jsx,tsx,mdx}";
 @source not "../node_modules";
 @source not "../.next";
@@ -120,7 +120,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* หน้า Home BU (เดสก์ท็อป xl+): เต็มความสูงใต้ sticky header — <xl ใช้ min-h-0 กันพื้นที่ว่างบนแท็บเล็ต */
+/* BU landing (xl+): fill below sticky header; <xl uses min-h-0 to avoid tablet gap */
 @layer utilities {
   .min-h-bu-landing {
     min-height: calc(100vh - 3.5rem);
@@ -128,7 +128,7 @@
     min-height: calc(100dvh - 3.5rem);
   }
 
-  /* BU hero: หัวข้อไล่สีเคลื่อน (Carmen Cloud / Learning Center) */
+  /* BU hero: animated gradient titles */
   .bu-title-shift {
     background-size: 220% auto;
     -webkit-background-clip: text;

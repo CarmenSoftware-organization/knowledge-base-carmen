@@ -57,9 +57,9 @@ function isCarmenRoomHistory(value: unknown): value is CarmenRoomHistory {
 }
 
 const ROOMS_KEY = "carmen_rooms";
-const MAX_ROOMS = 15;           // สูงสุด 15 ห้อง
-const MAX_MESSAGES = 100;       // สูงสุด 100 messages ต่อห้อง
-const ROOM_TTL_DAYS = 30;       // ลบห้องที่ไม่ได้ใช้เกิน 30 วัน
+const MAX_ROOMS = 15;
+const MAX_MESSAGES = 100;
+const ROOM_TTL_DAYS = 30;
 
 export function createCarmenApi(baseUrl: string) {
   const base = baseUrl.replace(/\/$/, "");
@@ -75,7 +75,7 @@ export function createCarmenApi(baseUrl: string) {
     }
   }
 
-  /** ลบ carmen_history_* ที่ไม่มี room ใน carmen_rooms แล้ว (orphan keys) */
+  /** Drop orphan carmen_history_* keys */
   function _cleanOrphans(validIds: Set<string>): void {
     const toDelete: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -87,7 +87,7 @@ export function createCarmenApi(baseUrl: string) {
     toDelete.forEach(k => localStorage.removeItem(k));
   }
 
-  /** ลบห้องที่ไม่ได้ใช้เกิน ROOM_TTL_DAYS และ orphan keys */
+  /** Prune stale rooms + orphan history keys */
   async function housekeep(): Promise<void> {
     try {
       const rooms = await getRooms();
@@ -99,7 +99,7 @@ export function createCarmenApi(baseUrl: string) {
         localStorage.setItem(ROOMS_KEY, JSON.stringify(alive));
       }
       _cleanOrphans(new Set(alive.map(r => r.room_id)));
-    } catch { /* ไม่ block การทำงาน */ }
+    } catch { /* non-fatal */ }
   }
 
   async function createRoom(
@@ -115,7 +115,6 @@ export function createCarmenApi(baseUrl: string) {
     try {
       let rooms = await getRooms();
       rooms.unshift(room);
-      // ถ้าเกิน MAX_ROOMS ให้ลบห้องเก่าสุดทิ้ง
       while (rooms.length > MAX_ROOMS) {
         const removed = rooms.pop()!;
         localStorage.removeItem(`carmen_history_${removed.room_id}`);
@@ -170,7 +169,6 @@ export function createCarmenApi(baseUrl: string) {
           history.messages[existingIdx] = maskedMsg;
         } else {
           history.messages.push(maskedMsg);
-          // trim ถ้าเกิน MAX_MESSAGES — ตัด message เก่าสุดทิ้ง
           if (history.messages.length > MAX_MESSAGES) {
             history.messages = history.messages.slice(-MAX_MESSAGES);
           }

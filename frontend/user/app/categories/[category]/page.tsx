@@ -40,7 +40,7 @@ export default async function CategoryPage({
     notFound();
   }
 
-  // BU อื่นอาจไม่มีหมวดนี้ — backend คืน 200 + items: [] ต้องเป็น 404 ไม่ใช่หน้าว่าง
+  // Empty list from API → 404 (not blank page)
   if (!data.items?.length) {
     notFound();
   }
@@ -54,7 +54,7 @@ export default async function CategoryPage({
       indexContent = matter(rawIndex.content);
     }
   } catch {
-    // ไม่มี index.md แต่มีบทความอื่น — โอเค
+    // No index.md is OK if category has other articles
   }
 
   const categoryName =
