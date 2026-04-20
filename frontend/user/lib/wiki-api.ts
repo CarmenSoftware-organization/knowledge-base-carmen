@@ -229,6 +229,55 @@ export function wikiPathToRoute(path: string): string {
   return `/categories/${category}/${middle}/${slug}`;
 }
 
+/** Content path (`category/.../file.md`) -> directory path for resolving relative markdown links. */
+export function wikiDirFromContentPath(path: string): string {
+  const normalized = normalizeWikiRelPath(path).replace(/\/+/g, "/");
+  if (!normalized) return "";
+  if (/\/index\.md$/i.test(normalized)) {
+    return normalized.replace(/\/index\.md$/i, "");
+  }
+  return normalized.replace(/\/[^/]+\.md$/i, "");
+}
+
+/**
+ * Resolve markdown href to either:
+ * - internal app route (`/categories/...`) for wiki markdown links
+ * - original href for external/hash/mailto/etc
+ */
+export function resolveWikiMarkdownHref(
+  href: string,
+  wikiArticleDir: string | undefined,
+  category: string,
+): string {
+  const raw = (href || "").trim();
+  if (!raw) return raw;
+
+  // Keep external/special links unchanged.
+  if (
+    /^(https?:|mailto:|tel:|data:|javascript:)/i.test(raw) ||
+    raw.startsWith("#")
+  ) {
+    return raw;
+  }
+
+  // Already an app route.
+  if (raw.startsWith("/categories/") || raw.startsWith("/faq")) {
+    return raw;
+  }
+
+  const noQueryHash = raw.split(/[?#]/)[0];
+
+  const baseDir = (wikiArticleDir || category || "")
+    .replace(/\\/g, "/")
+    .replace(/^\/+|\/+$/g, "");
+  const rel = noQueryHash.replace(/\\/g, "/").replace(/^\/+/, "");
+  const joined =
+    raw.startsWith("/") || !baseDir ? rel : `${baseDir}/${rel}`.replace(/\/+/g, "/");
+
+  const normalized = normalizeWikiRelPath(joined);
+  return wikiPathToRoute(normalized);
+}
+
 export async function findBestArticleForQuery(
   query: string,
   bu?: string,
