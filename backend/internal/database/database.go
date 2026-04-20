@@ -143,3 +143,21 @@ func TruncateBUTables(bu string) error {
 	sql := fmt.Sprintf("TRUNCATE TABLE %s.documents RESTART IDENTITY CASCADE", bu)
 	return DB.Exec(sql).Error
 }
+
+// TruncateAllBUIndexTables runs TRUNCATE on <slug>.documents for every slug in public.business_units.
+func TruncateAllBUIndexTables() error {
+	var slugs []string
+	if err := DB.Table("public.business_units").Order("id").Pluck("slug", &slugs).Error; err != nil {
+		return fmt.Errorf("list business_units: %w", err)
+	}
+	for _, slug := range slugs {
+		slug = strings.TrimSpace(slug)
+		if slug == "" || !security.ValidateSchema(slug) {
+			continue
+		}
+		if err := TruncateBUTables(slug); err != nil {
+			return fmt.Errorf("truncate %s.documents: %w", slug, err)
+		}
+	}
+	return nil
+}

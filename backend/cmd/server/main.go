@@ -59,8 +59,16 @@ func main() {
 		sub := args[1]
 		if sub == "index" && len(args) >= 3 {
 			bu := args[2]
+			if strings.EqualFold(bu, "all") {
+				log.Println("Truncating documents for all BUs (from public.business_units)...")
+				if err := database.TruncateAllBUIndexTables(); err != nil {
+					log.Fatalf("Reset index all failed: %v", err)
+				}
+				log.Println("All BU indexes cleared. Run 'reindex all' to rebuild.")
+				return
+			}
 			if !security.ValidateSchema(bu) {
-				log.Fatalf("Invalid BU: %q", bu)
+				log.Fatalf("Invalid BU: %q (use slug or \"all\")", bu)
 			}
 			log.Printf("Truncating documents for BU: %s...", bu)
 			if err := database.TruncateBUTables(bu); err != nil {
@@ -77,7 +85,7 @@ func main() {
 			log.Println("Public tables cleared.")
 			return
 		}
-		log.Fatal("Usage: go run cmd/server/main.go reset index <bu> | reset all")
+		log.Fatal("Usage: go run cmd/server/main.go reset index <bu>|all | reset all")
 	}
 	if len(args) >= 2 && args[0] == "reindex" {
 		buArg := args[1]
