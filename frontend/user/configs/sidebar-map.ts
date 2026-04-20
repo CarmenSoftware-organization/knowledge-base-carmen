@@ -3,6 +3,7 @@ export const categoryDisplayMap: Record<string, string> = {
     ar: "Account Receivable",
     gl: "General Ledger",
     asset: "Asset",
+    "asset-checker": "Asset Checker",
     configuration: "Configuration",
     workbook: "Work Book",
     comment: "Comment & Document",

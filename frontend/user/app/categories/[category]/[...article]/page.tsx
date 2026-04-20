@@ -2,7 +2,11 @@ import { KBHeader } from "@/components/kb/header";
 import { KBFooter } from "@/components/kb/footer";
 import { KBSidebar } from "@/components/kb/sidebar";
 import { Breadcrumb } from "@/components/kb/breadcrumb";
-import { getContent } from "@/lib/wiki-api";
+import {
+  getContent,
+  normalizeWikiRelPath,
+  wikiDirFromContentPath,
+} from "@/lib/wiki-api";
 import { formatCategoryName } from "@/lib/wiki-utils";
 import { notFound } from "next/navigation";
 import matter from "gray-matter";
@@ -50,14 +54,21 @@ export default async function ArticlePage({ params }: Props) {
 
   const locale = category.toLowerCase() === "changelog" ? "en" : cookieLocale;
 
-  const path = `${category}/${articleSegments.join("/")}.md`;
+  const relBase = normalizeWikiRelPath(
+    [category, ...articleSegments].join("/"),
+  );
+  const primaryPath = `${relBase}.md`;
+  const folderIndexPath = `${relBase}/index.md`;
 
   let raw;
-
   try {
-    raw = await getContent(path, bu, locale, { cache: "no-store" });
+    raw = await getContent(primaryPath, bu, locale, { cache: "no-store" });
   } catch {
-    notFound();
+    try {
+      raw = await getContent(folderIndexPath, bu, locale, { cache: "no-store" });
+    } catch {
+      notFound();
+    }
   }
 
   const catLower = category.toLowerCase();
@@ -98,6 +109,12 @@ export default async function ArticlePage({ params }: Props) {
 
   const contentString = content.toString();
   const fixedContent = contentString.replace(/\n##/g, "\n\n##");
+
+  const wikiArticleDir = raw.path
+    ? wikiDirFromContentPath(raw.path)
+    : articleSegments.length > 1
+      ? `${category}/${articleSegments.slice(0, -1).join("/")}`
+      : category;
 
   const t = await getTranslations();
 
@@ -169,7 +186,12 @@ export default async function ArticlePage({ params }: Props) {
               <TableOfContents />
             </div>
 
-            <MarkdownRender content={fixedContent} category={category} bu={bu} />
+            <MarkdownRender
+              content={fixedContent}
+              category={category}
+              wikiArticleDir={wikiArticleDir}
+              bu={bu}
+            />
           </div>
 
           <div className="hidden xl:block shrink-0">

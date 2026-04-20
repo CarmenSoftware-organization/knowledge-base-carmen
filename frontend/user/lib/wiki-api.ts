@@ -229,6 +229,71 @@ export function wikiPathToRoute(path: string): string {
   return `/categories/${category}/${middle}/${slug}`;
 }
 
+/**
+ * รีโซลฟ์ลิงก์ใน markdown (เช่น ./บทความ.md หรือ ./โฟลเดอร์/) ให้เป็น route ของแอป
+ * อิงโฟลเดอร์ของไฟล์ .md ปัจจุบันใน repo (wikiArticleDir)
+ */
+export function resolveWikiMarkdownHref(
+  href: string,
+  wikiArticleDir: string | undefined,
+  category: string,
+): string {
+  const raw = href.trim();
+  if (!raw) return raw;
+
+  const hashIdx = raw.indexOf("#");
+  const pathPartRaw = hashIdx >= 0 ? raw.slice(0, hashIdx) : raw;
+  const hashSuffix = hashIdx >= 0 ? raw.slice(hashIdx) : "";
+  const pathPart = pathPartRaw.trim();
+
+  if (!pathPart) return raw;
+
+  if (/^(https?:|mailto:|tel:)/i.test(pathPart)) return href;
+
+  if (pathPart.startsWith("/")) {
+    return `${pathPart}${hashSuffix}`;
+  }
+
+  const base = (wikiArticleDir || category)
+    .replace(/\\/g, "/")
+    .replace(/\/+$/, "");
+  const baseParts = base.split("/").filter(Boolean);
+
+  let rest = pathPart.replace(/^\.\//, "");
+  const isFolderTrail = rest.endsWith("/");
+  const segments = rest.split("/").filter((s) => s !== "" && s !== ".");
+
+  const parts: string[] = [...baseParts];
+  for (const seg of segments) {
+    if (seg === "..") {
+      if (parts.length > 0) parts.pop();
+    } else {
+      parts.push(seg);
+    }
+  }
+
+  let wikiPath = parts.join("/");
+  const hasMdExt = /\.md$/i.test(wikiPath);
+  if (isFolderTrail || !hasMdExt) {
+    wikiPath = `${wikiPath.replace(/\/$/, "")}/index.md`;
+  }
+
+  if (wikiPath.includes("..")) return href;
+
+  return `${wikiPathToRoute(wikiPath)}${hashSuffix}`;
+}
+
+/** โฟลเดอร์ของบทความใน repo จาก path ที่ API คืน (ใช้โหลดรูป / ลิงก์) */
+export function wikiDirFromContentPath(contentPath: string): string {
+  const p = contentPath.replace(/\\/g, "/");
+  if (p.toLowerCase().endsWith("/index.md")) {
+    return p.slice(0, -"/index.md".length);
+  }
+  const i = p.lastIndexOf("/");
+  if (i <= 0) return p.replace(/\.md$/i, "");
+  return p.slice(0, i);
+}
+
 // หาบทความที่ตรงกับคำค้นมากที่สุดคืนทั้ง item และ route
 
 export async function findBestArticleForQuery(
@@ -297,6 +362,30 @@ export async function findBestArticleForQuery(
    Content
  ========================= */
 
+/** NFC ทีละ segment + decode ซ้ำอย่างปลอดภัย — ให้ตรงกับชื่อไฟล์บนดิสก์ (เช่น macOS) */
+export function normalizeWikiRelPath(path: string): string {
+  return path
+    .replace(/\\/g, "/")
+    .split("/")
+    .filter(Boolean)
+    .map((seg) => {
+      try {
+        return decodeURIComponent(seg).normalize("NFC");
+      } catch {
+        return seg.normalize("NFC");
+      }
+    })
+    .join("/");
+}
+
+/** ใช้กับ URL `/api/wiki/content/...` — ห้ามใส่พาธดิบที่มี ", ช่องว่าง หรือไทยโดยไม่ encode */
+export function encodeWikiPathForFetch(path: string): string {
+  return normalizeWikiRelPath(path)
+    .split("/")
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+}
+
 // GET /api/wiki/content/*
 // locale: "th" | "en" — when "en", backend translates content via Google Translate (if enabled)
 export async function getContent(
@@ -319,8 +408,9 @@ export async function getContent(
   const selectedBU = bu || getSelectedBUClient();
   const params = new URLSearchParams({ bu: selectedBU });
   if (locale) params.set("locale", locale);
+  const encodedPath = encodeWikiPathForFetch(path);
   const res = await fetch(
-    `${API_BASE}/api/wiki/content/${path}?${params.toString()}`,
+    `${API_BASE}/api/wiki/content/${encodedPath}?${params.toString()}`,
     { cache: "no-store", ...fetchOptions },
   );
 

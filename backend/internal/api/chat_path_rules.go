@@ -27,6 +27,10 @@ var topicPathRules = []struct {
 		Patterns: []string{"%AS-%", "%asset%"},
 	},
 	{
+		Keywords: []string{"asset checker", "asset-checker", "เช็คสินทรัพย์", "ตรวจสอบสินทรัพย์"},
+		Patterns: []string{"%asset-checker%", "%/asset-checker/%"},
+	},
+	{
 		Keywords: []string{" gl ", "gl ", "general ledger", "journal voucher", "voucher", "บัญชีแยกประเภท", "ผังบัญชี", "allocation", "amortization", "budget", "recurring"},
 		Patterns: []string{"%gl%", "%c-%"},
 	},

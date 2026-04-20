@@ -24,6 +24,11 @@ import shutil
 import sys
 from pathlib import Path
 
+_SCRIPT_DIR = Path(__file__).resolve().parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+import carmen_markdown_clean as _mdc_clean
+
 
 def slugify_stem(name: str) -> str:
     """ชื่อไฟล์ปลอดภัยสำหรับ URL / Git (คงอักษรไทยและตัวเลขไว้ได้บ้าง)."""
@@ -83,7 +88,7 @@ def convert_one(
 
     with docx.open("rb") as f:
         result = mammoth.convert_to_markdown(f, **kwargs)
-        md = result.value or ""
+        md = _mdc_clean.strip_docx_title_body_lines((result.value or "").strip())
         if result.messages:
             for m in result.messages:
                 print(f"  [{docx.name}] {m}", file=sys.stderr)

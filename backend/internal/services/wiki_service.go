@@ -3,8 +3,10 @@ package services
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -18,6 +20,7 @@ import (
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/github"
 	"github.com/new-carmen/backend/pkg/openrouter"
+	"golang.org/x/text/unicode/norm"
 )
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
@@ -282,6 +285,9 @@ func (s *WikiService) ListByCategory(bu, slug string) (string, []CategoryItem, e
 
 	var list []CategoryItem
 	for _, e := range entries {
+		if strings.Contains(e.Path, "/_images/") {
+			continue
+		}
 		parts := strings.Split(e.Path, "/")
 		if len(parts) < 2 || parts[0] != slug {
 			continue
@@ -330,6 +336,9 @@ func (s *WikiService) ListSidebarTree(bu string) ([]SidebarCategory, error) {
 	seen := make(map[string]*catMeta)
 
 	for _, e := range entries {
+		if strings.Contains(e.Path, "/_images/") {
+			continue
+		}
 		parts := strings.Split(e.Path, "/")
 		if len(parts) < 2 {
 			continue
@@ -633,36 +642,82 @@ func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 	return entries, nil
 }
 
+// wikiPathInsideRoot validates rel is inside root; returns absolute path and repo-relative slash path.
+func wikiPathInsideRoot(root, rel string) (abs string, relSlash string, err error) {
+	relClean := filepath.Clean(filepath.FromSlash(rel))
+	if relClean == "." || relClean == ".." || strings.HasPrefix(relClean, ".."+string(os.PathSeparator)) {
+		return "", "", os.ErrNotExist
+	}
+	abs = filepath.Clean(filepath.Join(root, relClean))
+	relSlash, err = filepath.Rel(root, abs)
+	if err != nil || strings.HasPrefix(relSlash, "..") {
+		return "", "", os.ErrNotExist
+	}
+	return abs, filepath.ToSlash(relSlash), nil
+}
+
+// resolveExistingFileUnderWikiRoot opens rel under root; if missing, matches basename in parent using Unicode NFC (macOS NFD filenames).
+func resolveExistingFileUnderWikiRoot(root, rel string, mdOnly bool) (abs string, relSlash string, err error) {
+	abs0, relSlash0, err := wikiPathInsideRoot(root, rel)
+	if err != nil {
+		return "", "", err
+	}
+	if st, err := os.Stat(abs0); err == nil {
+		if st.IsDir() {
+			return "", "", os.ErrNotExist
+		}
+		return abs0, relSlash0, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", "", err
+	}
+
+	parentSlash := path.Dir(relSlash0)
+	base := path.Base(relSlash0)
+	if parentSlash == "." || base == "." {
+		return "", "", os.ErrNotExist
+	}
+	parentAbs := filepath.Join(root, filepath.FromSlash(parentSlash))
+	entries, err := os.ReadDir(parentAbs)
+	if err != nil {
+		return "", "", os.ErrNotExist
+	}
+	want := norm.NFC.String(base)
+	for _, ent := range entries {
+		if ent.IsDir() {
+			continue
+		}
+		name := ent.Name()
+		if mdOnly && !strings.HasSuffix(strings.ToLower(name), ".md") {
+			continue
+		}
+		if norm.NFC.String(name) != want {
+			continue
+		}
+		fixedAbs := filepath.Join(parentAbs, name)
+		fixedSlash := path.Join(parentSlash, name)
+		return fixedAbs, fixedSlash, nil
+	}
+	return "", "", os.ErrNotExist
+}
+
 func (s *WikiService) GetLocalAssetPath(bu, relPath string) (string, error) {
-	relPath = filepath.Clean(filepath.FromSlash(relPath))
-	if relPath == "." || relPath == ".." || strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
-		return "", os.ErrNotExist
-	}
-	root := s.getRepoPath(bu)
-	full := filepath.Clean(filepath.Join(root, relPath))
-	relCheck, err := filepath.Rel(filepath.Clean(root), full)
-	if err != nil || strings.HasPrefix(relCheck, "..") {
-		return "", os.ErrNotExist
-	}
-	return full, nil
+	root := filepath.Clean(s.getRepoPath(bu))
+	abs, _, err := resolveExistingFileUnderWikiRoot(root, relPath, false)
+	return abs, err
 }
 
 func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, error) {
-	relPath = filepath.Clean(relPath)
-	if relPath == ".." || strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
-		return nil, os.ErrNotExist
-	}
 	root := filepath.Clean(s.getRepoPath(bu))
-	full := filepath.Clean(filepath.Join(root, filepath.FromSlash(relPath)))
-	relCheck, err := filepath.Rel(root, full)
-	if err != nil || strings.HasPrefix(relCheck, "..") {
-		return nil, os.ErrNotExist
-	}
-	data, err := os.ReadFile(full)
+	abs, matchedRelSlash, err := resolveExistingFileUnderWikiRoot(root, relPath, true)
 	if err != nil {
 		return nil, err
 	}
-	out := &WikiContent{Path: filepath.ToSlash(relPath), Title: slugToTitle(filepath.Base(relPath))}
+	data, err := os.ReadFile(abs)
+	if err != nil {
+		return nil, err
+	}
+	baseName := path.Base(matchedRelSlash)
+	out := &WikiContent{Path: matchedRelSlash, Title: slugToTitle(baseName)}
 	meta, body := parseFrontmatter(data)
 	if len(meta) > 0 {
 		applyMeta(out, meta, body)

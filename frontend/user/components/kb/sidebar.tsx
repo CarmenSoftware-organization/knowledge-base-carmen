@@ -6,8 +6,14 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { getSidebarTree, getSelectedBUClient, type SidebarCategory } from "@/lib/wiki-api";
+import {
+  getSidebarTree,
+  getSelectedBUClient,
+  wikiPathToRoute,
+  type SidebarCategory,
+} from "@/lib/wiki-api";
 import { articleDisplayMap, categoryDisplayMap, cleanTitle } from "@/configs/sidebar-map";
+import { displayWikiArticleTitle } from "@/lib/wiki-utils";
 
 type SidebarCategoryWithName = SidebarCategory & { name: string };
 
@@ -48,13 +54,27 @@ type CategoryItemProps = {
   pathname: string;
 };
 
+function pathsMatchSidebar(a: string, b: string) {
+  const x = (a.split("?")[0] || "").replace(/\/$/, "") || "/";
+  const y = (b.split("?")[0] || "").replace(/\/$/, "") || "/";
+  if (x === y) return true;
+  try {
+    return decodeURIComponent(x) === decodeURIComponent(y);
+  } catch {
+    return false;
+  }
+}
+
 const CategoryItemRow = memo(function CategoryItemRow({
   categoryItem,
   isExpanded,
   onToggle,
   pathname,
 }: CategoryItemProps) {
-  const isActiveCategory = pathname === `/categories/${categoryItem.slug}`;
+  const catPrefix = `/categories/${categoryItem.slug}`;
+  const isActiveCategory =
+    pathsMatchSidebar(pathname, catPrefix) ||
+    pathname.startsWith(`${catPrefix}/`);
 
   return (
     <div className="mb-1">
@@ -81,23 +101,48 @@ const CategoryItemRow = memo(function CategoryItemRow({
             exit={{ height: 0, opacity: 0 }}
             className="ml-4 mt-1 space-y-0.5 border-l-2 border-primary/10 pl-2 overflow-hidden"
           >
-            {categoryItem.articles.map((article) => {
+            {categoryItem.articles
+              .filter((a) => {
+                const p = a.path.replace(/\\/g, "/");
+                if (p.includes("/_images/")) return false;
+                if (a.slug === "index" && p.split("/").filter(Boolean).length === 2) {
+                  return false;
+                }
+                return true;
+              })
+              .map((article) => {
               const isIndex = article.slug === "index";
-              const displayTitle = isIndex
-                ? "Dashboard Overview"
-                : article.title || articleDisplayMap[article.slug] || cleanTitle(article.slug);
+              const pathDepth = article.path
+                .replace(/\\/g, "/")
+                .split("/")
+                .filter(Boolean).length;
+              const isCategoryRootIndex = isIndex && pathDepth === 2;
 
-              const articlePath = isIndex
-                ? `/categories/${categoryItem.slug}`
-                : `/categories/${categoryItem.slug}/${article.slug}`;
+              const displayTitle = isIndex
+                ? isCategoryRootIndex
+                  ? categoryItem.name
+                  : displayWikiArticleTitle(
+                      article.title,
+                      article.slug,
+                      article.path,
+                    ) || cleanTitle(article.slug)
+                : articleDisplayMap[article.slug] ||
+                  displayWikiArticleTitle(
+                    article.title,
+                    article.slug,
+                    article.path,
+                  ) ||
+                  cleanTitle(article.slug);
+
+              const articlePath = wikiPathToRoute(article.path);
 
               return (
                 <Link
-                  key={article.slug}
+                  key={article.path}
                   href={articlePath}
                   className={cn(
                     "block px-3 py-1.5 text-[13px] rounded-md transition-all",
-                    pathname === articlePath
+                    pathsMatchSidebar(pathname, articlePath)
                       ? "text-primary font-bold bg-primary/5"
                       : "text-muted-foreground hover:text-foreground"
                   )}

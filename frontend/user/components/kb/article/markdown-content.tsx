@@ -9,16 +9,72 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkEmoji from "remark-emoji";
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { API_BASE, DEFAULT_BU } from "@/lib/config";
 import { extractYoutubeId } from "@/lib/utils";
-import { getSelectedBUClient } from "@/lib/wiki-api";
+import { getSelectedBUClient, resolveWikiMarkdownHref } from "@/lib/wiki-api";
 import DOMPurify from "dompurify";
 
 interface MarkdownRenderProps {
   content: string;
   category: string;
+  /**
+   * โฟลเดอร์ของไฟล์ .md ใน repo (ไม่มี .md) เช่น ap/Account-Payable-Invoice
+   * ใช้รีโซลฟ์รูปแบบชื่อไฟล์เปล่า ๆ ที่อยู่ข้างบทความใน nested path
+   */
+  wikiArticleDir?: string;
   /** ส่งจากหน้า server (cookie BU) เพื่อให้ URL รูปตรงกันระหว่าง SSR กับ hydrate — ถ้าไม่ส่งจะอ่านจาก cookie บน client เท่านั้น */
   bu?: string;
+}
+
+/** แปลง src ใน md → path สำหรับ /wiki-assets ภายใต้ root ของ BU */
+function wikiAssetRelativePath(
+  src: string,
+  category: string,
+  wikiArticleDir?: string,
+): string {
+  let assetRelative = src.replace("./", "").replace(/^\/+/, "");
+  if (assetRelative.startsWith("carmen_cloud/")) {
+    assetRelative = assetRelative.slice("carmen_cloud/".length);
+  } else if (assetRelative.startsWith("contents/carmen_cloud/")) {
+    assetRelative = assetRelative.slice("contents/carmen_cloud/".length);
+  } else if (assetRelative.startsWith("contents/carmen/")) {
+    assetRelative = assetRelative.slice("contents/carmen/".length);
+  } else if (assetRelative.startsWith("carmen/")) {
+    assetRelative = assetRelative.slice("carmen/".length);
+  }
+
+  // รูปกลางโมดูล: faq/_images/… หรือ ap/_images/… (ไม่ผูกกับโฟลเดอร์ nested ของบทความ)
+  if (assetRelative.startsWith("_images/")) {
+    if (!assetRelative.startsWith(`${category}/`)) {
+      return `${category}/${assetRelative}`;
+    }
+    return assetRelative;
+  }
+
+  if (assetRelative.startsWith(`${category}/`)) {
+    return assetRelative;
+  }
+
+  const base = (wikiArticleDir || category).replace(/\/+$/, "");
+  return `${base}/${assetRelative}`.replace(/\/{2,}/g, "/");
+}
+
+function sanitizeImgAlt(alt: string, resolvedSrc: string): string {
+  const t = (alt || "").trim();
+  if (!t) return "";
+  if (/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(t)) return "";
+  const lastSeg = resolvedSrc.split("/").pop() || "";
+  const decoded = (() => {
+    try {
+      return decodeURIComponent(lastSeg);
+    } catch {
+      return lastSeg;
+    }
+  })();
+  if (t === lastSeg || t === decoded) return "";
+  if (t.length > 100 && (t.includes("/") || t.includes("\\"))) return "";
+  return t;
 }
 
 function MermaidDiagram({ chart }: { chart: string }) {
@@ -80,7 +136,12 @@ function MermaidDiagram({ chart }: { chart: string }) {
   );
 }
 
-export function MarkdownRender({ content, category, bu: buProp }: MarkdownRenderProps) {
+export function MarkdownRender({
+  content,
+  category,
+  wikiArticleDir,
+  bu: buProp,
+}: MarkdownRenderProps) {
   return (
     <article
       className="
@@ -190,7 +251,7 @@ export function MarkdownRender({ content, category, bu: buProp }: MarkdownRender
             return <p className="leading-7 my-3 text-muted-foreground">{children}</p>;
           },
 
-          a: ({ href = "", children, ...props }) => {
+          a: ({ href = "", children, node: _node, ...props }) => {
             const videoId = extractYoutubeId(href);
 
             if (videoId) {
@@ -206,10 +267,33 @@ export function MarkdownRender({ content, category, bu: buProp }: MarkdownRender
               );
             }
 
+            const resolved = resolveWikiMarkdownHref(
+              href,
+              wikiArticleDir,
+              category,
+            );
+            const isInternal =
+              resolved.startsWith("/categories/") ||
+              resolved.startsWith("/faq") ||
+              resolved.startsWith("/search");
+            const isHashOnly = href.trim().startsWith("#");
+
+            if (isInternal || isHashOnly) {
+              return (
+                <Link
+                  {...props}
+                  href={resolved}
+                  className="text-primary underline hover:opacity-80"
+                >
+                  {children}
+                </Link>
+              );
+            }
+
             return (
               <a
                 {...props}
-                href={href}
+                href={resolved}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary underline hover:opacity-80"
@@ -229,7 +313,7 @@ export function MarkdownRender({ content, category, bu: buProp }: MarkdownRender
             <ul className="list-disc ml-6 space-y-2">{children}</ul>
           ),
 
-          img: ({ src, alt = "", ...props }) => {
+          img: ({ src, alt = "", title, ...props }) => {
             if (!src || typeof src !== "string") return null;
             const bu =
               (buProp?.trim() && buProp.trim().toLowerCase()) ||
@@ -243,21 +327,21 @@ export function MarkdownRender({ content, category, bu: buProp }: MarkdownRender
                   {...props}
                   src={src}
                   alt={alt}
+                  title={title}
                   className="block rounded-xl my-6 shadow-md max-w-full"
                 />
               );
             }
 
-            // Wiki stores paths in md as /carmen_cloud/faq/_images/... (repo root = carmen_cloud).
-            // Backend /wiki-assets/* expects path relative to that root: faq/_images/...
-            let assetRelative = src.replace("./", "").replace(/^\/+/, "");
-            if (assetRelative.startsWith("carmen_cloud/")) {
-              assetRelative = assetRelative.slice("carmen_cloud/".length);
-            } else if (assetRelative.startsWith("contents/carmen_cloud/")) {
-              assetRelative = assetRelative.slice("contents/carmen_cloud/".length);
-            } else if (!assetRelative.startsWith(category + "/")) {
-              assetRelative = `${category}/${assetRelative}`;
-            }
+            const assetRelative = wikiAssetRelativePath(
+              src,
+              category,
+              wikiArticleDir,
+            );
+            const displayAlt = sanitizeImgAlt(String(alt), assetRelative);
+            const titleStr = title != null ? String(title) : undefined;
+            const displayTitle =
+              titleStr && !sanitizeImgAlt(titleStr, assetRelative) ? undefined : titleStr;
 
             const qs = new URLSearchParams({ bu });
             const url = `${API_BASE}/wiki-assets/${assetRelative
@@ -269,7 +353,9 @@ export function MarkdownRender({ content, category, bu: buProp }: MarkdownRender
               <img
                 {...props}
                 src={url}
-                alt={alt}
+                alt={displayAlt}
+                title={displayTitle}
+                loading="lazy"
                 className="block rounded-xl my-6 shadow-md max-w-full"
               />
             );

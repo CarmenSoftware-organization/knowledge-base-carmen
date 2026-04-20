@@ -60,6 +60,11 @@ export default async function CategoryPage({
   const categoryName =
     categoryDisplayMap[data.category] || data.category.toUpperCase();
 
+  const gridItems = data.items.filter((item) => {
+    const p = item.path.replace(/\\/g, "/");
+    return item.slug !== "index" && !p.includes("/_images/");
+  });
+
   const t = await getTranslations();
 
   return (
@@ -110,6 +115,7 @@ export default async function CategoryPage({
                     .toString()
                     .replace(/\n##/g, "\n\n##")}
                   category={category}
+                  wikiArticleDir={category}
                   bu={bu}
                 />
 
@@ -138,7 +144,7 @@ export default async function CategoryPage({
               </div>
             )}
 
-            <ArticleGridTransition items={data.items} category={category} />
+            <ArticleGridTransition items={gridItems} category={category} />
           </div>
         </div>
       </main>

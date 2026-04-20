@@ -155,6 +155,7 @@ export default async function FAQSubPage({ params }: Props) {
                     .toString()
                     .replace(/\n##/g, "\n\n##")}
                   category={FAQ_SLUG}
+                  wikiArticleDir={`${FAQ_SLUG}/${pathSegments.join("/")}`}
                   bu={bu}
                 />
               </div>

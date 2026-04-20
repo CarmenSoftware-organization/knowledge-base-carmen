@@ -23,6 +23,7 @@ var synonymMap = map[string][]string{
 	"dashboard":      {"Dashboard", "สถิติ"},
 	"vendor":         {"Vendor", "ผู้ขาย", "ร้านค้า"},
 	"workbook":       {"Workbook", "Excel", "WB"},
+	"asset-checker":  {"Asset Checker", "AS checker", "ตรวจสอบสินทรัพย์"},
 	"comment":        {"Comment", "คอมเมนต์", "ความคิดเห็น"},
 }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion, Variants } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { articleDisplayMap, cleanTitle } from "@/configs/sidebar-map";
+import { displayWikiArticleTitle } from "@/lib/wiki-utils";
 import { ArrowRight } from "lucide-react";
 import { wikiPathToRoute } from "@/lib/wiki-api";
 
@@ -42,7 +43,9 @@ export function ArticleGridTransition(props: {
     >
       {filteredItems.map((item: any) => {
         const displayTitle =
-          articleDisplayMap[item.slug] || cleanTitle(item.title);
+          articleDisplayMap[item.slug] ||
+          displayWikiArticleTitle(item.title, item.slug, item.path) ||
+          cleanTitle(item.title);
         const href = wikiPathToRoute(item.path);
 
         return (
