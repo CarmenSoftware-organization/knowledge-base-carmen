@@ -14,7 +14,8 @@
     "buSwitcherHint": "Choose your business unit to show guides for your product",
     "buSwitcherPlaceholder": "Select unit",
     "languageLabel": "Language",
-    "languageHint": "Switch Thai / English for supported content"
+    "languageHint": "Switch Thai / English for supported content",
+    "contactCenter": "Contact Center"
   },
   "buLanding": {
     "flairBadge": "Knowledge hub",

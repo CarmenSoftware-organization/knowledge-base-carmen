@@ -155,7 +155,7 @@ export async function getCategory(
 }
 
 /* =========================
-   List + Search (สำหรับ hero search)
+   List + search (hero / global)
  ========================= */
 
 let cachedList: { [bu: string]: WikiListItem[] } = {};
@@ -184,7 +184,7 @@ export async function getAllArticles(bu?: string): Promise<WikiListItem[]> {
   return cachedList[selectedBU];
 }
 
-// แปลง path จาก wiki → route ของหน้า content
+/** Wiki filesystem path → app route */
 export function wikiPathToRoute(path: string): string {
   const normalizedPath = path.replace(/\\/g, "/");
   const parts = normalizedPath
@@ -229,73 +229,6 @@ export function wikiPathToRoute(path: string): string {
   return `/categories/${category}/${middle}/${slug}`;
 }
 
-/**
- * รีโซลฟ์ลิงก์ใน markdown (เช่น ./บทความ.md หรือ ./โฟลเดอร์/) ให้เป็น route ของแอป
- * อิงโฟลเดอร์ของไฟล์ .md ปัจจุบันใน repo (wikiArticleDir)
- */
-export function resolveWikiMarkdownHref(
-  href: string,
-  wikiArticleDir: string | undefined,
-  category: string,
-): string {
-  const raw = href.trim();
-  if (!raw) return raw;
-
-  const hashIdx = raw.indexOf("#");
-  const pathPartRaw = hashIdx >= 0 ? raw.slice(0, hashIdx) : raw;
-  const hashSuffix = hashIdx >= 0 ? raw.slice(hashIdx) : "";
-  const pathPart = pathPartRaw.trim();
-
-  if (!pathPart) return raw;
-
-  if (/^(https?:|mailto:|tel:)/i.test(pathPart)) return href;
-
-  if (pathPart.startsWith("/")) {
-    return `${pathPart}${hashSuffix}`;
-  }
-
-  const base = (wikiArticleDir || category)
-    .replace(/\\/g, "/")
-    .replace(/\/+$/, "");
-  const baseParts = base.split("/").filter(Boolean);
-
-  let rest = pathPart.replace(/^\.\//, "");
-  const isFolderTrail = rest.endsWith("/");
-  const segments = rest.split("/").filter((s) => s !== "" && s !== ".");
-
-  const parts: string[] = [...baseParts];
-  for (const seg of segments) {
-    if (seg === "..") {
-      if (parts.length > 0) parts.pop();
-    } else {
-      parts.push(seg);
-    }
-  }
-
-  let wikiPath = parts.join("/");
-  const hasMdExt = /\.md$/i.test(wikiPath);
-  if (isFolderTrail || !hasMdExt) {
-    wikiPath = `${wikiPath.replace(/\/$/, "")}/index.md`;
-  }
-
-  if (wikiPath.includes("..")) return href;
-
-  return `${wikiPathToRoute(wikiPath)}${hashSuffix}`;
-}
-
-/** โฟลเดอร์ของบทความใน repo จาก path ที่ API คืน (ใช้โหลดรูป / ลิงก์) */
-export function wikiDirFromContentPath(contentPath: string): string {
-  const p = contentPath.replace(/\\/g, "/");
-  if (p.toLowerCase().endsWith("/index.md")) {
-    return p.slice(0, -"/index.md".length);
-  }
-  const i = p.lastIndexOf("/");
-  if (i <= 0) return p.replace(/\.md$/i, "");
-  return p.slice(0, i);
-}
-
-// หาบทความที่ตรงกับคำค้นมากที่สุดคืนทั้ง item และ route
-
 export async function findBestArticleForQuery(
   query: string,
   bu?: string,
@@ -306,7 +239,6 @@ export async function findBestArticleForQuery(
   const q = query.trim().toLowerCase();
   if (!q) return { item: null, route: null };
 
-  // 1. Vector Search ก่อน (แม่นสุด)
   try {
     const aiResults = await searchWiki(query, bu);
     if (aiResults?.length > 0) {
@@ -338,7 +270,6 @@ export async function findBestArticleForQuery(
     };
   }
 
-  // 3. Fuzzy fallback (พิมผิด / พิมไม่ครบ)
   const fuse = new Fuse(items, {
     keys: [
       { name: "title", weight: 0.7 },
@@ -488,9 +419,7 @@ function normalizeQuery(q: string): string {
       .trim()
       .toLowerCase()
       .normalize("NFC")
-      // ✅ ตัดจุดระหว่างตัวอักษรไทยออก: ภ.ง.ด. → ภงด
       .replace(/(\p{L})\.(?=\p{L})/gu, "$1")
-      // ✅ ตัดจุดท้ายคำออก: ภ.ง.ด. → ภ.ง.ด
       .replace(/\.$/, "")
       .replace(/\s+/g, " ")
   );

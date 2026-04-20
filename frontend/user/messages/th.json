@@ -14,7 +14,8 @@
     "buSwitcherHint": "เลือกหน่วยธุรกิจเพื่อแสดงคู่มือที่ตรงกับระบบของคุณ",
     "buSwitcherPlaceholder": "เลือกหน่วยงาน",
     "languageLabel": "ภาษา",
-    "languageHint": "สลับภาษาไทย / อังกฤษสำหรับเนื้อหาที่รองรับ"
+    "languageHint": "สลับภาษาไทย / อังกฤษสำหรับเนื้อหาที่รองรับ",
+    "contactCenter": "Contact Center"
   },
   "buLanding": {
     "flairBadge": "ศูนย์ความรู้",

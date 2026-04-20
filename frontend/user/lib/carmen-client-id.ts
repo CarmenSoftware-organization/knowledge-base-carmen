@@ -1,8 +1,4 @@
-/**
- * สร้าง/ดึง Client ID สำหรับผู้ใช้ที่ไม่ล็อกอิน
- * เก็บใน localStorage เพื่อให้แต่ละ browser/device มี ID เดียวกัน
- * ใช้เป็น user_id ใน chat_history
- */
+/** Anonymous chat user id: persisted in localStorage per browser */
 const STORAGE_KEY = "carmen_client_id";
 
 export function getOrCreateClientId(): string {

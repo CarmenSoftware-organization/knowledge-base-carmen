@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, ChevronDown } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { Menu, X, ChevronDown, Headset } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
@@ -14,6 +14,8 @@ import { BUSwitcher } from "./bu-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { useTranslations } from "next-intl";
 import { getBusinessUnits, getCategory, setSelectedBU } from "@/lib/wiki-api";
+import { cn } from "@/lib/utils";
+import { notifyKbHeaderScrollHidden } from "@/lib/kb-scroll-chrome";
 
 // ─── Animation variants ────────────────────────────────────────────────────────
 
@@ -62,6 +64,22 @@ const mobileMenuVariants: Variants = {
   },
 };
 
+const mobileBackdropVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.15 },
+  },
+};
+
+/** Support button: same pill style as language switcher (h-9) */
+const headerSupportButtonClass =
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/10 text-primary transition-colors hover:bg-primary/15 hover:border-primary/50 dark:border-primary/45 dark:bg-primary/15 active:scale-[0.98]";
+
 const accordionVariants: Variants = {
   hidden: { height: 0, opacity: 0 },
   show: {
@@ -77,7 +95,7 @@ const accordionVariants: Variants = {
 };
 
 // ─── Changelog config ──────────────────────────────────────────────────────────
-// เรียงจากล่าสุด → เก่าสุด
+// Newest first
 const CHANGELOG_ORDER: string[] = [
   "mar2026",
   "feb2026",
@@ -93,6 +111,10 @@ const CHANGELOG_ORDER: string[] = [
   "june2024",
   "may2024",
 ];
+
+/** Same Zoho support form as footer / BU landing */
+const ZOHO_CONTACT_CENTER_URL =
+  "https://forms.zohopublic.com/carmensoftware/form/Contactforsupport/formperma/u00Cn7XaD_LKMPjMYBVbZxAe7redlAiayQxwJJqnsLI?zf_enablecamera=true";
 
 const changelogTitleMap: Record<string, string> = {
   mar2026: "March 2026 Release Information",
@@ -155,11 +177,21 @@ export function KBHeader() {
     };
   }, [mobileMenuOpen, mobileChangelogOpen, desktopChangelogOpen]);
 
+  const closeMobile = useCallback(() => {
+    setMobileMenuOpen(false);
+    setMobileChangelogOpen(false);
+  }, []);
+
   useEffect(() => {
     if (mobileMenuOpen || mobileChangelogOpen || desktopChangelogOpen) {
       setScrollHidden(false);
     }
   }, [mobileMenuOpen, mobileChangelogOpen, desktopChangelogOpen]);
+
+  useEffect(() => {
+    const effectiveHidden = reduceMotion ? false : scrollHidden;
+    notifyKbHeaderScrollHidden(effectiveHidden);
+  }, [scrollHidden, reduceMotion]);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -209,6 +241,24 @@ export function KBHeader() {
   }, [pathname]);
 
   useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMobile();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileMenuOpen, closeMobile]);
+
+  useEffect(() => {
     if ((!desktopChangelogOpen && !mobileChangelogOpen) || changelogItems.length > 0) return;
     Promise.all([
       getBusinessUnits().catch(() => ({ items: [] })),
@@ -247,21 +297,16 @@ export function KBHeader() {
   }, [desktopChangelogOpen, mobileChangelogOpen, changelogItems.length]);
 
   const sortedChangelog = sortChangelog(changelogItems);
+
   const handleChangelogClick = (buSlug: string) => {
     setSelectedBU(buSlug);
     closeMobile();
   };
 
-
   const logoSrc =
     mounted && resolvedTheme === "dark"
       ? "/carmen-logo-light.png"
       : "/carmen02-logo.png";
-
-  const closeMobile = () => {
-    setMobileMenuOpen(false);
-    setMobileChangelogOpen(false);
-  };
 
   const headerAnimate =
     reduceMotion || !scrollHidden ? "show" : "scrollHidden";
@@ -273,47 +318,46 @@ export function KBHeader() {
       animate={headerAnimate}
       className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-md will-change-transform"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 items-center gap-3">
+      <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+        <div className="relative z-10 flex h-14 items-center gap-1.5 sm:gap-3 min-w-0 isolate">
 
-          {/* ── Logo ── */}
-          <Link href="/" className="shrink-0">
+          <Link href="/" className="relative z-[2] shrink-0 min-w-0 max-w-[42%] sm:max-w-none">
             <Image
               src={logoSrc}
               alt="Carmen Logo"
               width={140}
               height={40}
-              className="h-auto w-auto max-h-10 rounded transition-opacity duration-200"
+              className="h-auto w-auto max-h-7 max-w-[96px] sm:max-h-8 sm:max-w-[112px] md:max-h-10 md:max-w-[140px] rounded transition-opacity duration-200"
               style={{ width: "auto", height: "auto" }}
               priority
             />
           </Link>
 
-
-          {/* ── Search bar: sm–lg (iPad) กลาง header / desktop ซ่อน เพราะ nav อยู่แทน ── */}
           {!isHome && (
-            <div className="hidden sm:flex xl:hidden flex-1 mx-4">
-              <GlobalSearch variant="header" />
+            <div className="hidden sm:flex xl:hidden flex-1 min-w-0 mx-2 md:mx-3">
+              <GlobalSearch variant="header" className="w-full min-w-0" />
             </div>
           )}
 
-          {/* Desktop: search อยู่หลัง logo แทนเมื่อไม่มี nav บน sm */}
           {!isHome && (
-            <div className="hidden xl:flex flex-1 max-w-xl mx-2">
-              <GlobalSearch variant="header" />
+            <div className="hidden xl:flex flex-1 max-w-xl min-w-0 mx-2">
+              <GlobalSearch variant="header" className="w-full min-w-0" />
             </div>
           )}
 
-          {/* Spacer: home page — ดันทุก element ไปชิดขวาทุก breakpoint */}
-          {isHome && <div className="flex-1" />}
+          {isHome && <div className="flex-1 min-w-0 xl:flex-1" />}
 
-          {/* ── Desktop nav ── */}
-          <nav className="hidden xl:flex items-center gap-0.5">
-            <NavLink href="/">{t("home")}</NavLink>
+          <nav className="hidden xl:flex items-center gap-1">
+            <NavLink compact href="/">
+              {t("home")}
+            </NavLink>
             {!isHome && (
-              <div className="flex items-center gap-0.5">
-                <NavLink href="/categories">{t("categories")}</NavLink>
+              <>
+                <NavLink compact href="/categories">
+                  {t("categories")}
+                </NavLink>
                 <NavLink
+                  compact
                   href="/faq"
                   isActive={
                     pathname === "/faq" ||
@@ -323,7 +367,7 @@ export function KBHeader() {
                 >
                   FAQ
                 </NavLink>
-              </div>
+              </>
             )}
 
             {/* Changelog dropdown */}
@@ -333,10 +377,18 @@ export function KBHeader() {
               onMouseEnter={() => setDesktopChangelogOpen(true)}
               onMouseLeave={() => setDesktopChangelogOpen(false)}
             >
-              <button className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors duration-150">
+              <button
+                type="button"
+                className={cn(
+                  "inline-flex h-9 items-center gap-0.5 rounded-full px-3 text-xs font-medium transition-colors duration-150",
+                  desktopChangelogOpen
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground",
+                )}
+              >
                 Changelog
                 <ChevronDown
-                  className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
                     desktopChangelogOpen ? "rotate-180" : ""
                   }`}
                 />
@@ -382,18 +434,42 @@ export function KBHeader() {
           </nav>
 
           {/* ── Desktop utilities ── */}
-          <div className="hidden xl:flex items-center gap-1 pl-2 border-l border-border/60">
+          <div className="hidden xl:flex items-center gap-2 pl-2 border-l border-border/60 min-w-0">
             <LanguageSwitcher />
-            {!isHome && <BUSwitcher />}
-            <ThemeToggle />
+            {!isHome && <BUSwitcher toolbar />}
+            <a
+              href={ZOHO_CONTACT_CENTER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={headerSupportButtonClass}
+              aria-label={t("contactCenter")}
+              title={t("contactCenter")}
+            >
+              <Headset className="size-4 shrink-0" aria-hidden />
+            </a>
+            <ThemeToggle compact />
           </div>
 
-          {/* ── Mobile/iPad right-side: Burger เท่านั้น ── */}
-          <div className="xl:hidden flex items-center ml-auto">
+          <div className="xl:hidden ml-auto flex items-center justify-end gap-2 shrink-0">
+            <div className="shrink-0 hidden min-[360px]:block">
+              <LanguageSwitcher />
+            </div>
+            <a
+              href={ZOHO_CONTACT_CENTER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(headerSupportButtonClass, "relative z-[2]")}
+              aria-label={t("contactCenter")}
+              title={t("contactCenter")}
+            >
+              <Headset className="size-4 shrink-0" aria-hidden />
+            </a>
             <button
-              className="p-2 rounded-md text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors"
+              type="button"
+              className="relative z-[2] inline-flex h-10 w-10 sm:h-10 sm:w-10 items-center justify-center rounded-md sm:rounded-lg text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors touch-manipulation"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label="Toggle menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
             >
               <AnimatePresence mode="wait" initial={false}>
                 {mobileMenuOpen ? (
@@ -424,27 +500,42 @@ export function KBHeader() {
           </div>
         </div>
 
-        {/* ── Mobile menu dropdown — overlay ไม่ดัน layout ── */}
+        {/* ── Mobile / iPad drawer + backdrop ── */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div
-              variants={mobileMenuVariants}
-              initial="hidden"
-              animate="show"
-              exit="exit"
-              className="xl:hidden fixed left-0 right-0 top-14 z-40 border-t border-b border-border/60 bg-background/98 backdrop-blur-md shadow-lg pb-4"
-            >
-              {/* Search bar — แสดงเฉพาะ mobile (< sm) เท่านั้น iPad มีใน header แล้ว */}
+            <>
+              <motion.button
+                key="nav-backdrop"
+                type="button"
+                variants={mobileBackdropVariants}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                aria-label="Close menu"
+                className="xl:hidden fixed inset-0 top-14 z-[45] bg-black/45 backdrop-blur-[2px] border-0 cursor-pointer p-0 m-0"
+                onClick={closeMobile}
+              />
+              <motion.div
+                key="nav-panel"
+                variants={mobileMenuVariants}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                className="xl:hidden fixed left-0 right-0 top-14 z-[48] max-h-[min(85dvh,calc(100dvh-3.5rem))] overflow-y-auto overscroll-y-contain border-b border-border/60 bg-background/98 backdrop-blur-md shadow-xl rounded-b-2xl sm:rounded-b-xl"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Main menu"
+              >
               {!isHome && (
-                <div className="pt-3 pb-2 sm:hidden">
-                  <GlobalSearch variant="header" />
+                <div className="px-3 pt-3 pb-2 sm:hidden">
+                  <GlobalSearch variant="header" className="w-full min-w-0" />
                 </div>
               )}
 
-              <div className="pt-2 flex flex-col">
+              <div className="px-1.5 sm:px-2 pt-1 pb-2 flex flex-col gap-0.5">
                 <MobileNavLink href="/" onClick={closeMobile}>{t("home")}</MobileNavLink>
                 {!isHome && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 px-0.5">
                     <MobileNavLink href="/categories" onClick={closeMobile}>
                       {t("categories")}
                     </MobileNavLink>
@@ -463,10 +554,12 @@ export function KBHeader() {
                 )}
 
                 {/* Changelog accordion */}
-                <div>
+                <div className="mt-1">
                   <button
+                    type="button"
                     onClick={() => setMobileChangelogOpen((prev) => !prev)}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors"
+                    className="w-full flex items-center justify-between min-h-11 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors touch-manipulation"
+                    aria-expanded={mobileChangelogOpen}
                   >
                     <span>Changelog</span>
                     <ChevronDown
@@ -520,15 +613,17 @@ export function KBHeader() {
 
               </div>
 
-              {/* Utilities row — Language, BU switcher (non-home), Theme */}
-              <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2 px-3">
-                <LanguageSwitcher />
-                {!isHome && <BUSwitcher />}
-                <div className="ml-auto">
+              <div className="mt-2 pt-3 border-t border-border/60 space-y-3 px-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                <div className="min-[360px]:hidden">
+                  <LanguageSwitcher />
+                </div>
+                {!isHome && <BUSwitcher fluid />}
+                <div className="flex items-center justify-end gap-2">
                   <ThemeToggle />
                 </div>
               </div>
             </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>
@@ -542,21 +637,28 @@ function NavLink({
   href,
   children,
   isActive: isActiveOverride,
+  compact,
 }: {
   href: string;
   children: React.ReactNode;
   isActive?: boolean;
+  /** Desktop nav: pill style */
+  compact?: boolean;
 }) {
   const pathname = usePathname();
   const isActive = isActiveOverride ?? pathname === href;
   return (
     <Link
       href={href}
-      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150 ${
+      className={cn(
+        "font-medium transition-colors duration-150",
+        compact
+          ? "inline-flex h-9 items-center rounded-full px-3 text-xs"
+          : "rounded-md px-3 py-1.5 text-sm",
         isActive
-          ? "text-white bg-accent dark:text-foreground"
-          : "text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent"
-      }`}
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground",
+      )}
     >
       {children}
     </Link>
@@ -580,10 +682,10 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-150 ${
+      className={`flex min-h-11 items-center rounded-full px-3 py-2.5 text-sm font-medium transition-colors duration-150 touch-manipulation active:scale-[0.99] ${
         isActive
-          ? "text-white bg-accent dark:text-foreground"
-          : "text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent"
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground"
       }`}
     >
       {children}

@@ -170,10 +170,9 @@ export function BULandingCards({ items }: Props) {
 
   return (
     <section className="relative flex flex-col">
-      {/* ฮีโร่เต็มหน้าจอ (หัก header) */}
       <div
         id="bu-landing"
-        className="relative flex min-h-bu-landing scroll-mt-14 flex-col overflow-hidden border-b border-border/50"
+        className="relative flex min-h-0 scroll-mt-14 flex-col overflow-hidden border-b border-border/50 xl:min-h-bu-landing"
       >
         <AmbientOrbs reduceMotion={reduceMotion} />
 
@@ -189,16 +188,16 @@ export function BULandingCards({ items }: Props) {
           aria-hidden
         />
 
-        <div className="relative z-0 flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 md:px-8 lg:px-10 xl:px-12">
-          <div className="mx-auto flex min-h-0 w-full max-w-[85rem] flex-1 flex-col justify-center gap-5 py-5 sm:gap-6 sm:py-6 md:gap-8 md:py-8">
+        <div className="relative z-0 flex min-h-0 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 md:px-8 lg:px-10 xl:px-12 xl:flex-1">
+          <div className="mx-auto flex min-h-0 w-full max-w-[85rem] flex-col justify-start gap-4 py-4 sm:gap-5 sm:py-5 md:gap-6 md:py-6 lg:py-7 xl:flex-1 xl:justify-center xl:gap-8 xl:py-8">
             <motion.div
               className="w-full shrink-0"
               variants={brandContainer}
               initial="hidden"
               animate="show"
             >
-              <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-6 sm:max-w-6xl sm:gap-8 lg:grid-cols-2 lg:gap-10 lg:px-4 xl:max-w-7xl xl:gap-12 2xl:max-w-[90rem]">
-                <div className="flex w-full justify-center pl-3 sm:pl-4 lg:pl-8 lg:pr-4 xl:pl-10 xl:pr-8">
+              <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-start gap-5 sm:max-w-6xl sm:gap-6 sm:px-0 md:gap-7 xl:grid-cols-2 xl:items-center xl:gap-10 xl:px-10 xl:max-w-7xl 2xl:max-w-[90rem] 2xl:gap-12 2xl:px-12">
+                <div className="flex w-full justify-center px-0 sm:px-1 xl:pl-12 xl:pr-5 2xl:pl-16 2xl:pr-8">
                   <div className="flex w-full max-w-xl flex-col items-start text-left sm:max-w-2xl">
                     <motion.h1
                       variants={brandTitle}
@@ -244,10 +243,10 @@ export function BULandingCards({ items }: Props) {
                   </div>
                 </div>
 
-                <div className="flex w-full justify-center lg:justify-center lg:pl-4 lg:pr-6 xl:pl-6 xl:pr-8">
+                <div className="hidden w-full justify-center xl:flex xl:pl-6 xl:pr-8">
                   <motion.div
                     variants={logoPop}
-                    className="relative w-full max-w-[15rem] sm:max-w-[17rem] md:max-w-sm lg:max-w-md xl:max-w-lg"
+                    className="relative w-full max-w-md xl:max-w-lg"
                   >
                     <div
                       className="pointer-events-none absolute left-1/2 top-1/2 h-[88%] w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-primary/25 via-transparent to-accent/20 blur-3xl opacity-70 dark:from-primary/30 dark:to-accent/28 sm:blur-[72px]"
@@ -268,10 +267,8 @@ export function BULandingCards({ items }: Props) {
                           alt="Carmen"
                           width={480}
                           height={132}
-                          className={`relative mx-auto block h-auto w-full max-h-[4.25rem] object-contain sm:max-h-[5.25rem] md:max-h-24 lg:max-h-28 xl:max-h-32 ${
-                            isDarkLogo
-                              ? "scale-100"
-                              : "scale-[1.05] sm:scale-[1.03] md:scale-[1.02]"
+                          className={`relative mx-auto block h-auto w-full max-h-28 object-contain xl:max-h-32 ${
+                            isDarkLogo ? "scale-100" : "scale-[1.02]"
                           }`}
                           style={{ width: "auto", height: "auto" }}
                           priority
@@ -285,7 +282,7 @@ export function BULandingCards({ items }: Props) {
 
             <div
               id="bu-cards"
-              className="w-full shrink-0 scroll-mt-16 pt-2 sm:scroll-mt-20 sm:pt-4 md:pt-5"
+              className="w-full shrink-0 scroll-mt-16 pt-3 sm:scroll-mt-20 sm:pt-4 md:pt-4 xl:pt-6"
             >
               <div className="flex flex-col">
                 {items.length === 0 ? (

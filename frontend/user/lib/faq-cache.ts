@@ -2,7 +2,7 @@ import { cache } from "react";
 import { getCategory } from "@/lib/wiki-api";
 import type { FaqWikiItem } from "@/lib/faq-nav";
 
-/** Dedupe การโหลดรายการ FAQ ในคำขอเดียวกัน (เช่น บทความ FAQ + MobileSidebar) */
+/** Dedupe FAQ nav fetch in one request (e.g. article + mobile drawer) */
 export const getCachedFaqNavItems = cache(
   async (bu: string): Promise<FaqWikiItem[]> => {
     try {

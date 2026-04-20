@@ -29,7 +29,7 @@ export default function FloatingChatBot({
   const [currentBU, setCurrentBU] = useState(initialBU || getSelectedBUClient());
   const [clientId, setClientId] = useState<string | null>(null);
 
-  // เมื่อไม่มีการล็อกอิน ใช้ Client ID แทน (แยกผู้ใช้แต่ละ browser/device)
+  // Unauthenticated: stable client id per browser
   const username =
     usernameProp && usernameProp !== "Guest"
       ? usernameProp
@@ -162,7 +162,6 @@ export default function FloatingChatBot({
           )}
         </AnimatePresence>
 
-        {/* Launcher — กลมเสมอ */}
         <motion.button
           onClick={() => { dismissTooltip(); toggleOpen(); }}
           className="w-[60px] h-[60px] sm:w-[66px] sm:h-[66px] flex items-center justify-center cursor-pointer shadow-2xl carmen-launcher"

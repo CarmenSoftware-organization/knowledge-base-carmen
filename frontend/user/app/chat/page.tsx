@@ -70,7 +70,6 @@ export default function ChatPage() {
               <CardTitle>คำตอบ</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* กรณีคำถามกำกวม ให้ผู้ใช้เลือกตัวเลือกก่อน */}
               {result.needDisambiguation && result.options && result.options.length > 0 && (
                 <div className="space-y-2 border-b pb-4">
                   <p className="text-sm font-medium">

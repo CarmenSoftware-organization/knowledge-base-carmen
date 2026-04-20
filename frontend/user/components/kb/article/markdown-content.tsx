@@ -18,12 +18,8 @@ import DOMPurify from "dompurify";
 interface MarkdownRenderProps {
   content: string;
   category: string;
-  /**
-   * โฟลเดอร์ของไฟล์ .md ใน repo (ไม่มี .md) เช่น ap/Account-Payable-Invoice
-   * ใช้รีโซลฟ์รูปแบบชื่อไฟล์เปล่า ๆ ที่อยู่ข้างบทความใน nested path
-   */
   wikiArticleDir?: string;
-  /** ส่งจากหน้า server (cookie BU) เพื่อให้ URL รูปตรงกันระหว่าง SSR กับ hydrate — ถ้าไม่ส่งจะอ่านจาก cookie บน client เท่านั้น */
+  /** Optional BU from server for image URLs (SSR/hydrate match); else client cookie */
   bu?: string;
 }
 
@@ -145,14 +141,15 @@ export function MarkdownRender({
   return (
     <article
       className="
-        prose prose-lg max-w-none
+        prose prose-sm sm:prose-base lg:prose-lg max-w-none
         bg-card text-foreground
-        p-8 rounded-xl shadow-sm border border-border
-        prose-headings:scroll-mt-24
-        prose-ol:list-decimal prose-ol:ml-6 prose-ol:space-y-2
-        prose-ul:list-disc prose-ul:ml-6 prose-ul:space-y-2
-        prose-li:my-1 prose-li:leading-7
-        prose-table:my-6 prose-table:text-sm
+        p-4 sm:p-6 md:p-8 rounded-lg sm:rounded-xl shadow-sm border border-border
+        prose-headings:scroll-mt-20 sm:prose-headings:scroll-mt-24 lg:prose-headings:scroll-mt-28
+        prose-p:text-sm sm:prose-p:text-base prose-p:leading-relaxed
+        prose-ol:list-decimal prose-ol:ml-4 sm:prose-ol:ml-6 prose-ol:space-y-1.5 sm:prose-ol:space-y-2
+        prose-ul:list-disc prose-ul:ml-4 sm:prose-ul:ml-6 prose-ul:space-y-1.5 sm:prose-ul:space-y-2
+        prose-li:my-0.5 sm:prose-li:my-1 prose-li:text-sm sm:prose-li:text-base prose-li:leading-relaxed sm:prose-li:leading-7
+        prose-table:my-4 sm:prose-table:my-6 prose-table:text-xs sm:prose-table:text-sm
         prose-a:text-primary hover:prose-a:underline
       "
     >
@@ -206,19 +203,25 @@ export function MarkdownRender({
           },
 
           h1: ({ children, ...props }) => (
-            <h1 {...props} className="text-3xl font-bold mt-1 mb-6 border-b border-border pb-3">
+            <h1
+              {...props}
+              className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 mb-4 sm:mb-6 border-b border-border pb-2 sm:pb-3 scroll-mt-20 sm:scroll-mt-24"
+            >
               {children}
             </h1>
           ),
 
           h2: ({ children, ...props }) => (
-            <h2 {...props} className="text-2xl font-semibold mt-1 mb-4 border-b border-border pb-2 scroll-mt-24">
+            <h2
+              {...props}
+              className="text-lg sm:text-xl md:text-2xl font-semibold mt-6 sm:mt-8 mb-3 sm:mb-4 border-b border-border pb-1.5 sm:pb-2 scroll-mt-20 sm:scroll-mt-24"
+            >
               {children}
             </h2>
           ),
 
           h3: ({ children, ...props }) => (
-            <h3 {...props} className="text-xl font-semibold mt-8 mb-3">
+            <h3 {...props} className="text-base sm:text-lg md:text-xl font-semibold mt-6 sm:mt-8 mb-2 sm:mb-3 scroll-mt-20 sm:scroll-mt-24">
               {children}
             </h3>
           ),
@@ -248,7 +251,11 @@ export function MarkdownRender({
               }
             }
 
-            return <p className="leading-7 my-3 text-muted-foreground">{children}</p>;
+            return (
+              <p className="my-2 sm:my-3 text-sm sm:text-base leading-relaxed sm:leading-7 text-muted-foreground">
+                {children}
+              </p>
+            );
           },
 
           a: ({ href = "", children, node: _node, ...props }) => {
@@ -304,13 +311,15 @@ export function MarkdownRender({
           },
 
           ol: ({ children, ...props }) => (
-            <ol {...props} className="list-decimal ml-6 space-y-2">
+            <ol {...props} className="list-decimal ml-4 sm:ml-6 space-y-1.5 sm:space-y-2 text-sm sm:text-base pl-0.5">
               {children}
             </ol>
           ),
 
           ul: ({ children }) => (
-            <ul className="list-disc ml-6 space-y-2">{children}</ul>
+            <ul className="list-disc ml-4 sm:ml-6 space-y-1.5 sm:space-y-2 text-sm sm:text-base pl-0.5">
+              {children}
+            </ul>
           ),
 
           img: ({ src, alt = "", title, ...props }) => {
@@ -362,19 +371,19 @@ export function MarkdownRender({
           },
 
           table: ({ children }) => (
-            <div className="overflow-x-auto my-6">
-              <table className="w-full border border-border text-sm">{children}</table>
+            <div className="overflow-x-auto my-4 sm:my-6 -mx-1 px-1 sm:mx-0 sm:px-0">
+              <table className="w-full min-w-[16rem] border border-border text-xs sm:text-sm">{children}</table>
             </div>
           ),
 
           th: ({ children }) => (
-            <th className="border border-border px-3 py-2 bg-muted text-left font-medium">
+            <th className="border border-border px-2 py-1.5 sm:px-3 sm:py-2 bg-muted text-left font-medium">
               {children}
             </th>
           ),
 
           td: ({ children }) => (
-            <td className="border border-border px-3 py-2">{children}</td>
+            <td className="border border-border px-2 py-1.5 sm:px-3 sm:py-2">{children}</td>
           ),
         }}
       >
