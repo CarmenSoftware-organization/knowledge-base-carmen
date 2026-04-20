@@ -141,7 +141,7 @@ export default async function ArticlePage({ params }: Props) {
       />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10 flex gap-8 lg:gap-10 items-start">
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-5 sm:py-8 lg:py-10 flex gap-6 sm:gap-8 lg:gap-10 items-start">
           {!isFaqArticle && (
             <div className="hidden xl:block shrink-0">
               <KBSidebar />

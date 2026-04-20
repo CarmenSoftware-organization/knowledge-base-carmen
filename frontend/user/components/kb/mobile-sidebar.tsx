@@ -1,13 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, ChevronRight, X } from "lucide-react"; 
+import { Menu, ChevronRight, X } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { KBSidebar } from "./sidebar";
 import { TableOfContents } from "./toc";
 import { FaqSidebarNav } from "./faq-sidebar";
 import { cn } from "@/lib/utils";
 import { usePathname, useParams } from "next/navigation";
 import type { FaqWikiItem } from "@/lib/faq-nav";
+import { subscribeKbHeaderScrollHidden } from "@/lib/kb-scroll-chrome";
+
+/** h-14 (56) + h-12 (48) + ช่องว่าง — ดันแถบ Menu ออกนอกจอคู่กับ KBHeader */
+const MOBILE_SUBBAR_HIDE_Y = -(56 + 48 + 6);
 
 type MobileSidebarProps = {
   /** รายการ FAQ จาก server — ถ้ามี จะแสดงเมนู FAQ แทนเมนูคู่มือเมื่ออยู่ในโซน FAQ */
@@ -16,6 +21,8 @@ type MobileSidebarProps = {
 
 export function MobileSidebar({ faqItems }: MobileSidebarProps) {
   const [activeDrawer, setActiveDrawer] = useState<"menu" | "toc" | null>(null);
+  const [headerScrollHidden, setHeaderScrollHidden] = useState(false);
+  const reduceMotion = useReducedMotion();
   const pathname = usePathname();
   const params = useParams();
   const isArticlePage = !!params.article;
@@ -37,16 +44,28 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
     setActiveDrawer(null);
   }, [pathname]);
 
+  useEffect(() => {
+    return subscribeKbHeaderScrollHidden(setHeaderScrollHidden);
+  }, []);
+
   const closeDrawer = () => setActiveDrawer(null);
+
+  const subBarY =
+    reduceMotion || !headerScrollHidden || activeDrawer ? 0 : MOBILE_SUBBAR_HIDE_Y;
 
   return (
     <>
       {/* 📱 Sticky Sub-Header — ซ่อนทั้งแถบบน /faq ที่ไม่ใช่บทความ; บทความ FAQ ยังมีปุ่ม TOC */}
       {showMobileSubBar && (
-        <div className="lg:hidden sticky top-[64px] z-40 w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-700/60">
+        <motion.div
+          className="lg:hidden sticky top-14 z-40 w-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-700/60 will-change-transform"
+          initial={false}
+          animate={{ y: subBarY }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div
             className={cn(
-              "flex items-center px-4 h-12",
+              "flex items-center px-3 sm:px-4 h-11 sm:h-12",
               hideKbManualMenu &&
                 isArticlePage &&
                 !hasFaqNav &&
@@ -63,18 +82,18 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
             {!hideKbManualMenu && (
               <button
                 onClick={() => setActiveDrawer("menu")}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors touch-manipulation"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                 <span>Menu</span>
               </button>
             )}
             {hideKbManualMenu && hasFaqNav && (
               <button
                 onClick={() => setActiveDrawer("menu")}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors touch-manipulation"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                 <span>FAQ</span>
               </button>
             )}
@@ -82,14 +101,15 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
             {isArticlePage && (
               <button
                 onClick={() => setActiveDrawer("toc")}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors"
               >
-                <span>On this page</span>
-                <ChevronRight className="h-4 w-4" />
+                <span className="hidden min-[380px]:inline">On this page</span>
+                <span className="min-[380px]:hidden">TOC</span>
+                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               </button>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Overlay */}

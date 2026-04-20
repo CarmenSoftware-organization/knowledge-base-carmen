@@ -120,7 +120,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* หน้า Home BU: เต็มความสูงใต้ sticky header (h-14 = 3.5rem) — vh → svh → dvh */
+/* หน้า Home BU (เดสก์ท็อป xl+): เต็มความสูงใต้ sticky header — <xl ใช้ min-h-0 กันพื้นที่ว่างบนแท็บเล็ต */
 @layer utilities {
   .min-h-bu-landing {
     min-height: calc(100vh - 3.5rem);

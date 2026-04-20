@@ -18,8 +18,15 @@ import {
 } from "@/components/ui/select";
 import { Building2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { cn } from "@/lib/utils";
 
-export function BUSwitcher() {
+type BUSwitcherProps = {
+  className?: string;
+  /** Full-width row for mobile drawer / tight layouts */
+  fluid?: boolean;
+};
+
+export function BUSwitcher({ className, fluid }: BUSwitcherProps) {
   const t = useTranslations("common");
   const [bus, setBus] = useState<BusinessUnit[]>([]);
   const [selected, setSelected] = useState<string>(DEFAULT_BU);
@@ -55,11 +62,15 @@ export function BUSwitcher() {
 
   return (
     <div
-      className="flex items-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-2 py-1 shadow-sm dark:border-primary/45 dark:bg-primary/15"
+      className={cn(
+        "flex items-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-2 py-1 shadow-sm dark:border-primary/45 dark:bg-primary/15",
+        fluid && "w-full min-w-0 flex-wrap sm:flex-nowrap",
+        className,
+      )}
       title={t("buSwitcherHint")}
     >
-      <div className="flex items-center gap-1.5 text-primary shrink-0">
-        <Building2 className="size-4" aria-hidden />
+      <div className="flex min-w-0 items-center gap-1.5 text-primary shrink-0">
+        <Building2 className="size-4 shrink-0" aria-hidden />
         <span className="hidden min-[1200px]:inline text-[11px] font-bold uppercase tracking-wide text-primary">
           {t("buSwitcherLabel")}
         </span>
@@ -67,7 +78,12 @@ export function BUSwitcher() {
       <Select value={selected} onValueChange={handleChange}>
         <SelectTrigger
           aria-label={t("buSwitcherLabel")}
-          className="h-8 min-w-[7.5rem] w-[min(11rem,38vw)] rounded-lg border border-primary/25 bg-background/95 px-2.5 text-sm font-semibold text-foreground shadow-sm ring-0 hover:bg-background focus:ring-2 focus:ring-primary/35 dark:border-primary/35 dark:bg-background/90"
+          className={cn(
+            "h-8 rounded-lg border border-primary/25 bg-background/95 px-2 text-sm font-semibold text-foreground shadow-sm ring-0 hover:bg-background focus:ring-2 focus:ring-primary/35 dark:border-primary/35 dark:bg-background/90 [&>span]:truncate",
+            fluid
+              ? "min-w-0 w-full max-w-none flex-1 basis-[12rem]"
+              : "min-w-[4.75rem] w-[min(7.25rem,28vw)] max-w-[7.5rem]",
+          )}
         >
           <SelectValue placeholder={t("buSwitcherPlaceholder")} />
         </SelectTrigger>

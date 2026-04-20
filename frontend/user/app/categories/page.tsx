@@ -47,7 +47,7 @@ export default async function CategoriesPage() {
       <MobileSidebar />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 flex flex-col lg:flex-row gap-6 sm:gap-8">
           
           {/* Sidebar - Desktop Only */}
           <aside className="hidden md:block w-64 shrink-0">
@@ -60,8 +60,8 @@ export default async function CategoriesPage() {
           <div className="flex-1 w-full">
             <Breadcrumb items={[{ label: t("common.categoriesAll") }]} />
 
-            <div className="mt-6 mb-10">
-              <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+            <div className="mt-4 mb-6 sm:mt-6 sm:mb-8 md:mb-10">
+              <h1 className="text-2xl font-black leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
                 {t("category.documents")}
               </h1>
             </div>
