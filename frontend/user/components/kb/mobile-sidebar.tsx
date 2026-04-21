@@ -132,7 +132,7 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-4">
               {hideKbManualMenu && hasFaqNav && faqItems ? (
                 <FaqSidebarNav
                   items={faqItems}
@@ -168,7 +168,7 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
               </button>
             </div>
             {/* overflow-y-auto on this div so TOC's closest(".overflow-y-auto") finds it correctly */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-6">
               <TableOfContents isMobile onClose={closeDrawer} />
             </div>
           </div>

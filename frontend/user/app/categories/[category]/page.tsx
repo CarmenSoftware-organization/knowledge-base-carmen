@@ -40,12 +40,14 @@ export default async function CategoryPage({
   const isChangelog = category.toLowerCase() === "changelog";
   const cookieStore = await cookies();
   const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
+  // Changelog is global content and must not vary by selected BU.
+  const contentBu = isChangelog ? DEFAULT_BU : bu;
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
   const locale = isChangelog ? "en" : cookieLocale;
 
   let data;
   try {
-    data = await getCategory(category, bu, { cache: "no-store" });
+    data = await getCategory(category, contentBu, { cache: "no-store" });
   } catch {
     notFound();
   }
@@ -58,7 +60,7 @@ export default async function CategoryPage({
   let indexContent = null;
   if (!isChangelog) {
     try {
-      const rawIndex = await getContent(`${category}/index.md`, bu, locale, {
+      const rawIndex = await getContent(`${category}/index.md`, contentBu, locale, {
         cache: "no-store",
       });
       if (rawIndex) {
