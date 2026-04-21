@@ -10,17 +10,26 @@ import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import matter from "gray-matter";
 import { ArticleGridTransition } from "@/components/kb/article-grid-client";
+import { ChangelogTimeline } from "@/components/kb/changelog-timeline";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { DEFAULT_BU } from "@/lib/config";
+import { sortChangelogItems } from "@/lib/changelog-utils";
+import { cn } from "@/lib/utils";
 
 export default async function CategoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ category: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 }) {
   const resolvedParams = await params;
   const category = resolvedParams.category;
+  const resolvedSearch = await searchParams;
+  const pageRaw = resolvedSearch.page;
+  const pageStr = Array.isArray(pageRaw) ? pageRaw[0] : pageRaw;
+  const changelogPage = Math.max(1, parseInt(pageStr || "1", 10) || 1);
 
   if (!category) notFound();
 
@@ -28,10 +37,11 @@ export default async function CategoryPage({
     redirect("/faq");
   }
 
+  const isChangelog = category.toLowerCase() === "changelog";
   const cookieStore = await cookies();
   const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU).trim().toLowerCase();
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
-  const locale = category.toLowerCase() === "changelog" ? "en" : cookieLocale;
+  const locale = isChangelog ? "en" : cookieLocale;
 
   let data;
   try {
@@ -40,30 +50,33 @@ export default async function CategoryPage({
     notFound();
   }
 
-  // Empty list from API → 404 (not blank page)
-  if (!data.items?.length) {
+  if (!data.items?.length && !isChangelog) {
     notFound();
   }
 
+  // Changelog list page: skip index.md (legacy long content).
   let indexContent = null;
-  try {
-    const rawIndex = await getContent(`${category}/index.md`, bu, locale, {
-      cache: "no-store",
-    });
-    if (rawIndex) {
-      indexContent = matter(rawIndex.content);
+  if (!isChangelog) {
+    try {
+      const rawIndex = await getContent(`${category}/index.md`, bu, locale, {
+        cache: "no-store",
+      });
+      if (rawIndex) {
+        indexContent = matter(rawIndex.content);
+      }
+    } catch {
+      // No index.md is OK if category has other articles
     }
-  } catch {
-    // No index.md is OK if category has other articles
   }
 
   const categoryName =
     categoryDisplayMap[data.category] || data.category.toUpperCase();
 
-  const gridItems = data.items.filter((item) => {
+  const gridItems = (data.items || []).filter((item) => {
     const p = item.path.replace(/\\/g, "/");
     return item.slug !== "index" && !p.includes("/_images/");
   });
+  const changelogSorted = isChangelog ? sortChangelogItems(gridItems) : [];
 
   const t = await getTranslations();
 
@@ -73,14 +86,21 @@ export default async function CategoryPage({
       <MobileSidebar />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex gap-10 items-start relative">
+        <div
+          className={cn(
+            "mx-auto px-4 sm:px-6 py-6",
+            isChangelog
+              ? "max-w-3xl"
+              : "max-w-7xl flex gap-10 items-start relative",
+          )}
+        >
+          {!isChangelog && (
+            <aside className="hidden lg:block sticky top-24 shrink-0">
+              <KBSidebar />
+            </aside>
+          )}
 
-          {/* Sidebar */}
-          <aside className="hidden lg:block sticky top-24 shrink-0">
-            <KBSidebar />
-          </aside>
-
-          <div className="flex-1 min-w-0">
+          <div className={cn("min-w-0", !isChangelog && "flex-1")}>
             <Breadcrumb
               items={[
                 { label: t("common.categories"), href: "/categories" },
@@ -126,7 +146,9 @@ export default async function CategoryPage({
                   </div>
                   <div className="relative flex justify-center">
                     <span className="bg-background px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                      {t("category.articlesInCategory")}
+                      {isChangelog
+                        ? "Release history"
+                        : t("category.articlesInCategory")}
                     </span>
                   </div>
                 </div>
@@ -134,17 +156,27 @@ export default async function CategoryPage({
             )}
 
             {!indexContent && (
-              <div className="mt-6 mb-6">
+              <div className={cn("mt-6", isChangelog ? "mb-2" : "mb-6")}>
                 <h1 className="text-3xl font-black text-foreground tracking-tight">
                   {categoryName}
                 </h1>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  {t("category.allArticlesInCategory")}
+                  {isChangelog
+                    ? "Newest releases first, grouped by year. Open a card for full notes."
+                    : t("category.allArticlesInCategory")}
                 </p>
               </div>
             )}
 
-            <ArticleGridTransition items={gridItems} category={category} />
+            {isChangelog ? (
+              <ChangelogTimeline
+                category={category}
+                items={changelogSorted}
+                page={changelogPage}
+              />
+            ) : (
+              <ArticleGridTransition items={gridItems} category={category} />
+            )}
           </div>
         </div>
       </main>
