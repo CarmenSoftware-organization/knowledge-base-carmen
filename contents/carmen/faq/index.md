@@ -8,7 +8,9 @@ tags: carmen,faq,documentation
 
 # Carmen FAQ
 
-Generated from Carmen Cloud source documents with folder naming `Module-Submodule-Category`.
+Generated from Carmen Cloud source documents with module-first hierarchy.
+
+Supported paths: `faq/Module/Submodule/Article.md` and `faq/Module/Submodule/Category/Article.md`.
 
 ## Modules
 

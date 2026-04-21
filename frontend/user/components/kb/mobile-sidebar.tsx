@@ -15,7 +15,6 @@ import { subscribeKbHeaderScrollHidden } from "@/lib/kb-scroll-chrome";
 const MOBILE_SUBBAR_HIDE_Y = -(56 + 48 + 6);
 
 type MobileSidebarProps = {
-  /** FAQ nav from server; in FAQ zone shows FAQ menu instead of manual */
   faqItems?: FaqWikiItem[];
 };
 
@@ -27,11 +26,11 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
   const params = useParams();
   const isArticlePage = !!params.article;
 
-  /** FAQ routes: separate nav, no KBSidebar on mobile */
   const hideKbManualMenu =
     pathname === "/faq" ||
     pathname.startsWith("/faq/") ||
-    pathname.startsWith("/categories/faq");
+    pathname.startsWith("/categories/faq") ||
+    pathname.startsWith("/categories/changelog");
 
   const hasFaqNav = Boolean(faqItems?.length);
 
@@ -65,14 +64,8 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
           <div
             className={cn(
               "flex items-center px-3 sm:px-4 h-11 sm:h-12",
-              hideKbManualMenu &&
-                isArticlePage &&
-                !hasFaqNav &&
-                "justify-end",
-              hideKbManualMenu &&
-                isArticlePage &&
-                hasFaqNav &&
-                "justify-between",
+              hideKbManualMenu && isArticlePage && !hasFaqNav && "justify-end",
+              hideKbManualMenu && isArticlePage && hasFaqNav && "justify-between",
               !hideKbManualMenu && isArticlePage && "justify-between",
               !hideKbManualMenu && !isArticlePage && "justify-start",
               hideKbManualMenu && !isArticlePage && hasFaqNav && "justify-start"
@@ -96,7 +89,6 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
                 <span>FAQ</span>
               </button>
             )}
-
             {isArticlePage && (
               <button
                 onClick={() => setActiveDrawer("toc")}
@@ -112,26 +104,29 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
       )}
 
       {/* Overlay */}
-      <div 
+      <div
         className={cn(
           "fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] backdrop-blur-sm transition-opacity duration-300",
           activeDrawer ? "opacity-100" : "opacity-0 pointer-events-none"
-        )} 
-        onClick={closeDrawer} 
+        )}
+        onClick={closeDrawer}
       />
 
+      {/* Menu drawer */}
       {openMenuDrawer && (
-        <div className={cn(
-          "fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-zinc-900 z-[120] shadow-2xl dark:shadow-black/50 transition-transform duration-300 ease-in-out",
-          activeDrawer === "menu" ? "translate-x-0" : "-translate-x-full"
-        )}>
+        <div
+          className={cn(
+            "fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-zinc-900 z-[120] shadow-2xl dark:shadow-black/50 transition-transform duration-300 ease-in-out",
+            activeDrawer === "menu" ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
           <div className="flex flex-col h-full">
             <div className="p-6 border-b border-zinc-200 dark:border-zinc-700/60 flex justify-between items-center">
               <span className="font-bold text-primary dark:text-zinc-100">
                 {hideKbManualMenu && hasFaqNav ? "เมนู FAQ" : "เมนูเอกสาร"}
               </span>
-              <button 
-                onClick={closeDrawer} 
+              <button
+                onClick={closeDrawer}
                 className="text-muted-foreground dark:text-zinc-400 p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -152,23 +147,29 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
         </div>
       )}
 
+      {/* TOC drawer — overflow-y-auto here is what TOC's auto-scroll targets via .closest(".overflow-y-auto") */}
       {isArticlePage && (
-        <div className={cn(
-          "fixed inset-y-0 right-0 w-[280px] bg-white dark:bg-zinc-900 z-[120] shadow-2xl dark:shadow-black/50 transition-transform duration-300 ease-in-out",
-          activeDrawer === "toc" ? "translate-x-0" : "translate-x-full"
-        )}>
+        <div
+          className={cn(
+            "fixed inset-y-0 right-0 w-[280px] bg-white dark:bg-zinc-900 z-[120] shadow-2xl dark:shadow-black/50 transition-transform duration-300 ease-in-out",
+            activeDrawer === "toc" ? "translate-x-0" : "translate-x-full"
+          )}
+        >
           <div className="flex flex-col h-full">
             <div className="p-6 border-b border-zinc-200 dark:border-zinc-700/60 flex justify-between items-center bg-gray-50 dark:bg-zinc-800/50">
-              <span className="font-bold text-primary dark:text-zinc-100 italic">On this page</span>
-              <button 
-                onClick={closeDrawer} 
+              <span className="font-bold text-primary dark:text-zinc-100 italic">
+                On this page
+              </span>
+              <button
+                onClick={closeDrawer}
                 className="text-muted-foreground dark:text-zinc-400 p-1 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 mobile-toc-container">
-               <TableOfContents isMobile onClose={closeDrawer} />
+            {/* overflow-y-auto on this div so TOC's closest(".overflow-y-auto") finds it correctly */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <TableOfContents isMobile onClose={closeDrawer} />
             </div>
           </div>
         </div>

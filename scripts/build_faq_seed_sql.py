@@ -138,15 +138,22 @@ class Entry:
     tags: list[str]
 
 
-def parse_hierarchy_from_meta_or_stem(meta: dict[str, str], stem: str, parent_folder: str = "") -> Hierarchy:
+def parse_hierarchy_from_meta_or_stem(
+    meta: dict[str, str], stem: str, parent_parts: list[str] | None = None
+) -> Hierarchy:
     mod = meta.get("faq_module", "").strip()
     sub = meta.get("faq_submodule", "").strip()
     cat = meta.get("faq_category", "").strip()
     if mod and sub and cat:
         return Hierarchy(mod, sub, cat)
 
-    if parent_folder:
-        from_folder = [p.strip() for p in parent_folder.split("-") if p.strip()]
+    parent_parts = [p.strip() for p in (parent_parts or []) if p.strip()]
+    if parent_parts:
+        if len(parent_parts) >= 3:
+            return Hierarchy(parent_parts[0], parent_parts[1], "-".join(parent_parts[2:]))
+        if len(parent_parts) == 2:
+            return Hierarchy(parent_parts[0], parent_parts[1], "General")
+        from_folder = [p.strip() for p in parent_parts[0].split("-") if p.strip()]
         if len(from_folder) >= 3:
             return Hierarchy(from_folder[0], from_folder[1], "-".join(from_folder[2:]))
         if len(from_folder) == 2:
@@ -171,14 +178,14 @@ def build_entries(faq_dir: Path) -> list[Entry]:
             continue
         raw = md.read_text(encoding="utf-8")
         meta, body = split_frontmatter(raw)
-        parent_folder = ""
+        parent_parts: list[str] = []
         try:
             rel = md.relative_to(faq_dir)
             if len(rel.parts) > 1:
-                parent_folder = rel.parts[0]
+                parent_parts = list(rel.parts[:-1])
         except ValueError:
-            parent_folder = md.parent.name
-        hierarchy = parse_hierarchy_from_meta_or_stem(meta, md.stem, parent_folder)
+            parent_parts = [md.parent.name]
+        hierarchy = parse_hierarchy_from_meta_or_stem(meta, md.stem, parent_parts)
         labeled = parse_labeled_sections(body)
 
         title = (

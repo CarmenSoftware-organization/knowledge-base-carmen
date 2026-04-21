@@ -127,7 +127,10 @@ def discover_docs() -> list[DocItem]:
 
 def convert_doc(item: DocItem) -> tuple[Path, str]:
     title = item.source.stem.strip()
-    target_folder = TARGET_FAQ_ROOT / item.category_folder
+    hierarchy_parts = [item.module, item.submodule]
+    if item.category and item.category.lower() != "general":
+        hierarchy_parts.append(item.category)
+    target_folder = TARGET_FAQ_ROOT.joinpath(*hierarchy_parts)
     target_folder.mkdir(parents=True, exist_ok=True)
 
     image_bucket = (
@@ -200,7 +203,8 @@ def write_index(modules: set[str]) -> None:
         "tags: carmen,faq,documentation\n"
         "---\n\n"
         "# Carmen FAQ\n\n"
-        "Generated from Carmen Cloud source documents with folder naming `Module-Submodule-Category`.\n\n"
+        "Generated from Carmen Cloud source documents with module-first hierarchy.\n\n"
+        "Supported paths: `faq/Module/Submodule/Article.md` and `faq/Module/Submodule/Category/Article.md`.\n\n"
         "## Modules\n\n"
         f"{module_lines}\n"
     )

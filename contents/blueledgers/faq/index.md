@@ -8,7 +8,9 @@ tags: blueledgers,faq,documentation
 
 # Blueledgers FAQ
 
-Generated from source docs with folder naming `Module-Submodule-Category`.
+Generated from source docs with module-first hierarchy.
+
+Supported paths: `faq/Module/Submodule/Article.md` and `faq/Module/Submodule/Category/Article.md`.
 
 ## Modules
 

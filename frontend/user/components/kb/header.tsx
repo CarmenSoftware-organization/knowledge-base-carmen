@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, ChevronDown, Headset } from "lucide-react";
+import { Menu, X, Headset } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -13,13 +13,6 @@ import { useTheme } from "next-themes";
 import { BUSwitcher } from "./bu-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { useTranslations } from "next-intl";
-import {
-  getBusinessUnits,
-  getCategories,
-  getCategory,
-  getSelectedBUClient,
-  setSelectedBU,
-} from "@/lib/wiki-api";
 import { cn } from "@/lib/utils";
 import { notifyKbHeaderScrollHidden } from "@/lib/kb-scroll-chrome";
 
@@ -37,22 +30,6 @@ const headerVariants: Variants = {
     y: "-100%",
     pointerEvents: "none",
     transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
-const dropdownVariants: Variants = {
-  hidden: { opacity: 0, y: 6, scale: 0.98 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] },
-  },
-  exit: {
-    opacity: 0,
-    y: 4,
-    scale: 0.98,
-    transition: { duration: 0.12 },
   },
 };
 
@@ -86,86 +63,9 @@ const mobileBackdropVariants: Variants = {
 const headerSupportButtonClass =
   "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/10 text-primary transition-colors hover:bg-primary/15 hover:border-primary/50 dark:border-primary/45 dark:bg-primary/15 active:scale-[0.98]";
 
-const accordionVariants: Variants = {
-  hidden: { height: 0, opacity: 0 },
-  show: {
-    height: "auto",
-    opacity: 1,
-    transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
-  },
-  exit: {
-    height: 0,
-    opacity: 0,
-    transition: { duration: 0.18 },
-  },
-};
-
-// ─── Changelog config ──────────────────────────────────────────────────────────
-// Newest first
-const CHANGELOG_ORDER: string[] = [
-  "mar2026",
-  "feb2026",
-  "nov2025",
-  "sep2025",
-  "jul2025",
-  "may2025",
-  "apr2025",
-  "mar2025",
-  "jan2025",
-  "nov2024",
-  "aug2024",
-  "june2024",
-  "may2024",
-];
-
 /** Same Zoho support form as footer / BU landing */
 const ZOHO_CONTACT_CENTER_URL =
   "https://forms.zohopublic.com/carmensoftware/form/Contactforsupport/formperma/u00Cn7XaD_LKMPjMYBVbZxAe7redlAiayQxwJJqnsLI?zf_enablecamera=true";
-
-const changelogTitleMap: Record<string, string> = {
-  mar2026: "March 2026 Release Information",
-  feb2026: "February 2026 Release Information",
-  nov2025: "November 2025 Release Information",
-  sep2025: "September 2025 Release Information",
-  jul2025: "July 2025 Release Information",
-  may2025: "May 2025 Release Information",
-  apr2025: "April 2025 Release Information",
-  mar2025: "March 2025 Release Information",
-  jan2025: "January 2025 Release Information",
-  nov2024: "November 2024 Release Information",
-  aug2024: "August 2024 Release Information",
-  june2024: "June 2024 Release Information",
-  may2024: "May 2024 Release Information",
-};
-
-function sortChangelog(
-  items: {
-    slug: string;
-    title: string;
-    buSlug: string;
-    categorySlug: string;
-  }[],
-) {
-  return [...items].sort((a, b) => {
-    const ai = CHANGELOG_ORDER.indexOf(a.slug);
-    const bi = CHANGELOG_ORDER.indexOf(b.slug);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-}
-
-function prioritizeSelectedBU<
-  T extends {
-    slug: string;
-  },
->(bus: T[], selected: string): T[] {
-  const selectedSlug = (selected || "").trim().toLowerCase();
-  if (!selectedSlug) return bus;
-  return [...bus].sort((a, b) => {
-    const aIsSelected = a.slug.toLowerCase() === selectedSlug ? 0 : 1;
-    const bIsSelected = b.slug.toLowerCase() === selectedSlug ? 0 : 1;
-    return aIsSelected - bIsSelected;
-  });
-}
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
@@ -178,42 +78,27 @@ export function KBHeader() {
 
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileChangelogOpen, setMobileChangelogOpen] = useState(false);
-  const [desktopChangelogOpen, setDesktopChangelogOpen] = useState(false);
-  const [changelogItems, setChangelogItems] = useState<
-    { slug: string; title: string; buSlug: string; categorySlug: string }[]
-  >([]);
   const [scrollHidden, setScrollHidden] = useState(false);
 
-  const changelogRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
   const scrollRaf = useRef<number>(0);
-  const menuOpenRef = useRef({
-    mobile: false,
-    mobileChangelog: false,
-    desktopChangelog: false,
-  });
+  const menuOpenRef = useRef({ mobile: false });
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    menuOpenRef.current = {
-      mobile: mobileMenuOpen,
-      mobileChangelog: mobileChangelogOpen,
-      desktopChangelog: desktopChangelogOpen,
-    };
-  }, [mobileMenuOpen, mobileChangelogOpen, desktopChangelogOpen]);
+    menuOpenRef.current = { mobile: mobileMenuOpen };
+  }, [mobileMenuOpen]);
 
   const closeMobile = useCallback(() => {
     setMobileMenuOpen(false);
-    setMobileChangelogOpen(false);
   }, []);
 
   useEffect(() => {
-    if (mobileMenuOpen || mobileChangelogOpen || desktopChangelogOpen) {
+    if (mobileMenuOpen) {
       setScrollHidden(false);
     }
-  }, [mobileMenuOpen, mobileChangelogOpen, desktopChangelogOpen]);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     const effectiveHidden = reduceMotion ? false : scrollHidden;
@@ -231,7 +116,7 @@ export function KBHeader() {
       scrollRaf.current = requestAnimationFrame(() => {
         const y = window.scrollY;
         const m = menuOpenRef.current;
-        if (m.mobile || m.mobileChangelog || m.desktopChangelog) {
+        if (m.mobile) {
           setScrollHidden(false);
           lastScrollY.current = y;
           return;
@@ -264,7 +149,6 @@ export function KBHeader() {
 
   useEffect(() => {
     setMobileMenuOpen(false);
-    setMobileChangelogOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -284,65 +168,6 @@ export function KBHeader() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileMenuOpen, closeMobile]);
-
-  useEffect(() => {
-    if ((!desktopChangelogOpen && !mobileChangelogOpen) || changelogItems.length > 0) return;
-    Promise.all([
-      getBusinessUnits().catch(() => ({ items: [] })),
-    ])
-      .then(async ([buData]) => {
-        const selectedBU = getSelectedBUClient();
-        const bus = prioritizeSelectedBU(buData.items || [], selectedBU);
-        if (bus.length === 0) {
-          setChangelogItems([]);
-          return;
-        }
-
-        const perBU = await Promise.all(
-          bus.map(async (bu) => {
-            try {
-              const categories = await getCategories(bu.slug);
-              const changelogCategory = (categories.items || []).find(
-                (c) =>
-                  c.slug?.toLowerCase() === "changelog" ||
-                  c.slug?.toLowerCase().includes("changelog"),
-              );
-              if (!changelogCategory?.slug) return [];
-              const data = await getCategory(changelogCategory.slug, bu.slug);
-              return (data.items || [])
-                .filter((item) => item.slug?.toLowerCase() !== "index")
-                .map((item) => ({
-                  slug: item.slug,
-                  title: item.title || changelogTitleMap[item.slug] || item.slug,
-                  buSlug: bu.slug,
-                  categorySlug: changelogCategory.slug,
-                }));
-            } catch {
-              return [];
-            }
-          })
-        );
-
-        const merged = perBU.flat();
-        const unique = new Map<
-          string,
-          { slug: string; title: string; buSlug: string; categorySlug: string }
-        >();
-        for (const item of merged) {
-          // keep first BU occurrence for each release slug
-          if (!unique.has(item.slug)) unique.set(item.slug, item);
-        }
-        setChangelogItems(Array.from(unique.values()));
-      })
-      .catch(() => setChangelogItems([]));
-  }, [desktopChangelogOpen, mobileChangelogOpen, changelogItems.length]);
-
-  const sortedChangelog = sortChangelog(changelogItems);
-
-  const handleChangelogClick = (buSlug: string) => {
-    setSelectedBU(buSlug);
-    closeMobile();
-  };
 
   const logoSrc =
     mounted && resolvedTheme === "dark"
@@ -410,68 +235,13 @@ export function KBHeader() {
                 </NavLink>
               </>
             )}
-
-            {/* Changelog dropdown */}
-            <div
-              ref={changelogRef}
-              className="relative"
-              onMouseEnter={() => setDesktopChangelogOpen(true)}
-              onMouseLeave={() => setDesktopChangelogOpen(false)}
+            <NavLink
+              compact
+              href="/categories/changelog"
+              isActive={pathname.startsWith("/categories/changelog")}
             >
-              <button
-                type="button"
-                className={cn(
-                  "inline-flex h-9 items-center gap-0.5 rounded-full px-3 text-xs font-medium transition-colors duration-150",
-                  desktopChangelogOpen
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground",
-                )}
-              >
-                Changelog
-                <ChevronDown
-                  className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
-                    desktopChangelogOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              <AnimatePresence>
-                {desktopChangelogOpen && (
-                  <motion.div
-                    variants={dropdownVariants}
-                    initial="hidden"
-                    animate="show"
-                    exit="exit"
-                    className="absolute right-0 mt-1.5 w-72 rounded-lg border border-border bg-popover shadow-md z-50 overflow-hidden py-1"
-                  >
-                    {sortedChangelog.length === 0 ? (
-                      <p className="px-3 py-2 text-xs text-muted-foreground">ยังไม่มีรายการ</p>
-                    ) : (
-                      sortedChangelog.map((item, index) => {
-                        const label =
-                          changelogTitleMap[item.slug] || item.title || item.slug;
-                        const isNewest = index === 0;
-                        return (
-                          <Link
-                            key={item.slug}
-                            href={`/categories/${encodeURIComponent(item.categorySlug)}/${encodeURIComponent(item.slug)}`}
-                            onClick={() => handleChangelogClick(item.buSlug)}
-                            className="flex items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors duration-100 group"
-                          >
-                            <span>{label}</span>
-                            {isNewest && (
-                              <span className="text-[10px] font-semibold text-red-500 tracking-wide ml-2 shrink-0">
-                                new
-                              </span>
-                            )}
-                          </Link>
-                        );
-                      })
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+              Changelog
+            </NavLink>
           </nav>
 
           {/* ── Desktop utilities ── */}
@@ -593,64 +363,13 @@ export function KBHeader() {
                     </MobileNavLink>
                   </div>
                 )}
-
-                {/* Changelog accordion */}
-                <div className="mt-1">
-                  <button
-                    type="button"
-                    onClick={() => setMobileChangelogOpen((prev) => !prev)}
-                    className="w-full flex items-center justify-between min-h-11 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors touch-manipulation"
-                    aria-expanded={mobileChangelogOpen}
-                  >
-                    <span>Changelog</span>
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        mobileChangelogOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {mobileChangelogOpen && (
-                      <motion.div
-                        variants={accordionVariants}
-                        initial="hidden"
-                        animate="show"
-                        exit="exit"
-                        className="overflow-hidden"
-                      >
-                        <div className="ml-3 pl-3 border-l border-border/60 flex flex-col gap-0.5 py-1">
-                          {sortedChangelog.length === 0 ? (
-                            <p className="px-2 py-1.5 text-xs text-muted-foreground">
-                              ยังไม่มีรายการ
-                            </p>
-                          ) : (
-                            sortedChangelog.map((item, index) => {
-                              const label =
-                                changelogTitleMap[item.slug] || item.title || item.slug;
-                              const isNewest = index === 0;
-                              return (
-                                <Link
-                                  key={item.slug}
-                                  href={`/categories/${encodeURIComponent(item.categorySlug)}/${encodeURIComponent(item.slug)}`}
-                                  onClick={() => handleChangelogClick(item.buSlug)}
-                                  className="flex items-center justify-between px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:text-white dark:hover:text-foreground hover:bg-accent transition-colors"
-                                >
-                                  <span>{label}</span>
-                                  {isNewest && (
-                                    <span className="text-[10px] font-semibold text-red-500 tracking-wide ml-2 shrink-0">
-                                      new
-                                    </span>
-                                  )}
-                                </Link>
-                              );
-                            })
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <MobileNavLink
+                  href="/categories/changelog"
+                  onClick={closeMobile}
+                  isActive={pathname.startsWith("/categories/changelog")}
+                >
+                  Changelog
+                </MobileNavLink>
 
               </div>
 

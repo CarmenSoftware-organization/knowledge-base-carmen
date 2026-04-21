@@ -73,6 +73,7 @@ export default async function ArticlePage({ params }: Props) {
 
   const catLower = category.toLowerCase();
   const isFaqArticle = catLower === "faq";
+  const isChangelogArticle = catLower === "changelog";
   const faqNavItems = isFaqArticle ? await getCachedFaqNavItems(bu) : [];
 
   const { data: frontmatter, content } = matter(raw.content);
@@ -134,7 +135,8 @@ export default async function ArticlePage({ params }: Props) {
   const folderSegments = articleSegments.slice(0, -1);
   for (let i = 0; i < folderSegments.length; i++) {
     const seg = folderSegments[i];
-    const label = catLower === "faq" ? faqSegmentLabel(seg) : humanizeSegment(seg);
+    const label =
+      catLower === "faq" ? faqSegmentLabel(seg) : humanizeSegment(seg);
     if (catLower === "faq") {
       const href = `/faq/${folderSegments
         .slice(0, i + 1)
@@ -151,6 +153,7 @@ export default async function ArticlePage({ params }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <KBHeader />
+      {/* MobileSidebar owns the mobile TOC drawer — no inline TOC needed on mobile */}
       <MobileSidebar
         faqItems={
           isFaqArticle && faqNavItems.length > 0 ? faqNavItems : undefined
@@ -159,7 +162,7 @@ export default async function ArticlePage({ params }: Props) {
 
       <main className="flex-1">
         <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-5 sm:py-8 lg:py-10 flex gap-6 sm:gap-8 lg:gap-10 items-start">
-          {!isFaqArticle && (
+          {!isFaqArticle && !isChangelogArticle && (
             <div className="hidden xl:block shrink-0">
               <KBSidebar />
             </div>
@@ -182,9 +185,15 @@ export default async function ArticlePage({ params }: Props) {
 
             <div className="border-b border-border mb-8"></div>
 
-            <div className="block xl:hidden mb-8">
-              <TableOfContents />
-            </div>
+            {/*
+              ❌ REMOVED the old duplicate block:
+                <div className="block xl:hidden mb-8">
+                  <TableOfContents />
+                </div>
+              Mobile TOC is now exclusively handled by MobileSidebar's drawer above.
+              Having two instances causes IntersectionObserver to fire twice,
+              making activeId jump incorrectly.
+            */}
 
             <MarkdownRender
               content={fixedContent}
@@ -194,6 +203,7 @@ export default async function ArticlePage({ params }: Props) {
             />
           </div>
 
+          {/* Desktop sticky TOC — xl and up only */}
           <div className="hidden xl:block shrink-0">
             <TableOfContents />
           </div>

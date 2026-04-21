@@ -7,15 +7,17 @@ import { getCategory, getContent } from "@/lib/wiki-api";
 import { ArticleGridTransition } from "@/components/kb/article-grid-client";
 import { FaqFolderGrid } from "@/components/kb/faq-folder-grid";
 import { buildFaqNav } from "@/lib/faq-nav";
-import { ArticleHeaderInfo } from "@/components/kb/article/article-header-info";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import matter from "gray-matter";
-import { categoryDisplayMap } from "@/configs/sidebar-map";
 import { DEFAULT_BU } from "@/lib/config";
 
 const FAQ_SLUG = "faq";
+
+function stripLeadingH1(markdown: string): string {
+  return markdown.replace(/^\s*#\s+.+\n+/, "");
+}
 
 export default async function FAQHomePage() {
   const t = await getTranslations();
@@ -47,7 +49,7 @@ export default async function FAQHomePage() {
               <Breadcrumb
                 items={[
                   { label: t("common.categories"), href: "/categories" },
-                  { label: categoryDisplayMap[FAQ_SLUG] || "FAQ" },
+                  { label: "FAQ" },
                 ]}
               />
               <p className="mt-8 text-sm text-muted-foreground">
@@ -70,7 +72,7 @@ export default async function FAQHomePage() {
     );
   }
 
-  const categoryName = categoryDisplayMap[FAQ_SLUG] || "FAQ";
+  const categoryName = data.title?.trim() || "FAQ";
   const faqNav = buildFaqNav([], data.items);
 
   return (
@@ -105,30 +107,11 @@ export default async function FAQHomePage() {
 
             {indexContent && (
               <div className="mt-4 mb-8">
-                <ArticleHeaderInfo
-                  title={(indexContent.data.title as string) || categoryName}
-                  formattedDate={
-                    indexContent.data.date
-                      ? new Date(
-                          indexContent.data.date as string
-                        ).toLocaleDateString("th-TH", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })
-                      : null
-                  }
-                  tags={
-                    Array.isArray(indexContent.data.tags)
-                      ? (indexContent.data.tags as string[])
-                      : []
-                  }
-                />
-                <div className="border-b my-6 border-border" />
                 <MarkdownRender
-                  content={indexContent.content
-                    .toString()
-                    .replace(/\n##/g, "\n\n##")}
+                  content={stripLeadingH1(indexContent.content.toString()).replace(
+                    /\n##/g,
+                    "\n\n##"
+                  )}
                   category={FAQ_SLUG}
                   bu={bu}
                 />

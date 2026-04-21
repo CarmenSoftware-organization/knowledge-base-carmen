@@ -8,13 +8,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   buildFaqNav,
-  faqHasRealNestedFolders,
   faqPathTail,
-  normalizeFaqTailFlatNumeric,
   type FaqWikiItem,
 } from "@/lib/faq-nav";
 import { wikiPathToRoute } from "@/lib/wiki-api";
-import { articleDisplayMap, cleanTitle } from "@/configs/sidebar-map";
 
 function safeDecode(seg: string): string {
   try {
@@ -73,7 +70,6 @@ function pathsMatch(a: string, b: string) {
 /** Folder keys to expand for URL (incl. synthetic FAQ levels) */
 function faqExpandedFolderKeys(pathname: string, items: FaqWikiItem[]): string[] {
   const p = (pathname.split("?")[0] || "").replace(/\/$/, "") || "/";
-  const useSynthetic = !faqHasRealNestedFolders(items);
 
   if (p === "/faq" || p === "/categories/faq") {
     return [];
@@ -98,10 +94,7 @@ function faqExpandedFolderKeys(pathname: string, items: FaqWikiItem[]): string[]
       if (!pathsMatch(route, pathname)) continue;
       const rawTail = faqPathTail(item.path);
       if (!rawTail?.length) continue;
-      const tail =
-        useSynthetic && rawTail.length === 1 && rawTail[0].endsWith(".md")
-          ? normalizeFaqTailFlatNumeric(rawTail)
-          : rawTail;
+      const tail = rawTail;
       const last = tail[tail.length - 1];
       if (!last?.endsWith(".md")) continue;
       const folderParts = tail.slice(0, -1);
@@ -228,9 +221,7 @@ const FaqLevel = memo(function FaqLevel({
 
       {articles.map((article) => {
         const href = wikiPathToRoute(article.path);
-        const slug = article.slug;
-        const label =
-          articleDisplayMap[slug] || cleanTitle(article.title || slug);
+        const label = article.title?.trim() || article.slug;
         const active = pathsMatch(pathname, href);
 
         return (

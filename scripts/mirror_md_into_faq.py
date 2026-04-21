@@ -80,10 +80,12 @@ def main() -> None:
     faq_dir.mkdir(parents=True, exist_ok=True)
 
     copied = 0
-    for md_path in sorted(src.glob("*.md")):
-        if args.exclude_index and md_path.name.lower() in ("index.md",):
+    for md_path in sorted(src.rglob("*.md")):
+        if args.exclude_index and md_path.name.lower() == "index.md":
             continue
-        dst = faq_dir / md_path.name
+        rel = md_path.relative_to(src)
+        dst = faq_dir / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
         text = md_path.read_text(encoding="utf-8")
         text = update_image_links(text)
         dst.write_text(text, encoding="utf-8")
