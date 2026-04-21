@@ -309,12 +309,14 @@ export function KBHeader() {
               );
               if (!changelogCategory?.slug) return [];
               const data = await getCategory(changelogCategory.slug, bu.slug);
-              return (data.items || []).map((item) => ({
-                slug: item.slug,
-                title: item.title || changelogTitleMap[item.slug] || item.slug,
-                buSlug: bu.slug,
-                categorySlug: changelogCategory.slug,
-              }));
+              return (data.items || [])
+                .filter((item) => item.slug?.toLowerCase() !== "index")
+                .map((item) => ({
+                  slug: item.slug,
+                  title: item.title || changelogTitleMap[item.slug] || item.slug,
+                  buSlug: bu.slug,
+                  categorySlug: changelogCategory.slug,
+                }));
             } catch {
               return [];
             }
