@@ -302,9 +302,6 @@ export function MarkdownRender({
               resolved.startsWith("/faq") ||
               resolved.startsWith("/search");
             const isHashOnly = href.trim().startsWith("#");
-            // #region agent log
-            fetch('http://127.0.0.1:7292/ingest/e2038622-1309-4179-ad5f-57c724e3114a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9a88b9'},body:JSON.stringify({sessionId:'9a88b9',runId:'frontend-security-review-1',hypothesisId:'H1-H3',location:'frontend/user/components/kb/article/markdown-content.tsx:a-component:287',message:'markdown anchor classification',data:{href,resolved,isInternal,isHashOnly},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
 
             if (isInternal || isHashOnly) {
               return (
