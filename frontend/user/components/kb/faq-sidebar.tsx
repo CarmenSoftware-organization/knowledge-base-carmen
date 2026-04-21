@@ -273,7 +273,7 @@ export function FaqSidebarNav({
   return (
     <motion.nav
       className={cn(
-        "space-y-1 pr-4 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-hide",
+        "space-y-1 pr-4 max-h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] scrollbar-hide",
         className
       )}
       aria-label="FAQ navigation"
@@ -321,7 +321,7 @@ export function FaqSidebar({ items }: { items: FaqWikiItem[] }) {
       initial="hidden"
       animate="show"
       className={cn(
-        "shrink-0 hidden lg:block w-64 sticky top-28 h-fit self-start"
+        "shrink-0 hidden lg:block w-64 h-fit self-start"
       )}
     >
       <motion.p

@@ -142,7 +142,7 @@ export function TableOfContents({
       className={cn(
         isMobile
           ? "block"
-          : "hidden xl:block w-64 shrink-0 h-fit sticky top-28"
+          : "hidden xl:block w-64 shrink-0 h-fit"
       )}
     >
       <div className={cn(!isMobile && "border-l-2 border-gray-100 pl-4 relative")}>

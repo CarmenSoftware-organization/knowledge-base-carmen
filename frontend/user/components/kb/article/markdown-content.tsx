@@ -73,6 +73,24 @@ function sanitizeImgAlt(alt: string, resolvedSrc: string): string {
   return t;
 }
 
+function decodeUriComponentSafe(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeAssetSegment(seg: string): string {
+  let current = seg;
+  for (let i = 0; i < 2; i += 1) {
+    const decoded = decodeUriComponentSafe(current);
+    if (decoded === current) break;
+    current = decoded;
+  }
+  return current.normalize("NFC");
+}
+
 function MermaidDiagram({ chart }: { chart: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -358,7 +376,7 @@ export function MarkdownRender({
             const qs = new URLSearchParams({ bu });
             const url = `${API_BASE}/wiki-assets/${assetRelative
               .split("/")
-              .map((seg) => encodeURIComponent(seg))
+              .map((seg) => encodeURIComponent(normalizeAssetSegment(seg)))
               .join("/")}?${qs.toString()}`;
 
             return (

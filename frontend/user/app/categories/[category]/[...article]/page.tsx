@@ -50,9 +50,12 @@ export default async function ArticlePage({ params }: Props) {
   const bu = (cookieStore.get("selected_bu")?.value || DEFAULT_BU)
     .trim()
     .toLowerCase();
+  const isChangelogCategory = category.toLowerCase() === "changelog";
+  // Changelog is shared across all BUs.
+  const contentBu = isChangelogCategory ? DEFAULT_BU : bu;
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
 
-  const locale = category.toLowerCase() === "changelog" ? "en" : cookieLocale;
+  const locale = isChangelogCategory ? "en" : cookieLocale;
 
   const relBase = normalizeWikiRelPath(
     [category, ...articleSegments].join("/"),
@@ -62,10 +65,10 @@ export default async function ArticlePage({ params }: Props) {
 
   let raw;
   try {
-    raw = await getContent(primaryPath, bu, locale, { cache: "no-store" });
+    raw = await getContent(primaryPath, contentBu, locale, { cache: "no-store" });
   } catch {
     try {
-      raw = await getContent(folderIndexPath, bu, locale, { cache: "no-store" });
+      raw = await getContent(folderIndexPath, contentBu, locale, { cache: "no-store" });
     } catch {
       notFound();
     }
@@ -163,13 +166,15 @@ export default async function ArticlePage({ params }: Props) {
       <main className="flex-1">
         <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-5 sm:py-8 lg:py-10 flex gap-6 sm:gap-8 lg:gap-10 items-start">
           {!isFaqArticle && !isChangelogArticle && (
-            <div className="hidden xl:block shrink-0">
+            <div className="hidden xl:block shrink-0 self-start sticky top-24">
               <KBSidebar />
             </div>
           )}
 
           {isFaqArticle && faqNavItems.length > 0 && (
-            <FaqSidebar items={faqNavItems} />
+            <div className="hidden xl:block shrink-0 self-start sticky top-24">
+              <FaqSidebar items={faqNavItems} />
+            </div>
           )}
 
           <div className="min-w-0 w-full max-w-4xl flex-1">
@@ -199,12 +204,12 @@ export default async function ArticlePage({ params }: Props) {
               content={fixedContent}
               category={category}
               wikiArticleDir={wikiArticleDir}
-              bu={bu}
+              bu={contentBu}
             />
           </div>
 
           {/* Desktop sticky TOC — xl and up only */}
-          <div className="hidden xl:block shrink-0">
+          <div className="hidden xl:block shrink-0 self-start sticky top-24">
             <TableOfContents />
           </div>
         </div>

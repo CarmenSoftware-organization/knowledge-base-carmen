@@ -226,13 +226,13 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
     <aside
       className={cn(
         "shrink-0",
-        isMobile ? "w-full" : "w-64 sticky top-28 h-fit hidden lg:block"
+        isMobile ? "w-full" : "w-64 h-fit hidden lg:block"
       )}
     >
       {isLoading ? (
         <SidebarSkeleton />
       ) : (
-        <nav className="space-y-1 pr-4 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-hide">
+        <nav className="space-y-1 pr-4 max-h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] scrollbar-hide">
           {categories.map((categoryItem) => (
             <CategoryItemRow
               key={categoryItem.slug}
