@@ -42,21 +42,12 @@ export function getSelectedBUClient(): string {
   if (match) {
     try {
       const normalized = decodeURIComponent(match[2]).trim().toLowerCase();
-      // #region agent log
-      fetch('http://127.0.0.1:7292/ingest/e2038622-1309-4179-ad5f-57c724e3114a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9a88b9'},body:JSON.stringify({sessionId:'9a88b9',runId:'frontend-security-review-1',hypothesisId:'H4',location:'frontend/user/lib/wiki-api.ts:getSelectedBUClient:47',message:'selected_bu cookie parsed',data:{hasCookie:true,normalizedBu:normalized},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       return normalized;
     } catch {
       const fallback = match[2].trim().toLowerCase();
-      // #region agent log
-      fetch('http://127.0.0.1:7292/ingest/e2038622-1309-4179-ad5f-57c724e3114a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9a88b9'},body:JSON.stringify({sessionId:'9a88b9',runId:'frontend-security-review-1',hypothesisId:'H4',location:'frontend/user/lib/wiki-api.ts:getSelectedBUClient:52',message:'selected_bu cookie parse fallback',data:{hasCookie:true,normalizedBu:fallback},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       return fallback;
     }
   }
-  // #region agent log
-  fetch('http://127.0.0.1:7292/ingest/e2038622-1309-4179-ad5f-57c724e3114a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9a88b9'},body:JSON.stringify({sessionId:'9a88b9',runId:'frontend-security-review-1',hypothesisId:'H4',location:'frontend/user/lib/wiki-api.ts:getSelectedBUClient:57',message:'selected_bu cookie missing fallback default',data:{hasCookie:false,defaultBu:DEFAULT_BU},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   return DEFAULT_BU;
 }
 
@@ -261,9 +252,6 @@ export function resolveWikiMarkdownHref(
   category: string,
 ): string {
   const raw = (href || "").trim();
-  // #region agent log
-  fetch('http://127.0.0.1:7292/ingest/e2038622-1309-4179-ad5f-57c724e3114a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9a88b9'},body:JSON.stringify({sessionId:'9a88b9',runId:'frontend-security-review-1',hypothesisId:'H1-H3',location:'frontend/user/lib/wiki-api.ts:resolveWikiMarkdownHref:253',message:'resolve markdown href entry',data:{href:raw,wikiArticleDir,category},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   if (!raw) return raw;
 
   // Keep external/special links unchanged.
@@ -271,9 +259,6 @@ export function resolveWikiMarkdownHref(
     /^(https?:|mailto:|tel:|data:|javascript:)/i.test(raw) ||
     raw.startsWith("#")
   ) {
-    // #region agent log
-    fetch('http://127.0.0.1:7292/ingest/e2038622-1309-4179-ad5f-57c724e3114a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9a88b9'},body:JSON.stringify({sessionId:'9a88b9',runId:'frontend-security-review-1',hypothesisId:'H1-H2',location:'frontend/user/lib/wiki-api.ts:resolveWikiMarkdownHref:262',message:'special protocol href passthrough',data:{href:raw,isJavascript:/^javascript:/i.test(raw),isData:/^data:/i.test(raw),isHash:raw.startsWith('#')},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     return raw;
   }
 
@@ -292,9 +277,6 @@ export function resolveWikiMarkdownHref(
     raw.startsWith("/") || !baseDir ? rel : `${baseDir}/${rel}`.replace(/\/+/g, "/");
 
   const normalized = normalizeWikiRelPath(joined);
-  // #region agent log
-  fetch('http://127.0.0.1:7292/ingest/e2038622-1309-4179-ad5f-57c724e3114a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9a88b9'},body:JSON.stringify({sessionId:'9a88b9',runId:'frontend-security-review-1',hypothesisId:'H3',location:'frontend/user/lib/wiki-api.ts:resolveWikiMarkdownHref:279',message:'resolved markdown href to route',data:{href:raw,joined,normalized,resolvedRoute:wikiPathToRoute(normalized)},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   return wikiPathToRoute(normalized);
 }
 
