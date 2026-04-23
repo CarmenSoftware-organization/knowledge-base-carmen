@@ -29,12 +29,16 @@ func getEmbeddingDim() int {
 	return embeddingDim
 }
 
-// TruncateEmbedding normalizes embedding to exactly EmbeddingDim for PostgreSQL VECTOR.
-// - If model returns > EmbeddingDim: truncate to first N dims.
-// - If model returns < EmbeddingDim: pad with zeros.
-// - Otherwise: return as-is.
-func TruncateEmbedding(vec []float32) []float32 {
-	dim := getEmbeddingDim()
+// CurrentEmbeddingDim returns the configured default dimension.
+func CurrentEmbeddingDim() int {
+	return getEmbeddingDim()
+}
+
+// TruncateEmbeddingToDim normalizes vector length to the requested dimension.
+func TruncateEmbeddingToDim(vec []float32, dim int) []float32 {
+	if dim <= 0 {
+		dim = getEmbeddingDim()
+	}
 	if len(vec) == 0 {
 		return make([]float32, dim)
 	}
@@ -44,10 +48,17 @@ func TruncateEmbedding(vec []float32) []float32 {
 	if len(vec) > dim {
 		return vec[:dim]
 	}
-	// Pad with zeros when model returns fewer dimensions
 	out := make([]float32, dim)
 	copy(out, vec)
 	return out
+}
+
+// TruncateEmbedding normalizes embedding to exactly EmbeddingDim for PostgreSQL VECTOR.
+// - If model returns > EmbeddingDim: truncate to first N dims.
+// - If model returns < EmbeddingDim: pad with zeros.
+// - Otherwise: return as-is.
+func TruncateEmbedding(vec []float32) []float32 {
+	return TruncateEmbeddingToDim(vec, getEmbeddingDim())
 }
 
 // NormalizeEmbedding ensures the vector has a magnitude of 1.0.

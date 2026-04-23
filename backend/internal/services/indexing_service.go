@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/new-carmen/backend/internal/config"
@@ -70,6 +71,11 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		return fmt.Errorf("get content: %w", err)
 	}
 
+	targetDim, err := s.getVectorDimForBU(bu)
+	if err != nil {
+		return fmt.Errorf("detect vector dimension for bu %s: %w", bu, err)
+	}
+
 	var docID int64
 	sqlDoc := fmt.Sprintf("INSERT INTO %s.documents (path, title, source, created_at, updated_at) VALUES (?, ?, 'wiki', now(), now()) ON CONFLICT (path) DO UPDATE SET title = EXCLUDED.title, updated_at = now() RETURNING id", bu)
 	err = database.DB.Raw(sqlDoc, content.Path, content.Title).Scan(&docID).Error
@@ -96,8 +102,8 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 			continue
 		}
 
-		// 1. Truncate to target dimension (2000)
-		emb = utils.TruncateEmbedding(emb)
+		// 1. Truncate/pad to the target dimension for this BU schema.
+		emb = utils.TruncateEmbeddingToDim(emb, targetDim)
 
 		// 2. Normalize to 1.0 magnitude for accurate Cosine Distance
 		emb = utils.NormalizeEmbedding(emb)
@@ -108,6 +114,33 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		}
 	}
 	return nil
+}
+
+func (s *IndexingService) getVectorDimForBU(bu string) (int, error) {
+	var typeStr string
+	sql := `
+SELECT format_type(a.atttypid, a.atttypmod)
+FROM pg_attribute a
+JOIN pg_class c ON c.oid = a.attrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = ?
+  AND c.relname = 'document_chunks'
+  AND a.attname = 'embedding'
+  AND a.attnum > 0
+  AND NOT a.attisdropped
+LIMIT 1
+`
+	if err := database.DB.Raw(sql, bu).Scan(&typeStr).Error; err != nil {
+		return 0, err
+	}
+	typeStr = strings.TrimSpace(strings.ToLower(typeStr))
+	if strings.HasPrefix(typeStr, "vector(") && strings.HasSuffix(typeStr, ")") {
+		raw := strings.TrimSuffix(strings.TrimPrefix(typeStr, "vector("), ")")
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			return n, nil
+		}
+	}
+	return utils.CurrentEmbeddingDim(), nil
 }
 
 func chunkContent(text string, chunkSize, overlap int) []string {
