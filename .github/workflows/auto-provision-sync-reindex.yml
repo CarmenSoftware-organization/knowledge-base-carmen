@@ -37,19 +37,63 @@ jobs:
             STATUSES="$(git diff --name-status "${BEFORE}" "${AFTER}" -- contents || true)"
           fi
 
-          BUS_CANDIDATES="$(echo "${FILES}" | awk -F/ '/^contents\/[^/]+\//{print $2}' | sort -u)"
+          extract_bu() {
+            local p="$1"
+            # Supports:
+            # - contents/<bu>/...
+            # - contents/training_center/<bu>/...
+            if [[ "$p" =~ ^contents/training_center/([^/]+)/ ]]; then
+              echo "${BASH_REMATCH[1]}"
+              return 0
+            fi
+            if [[ "$p" =~ ^contents/([^/]+)/ ]]; then
+              local lvl1="${BASH_REMATCH[1]}"
+              if [[ "$lvl1" != "training_center" ]]; then
+                echo "${lvl1}"
+                return 0
+              fi
+            fi
+            return 1
+          }
+
+          BUS_CANDIDATES=""
+          while IFS= read -r f; do
+            [[ -z "$f" ]] && continue
+            if bu="$(extract_bu "$f")"; then
+              BUS_CANDIDATES="${BUS_CANDIDATES}"$'\n'"${bu}"
+            fi
+          done <<< "${FILES}"
+          BUS_CANDIDATES="$(echo "${BUS_CANDIDATES}" | sed '/^$/d' | sort -u || true)"
           ACTIVE_BU=""
           for bu in ${BUS_CANDIDATES}; do
-            if git ls-tree -r --name-only "${AFTER}" -- "contents/${bu}/" | grep -q .; then
+            if git ls-tree -r --name-only "${AFTER}" -- "contents/${bu}/" | grep -q . || \
+               git ls-tree -r --name-only "${AFTER}" -- "contents/training_center/${bu}/" | grep -q .; then
               ACTIVE_BU="${ACTIVE_BU} ${bu}"
             fi
           done
           ACTIVE_BU="$(echo "${ACTIVE_BU}" | xargs || true)"
 
-          REMOVED_CANDIDATES="$(echo "${STATUSES}" | awk '$1=="D" && $2 ~ /^contents\/[^/]+\// {split($2,a,"/"); print a[2]}' | sort -u)"
+          REMOVED_CANDIDATES=""
+          while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            status="$(echo "$line" | awk '{print $1}')"
+            path1="$(echo "$line" | awk '{print $2}')"
+            # handle rename records: R100 old new
+            if [[ "$status" =~ ^R ]]; then
+              if bu="$(extract_bu "$path1")"; then
+                REMOVED_CANDIDATES="${REMOVED_CANDIDATES}"$'\n'"${bu}"
+              fi
+            elif [[ "$status" == "D" ]]; then
+              if bu="$(extract_bu "$path1")"; then
+                REMOVED_CANDIDATES="${REMOVED_CANDIDATES}"$'\n'"${bu}"
+              fi
+            fi
+          done <<< "${STATUSES}"
+          REMOVED_CANDIDATES="$(echo "${REMOVED_CANDIDATES}" | sed '/^$/d' | sort -u || true)"
           REMOVED_BU=""
           for bu in ${REMOVED_CANDIDATES}; do
-            if ! git ls-tree -r --name-only "${AFTER}" -- "contents/${bu}/" | grep -q .; then
+            if ! git ls-tree -r --name-only "${AFTER}" -- "contents/${bu}/" | grep -q . && \
+               ! git ls-tree -r --name-only "${AFTER}" -- "contents/training_center/${bu}/" | grep -q .; then
               REMOVED_BU="${REMOVED_BU} ${bu}"
             fi
           done
