@@ -119,6 +119,12 @@ func (s *WikiService) getRepoPath(bu string) string {
 		return contentsPath
 	}
 
+	// Compatibility path for nested training center layout: "contents/training_center/<bu>".
+	trainingCenterPath := filepath.Join(base, "contents", "training_center", bu)
+	if st, err := os.Stat(trainingCenterPath); err == nil && st.IsDir() {
+		return trainingCenterPath
+	}
+
 	// Fall back to direct path so the caller gets an explicit, useful path-not-found error.
 	return directPath
 }
