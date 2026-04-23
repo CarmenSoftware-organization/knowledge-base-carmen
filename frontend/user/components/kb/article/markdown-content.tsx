@@ -52,6 +52,12 @@ function wikiAssetRelativePath(
     return assetRelative;
   }
 
+  // Shared UI icons are referenced as /public/... in docs.
+  // Keep root-level public path so it does not become <articleDir>/public/...
+  if (assetRelative.startsWith("public/")) {
+    return assetRelative;
+  }
+
   const base = (wikiArticleDir || category).replace(/\/+$/, "");
   return `${base}/${assetRelative}`.replace(/\/{2,}/g, "/");
 }
@@ -369,6 +375,21 @@ export function MarkdownRender({
             const titleStr = title != null ? String(title) : undefined;
             const displayTitle =
               titleStr && !sanitizeImgAlt(titleStr, assetRelative) ? undefined : titleStr;
+
+            // Render /public/... assets via Next static public root.
+            if (assetRelative.startsWith("public/")) {
+              const publicUrl = `/${assetRelative.replace(/^public\//, "")}`;
+              return (
+                <img
+                  {...props}
+                  src={publicUrl}
+                  alt={displayAlt}
+                  title={displayTitle}
+                  loading="lazy"
+                  className="block rounded-xl my-6 shadow-md max-w-full"
+                />
+              );
+            }
 
             const qs = new URLSearchParams({ bu });
             const url = `${API_BASE}/wiki-assets/${assetRelative
