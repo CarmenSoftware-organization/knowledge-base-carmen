@@ -98,11 +98,7 @@ export default async function FAQHomePage() {
               <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
                 คำถามที่พบบ่อย — {categoryName}
               </h1>
-              <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
-                เลือกหมวดหมู่แล้วเข้าไปดูหมวดย่อยและบทความ — เนื้อหาอยู่ใต้{" "}
-                <code className="text-xs bg-muted px-1 rounded">faq/</code> ใน
-                repo อัปเดตตาม Wiki / Git หลัง sync
-              </p>
+              
             </div>
 
             {indexContent && (

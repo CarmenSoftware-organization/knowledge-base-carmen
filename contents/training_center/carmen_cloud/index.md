@@ -1,6 +1,6 @@
 ---
-title: Carmen Cloud Training
-description: Training materials for Carmen Cloud
+title: Carmen Cloud
+description: Video training for Carmen Cloud modules
 published: true
 editor: markdown
 tags: training-center,carmen-cloud

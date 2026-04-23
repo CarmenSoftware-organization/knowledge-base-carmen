@@ -1,18 +1,18 @@
 ---
-title: Carmen Onpermise Training
-description: Training materials for Carmen on-premise
+title: Carmen On-Premise
+description: Video training for Carmen On-Premise modules
 published: true
 editor: markdown
 tags: training-center,carmen-onpermise
 ---
 
-# Carmen Onpermise
+# Carmen On-Premise
 
 - [ASSET](./ASSET/)
 - [Addin](./Addin/)
 - [ApONPERMISE](./ApONPERMISE/)
 - [ArONPERMISE](./ArONPERMISE/)
-- [CADENA](./cadena/)
+- [Cadena](../cadena/)
 - [GlONPERMISE](./GlONPERMISE/)
 - [INVENTORY](./INVENTORY/)
 - [RECIPE](./RECIPE/)
