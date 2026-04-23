@@ -12,11 +12,37 @@ import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import matter from "gray-matter";
 import { DEFAULT_BU } from "@/lib/config";
+import type { ReactNode } from "react";
 
 const FAQ_SLUG = "faq";
 
 function stripLeadingH1(markdown: string): string {
   return markdown.replace(/^\s*#\s+.+\n+/, "");
+}
+
+function SectionDivider({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
+  const spacingClass = compact ? "py-2 mb-4" : "py-6 mb-2";
+  return (
+    <div className={`relative ${spacingClass}`}>
+      <div className="absolute inset-0 flex items-center">
+        <div className="w-full border-t border-border" />
+      </div>
+      <div className="relative flex justify-center">
+        <span className="bg-background px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+          {children}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+async function loadFaqIndexContent(bu: string, locale: string): Promise<ReturnType<typeof matter> | null> {
+  try {
+    const rawIndex = await getContent(`${FAQ_SLUG}/index.md`, bu, locale);
+    return rawIndex ? matter(rawIndex.content) : null;
+  } catch {
+    return null;
+  }
 }
 
 export default async function FAQHomePage() {
@@ -26,18 +52,11 @@ export default async function FAQHomePage() {
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
 
   let data: Awaited<ReturnType<typeof getCategory>>;
-  let indexContent: ReturnType<typeof matter> | null = null;
+  let indexContent: ReturnType<typeof matter> | null;
 
   try {
     data = await getCategory(FAQ_SLUG, bu);
-    try {
-      const rawIndex = await getContent(`${FAQ_SLUG}/index.md`, bu, cookieLocale);
-      if (rawIndex) {
-        indexContent = matter(rawIndex.content);
-      }
-    } catch {
-      indexContent = null;
-    }
+    indexContent = await loadFaqIndexContent(bu, cookieLocale);
   } catch {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -74,6 +93,9 @@ export default async function FAQHomePage() {
 
   const categoryName = "FAQ";
   const faqNav = buildFaqNav([], data.items);
+  const hasFolders = faqNav.folders.length > 0;
+  const hasArticles = faqNav.articles.length > 0;
+  const hasNoContent = !hasFolders && !hasArticles;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -114,52 +136,25 @@ export default async function FAQHomePage() {
               </div>
             )}
 
-            {!indexContent && faqNav.folders.length === 0 && (
-              <div className="relative py-2 mb-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-background px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                    {t("category.articlesInCategory")}
-                  </span>
-                </div>
-              </div>
+            {!indexContent && !hasFolders && (
+              <SectionDivider compact>{t("category.articlesInCategory")}</SectionDivider>
             )}
 
-            {faqNav.folders.length > 0 && (
+            {hasFolders && (
               <>
-                <div className="relative py-6 mb-2">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-background px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                      หมวดหมู่
-                    </span>
-                  </div>
-                </div>
+                <SectionDivider>หมวดหมู่</SectionDivider>
                 <FaqFolderGrid folders={faqNav.folders} pathPrefix={[]} />
               </>
             )}
 
-            {faqNav.articles.length > 0 && (
+            {hasArticles && (
               <>
-                <div className="relative py-6 mb-2">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-background px-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                      {t("category.articlesInCategory")}
-                    </span>
-                  </div>
-                </div>
+                <SectionDivider>{t("category.articlesInCategory")}</SectionDivider>
                 <ArticleGridTransition items={faqNav.articles} />
               </>
             )}
 
-            {faqNav.folders.length === 0 && faqNav.articles.length === 0 && (
+            {hasNoContent && (
               <div className="rounded-xl border border-dashed border-border bg-muted/30 px-5 py-8 text-center mb-10">
                 <p className="text-base font-semibold text-foreground">ไม่มีข้อมูล</p>
                 <p className="mt-2 text-sm text-muted-foreground">
