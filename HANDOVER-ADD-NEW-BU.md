@@ -25,6 +25,31 @@
 
 ---
 
+## 1.1) Automation (Production) ที่เพิ่มไว้แล้ว
+
+มี workflow ใหม่: `.github/workflows/auto-provision-sync-reindex.yml`
+
+เมื่อมี push เข้า `main` และไฟล์อยู่ใต้ `contents/**` จะทำอัตโนมัติ:
+
+1. Detect BU ที่เปลี่ยนจาก path `contents/<bu>/...`
+2. เรียก `POST /api/business-units/provision` (สร้าง/อัปเดต BU + schema + tables)
+3. เรียก `POST /api/wiki/sync`
+4. เรียก `POST /api/index/rebuild?bu=<bu>` สำหรับ BU ที่เปลี่ยน
+
+ต้องตั้ง GitHub Actions secrets:
+
+- `BACKEND_BASE_URL` เช่น `https://kb-carmen.onrender.com`
+- `BACKEND_ADMIN_API_KEY` ให้ตรงกับ `ADMIN_API_KEY` ของ backend
+
+ต้องมี backend env อย่างน้อย:
+
+- `ADMIN_API_KEY`
+- `GIT_REPO_URL`
+- `GIT_REPO_PATH`
+- `GIT_SYNC_BRANCH` (แนะนำ `main` สำหรับ repo นี้)
+
+---
+
 ## 2) ข้อกำหนดชื่อ BU (สำคัญ)
 
 - ใช้ `slug` ตัวพิมพ์เล็ก เช่น `newbu`, `acme_finance`

@@ -49,6 +49,7 @@ func RegisterFAQ(app *fiber.App) {
 func RegisterBusinessUnits(app *fiber.App) {
 	h := api.NewBusinessUnitHandler()
 	app.Get("/api/business-units", h.List)
+	app.Post("/api/business-units/provision", middleware.RequireAdminKey, h.Provision)
 }
 
 func RegisterActivity(app *fiber.App) {

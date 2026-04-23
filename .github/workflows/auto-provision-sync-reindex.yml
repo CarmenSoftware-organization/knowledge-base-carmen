@@ -1,0 +1,98 @@
+name: Auto provision BU + sync + reindex
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "contents/**"
+  workflow_dispatch:
+
+jobs:
+  sync-and-reindex:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed BUs from contents/
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          if [[ -z "${BEFORE}" || "${BEFORE}" == "0000000000000000000000000000000000000000" ]]; then
+            FILES="$(git ls-tree -r --name-only "${AFTER}" -- contents || true)"
+          else
+            FILES="$(git diff --name-only "${BEFORE}" "${AFTER}" -- contents || true)"
+          fi
+
+          BUS="$(echo "${FILES}" | awk -F/ '/^contents\/[^/]+\//{print $2}' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]\+$//')"
+
+          echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${FILES}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "bus=${BUS}" >> "$GITHUB_OUTPUT"
+
+          if [[ -z "${BUS}" ]]; then
+            echo "No BU changes detected under contents/"
+          else
+            echo "Detected BU(s): ${BUS}"
+          fi
+
+      - name: Stop when no BU changed
+        if: steps.detect.outputs.bus == ''
+        run: echo "No work to do."
+
+      - name: Provision changed BUs
+        if: steps.detect.outputs.bus != ''
+        env:
+          API_BASE: ${{ secrets.BACKEND_BASE_URL }}
+          ADMIN_KEY: ${{ secrets.BACKEND_ADMIN_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_BASE}" || -z "${ADMIN_KEY}" ]]; then
+            echo "Missing BACKEND_BASE_URL or BACKEND_ADMIN_API_KEY secrets"
+            exit 1
+          fi
+
+          for bu in ${{ steps.detect.outputs.bus }}; do
+            echo "Provisioning BU: ${bu}"
+            curl -sS -f -X POST "${API_BASE}/api/business-units/provision" \
+              -H "X-Admin-Key: ${ADMIN_KEY}" \
+              -H "Content-Type: application/json" \
+              --data "{\"slug\":\"${bu}\",\"name\":\"${bu^^}\",\"description\":\"Auto provisioned by GitHub Actions\"}"
+            echo
+          done
+
+      - name: Sync wiki content
+        if: steps.detect.outputs.bus != ''
+        env:
+          API_BASE: ${{ secrets.BACKEND_BASE_URL }}
+          ADMIN_KEY: ${{ secrets.BACKEND_ADMIN_API_KEY }}
+        run: |
+          set -euo pipefail
+          curl -sS -f -X POST "${API_BASE}/api/wiki/sync" -H "X-Admin-Key: ${ADMIN_KEY}"
+
+      - name: Reindex changed BUs
+        if: steps.detect.outputs.bus != ''
+        env:
+          API_BASE: ${{ secrets.BACKEND_BASE_URL }}
+          ADMIN_KEY: ${{ secrets.BACKEND_ADMIN_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for bu in ${{ steps.detect.outputs.bus }}; do
+            echo "Trigger reindex for: ${bu}"
+            curl -sS -f -X POST "${API_BASE}/api/index/rebuild?bu=${bu}" -H "X-Admin-Key: ${ADMIN_KEY}"
+            echo
+          done
