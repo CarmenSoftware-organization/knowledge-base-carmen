@@ -64,9 +64,6 @@ export default async function FAQSubPage({ params }: Props) {
   }
 
   const nav = buildFaqNav(pathSegments, data.items);
-  if (nav.folders.length === 0 && nav.articles.length === 0) {
-    notFound();
-  }
 
   const folderIndexTitles = faqIndexTitlesByFolderKey(data.items);
   const categoryName = data.title?.trim() || "FAQ";
@@ -174,6 +171,15 @@ export default async function FAQSubPage({ params }: Props) {
                 </div>
                 <ArticleGridTransition items={nav.articles} />
               </>
+            )}
+
+            {nav.folders.length === 0 && nav.articles.length === 0 && (
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 px-5 py-8 text-center mb-10">
+                <p className="text-base font-semibold text-foreground">ไม่มีข้อมูล</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  ยังไม่มีหมวดหรือบทความ FAQ ในส่วนนี้
+                </p>
+              </div>
             )}
           </div>
         </div>

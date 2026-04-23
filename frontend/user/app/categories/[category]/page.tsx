@@ -45,16 +45,15 @@ export default async function CategoryPage({
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value || "th";
   const locale = isChangelog ? "en" : cookieLocale;
 
-  let data;
+  let data: Awaited<ReturnType<typeof getCategory>> | null = null;
+  let categoryLoadFailed = false;
   try {
     data = await getCategory(category, contentBu, { cache: "no-store" });
   } catch {
-    notFound();
+    categoryLoadFailed = true;
   }
 
-  if (!data.items?.length && !isChangelog) {
-    notFound();
-  }
+  const noManualContent = !isChangelog && (!data?.items?.length || categoryLoadFailed);
 
   // Changelog list page: skip index.md (legacy long content).
   let indexContent = null;
@@ -72,9 +71,10 @@ export default async function CategoryPage({
   }
 
   const categoryName =
-    categoryDisplayMap[data.category] || data.category.toUpperCase();
+    categoryDisplayMap[data?.category || category] ||
+    (data?.category || category).toUpperCase();
 
-  const gridItems = (data.items || []).filter((item) => {
+  const gridItems = (data?.items || []).filter((item) => {
     const p = item.path.replace(/\\/g, "/");
     return item.slug !== "index" && !p.includes("/_images/");
   });
@@ -110,7 +110,14 @@ export default async function CategoryPage({
               ]}
             />
 
-            {indexContent && (
+            {noManualContent ? (
+              <div className="mt-10 rounded-xl border border-dashed border-border bg-muted/30 px-5 py-10 text-center">
+                <p className="text-base font-semibold text-foreground">ไม่มีข้อมูลคู่มือ</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  ยังไม่มีเนื้อหาในหมวดนี้ หรือระบบยังโหลดข้อมูลไม่สำเร็จ
+                </p>
+              </div>
+            ) : indexContent && (
               <div className="mt-4">
                 <ArticleHeaderInfo
                   title={indexContent.data.title || categoryName}
@@ -157,7 +164,7 @@ export default async function CategoryPage({
               </div>
             )}
 
-            {!indexContent && (
+            {!noManualContent && !indexContent && (
               <div className={cn("mt-6", isChangelog ? "mb-2" : "mb-6")}>
                 <h1 className="text-3xl font-black text-foreground tracking-tight">
                   {categoryName}
@@ -170,7 +177,7 @@ export default async function CategoryPage({
               </div>
             )}
 
-            {isChangelog ? (
+            {noManualContent ? null : isChangelog ? (
               <ChangelogTimeline
                 category={category}
                 items={changelogSorted}

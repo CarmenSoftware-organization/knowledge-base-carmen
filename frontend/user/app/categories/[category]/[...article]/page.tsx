@@ -41,6 +41,7 @@ function humanizeSegment(seg: string): string {
 
 export default async function ArticlePage({ params }: Props) {
   const { category, article: articleSegments } = await params;
+  const categoryLower = category?.toLowerCase() || "";
 
   if (!category || !articleSegments?.length) {
     notFound();
@@ -70,6 +71,37 @@ export default async function ArticlePage({ params }: Props) {
     try {
       raw = await getContent(folderIndexPath, contentBu, locale, { cache: "no-store" });
     } catch {
+      if (categoryLower !== "faq" && categoryLower !== "changelog") {
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <KBHeader />
+            <MobileSidebar />
+            <main className="flex-1">
+              <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-8 flex gap-6 sm:gap-8 lg:gap-10 items-start">
+                <div className="hidden xl:block shrink-0 self-start sticky top-24">
+                  <KBSidebar />
+                </div>
+                <div className="min-w-0 w-full max-w-4xl flex-1">
+                  <Breadcrumb
+                    items={[
+                      { label: "คู่มือ", href: "/categories" },
+                      { label: formatCategoryName(category), href: `/categories/${encodeURIComponent(category)}` },
+                      { label: "ไม่มีข้อมูล" },
+                    ]}
+                  />
+                  <div className="mt-8 rounded-xl border border-dashed border-border bg-muted/30 px-5 py-10 text-center">
+                    <p className="text-base font-semibold text-foreground">ไม่มีเนื้อหาคู่มือ</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      ไม่พบบทความหรือโฟลเดอร์ที่ต้องการเปิดในหมวดนี้
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </main>
+            <KBFooter />
+          </div>
+        );
+      }
       notFound();
     }
   }
