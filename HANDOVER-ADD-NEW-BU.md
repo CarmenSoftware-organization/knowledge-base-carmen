@@ -36,6 +36,12 @@
 3. เรียก `POST /api/wiki/sync`
 4. เรียก `POST /api/index/rebuild?bu=<bu>` สำหรับ BU ที่เปลี่ยน
 
+และถ้าลบโฟลเดอร์ BU ออกจาก `contents/<bu>/` จนไม่เหลือไฟล์แล้ว:
+
+1. Detect BU ที่ถูกลบ
+2. เรียก `POST /api/business-units/deprovision` (ลบ BU จาก `public.business_units` + `DROP SCHEMA ... CASCADE`)
+3. เรียก `POST /api/wiki/sync`
+
 ต้องตั้ง GitHub Actions secrets:
 
 - `BACKEND_BASE_URL` เช่น `https://kb-carmen.onrender.com`
@@ -47,6 +53,21 @@
 - `GIT_REPO_URL`
 - `GIT_REPO_PATH`
 - `GIT_SYNC_BRANCH` (แนะนำ `main` สำหรับ repo นี้)
+
+---
+
+## 1.2) ลบ BU แบบง่าย
+
+ถ้าต้องการลบ BU ออกจากระบบและหน้าเว็บ:
+
+1. ลบโฟลเดอร์ `contents/<bu>/` แล้ว push เข้า `main`
+2. รอ workflow `auto-provision-sync-reindex` ทำ deprovision อัตโนมัติ
+
+หรือสั่งผ่าน script โดยตรง:
+
+```bash
+API_BASE=https://kb-carmen.onrender.com ADMIN_KEY="<admin-key>" ./scripts/deprovision-bu.sh <bu>
+```
 
 ---
 

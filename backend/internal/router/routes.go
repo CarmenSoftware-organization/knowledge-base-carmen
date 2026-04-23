@@ -50,6 +50,7 @@ func RegisterBusinessUnits(app *fiber.App) {
 	h := api.NewBusinessUnitHandler()
 	app.Get("/api/business-units", h.List)
 	app.Post("/api/business-units/provision", middleware.RequireAdminKey, h.Provision)
+	app.Post("/api/business-units/deprovision", middleware.RequireAdminKey, h.Deprovision)
 }
 
 func RegisterActivity(app *fiber.App) {
