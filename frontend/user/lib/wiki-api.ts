@@ -33,7 +33,13 @@ export async function getBusinessUnits(): Promise<{ items: BusinessUnit[] }> {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch business units");
-  return res.json();
+  const data = (await res.json()) as { items?: BusinessUnit[] };
+  const items = (data.items ?? []).filter((bu) => {
+    const desc = (bu.description ?? "").trim().toLowerCase();
+    // Hide technical auto-provision entries from landing cards.
+    return desc !== "auto provision from contents";
+  });
+  return { items };
 }
 
 export function getSelectedBUClient(): string {

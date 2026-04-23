@@ -2,30 +2,50 @@ package utils
 
 import (
 	"math"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-// EmbeddingDim is the expected dimension for document_chunks and chat_history.
-// Set to 2000 for qwen3-embedding (from 4096). pgvector 8KB block limit is ~2000.
-const EmbeddingDim = 2000
+const defaultEmbeddingDim = 2000
+
+var (
+	embeddingDimOnce sync.Once
+	embeddingDim     int
+)
+
+func getEmbeddingDim() int {
+	embeddingDimOnce.Do(func() {
+		embeddingDim = defaultEmbeddingDim
+		raw := strings.TrimSpace(os.Getenv("VECTOR_DIMENSION"))
+		if raw == "" {
+			return
+		}
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			embeddingDim = n
+		}
+	})
+	return embeddingDim
+}
 
 // TruncateEmbedding normalizes embedding to exactly EmbeddingDim for PostgreSQL VECTOR.
 // - If model returns > EmbeddingDim: truncate to first N dims.
 // - If model returns < EmbeddingDim: pad with zeros.
 // - Otherwise: return as-is.
 func TruncateEmbedding(vec []float32) []float32 {
+	dim := getEmbeddingDim()
 	if len(vec) == 0 {
-		return make([]float32, EmbeddingDim)
+		return make([]float32, dim)
 	}
-	if len(vec) == EmbeddingDim {
+	if len(vec) == dim {
 		return vec
 	}
-	if len(vec) > EmbeddingDim {
-		return vec[:EmbeddingDim]
+	if len(vec) > dim {
+		return vec[:dim]
 	}
 	// Pad with zeros when model returns fewer dimensions
-	out := make([]float32, EmbeddingDim)
+	out := make([]float32, dim)
 	copy(out, vec)
 	return out
 }
@@ -62,4 +82,3 @@ func Float32SliceToPgVector(vec []float32) string {
 	b.WriteByte(']')
 	return b.String()
 }
-
