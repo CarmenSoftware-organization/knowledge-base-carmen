@@ -1,4 +1,4 @@
-name: Sync wiki-content into main (carmen_cloud only)
+name: Sync wiki-content into main (all contents)
 
 permissions:
   contents: write
@@ -29,12 +29,12 @@ jobs:
           git checkout main
           git reset --hard origin/main
 
-      - name: Sync carmen_cloud from wiki-content
+      - name: Sync all contents from wiki-content
         run: |
           git fetch origin wiki-content
-          git checkout origin/wiki-content -- carmen_cloud
-          git add carmen_cloud
-          git commit -m "docs: sync carmen_cloud from wiki-content" || echo "No changes"
+          git checkout origin/wiki-content -- contents
+          git add -A contents
+          git commit -m "docs: sync contents from wiki-content" || echo "No changes"
 
       - name: Push changes to main
         run: |

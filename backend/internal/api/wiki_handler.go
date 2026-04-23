@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
@@ -207,5 +208,34 @@ func (h *WikiHandler) Sync(c *fiber.Ctx) error {
 	if err := h.syncService.Sync(); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(fiber.Map{"ok": true, "message": "synced"})
+
+	includeAudit := true
+	if raw := c.Query("audit"); raw != "" {
+		if parsed, err := strconv.ParseBool(raw); err == nil {
+			includeAudit = parsed
+		}
+	}
+	if !includeAudit {
+		return c.JSON(fiber.Map{"ok": true, "message": "synced"})
+	}
+
+	report, err := h.syncService.BuildAuditReport()
+	if err != nil {
+		return c.JSON(fiber.Map{
+			"ok":          true,
+			"message":     "synced (audit failed)",
+			"audit_error": err.Error(),
+		})
+	}
+	return c.JSON(fiber.Map{"ok": true, "message": "synced", "audit": report})
+}
+
+// SyncAudit returns audit details comparing source markdown and indexed documents by BU.
+// GET /api/wiki/sync/audit
+func (h *WikiHandler) SyncAudit(c *fiber.Ctx) error {
+	report, err := h.syncService.BuildAuditReport()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"ok": true, "audit": report})
 }
