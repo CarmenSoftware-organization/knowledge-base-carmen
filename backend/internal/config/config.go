@@ -111,7 +111,7 @@ const (
 	defaultBU            = constants.DefaultBU
 	defaultCarmenPaths   = ""
 	defaultCarmenGitPath = ""
-	defaultGitSyncBranch = "wiki-content"
+	defaultGitSyncBranch = "main"
 	defaultGitHubRepoURL = "https://github.com"
 	defaultGitHubAPIURL  = "https://api.github.com"
 	defaultTranslateURL  = "https://translation.googleapis.com/language/translate/v2"
