@@ -46,6 +46,24 @@ curl http://localhost:8080/health
 curl http://localhost:8000/api/health
 ```
 
+## Deploy บน Render (Docker ทั้งระบบ)
+
+โปรเจคนี้รองรับ Blueprint deploy ด้วย `render.yaml` สำหรับ:
+- `carmen-frontend` (Next.js Docker)
+- `carmen-backend` (Go Docker)
+- `carmen-chatbot` (Python Docker)
+- `carmen-db` (Render Postgres)
+
+ขั้นตอน:
+
+```bash
+git add render.yaml backend/Dockerfile backend/docker-entrypoint.sh
+git commit -m "configure full docker render deployment"
+git push origin main
+```
+
+จากนั้นเปิด Render Blueprint แล้วตั้งค่า secret env ที่ `sync: false`
+
 ## Quick Start (Run แยกบริการ)
 
 ### 1) Backend (Go)

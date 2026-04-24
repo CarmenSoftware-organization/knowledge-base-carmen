@@ -16,6 +16,8 @@ WORKDIR /app
 
 COPY --from=builder /out/server ./server
 COPY migrations ./migrations
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 ENV PORT=8080
 EXPOSE 8080
@@ -23,4 +25,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://127.0.0.1:${PORT:-8080}/health || exit 1
 
-CMD ["./server"]
+CMD ["./docker-entrypoint.sh"]
