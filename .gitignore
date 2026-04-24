@@ -49,6 +49,8 @@ out/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+bash.exe.stackdump
+origin_main_files.txt
 
 # OS files
 .DS_Store
