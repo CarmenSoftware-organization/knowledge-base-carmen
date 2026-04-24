@@ -41,9 +41,9 @@ jobs:
             local p="$1"
             # Supports:
             # - contents/<bu>/...
-            # - contents/training_center/<bu>/...
+            # - contents/training_center/<module>/... (maps to BU "training_center")
             if [[ "$p" =~ ^contents/training_center/([^/]+)/ ]]; then
-              echo "${BASH_REMATCH[1]}"
+              echo "training_center"
               return 0
             fi
             if [[ "$p" =~ ^contents/([^/]+)/ ]]; then
@@ -66,8 +66,7 @@ jobs:
           BUS_CANDIDATES="$(echo "${BUS_CANDIDATES}" | sed '/^$/d' | sort -u || true)"
           ACTIVE_BU=""
           for bu in ${BUS_CANDIDATES}; do
-            if git ls-tree -r --name-only "${AFTER}" -- "contents/${bu}/" | grep -q . || \
-               git ls-tree -r --name-only "${AFTER}" -- "contents/training_center/${bu}/" | grep -q .; then
+            if git ls-tree -r --name-only "${AFTER}" -- "contents/${bu}/" | grep -q .; then
               ACTIVE_BU="${ACTIVE_BU} ${bu}"
             fi
           done
@@ -92,8 +91,7 @@ jobs:
           REMOVED_CANDIDATES="$(echo "${REMOVED_CANDIDATES}" | sed '/^$/d' | sort -u || true)"
           REMOVED_BU=""
           for bu in ${REMOVED_CANDIDATES}; do
-            if ! git ls-tree -r --name-only "${AFTER}" -- "contents/${bu}/" | grep -q . && \
-               ! git ls-tree -r --name-only "${AFTER}" -- "contents/training_center/${bu}/" | grep -q .; then
+            if ! git ls-tree -r --name-only "${AFTER}" -- "contents/${bu}/" | grep -q .; then
               REMOVED_BU="${REMOVED_BU} ${bu}"
             fi
           done

@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
@@ -25,6 +28,8 @@ type IndexingService struct {
 	llm        Embedder
 	logService *ActivityLogService
 }
+
+const defaultEmbeddingTimeout = 60 * time.Second
 
 func NewIndexingService() *IndexingService {
 	return &IndexingService{
@@ -64,10 +69,28 @@ func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
 	return nil
 }
 
+// IndexPath indexes a single markdown path for the given BU.
+func (s *IndexingService) IndexPath(ctx context.Context, bu, path string) error {
+	if !security.ValidateSchema(bu) {
+		return fmt.Errorf("invalid schema/bu: %q", bu)
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return s.indexSingle(bu, path)
+}
+
 func (s *IndexingService) indexSingle(bu, path string) error {
 	content, err := s.wiki.GetContent(bu, path)
 	if err != nil {
 		return fmt.Errorf("get content: %w", err)
+	}
+
+	targetDim, err := s.getVectorDimForBU(bu)
+	if err != nil {
+		return fmt.Errorf("detect vector dimension for bu %s: %w", bu, err)
 	}
 
 	var docID int64
@@ -87,7 +110,9 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		if strings.TrimSpace(chunkText) == "" {
 			continue
 		}
-		emb, err := s.llm.Embedding(chunkText)
+		emb, err := embeddingWithTimeout(func() ([]float32, error) {
+			return s.llm.Embedding(chunkText)
+		}, embeddingTimeout())
 		if err != nil {
 			return fmt.Errorf("embedding chunk %d: %w", i, err)
 		}
@@ -96,8 +121,8 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 			continue
 		}
 
-		// 1. Truncate to target dimension (2000)
-		emb = utils.TruncateEmbedding(emb)
+		// 1. Truncate/pad to the target dimension for this BU schema.
+		emb = utils.TruncateEmbeddingToDim(emb, targetDim)
 
 		// 2. Normalize to 1.0 magnitude for accurate Cosine Distance
 		emb = utils.NormalizeEmbedding(emb)
@@ -108,6 +133,63 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		}
 	}
 	return nil
+}
+
+func embeddingWithTimeout(call func() ([]float32, error), timeout time.Duration) ([]float32, error) {
+	type result struct {
+		emb []float32
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		emb, err := call()
+		ch <- result{emb: emb, err: err}
+	}()
+	select {
+	case out := <-ch:
+		return out.emb, out.err
+	case <-time.After(timeout):
+		return nil, fmt.Errorf("embedding timeout after %s", timeout)
+	}
+}
+
+func embeddingTimeout() time.Duration {
+	raw := strings.TrimSpace(os.Getenv("EMBEDDING_TIMEOUT_SECONDS"))
+	if raw == "" {
+		return defaultEmbeddingTimeout
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 {
+		return defaultEmbeddingTimeout
+	}
+	return time.Duration(n) * time.Second
+}
+
+func (s *IndexingService) getVectorDimForBU(bu string) (int, error) {
+	var typeStr string
+	sql := `
+SELECT format_type(a.atttypid, a.atttypmod)
+FROM pg_attribute a
+JOIN pg_class c ON c.oid = a.attrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = ?
+  AND c.relname = 'document_chunks'
+  AND a.attname = 'embedding'
+  AND a.attnum > 0
+  AND NOT a.attisdropped
+LIMIT 1
+`
+	if err := database.DB.Raw(sql, bu).Scan(&typeStr).Error; err != nil {
+		return 0, err
+	}
+	typeStr = strings.TrimSpace(strings.ToLower(typeStr))
+	if strings.HasPrefix(typeStr, "vector(") && strings.HasSuffix(typeStr, ")") {
+		raw := strings.TrimSuffix(strings.TrimPrefix(typeStr, "vector("), ")")
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			return n, nil
+		}
+	}
+	return utils.CurrentEmbeddingDim(), nil
 }
 
 func chunkContent(text string, chunkSize, overlap int) []string {

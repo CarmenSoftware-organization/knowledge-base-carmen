@@ -208,7 +208,6 @@ func (s *WikiSyncService) discoverBUs() ([]string, error) {
 	}
 
 	addFromParent(filepath.Join(repo, "contents"))
-	addFromParent(filepath.Join(repo, "contents", "training_center"))
 
 	out := make([]string, 0, len(candidates))
 	for bu := range candidates {

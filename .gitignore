@@ -21,6 +21,10 @@ wiki-import/
 **/.env.local
 **/.env.*.local
 
+# Wiki.js dry-run / local API token (use scripts/wikijs-dry-run-compare.sh)
+backend/.wikijs.token
+backend/wikijs.token
+
 # Docker Compose — local secrets (use docker-compose.env.example as template)
 .env.docker
 .env.docker.local
@@ -45,6 +49,8 @@ out/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+bash.exe.stackdump
+origin_main_files.txt
 
 # OS files
 .DS_Store

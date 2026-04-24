@@ -1,75 +1,77 @@
----
-title: README
-description: 
-published: true
-date: 2026-03-20T09:28:06.088Z
-tags: 
-editor: markdown
-dateCreated: 2026-03-19T02:57:01.973Z
----
+# Carmen Backend (Go Fiber)
 
-# New Carmen Backend
+บริการ API หลักของระบบ KB Carmen
 
-Backend API สำหรับระบบ New Carmen Web ที่ใช้ Go Fiber framework
+หน้าที่หลัก:
+- ให้ API สำหรับ wiki content, faq, activity, business units
+- จัดการ indexing ลง PostgreSQL/pgvector (`<bu>.documents`, `<bu>.document_chunks`)
+- sync เนื้อหาจาก git repo/wiki source
+- proxy chat routes ไป Python chatbot
+- บันทึก chat history/activity logs
 
-## โครงสร้างโปรเจค
+## Run Local
 
-```
-backend/
-├── cmd/
-│   └── server/
-│       └── main.go          # Entry point
-├── internal/
-│   ├── config/              # Configuration management
-│   ├── database/            # Database connection & migrations
-│   ├── models/              # Data models
-│   ├── storage/             # Data access layer
-│   ├── services/            # Business logic layer
-│   │   ├── auth/           # Authentication service
-│   │   ├── document/       # Document management
-│   │   ├── search/         # Search service
-│   │   └── ai/             # AI/LLM service
-│   ├── handlers/           # HTTP handlers
-│   ├── middleware/         # HTTP middleware
-│   └── utils/              # Utilities
-├── pkg/
-│   ├── openrouter/         # OpenRouter client
-│   └── github/             # GitHub integration
-├── migrations/             # Database migrations
-├── .env.example
-└── go.mod
+```bash
+cd backend
+go mod download
+cp .env.example .env
+go run cmd/server/main.go
 ```
 
-## Features
+หรือผ่าน Make:
 
-- 🔐 Authentication & Authorization (Role-based)
-- 📄 Document Management
-- 🔍 AI-Powered Semantic Search
-- 🤖 OpenRouter Integration
-- 📚 GitHub Integration (for wiki.js content)
-- 🐘 PostgreSQL Database
+```bash
+make run
+make dev
+make test
+make build
+```
 
-## Setup
+## Environment สำคัญ
 
-1. Copy `.env.example` to `.env` and configure
-2. Run migrations: `make migrate-up`
-3. Start server: `go run cmd/server/main.go`
+- `PORT` / `SERVER_PORT`
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SCHEMA`
+- `ADMIN_API_KEY`, `INTERNAL_API_KEY`
+- `PRIVACY_HMAC_SECRET`
+- `PYTHON_CHATBOT_URL`
+- `GIT_REPO_PATH`, `WIKI_CONTENT_PATH`
+- `GITHUB_TOKEN`, `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`, `GITHUB_BRANCH`
+- `OPENROUTER_API_KEY`, `OPENROUTER_EMBED_MODEL`
+
+## API กลุ่มหลัก
+
+- System: `/health`, `/api/system/status`
+- Wiki: `/api/wiki/*`, `/wiki-assets/*`
+- Indexing: `/api/index/rebuild*`
+- Chat (proxy + internal): `/api/chat/*`
+- FAQ: `/api/faq/*`
+- Activity: `/api/activity/*`
+- BU admin: `/api/business-units/*`
+- Webhook: `/webhook/github`
+
+> เส้นทางที่เป็น admin/internal ใช้ API key ผ่าน header (`X-Admin-Key`, `X-Internal-API-Key`)
+
+## Migration / CLI Operations
+
+ตัว server รองรับคำสั่ง CLI:
+
+```bash
+go run cmd/server/main.go migrate
+go run cmd/server/main.go reindex carmen
+go run cmd/server/main.go reindex all
+go run cmd/server/main.go reset index carmen
+go run cmd/server/main.go reset index all
+go run cmd/server/main.go reset all
+```
+
+สำหรับ migration เชิง production (ไฟล์ SQL ที่มี PL/pgSQL) แนะนำใช้ `psql` ตามแนวทางใน `migrations/README.md`
 
 ## Swagger (OpenAPI)
 
-- UI: เปิด `http://localhost:8080/swagger/index.html` หลังรันเซิร์ฟเวอร์ (พอร์ตตาม `SERVER_PORT` / `PORT`)
-- Regenerate หลังแก้คอมเมนต์ใน `internal/apidoc/swagger_routes.go` หรือ `cmd/server/main.go`:
+- UI: `http://localhost:8080/swagger/index.html`
+- regenerate:
 
 ```bash
 cd cmd/server
 go run github.com/swaggo/swag/cmd/swag@v1.16.4 init -g main.go -o ../../docs -d .,../../internal/apidoc,../../internal/models
 ```
-
-หรือจากรากโมดูล: `go generate ./cmd/server/...`
-
-## Development Plan
-
-- Week 1: Foundation & Content Management Flow
-- Week 2: Indexing & Semantic Search
-- Week 3: AI-Assisted Search Intelligence
-- Week 4: UX, Performance & Delivery

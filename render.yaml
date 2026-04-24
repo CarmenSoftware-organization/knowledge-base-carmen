@@ -1,126 +1,42 @@
-# render.yaml — New Carmen: Render deployment blueprint
+# render.yaml — Full Docker deployment on Render
 #
-# Architecture:
-#   carmen-db       → Render Managed PostgreSQL 16 (pgvector via migration 0001)
-#   carmen-chatbot  → Python 3.12 / FastAPI
-#   carmen-backend  → Go 1.21 / Fiber
+# Services:
+#   carmen-db        -> Render Managed PostgreSQL 16
+#   carmen-backend   -> Docker (Go Fiber)
+#   carmen-chatbot   -> Docker (Python FastAPI)
+#   carmen-frontend  -> Docker (Next.js)
 #
-# Frontend (Next.js) → Vercel (see frontend/user/vercel.json)
+# First-time setup:
+# 1) Push this file to Git provider and create Blueprint on Render
+# 2) Fill secrets marked with sync: false
+# 3) Deploy
 #
-# ─── First-time setup ─────────────────────────────────────────────────────────
-# 1. Push this file to GitHub, then connect repo on Render → "New Blueprint"
-# 2. Set all env vars marked "sync: false" in the Render dashboard:
-#      JWT_SECRET               → openssl rand -hex 32
-#      PRIVACY_HMAC_SECRET      → openssl rand -hex 32  (same value on both services) #      GITHUB_TOKEN             → GitHub PAT (repo:read scope)
-#      OPENROUTER_API_KEY       → your OpenRouter key
-#      GOOGLE_TRANSLATE_API_KEY → optional; leave empty if TRANSLATION_ENABLED=false
-# 3. Migrations run automatically via preDeployCommand on every backend deploy.
-#    If you need to run them manually: Render dashboard → carmen-backend → Shell
-#      $ ./server migrate
-# 4. After first deploy, set CORS_ORIGINS on both services and
-#    NEXT_PUBLIC_API_BASE on Vercel to the real URLs (see notes below).
-# ──────────────────────────────────────────────────────────────────────────────
+# Notes:
+# - backend startup runs idempotent migrate before starting server
+# - CORS defaults to "*" for quick bring-up; tighten after first successful deploy
+# - frontend API base is wired from backend's Render external URL
 
 databases:
   - name: carmen-db
     databaseName: carmen_db
-    user: postgres
-    plan: starter               # $7/mo — cheapest plan that supports pgvector
-    postgresMajorVersion: "16"  # matches pgvector/pgvector:pg16 in docker-compose
+    plan: starter
+    postgresMajorVersion: "16"
 
 services:
-  # ─── Python Chatbot (FastAPI + LangChain) ─────────────────────────────────
-  - type: web
-    name: carmen-chatbot
-    runtime: python
-    rootDir: carmen-chatbot
-    plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /api/health
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-
-      # ── Database (from Render managed DB) ──────────────────────────────────
-      - key: DB_HOST
-        fromDatabase:
-          name: carmen-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: carmen-db
-          property: port
-      - key: DB_USER
-        fromDatabase:
-          name: carmen-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: carmen-db
-          property: password
-      - key: DB_NAME
-        fromDatabase:
-          name: carmen-db
-          property: database
-      - key: DB_SSLMODE
-        value: require
-
-      # ── Wiki content ─────────────────────────────────────────────────────
-      # Render clones the full repo to /opt/render/project/src regardless of rootDir
-      - key: WIKI_CONTENT_PATH
-        value: /opt/render/project/src/carmen_cloud
-
-      # Must match Go backend VECTOR_DIMENSION and pgvector column (2000 if migrations/0006_vector_2000.sql was applied)
-      - key: VECTOR_DIMENSION
-        value: "1536"
-
-      # ── LLM ──────────────────────────────────────────────────────────────
-      - key: LLM_API_BASE
-        value: https://openrouter.ai/api/v1
-      - key: LLM_CHAT_MODEL
-        value: stepfun/step-3.5-flash:free
-      - key: LLM_INTENT_MODEL
-        value: google/gemini-2.5-flash-lite
-      - key: LLM_EMBED_MODEL
-        value: qwen/qwen3-embedding-8b
-      - key: LLM_API_KEY
-        sync: false   # set OPENROUTER_API_KEY in Render dashboard
-
-      # ── Security ─────────────────────────────────────────────────────────
-      - key: PRIVACY_HMAC_SECRET
-        sync: false   # openssl rand -hex 32 — must match backend value
-
-      # ── CORS ─────────────────────────────────────────────────────────────
-      # FastAPI uses exact origin strings only (no https://*.vercel.app wildcard).
-      # Tighten to your Vercel URL(s) in the dashboard when ready; * keeps previews working.
-      - key: CORS_ORIGINS
-        value: "*"
-
-      # ── Inter-service ─────────────────────────────────────────────────────
-      - key: GO_BACKEND_URL
-        fromService:
-          type: web
-          name: carmen-backend
-          envVarKey: RENDER_EXTERNAL_URL
-
-  # ─── Go Backend (Fiber API) ───────────────────────────────────────────────
+  # ─── Backend (Go Fiber in Docker) ───────────────────────────────────────────
   - type: web
     name: carmen-backend
-    runtime: go
-    rootDir: backend
+    runtime: docker
     plan: starter
-    buildCommand: go build -o server ./cmd/server
-    # Runs migrations idempotently before each new deployment starts.
-    # Safe to re-run: all SQL uses IF NOT EXISTS / CREATE OR REPLACE.
-    preDeployCommand: ./server migrate
-    startCommand: ./server
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
         value: production
+      - key: PORT
+        value: "8080"
 
-      # ── Database ───────────────────────────────────────────────────────────
       - key: DB_HOST
         fromDatabase:
           name: carmen-db
@@ -145,48 +61,124 @@ services:
         value: require
       - key: DB_SCHEMA
         value: carmen,public
+      - key: VECTOR_DIMENSION
+        value: "2000"
 
-      # ── Wiki / Git ─────────────────────────────────────────────────────────
+      # Wiki / Git
       - key: GIT_REPO_PATH
         value: /opt/render/project/src
       - key: WIKI_CONTENT_PATH
         value: /opt/render/project/src/carmen_cloud
       - key: GITHUB_REPO_OWNER
-        value: Sunshine050
+        value: CarmenSoftware-organization
       - key: GITHUB_REPO_NAME
-        value: new-carmen
+        value: kb-carmen
       - key: GITHUB_BRANCH
         value: main
       - key: GITHUB_TOKEN
-        sync: false   # GitHub PAT (repo:read)
+        sync: false
 
-      # ── LLM / Embeddings ───────────────────────────────────────────────────
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_EMBED_MODEL
         value: qwen/qwen3-embedding-8b
 
-      # ── Translation ────────────────────────────────────────────────────────
       - key: TRANSLATION_ENABLED
         value: "false"
       - key: GOOGLE_TRANSLATE_API_KEY
-        sync: false   # optional; set only if TRANSLATION_ENABLED=true
+        sync: false
 
-      # ── Security ───────────────────────────────────────────────────────────
       - key: JWT_SECRET
-        sync: false   # openssl rand -hex 32
+        sync: false
       - key: PRIVACY_HMAC_SECRET
-        sync: false   # openssl rand -hex 32 — must match chatbot value
+        sync: false
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: INTERNAL_API_KEY
+        sync: false
 
-      # ── CORS ───────────────────────────────────────────────────────────────
-      # Go Fiber CORS: https://*.vercel.app allows any Vercel deployment (see middleware/cors).
-      # Append custom domains in the dashboard if you use a non-Vercel host.
       - key: CORS_ORIGINS
-        value: "https://*.vercel.app"
+        value: "*"
 
-      # ── Inter-service ──────────────────────────────────────────────────────
       - key: PYTHON_CHATBOT_URL
         fromService:
           type: web
           name: carmen-chatbot
           envVarKey: RENDER_EXTERNAL_URL
+
+  # ─── Chatbot (FastAPI in Docker) ───────────────────────────────────────────
+  - type: web
+    name: carmen-chatbot
+    runtime: docker
+    plan: starter
+    dockerContext: .
+    dockerfilePath: ./carmen-chatbot/Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: "8000"
+      - key: DB_HOST
+        fromDatabase:
+          name: carmen-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: carmen-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: carmen-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: carmen-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: carmen-db
+          property: database
+      - key: DB_SSLMODE
+        value: require
+      - key: DB_SCHEMA
+        value: carmen,public
+      - key: VECTOR_DIMENSION
+        value: "2000"
+      - key: WIKI_CONTENT_PATH
+        value: /app/carmen_cloud
+      - key: LLM_API_BASE
+        value: https://openrouter.ai/api/v1
+      - key: LLM_CHAT_MODEL
+        value: stepfun/step-3.5-flash:free
+      - key: LLM_INTENT_MODEL
+        value: google/gemini-2.5-flash-lite
+      - key: LLM_EMBED_MODEL
+        value: qwen/qwen3-embedding-8b
+      - key: LLM_API_KEY
+        sync: false
+      - key: PRIVACY_HMAC_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: GO_BACKEND_URL
+        fromService:
+          type: web
+          name: carmen-backend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: GO_BACKEND_INTERNAL_API_KEY
+        sync: false
+
+  # ─── Frontend (Next.js in Docker) ──────────────────────────────────────────
+  - type: web
+    name: carmen-frontend
+    runtime: docker
+    plan: starter
+    dockerContext: ./frontend/user
+    dockerfilePath: ./frontend/user/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_BASE
+        value: https://kb-carmen.onrender.com
