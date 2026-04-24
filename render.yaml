@@ -19,7 +19,6 @@
 databases:
   - name: carmen-db
     databaseName: carmen_db
-    user: postgres
     plan: starter
     postgresMajorVersion: "16"
 
