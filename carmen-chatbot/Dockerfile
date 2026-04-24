@@ -11,7 +11,7 @@ COPY carmen-chatbot/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY carmen-chatbot/backend ./backend
-COPY carmen_cloud ./carmen_cloud
+COPY contents/training_center/carmen_cloud ./carmen_cloud
 
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT=production
