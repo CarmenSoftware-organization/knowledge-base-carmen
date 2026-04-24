@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { BookOpen, Building2, CircleHelp, Headset } from "lucide-react";
+import { BookOpen, Building2, Headset } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { setSelectedBU, type BusinessUnit } from "@/lib/wiki-api";
@@ -159,11 +159,6 @@ export function BULandingCards({ items }: Props) {
   const goToCategoriesForBu = (slug: string) => {
     setSelectedBU(slug);
     router.push("/categories");
-  };
-
-  const goToFaqForBu = (slug: string) => {
-    setSelectedBU(slug);
-    router.push("/faq");
   };
 
   const whyPoints = ["whatIsPoint1", "whatIsPoint2", "whatIsPoint3", "whatIsPoint4"] as const;
@@ -328,7 +323,7 @@ export function BULandingCards({ items }: Props) {
                             </div>
                           </CardHeader>
                           <CardContent className="relative px-3 pb-3 pt-0 sm:px-3.5 sm:pb-3.5 lg:px-4 lg:pb-4">
-                            <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+                            <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
                               <button
                                 type="button"
                                 onClick={() => goToCategoriesForBu(bu.slug)}
@@ -348,27 +343,6 @@ export function BULandingCards({ items }: Props) {
                                 </span>
                                 <span className="line-clamp-2 text-[9px] leading-snug text-muted-foreground sm:text-[10px]">
                                   {t("buActionGuidesHint")}
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => goToFaqForBu(bu.slug)}
-                                className={cn(
-                                  "flex min-h-[4.25rem] cursor-pointer flex-col justify-center gap-1 rounded-lg border border-border/70 bg-background/70 p-2.5 text-left shadow-sm transition-all",
-                                  "hover:border-primary/45 hover:bg-primary/[0.06] active:scale-[0.98]",
-                                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                )}
-                                aria-label={`${bu.name} — ${t("buActionFaqTitle")}`}
-                              >
-                                <CircleHelp
-                                  className="h-4 w-4 shrink-0 text-primary sm:h-[1.125rem] sm:w-[1.125rem]"
-                                  strokeWidth={2.25}
-                                />
-                                <span className="text-xs font-semibold leading-tight text-foreground sm:text-[0.8125rem]">
-                                  {t("buActionFaqTitle")}
-                                </span>
-                                <span className="line-clamp-2 text-[9px] leading-snug text-muted-foreground sm:text-[10px]">
-                                  {t("buActionFaqHint")}
                                 </span>
                               </button>
                             </div>
