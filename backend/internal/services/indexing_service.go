@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
@@ -26,6 +28,8 @@ type IndexingService struct {
 	llm        Embedder
 	logService *ActivityLogService
 }
+
+const defaultEmbeddingTimeout = 60 * time.Second
 
 func NewIndexingService() *IndexingService {
 	return &IndexingService{
@@ -65,6 +69,19 @@ func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
 	return nil
 }
 
+// IndexPath indexes a single markdown path for the given BU.
+func (s *IndexingService) IndexPath(ctx context.Context, bu, path string) error {
+	if !security.ValidateSchema(bu) {
+		return fmt.Errorf("invalid schema/bu: %q", bu)
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return s.indexSingle(bu, path)
+}
+
 func (s *IndexingService) indexSingle(bu, path string) error {
 	content, err := s.wiki.GetContent(bu, path)
 	if err != nil {
@@ -93,7 +110,9 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		if strings.TrimSpace(chunkText) == "" {
 			continue
 		}
-		emb, err := s.llm.Embedding(chunkText)
+		emb, err := embeddingWithTimeout(func() ([]float32, error) {
+			return s.llm.Embedding(chunkText)
+		}, embeddingTimeout())
 		if err != nil {
 			return fmt.Errorf("embedding chunk %d: %w", i, err)
 		}
@@ -114,6 +133,36 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		}
 	}
 	return nil
+}
+
+func embeddingWithTimeout(call func() ([]float32, error), timeout time.Duration) ([]float32, error) {
+	type result struct {
+		emb []float32
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		emb, err := call()
+		ch <- result{emb: emb, err: err}
+	}()
+	select {
+	case out := <-ch:
+		return out.emb, out.err
+	case <-time.After(timeout):
+		return nil, fmt.Errorf("embedding timeout after %s", timeout)
+	}
+}
+
+func embeddingTimeout() time.Duration {
+	raw := strings.TrimSpace(os.Getenv("EMBEDDING_TIMEOUT_SECONDS"))
+	if raw == "" {
+		return defaultEmbeddingTimeout
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 {
+		return defaultEmbeddingTimeout
+	}
+	return time.Duration(n) * time.Second
 }
 
 func (s *IndexingService) getVectorDimForBU(bu string) (int, error) {
