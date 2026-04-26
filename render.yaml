@@ -1,7 +1,6 @@
 # render.yaml — Full Docker deployment on Render
 #
 # Services:
-#   carmen-db        -> Render Managed PostgreSQL 16
 #   carmen-backend   -> Docker (Go Fiber)
 #   carmen-chatbot   -> Docker (Python FastAPI)
 #   carmen-frontend  -> Docker (Next.js)
@@ -12,22 +11,16 @@
 # 3) Deploy
 #
 # Notes:
+# - this blueprint is free-tier oriented (no Render managed Postgres)
+# - use external Postgres by filling DB_* vars on backend/chatbot
 # - backend startup runs idempotent migrate before starting server
-# - CORS defaults to "*" for quick bring-up; tighten after first successful deploy
-# - frontend API base is wired from backend's Render external URL
-
-databases:
-  - name: carmen-db
-    databaseName: carmen_db
-    plan: starter
-    postgresMajorVersion: "16"
 
 services:
   # ─── Backend (Go Fiber in Docker) ───────────────────────────────────────────
   - type: web
     name: carmen-backend
     runtime: docker
-    plan: starter
+    plan: free
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /health
@@ -38,25 +31,15 @@ services:
         value: "8080"
 
       - key: DB_HOST
-        fromDatabase:
-          name: carmen-db
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: carmen-db
-          property: port
+        value: "6432"
       - key: DB_USER
-        fromDatabase:
-          name: carmen-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: carmen-db
-          property: password
+        sync: false
       - key: DB_NAME
-        fromDatabase:
-          name: carmen-db
-          property: database
+        sync: false
       - key: DB_SSLMODE
         value: require
       - key: DB_SCHEMA
@@ -110,7 +93,7 @@ services:
   - type: web
     name: carmen-chatbot
     runtime: docker
-    plan: starter
+    plan: free
     dockerContext: .
     dockerfilePath: ./carmen-chatbot/Dockerfile
     healthCheckPath: /api/health
@@ -120,25 +103,15 @@ services:
       - key: PORT
         value: "8000"
       - key: DB_HOST
-        fromDatabase:
-          name: carmen-db
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: carmen-db
-          property: port
+        value: "6432"
       - key: DB_USER
-        fromDatabase:
-          name: carmen-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: carmen-db
-          property: password
+        sync: false
       - key: DB_NAME
-        fromDatabase:
-          name: carmen-db
-          property: database
+        sync: false
       - key: DB_SSLMODE
         value: require
       - key: DB_SCHEMA
@@ -173,7 +146,7 @@ services:
   - type: web
     name: carmen-frontend
     runtime: docker
-    plan: starter
+    plan: free
     dockerContext: ./frontend/user
     dockerfilePath: ./frontend/user/Dockerfile
     healthCheckPath: /
@@ -181,4 +154,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_BASE
-        value: https://kb-carmen.onrender.com
+        fromService:
+          type: web
+          name: carmen-backend
+          envVarKey: RENDER_EXTERNAL_URL

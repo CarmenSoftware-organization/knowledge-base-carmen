@@ -9,7 +9,9 @@ RUN npm ci
 FROM node:20-alpine AS builder
 WORKDIR /app
 ARG DOCKER_BUILD=1
+ARG NEXT_PUBLIC_API_BASE=https://kb-carmen-backend.onrender.com
 ENV DOCKER_BUILD=$DOCKER_BUILD
+ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -27,6 +29,8 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Next standalone may still require this helper at runtime.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@swc/helpers ./node_modules/@swc/helpers
 
 USER nextjs
 EXPOSE 3000

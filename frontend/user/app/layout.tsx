@@ -1,7 +1,6 @@
 import React from "react"
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import { getLocale } from 'next-intl/server'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
@@ -38,7 +37,6 @@ export default async function RootLayout({
           <ThemeProvider>
             {children}
             <FloatingChatBot />
-            <Analytics />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

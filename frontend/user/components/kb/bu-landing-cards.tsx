@@ -303,7 +303,9 @@ export function BULandingCards({ items }: Props) {
                     initial="hidden"
                     animate="show"
                   >
-                    {items.map((bu) => (
+                    {items.map((bu) => {
+                      const isTrainingCenter = bu.slug.toLowerCase() === "training_center";
+                      return (
                       <motion.div key={bu.id} variants={cardItem} className="min-h-0 w-full">
                         <Card className="relative h-full overflow-hidden rounded-xl border border-border/60 bg-card/85 shadow-md shadow-black/[0.03] backdrop-blur-xl dark:border-border/50 dark:bg-card/80 dark:shadow-black/20 sm:rounded-2xl">
                           <div
@@ -328,7 +330,12 @@ export function BULandingCards({ items }: Props) {
                             </div>
                           </CardHeader>
                           <CardContent className="relative px-3 pb-3 pt-0 sm:px-3.5 sm:pb-3.5 lg:px-4 lg:pb-4">
-                            <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+                            <div
+                              className={cn(
+                                "grid gap-2 sm:gap-2.5",
+                                isTrainingCenter ? "grid-cols-1" : "grid-cols-2",
+                              )}
+                            >
                               <button
                                 type="button"
                                 onClick={() => goToCategoriesForBu(bu.slug)}
@@ -350,32 +357,35 @@ export function BULandingCards({ items }: Props) {
                                   {t("buActionGuidesHint")}
                                 </span>
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => goToFaqForBu(bu.slug)}
-                                className={cn(
-                                  "flex min-h-[4.25rem] cursor-pointer flex-col justify-center gap-1 rounded-lg border border-border/70 bg-background/70 p-2.5 text-left shadow-sm transition-all",
-                                  "hover:border-primary/45 hover:bg-primary/[0.06] active:scale-[0.98]",
-                                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                )}
-                                aria-label={`${bu.name} — ${t("buActionFaqTitle")}`}
-                              >
-                                <CircleHelp
-                                  className="h-4 w-4 shrink-0 text-primary sm:h-[1.125rem] sm:w-[1.125rem]"
-                                  strokeWidth={2.25}
-                                />
-                                <span className="text-xs font-semibold leading-tight text-foreground sm:text-[0.8125rem]">
-                                  {t("buActionFaqTitle")}
-                                </span>
-                                <span className="line-clamp-2 text-[9px] leading-snug text-muted-foreground sm:text-[10px]">
-                                  {t("buActionFaqHint")}
-                                </span>
-                              </button>
+                              {!isTrainingCenter && (
+                                <button
+                                  type="button"
+                                  onClick={() => goToFaqForBu(bu.slug)}
+                                  className={cn(
+                                    "flex min-h-[4.25rem] cursor-pointer flex-col justify-center gap-1 rounded-lg border border-border/70 bg-background/70 p-2.5 text-left shadow-sm transition-all",
+                                    "hover:border-primary/45 hover:bg-primary/[0.06] active:scale-[0.98]",
+                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                  )}
+                                  aria-label={`${bu.name} — ${t("buActionFaqTitle")}`}
+                                >
+                                  <CircleHelp
+                                    className="h-4 w-4 shrink-0 text-primary sm:h-[1.125rem] sm:w-[1.125rem]"
+                                    strokeWidth={2.25}
+                                  />
+                                  <span className="text-xs font-semibold leading-tight text-foreground sm:text-[0.8125rem]">
+                                    {t("buActionFaqTitle")}
+                                  </span>
+                                  <span className="line-clamp-2 text-[9px] leading-snug text-muted-foreground sm:text-[10px]">
+                                    {t("buActionFaqHint")}
+                                  </span>
+                                </button>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </motion.div>
                 )}
               </div>
