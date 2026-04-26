@@ -3,6 +3,7 @@ import { KBFooter } from "@/components/kb/footer";
 import { KBSidebar } from "@/components/kb/sidebar";
 import { Breadcrumb } from "@/components/kb/breadcrumb";
 import {
+  getCategory,
   getContent,
   normalizeWikiRelPath,
   wikiDirFromContentPath,
@@ -20,6 +21,8 @@ import { getTranslations } from "next-intl/server";
 import { DEFAULT_BU } from "@/lib/config";
 import { faqSegmentLabel } from "@/lib/faq-nav";
 import { getCachedFaqNavItems } from "@/lib/faq-cache";
+import { buildChangelogNavList } from "@/lib/changelog-utils";
+import { ChangelogSidebar } from "@/components/kb/changelog-sidebar";
 
 type Props = {
   params: Promise<{
@@ -111,6 +114,16 @@ export default async function ArticlePage({ params }: Props) {
   const isChangelogArticle = catLower === "changelog";
   const faqNavItems = isFaqArticle ? await getCachedFaqNavItems(bu) : [];
 
+  let changelogNavItems: ReturnType<typeof buildChangelogNavList> = [];
+  if (isChangelogArticle) {
+    try {
+      const cat = await getCategory("changelog", contentBu, { cache: "no-store" });
+      changelogNavItems = buildChangelogNavList(cat.items);
+    } catch {
+      changelogNavItems = [];
+    }
+  }
+
   const { data: frontmatter, content } = matter(raw.content);
 
   const title =
@@ -193,6 +206,11 @@ export default async function ArticlePage({ params }: Props) {
         faqItems={
           isFaqArticle && faqNavItems.length > 0 ? faqNavItems : undefined
         }
+        changelogItems={
+          isChangelogArticle && changelogNavItems.length > 0
+            ? changelogNavItems
+            : undefined
+        }
       />
 
       <main className="flex-1">
@@ -206,6 +224,12 @@ export default async function ArticlePage({ params }: Props) {
           {isFaqArticle && faqNavItems.length > 0 && (
             <div className="hidden xl:block shrink-0 self-start sticky top-24">
               <FaqSidebar items={faqNavItems} />
+            </div>
+          )}
+
+          {isChangelogArticle && changelogNavItems.length > 0 && (
+            <div className="hidden xl:block shrink-0 self-start sticky top-24">
+              <ChangelogSidebar items={changelogNavItems} />
             </div>
           )}
 

@@ -58,3 +58,15 @@ export function sortChangelogItems(items: ChangelogListEntry[]): ChangelogListEn
     return b.slug.localeCompare(a.slug);
   });
 }
+
+/** Sidebar / timeline: drop index & _images, sort newest first. */
+export function buildChangelogNavList(
+  items: (WikiListItem & { slug: string })[] | undefined | null,
+): ChangelogListEntry[] {
+  const raw = items ?? [];
+  const filtered = raw.filter((item) => {
+    const p = item.path.replace(/\\/g, "/");
+    return item.slug !== "index" && !p.includes("/_images/");
+  });
+  return sortChangelogItems(filtered as ChangelogListEntry[]);
+}

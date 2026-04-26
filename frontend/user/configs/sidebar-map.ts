@@ -6,9 +6,10 @@ export const categoryDisplayMap: Record<string, string> = {
     "asset-checker": "Asset Checker",
     configuration: "Configuration",
     workbook: "Work Book",
-    comment: "Comment & Document",
+    comment: "Comment and Document Management & Activity Log",
     dashboard: "Dashboard",
     faq: "FAQ",
+    changelog: "Changelog",
 };
 
 export const articleDisplayMap: Record<string, string> = {
@@ -31,6 +32,9 @@ export const articleDisplayMap: Record<string, string> = {
     "CF-chart_of_account": "Chart of Accounts",
     "CF-permissions": "Permissions",
     "CF-users": "Users",
+
+    // Comment
+    "CM-index": "Comment and Document Management & Activity Log",
 };
 
 export function cleanTitle(title: string): string {

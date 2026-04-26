@@ -14,7 +14,8 @@ import { ChangelogTimeline } from "@/components/kb/changelog-timeline";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { DEFAULT_BU } from "@/lib/config";
-import { sortChangelogItems } from "@/lib/changelog-utils";
+import { buildChangelogNavList } from "@/lib/changelog-utils";
+import { ChangelogSidebar } from "@/components/kb/changelog-sidebar";
 import { cn } from "@/lib/utils";
 
 export default async function CategoryPage({
@@ -78,31 +79,32 @@ export default async function CategoryPage({
     const p = item.path.replace(/\\/g, "/");
     return item.slug !== "index" && !p.includes("/_images/");
   });
-  const changelogSorted = isChangelog ? sortChangelogItems(gridItems) : [];
+  const changelogSorted = isChangelog ? buildChangelogNavList(data?.items) : [];
 
   const t = await getTranslations();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <KBHeader />
-      <MobileSidebar />
+      <MobileSidebar
+        changelogItems={isChangelog && changelogSorted.length ? changelogSorted : undefined}
+      />
 
       <main className="flex-1">
-        <div
-          className={cn(
-            "mx-auto px-4 sm:px-6 py-6",
-            isChangelog
-              ? "max-w-3xl"
-              : "max-w-7xl flex gap-10 items-start relative",
-          )}
-        >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 flex gap-10 items-start relative">
           {!isChangelog && (
             <aside className="hidden lg:block sticky top-24 shrink-0">
               <KBSidebar />
             </aside>
           )}
 
-          <div className={cn("min-w-0", !isChangelog && "flex-1")}>
+          {isChangelog && changelogSorted.length > 0 && (
+            <aside className="hidden lg:block sticky top-24 shrink-0">
+              <ChangelogSidebar items={changelogSorted} />
+            </aside>
+          )}
+
+          <div className={cn("min-w-0", "flex-1")}>
             <Breadcrumb
               items={[
                 { label: t("common.categories"), href: "/categories" },

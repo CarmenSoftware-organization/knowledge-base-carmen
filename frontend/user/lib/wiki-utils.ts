@@ -1,5 +1,9 @@
+import { categoryDisplayMap } from "@/configs/sidebar-map";
+
 export function formatCategoryName(slug: string) {
-  return slug.toUpperCase();
+  const key = (slug || "").trim().toLowerCase();
+  if (key && categoryDisplayMap[key]) return categoryDisplayMap[key];
+  return (slug || "").toUpperCase();
 }
 
 /** แปลงชื่อไฟล์ / slug เป็น label อ่านง่าย (ไม่บังคับ title case — รักษาภาษาไทย) */

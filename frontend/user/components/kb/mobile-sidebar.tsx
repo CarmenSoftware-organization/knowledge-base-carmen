@@ -6,9 +6,11 @@ import { motion, useReducedMotion } from "framer-motion";
 import { KBSidebar } from "./sidebar";
 import { TableOfContents } from "./toc";
 import { FaqSidebarNav } from "./faq-sidebar";
+import { ChangelogSidebarNav } from "./changelog-sidebar";
 import { cn } from "@/lib/utils";
 import { usePathname, useParams } from "next/navigation";
 import type { FaqWikiItem } from "@/lib/faq-nav";
+import type { ChangelogListEntry } from "@/lib/changelog-utils";
 import { subscribeKbHeaderScrollHidden } from "@/lib/kb-scroll-chrome";
 
 /** Sub-bar offset: header (56) + bar (48) + gap — sync hide with KBHeader */
@@ -16,9 +18,10 @@ const MOBILE_SUBBAR_HIDE_Y = -(56 + 48 + 6);
 
 type MobileSidebarProps = {
   faqItems?: FaqWikiItem[];
+  changelogItems?: ChangelogListEntry[];
 };
 
-export function MobileSidebar({ faqItems }: MobileSidebarProps) {
+export function MobileSidebar({ faqItems, changelogItems }: MobileSidebarProps) {
   const [activeDrawer, setActiveDrawer] = useState<"menu" | "toc" | null>(null);
   const [headerScrollHidden, setHeaderScrollHidden] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -33,11 +36,16 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
     pathname.startsWith("/categories/changelog");
 
   const hasFaqNav = Boolean(faqItems?.length);
+  const hasChangelogNav = Boolean(changelogItems?.length);
 
   const showMobileSubBar =
-    !hideKbManualMenu || isArticlePage || (hideKbManualMenu && hasFaqNav);
+    !hideKbManualMenu ||
+    isArticlePage ||
+    (hideKbManualMenu && hasFaqNav) ||
+    (hideKbManualMenu && hasChangelogNav);
 
-  const openMenuDrawer = !hideKbManualMenu || hasFaqNav;
+  const openMenuDrawer =
+    !hideKbManualMenu || hasFaqNav || hasChangelogNav;
 
   useEffect(() => {
     setActiveDrawer(null);
@@ -64,11 +72,21 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
           <div
             className={cn(
               "flex items-center px-3 sm:px-4 h-11 sm:h-12",
-              hideKbManualMenu && isArticlePage && !hasFaqNav && "justify-end",
-              hideKbManualMenu && isArticlePage && hasFaqNav && "justify-between",
+              hideKbManualMenu &&
+                isArticlePage &&
+                !hasFaqNav &&
+                !hasChangelogNav &&
+                "justify-end",
+              hideKbManualMenu &&
+                isArticlePage &&
+                (hasFaqNav || hasChangelogNav) &&
+                "justify-between",
               !hideKbManualMenu && isArticlePage && "justify-between",
               !hideKbManualMenu && !isArticlePage && "justify-start",
-              hideKbManualMenu && !isArticlePage && hasFaqNav && "justify-start"
+              hideKbManualMenu &&
+                !isArticlePage &&
+                (hasFaqNav || hasChangelogNav) &&
+                "justify-start",
             )}
           >
             {!hideKbManualMenu && (
@@ -87,6 +105,15 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
               >
                 <Menu className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                 <span>FAQ</span>
+              </button>
+            )}
+            {hideKbManualMenu && hasChangelogNav && (
+              <button
+                onClick={() => setActiveDrawer("menu")}
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-muted-foreground dark:text-zinc-400 hover:text-primary dark:hover:text-zinc-100 transition-colors touch-manipulation"
+              >
+                <Menu className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Changelog</span>
               </button>
             )}
             {isArticlePage && (
@@ -123,7 +150,11 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
           <div className="flex flex-col h-full">
             <div className="p-6 border-b border-zinc-200 dark:border-zinc-700/60 flex justify-between items-center">
               <span className="font-bold text-primary dark:text-zinc-100">
-                {hideKbManualMenu && hasFaqNav ? "เมนู FAQ" : "เมนูเอกสาร"}
+                {hideKbManualMenu && hasFaqNav
+                  ? "เมนู FAQ"
+                  : hideKbManualMenu && hasChangelogNav
+                    ? "Changelog"
+                    : "เมนูเอกสาร"}
               </span>
               <button
                 onClick={closeDrawer}
@@ -137,6 +168,12 @@ export function MobileSidebar({ faqItems }: MobileSidebarProps) {
                 <FaqSidebarNav
                   items={faqItems}
                   showHomeLink
+                  className="max-h-none pr-0"
+                />
+              ) : hideKbManualMenu && hasChangelogNav && changelogItems ? (
+                <ChangelogSidebarNav
+                  items={changelogItems}
+                  showOverviewLink
                   className="max-h-none pr-0"
                 />
               ) : (
