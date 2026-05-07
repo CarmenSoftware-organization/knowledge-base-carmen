@@ -56,15 +56,17 @@ make build
 ตัว server รองรับคำสั่ง CLI:
 
 ```bash
-go run cmd/server/main.go migrate
-go run cmd/server/main.go reindex carmen
-go run cmd/server/main.go reindex all
-go run cmd/server/main.go reset index carmen
-go run cmd/server/main.go reset index all
-go run cmd/server/main.go reset all
+go run cmd/server/main.go migrate <path-to-sql>     # ระบุไฟล์เสมอ
+go run cmd/server/main.go reindex <bu>|all
+go run cmd/server/main.go reset index <bu>|all      # truncate <bu>.documents/document_chunks
+go run cmd/server/main.go reset all                 # truncate public activity/chat tables
 ```
 
-สำหรับ migration เชิง production (ไฟล์ SQL ที่มี PL/pgSQL) แนะนำใช้ `psql` ตามแนวทางใน `migrations/README.md`
+> ⚠️ **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$` เช่น `0002_setup_multi_bu.sql`) — Go binary ตัด `;` ผิด ใช้ `psql` หรือ `scripts/migrate-docker.sh` ตามลำดับใน `migrations/README.md`
+
+## Auto-provision (GitHub Actions)
+
+Push markdown ใต้ `contents/<bu>/` เข้า `main` → workflow `.github/workflows/auto-provision-sync-reindex.yml` เรียก `provision/sync/rebuild` ผ่าน admin API ให้อัตโนมัติ ดูรายละเอียดใน `HANDOVER-ADD-NEW-BU.md`
 
 ## Swagger (OpenAPI)
 

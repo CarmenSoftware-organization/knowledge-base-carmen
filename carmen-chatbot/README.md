@@ -55,7 +55,7 @@ curl http://localhost:8000/api/health
 
 ## RAG Pipeline (ย่อ)
 
-1. Intent routing (regex -> vector -> LLM fallback)
+1. Intent routing (regex → vector → LLM fallback)
 2. Rewrite follow-up question (เมื่อมี history)
 3. Thai-aware query handling + translation สำหรับ query ที่ไม่ใช่ไทย
 4. Hybrid retrieval (pgvector + FTS + RRF)
@@ -63,7 +63,10 @@ curl http://localhost:8000/api/health
 6. Token budgeting + prompt assembly จาก `backend/config/prompts.yaml`
 7. LLM generation + streamed events
 
-ปรับพารามิเตอร์ได้ที่:
-- `backend/config/tuning.yaml`
-- `backend/config/intents.yaml`
-- `backend/config/path_rules.yaml`
+ปรับพารามิเตอร์ได้ที่ `backend/config/{tuning,intents,path_rules,prompts}.yaml` (intents.yaml + tuning.yaml รองรับ hot-reload)
+
+## เอกสารเพิ่มเติม
+
+- `TUNING_GUIDE.md` — คู่มือปรับ prompt/intent/path/threshold แบบละเอียด
+- `chatbot-flow.md` — flowchart ของ pipeline ทั้งหมด
+- `HANDOVER.md` — สถาปัตยกรรม + roadmap สู่ agentic workflow

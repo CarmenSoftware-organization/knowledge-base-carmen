@@ -85,11 +85,14 @@
 
 ## 4) Business Unit (BU) และ Multi-tenant
 
-ระบบรองรับหลาย BU เช่น `carmen`, `blueledgers`
+ระบบรองรับหลาย BU เช่น `carmen`, `blueledgers`, `training_center`
 
-- โครงสร้าง index แยก schema ต่อ BU ใน Postgres
-- เลือก BU ผ่าน query/header/cookie (`bu`, `X-BU-Slug`, `selected_bu`)
+- แต่ละ BU = Postgres **schema** ที่ลงทะเบียนใน `public.business_units`
+- ใช้ slug เดียวกันทั้ง schema name, `business_units.slug`, และโฟลเดอร์ `contents/<slug>/`
+- Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$` — **ห้ามมี `-`** (เพราะใช้เป็นชื่อ schema)
+- เลือก BU ผ่าน query `?bu=<slug>` (frontend เก็บค่าใน cookie `selected_bu`)
 - การ reindex ต้องระบุ BU ให้ชัดเจนเพื่อไม่ให้ผิด tenant
+- รายละเอียดการเพิ่ม/ลบ BU: ดู `HANDOVER-ADD-NEW-BU.md`
 
 ---
 
@@ -110,6 +113,8 @@ docker compose --env-file .env.docker up --build
 ```bash
 ./scripts/migrate-docker.sh
 ```
+
+> ⚠️ **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$` เช่น `0002_setup_multi_bu.sql`) — Go binary ตัด `;` ผิด ใช้ `migrate-docker.sh` (ผ่าน psql) หรือ `psql` ตรงๆ ตามลำดับใน `backend/migrations/README.md`
 
 health check:
 
@@ -207,7 +212,20 @@ npm test
 
 ## 7) คู่มือการเพิ่ม/อัปเดตข้อมูล Wiki.js + PostgreSQL
 
-ลำดับที่แนะนำ:
+### 7.0 วิธีหลัก (production): push เข้า main
+
+แค่ commit markdown ใต้ `contents/<bu>/` แล้ว push เข้า `main` — workflow `.github/workflows/auto-provision-sync-reindex.yml` จะทำให้อัตโนมัติ:
+
+1. Detect BU ที่เปลี่ยนจาก path
+2. `POST /api/business-units/provision` (สร้าง schema + tables ถ้ายังไม่มี)
+3. `POST /api/wiki/sync`
+4. `POST /api/index/rebuild?bu=<bu>` ทุก BU ที่เปลี่ยน
+
+ถ้าลบโฟลเดอร์ BU จนไม่เหลือไฟล์ → workflow จะ **deprovision** (drop schema) อัตโนมัติ
+
+ต้องตั้ง GitHub Actions secrets: `BACKEND_BASE_URL`, `BACKEND_ADMIN_API_KEY`
+
+### 7.A วิธี manual (dev/local) — ลำดับที่แนะนำ
 
 1. ตรวจ/โหลด credential
 2. dry-run compare
@@ -381,16 +399,33 @@ curl http://localhost:8000/api/health
 
 ## 12) Operational Runbook (ฉบับสั้น)
 
-เมื่อมีการอัปเดต markdown:
+**Production** — แค่ push เข้า `main` (auto-provision workflow ทำงานต่อ)
+
+**Manual** เมื่อมีการอัปเดต markdown:
 
 ```bash
+# (ทางเลือก) import ไป Wiki.js ด้วย
 source ./scripts/wikijs-load-credentials.sh
 CONTENTS_ROOT="$PWD/contents/<bu>" ./scripts/wikijs-import-contents.sh --dry-run --limit 20
 CONTENTS_ROOT="$PWD/contents/<bu>" ./scripts/wikijs-import-contents.sh
+
+# Sync repo + reindex
 API_BASE=http://localhost:8080 ADMIN_KEY="<admin-key>" ./scripts/sync-wiki-and-reindex-bu.sh <bu>
 ```
 
-ถ้ามีการลบ/ย้ายไฟล์จำนวนมาก:
+ถ้าเพิ่ม BU ใหม่แบบ manual:
+
+```bash
+API_BASE=http://localhost:8080 ADMIN_KEY="<admin-key>" ./scripts/provision-bu.sh <bu>
+```
+
+ถ้าลบ BU แบบ manual:
+
+```bash
+API_BASE=http://localhost:8080 ADMIN_KEY="<admin-key>" ./scripts/deprovision-bu.sh <bu>
+```
+
+ถ้ามีการลบ/ย้ายไฟล์จำนวนมาก (clear index ก่อน reindex):
 
 ```bash
 cd backend
@@ -420,10 +455,23 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_<bu>_faq.sql
 ## 14) เช็กลิสต์ก่อนขึ้น Production
 
 - [ ] ตั้งค่า secrets ครบ (`OPENROUTER_API_KEY`, `JWT_SECRET`, `PRIVACY_HMAC_SECRET`, `GITHUB_TOKEN`)
-- [ ] รัน migrations ครบ
+- [ ] `VECTOR_DIMENSION` ตรงกับ migration variant ที่รัน (1536 / 2000 / 4096)
+- [ ] รัน migrations ครบ (ผ่าน psql ตามลำดับใน `backend/migrations/README.md`)
 - [ ] ทดสอบ `health` ของ Go/Python
 - [ ] ทดสอบ `/api/wiki/sync` + `/api/index/rebuild`
 - [ ] ทดสอบ chat stream + feedback
 - [ ] ทดสอบ FAQ API
 - [ ] ทดสอบ CORS จาก frontend domain จริง
+- [ ] `PYTHON_CHATBOT_URL` ใน Go backend ชี้ไป URL จริง (ไม่ใช่ `localhost`/placeholder)
+- [ ] ตั้ง GitHub Actions secrets `BACKEND_BASE_URL` + `BACKEND_ADMIN_API_KEY` (ถ้าใช้ auto-provision workflow)
+
+---
+
+## 15) เอกสารอ้างอิงเพิ่มเติม
+
+- `README.md` — Quick start + ภาพรวมสั้น
+- `CLAUDE.md` — guidance สำหรับ Claude Code
+- `HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
+- `backend/migrations/README.md` — ลำดับ migration + dimension variants
+- `carmen-chatbot/{HANDOVER,TUNING_GUIDE,chatbot-flow}.md` — RAG pipeline + การปรับจูน
 

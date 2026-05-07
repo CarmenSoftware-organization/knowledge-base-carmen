@@ -43,7 +43,7 @@ npm test
 
 ## Integration หลักกับ Backend
 
-เรียก API ผ่าน Go backend เป็นหลัก:
+เรียก API ผ่าน Go backend เป็นหลัก (Go จะ proxy `/api/chat/*` ไป Python chatbot ให้):
 - Wiki: `/api/wiki/*`
 - Chat: `/api/chat/ask`, `/api/chat/stream`, `/api/chat/feedback/*`
 - Activity: `/api/activity/*`
@@ -51,5 +51,6 @@ npm test
 - BU list: `/api/business-units`
 
 หมายเหตุ:
-- หน้า chat ใช้ stream จาก `/api/chat/stream` (NDJSON events)
-- default BU มาจาก cookie/setting (`selected_bu`)
+- ทุก endpoint ใช้ query `?bu=<slug>` เพื่อเลือก tenant — slug ห้ามมี `-`
+- หน้า chat ใช้ stream จาก `/api/chat/stream` (NDJSON: `status`/`chunk`/`sources`/`suggestions`/`done`)
+- default BU มาจาก cookie `selected_bu`

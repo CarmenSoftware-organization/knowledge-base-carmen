@@ -7,28 +7,34 @@
 - `backend` — Go Fiber API (wiki, index, faq, activity, chat proxy)
 - `carmen-chatbot` — Python FastAPI RAG chatbot (NDJSON stream)
 - `scripts` — import Wiki.js, sync/reindex, FAQ seed, BU ops
-- `contents` — markdown source ของเอกสารความรู้
+- `contents` — markdown source ของเอกสารความรู้ จัดเป็น `contents/<bu-slug>/...`
 
-## สถาปัตยกรรมการทำงาน
+## สถาปัตยกรรม
 
-1. Frontend เรียก Go backend เป็นหลัก (`/api/wiki/*`, `/api/chat/*`, `/api/faq/*`)
-2. Go backend proxy endpoint แชตหลักไป Python chatbot (`/api/chat/stream`)
-3. Python chatbot ทำ intent + retrieval จาก PostgreSQL/pgvector แล้ว stream คำตอบกลับ
-4. ข้อมูลเอกสารถูกอ่านจาก source markdown และถูก index ลง `<bu>.documents` / `<bu>.document_chunks`
-5. FAQ แยกอีก surface ใน `public.faq_*` (seed ด้วย script SQL)
+1. Frontend เรียก Go backend เป็นหลัก (`/api/wiki/*`, `/api/chat/*`, `/api/faq/*`, `/api/activity/*`, `/api/business-units`)
+2. Go backend proxy `/api/chat/*` ไป Python chatbot (`PYTHON_CHATBOT_URL`)
+3. Python chatbot ทำ intent + retrieval (pgvector + FTS + RRF) → LLM → stream NDJSON กลับ
+4. ทั้งสอง backend ใช้ Postgres+pgvector ตัวเดียวกัน
+5. เอกสารถูกอ่านจาก markdown ใน `contents/<bu>/...` แล้ว index ลง `<bu>.documents` / `<bu>.document_chunks`
+6. FAQ แยกอยู่ใน `public.faq_*` (seed ด้วย `scripts/build_faq_seed_sql.py`)
 
-## โครงสร้างโปรเจค
+### Multi-BU model
 
-```text
-kb-carmen/
-├── backend/
-├── carmen-chatbot/
-├── frontend/user/
-├── scripts/
-├── contents/
-├── docker-compose.yml
-└── render.yaml
-```
+แต่ละ Business Unit คือ Postgres **schema** ที่ลงทะเบียนใน `public.business_units` — ใช้ slug เดียวกันทั้ง schema name และโฟลเดอร์ `contents/<slug>/`
+
+- Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$` (**ห้ามมี `-`** เพราะใช้เป็นชื่อ schema)
+- เลือก BU ผ่าน query `?bu=<slug>` ในทุก endpoint
+- รายละเอียดเพิ่ม BU ใหม่: ดู `HANDOVER-ADD-NEW-BU.md`
+
+### Auto-provision (production)
+
+มี workflow `.github/workflows/auto-provision-sync-reindex.yml` — push ไฟล์ใต้ `contents/**` เข้า `main` แล้วระบบจะ:
+1. Detect BU ที่เปลี่ยนจาก path
+2. เรียก `POST /api/business-units/provision` (สร้าง schema + tables)
+3. เรียก `POST /api/wiki/sync` แล้ว `POST /api/index/rebuild?bu=<bu>`
+4. ถ้าลบโฟลเดอร์ BU จนหมด จะ deprovision (drop schema)
+
+ต้องตั้ง GitHub Actions secrets: `BACKEND_BASE_URL`, `BACKEND_ADMIN_API_KEY`
 
 ## Quick Start (Docker Compose)
 
@@ -36,17 +42,34 @@ kb-carmen/
 cp docker-compose.env.example .env.docker
 # แก้ค่า secrets ใน .env.docker เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET
 docker compose --env-file .env.docker up --build
-./scripts/migrate-docker.sh
+./scripts/migrate-docker.sh    # รัน migration ครั้งแรก (ใช้ psql ใน container db)
 ```
 
 ตรวจ health:
-
 ```bash
-curl http://localhost:8080/health
-curl http://localhost:8000/api/health
+curl http://localhost:8080/health        # Go backend
+curl http://localhost:8000/api/health    # Python chatbot
 ```
 
-## Deploy บน Render (Docker ทั้งระบบ)
+> **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$`) — มันจะตัด `;` ผิด ใช้ `migrate-docker.sh` หรือ `psql` ตรงๆ ตามลำดับใน `backend/migrations/README.md`
+
+## Quick Start (Run แยกบริการ)
+
+```bash
+# Backend (Go)
+cd backend && go mod download && cp .env.example .env && make run
+
+# Chatbot (Python)
+cd carmen-chatbot && python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && cp .env.example .env && python start_server.py
+
+# Frontend (Next.js)
+cd frontend/user && npm install && npm run dev
+```
+
+คำสั่งหลักรายบริการอยู่ใน README ของแต่ละโฟลเดอร์ (`backend/`, `frontend/user/`, `carmen-chatbot/`)
+
+## Deploy บน Render
 
 โปรเจคนี้รองรับ Blueprint deploy ด้วย `render.yaml` สำหรับ:
 - `carmen-frontend` (Next.js Docker)
@@ -54,100 +77,34 @@ curl http://localhost:8000/api/health
 - `carmen-chatbot` (Python Docker)
 - `carmen-db` (Render Postgres)
 
-ขั้นตอน:
-
-```bash
-git add render.yaml backend/Dockerfile backend/docker-entrypoint.sh
-git commit -m "configure full docker render deployment"
-git push origin main
-```
-
-จากนั้นเปิด Render Blueprint แล้วตั้งค่า secret env ที่ `sync: false`
-
-## Quick Start (Run แยกบริการ)
-
-### 1) Backend (Go)
-
-```bash
-cd backend
-go mod download
-cp .env.example .env
-go run cmd/server/main.go
-```
-
-### 2) Chatbot (Python)
-
-```bash
-cd carmen-chatbot
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python start_server.py
-```
-
-### 3) Frontend (Next.js)
-
-```bash
-cd frontend/user
-npm install
-npm run dev
-```
-
-## คำสั่งหลักรายบริการ
-
-### Backend (`backend`)
-
-```bash
-make run
-make dev
-make test
-make build
-```
-
-### Frontend (`frontend/user`)
-
-```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm test
-```
-
-### Chatbot (`carmen-chatbot`)
-
-```bash
-pytest
-uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
-```
+หลัง push เปิด Render Blueprint แล้วตั้งค่า secret env ที่ `sync: false`
 
 ## Workflow อัปเดตข้อมูลความรู้
 
-### 1) Import markdown ไป Wiki.js
+วิธีปกติ (production): commit markdown ใต้ `contents/<bu>/` แล้ว push เข้า `main` — workflow จัดการ provision/sync/reindex ให้อัตโนมัติ
 
+วิธี manual:
+```bash
+# Sync wiki + reindex ทีละ BU
+API_BASE=http://localhost:8080 ADMIN_KEY="<admin-key>" ./scripts/sync-wiki-and-reindex-bu.sh <bu>
+
+# Seed FAQ tables
+python3 scripts/build_faq_seed_sql.py --faq-dir contents/<bu>/faq --bu <bu> --out-sql scripts/seed_<bu>_faq.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_<bu>_faq.sql
+```
+
+import จาก Wiki.js (ทางเลือก):
 ```bash
 source ./scripts/wikijs-load-credentials.sh
-CONTENTS_ROOT="$PWD/contents/carmen" ./scripts/wikijs-import-contents.sh --dry-run --limit 20
-CONTENTS_ROOT="$PWD/contents/carmen" ./scripts/wikijs-import-contents.sh
-```
-
-### 2) Sync + Reindex ลง DB/vector
-
-```bash
-API_BASE=http://localhost:8080 ADMIN_KEY="<admin-key>" ./scripts/sync-wiki-and-reindex-bu.sh carmen
-```
-
-### 3) Seed FAQ tables (ถ้ามี FAQ ใหม่)
-
-```bash
-python3 ./scripts/build_faq_seed_sql.py --faq-dir contents/carmen/faq --bu carmen --out-sql scripts/seed_carmen_faq.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_carmen_faq.sql
+CONTENTS_ROOT="$PWD/contents/<bu>" ./scripts/wikijs-import-contents.sh --dry-run --limit 20
+CONTENTS_ROOT="$PWD/contents/<bu>" ./scripts/wikijs-import-contents.sh
 ```
 
 ## เอกสารย่อย
 
-- `backend/README.md` — backend API และ migration/indexing commands
-- `frontend/user/README.md` — frontend routes, env, chat integration
-- `carmen-chatbot/README.md` — RAG pipeline และ chatbot config
-- `USER_MANUAL_TH.md` — คู่มือภาษาไทยแบบละเอียดทั้งระบบ
+- `CLAUDE.md` — guidance สำหรับ Claude Code (สรุปสถาปัตยกรรม + gotchas)
+- `HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
+- `USER_MANUAL_TH.md` — คู่มือผู้ใช้ภาษาไทย
+- `backend/README.md`, `backend/migrations/README.md` — backend API + ลำดับ migration
+- `frontend/user/README.md` — frontend routes + env
+- `carmen-chatbot/README.md`, `TUNING_GUIDE.md`, `HANDOVER.md` — RAG pipeline + การปรับจูน
