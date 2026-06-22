@@ -83,25 +83,34 @@ func (s *IndexingService) IndexPath(ctx context.Context, bu, path string) error 
 }
 
 func (s *IndexingService) indexSingle(bu, path string) error {
+	buID, err := database.BUIDForSlug(bu)
+	if err != nil {
+		return fmt.Errorf("resolve bu id: %w", err)
+	}
+	if buID == 0 {
+		return fmt.Errorf("unknown bu: %q", bu)
+	}
+
 	content, err := s.wiki.GetContent(bu, path)
 	if err != nil {
 		return fmt.Errorf("get content: %w", err)
 	}
 
-	targetDim, err := s.getVectorDimForBU(bu)
+	targetDim, err := s.getVectorDim()
 	if err != nil {
-		return fmt.Errorf("detect vector dimension for bu %s: %w", bu, err)
+		return fmt.Errorf("detect vector dimension: %w", err)
 	}
 
 	var docID int64
-	sqlDoc := fmt.Sprintf("INSERT INTO %s.documents (path, title, source, created_at, updated_at) VALUES (?, ?, 'wiki', now(), now()) ON CONFLICT (path) DO UPDATE SET title = EXCLUDED.title, updated_at = now() RETURNING id", bu)
-	err = database.DB.Raw(sqlDoc, content.Path, content.Title).Scan(&docID).Error
-	if err != nil {
+	const sqlDoc = `INSERT INTO public.documents (bu_id, path, title, source, created_at, updated_at)
+VALUES (?, ?, ?, 'wiki', now(), now())
+ON CONFLICT (bu_id, path) DO UPDATE SET title = EXCLUDED.title, updated_at = now()
+RETURNING id`
+	if err := database.DB.Raw(sqlDoc, buID, content.Path, content.Title).Scan(&docID).Error; err != nil {
 		return fmt.Errorf("upsert document: %w", err)
 	}
 
-	sqlDel := fmt.Sprintf("DELETE FROM %s.document_chunks WHERE document_id = ?", bu)
-	if err := database.DB.Exec(sqlDel, docID).Error; err != nil {
+	if err := database.DB.Exec(`DELETE FROM public.document_chunks WHERE doc_id = ?`, docID).Error; err != nil {
 		return fmt.Errorf("delete old chunks: %w", err)
 	}
 
@@ -121,14 +130,13 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 			continue
 		}
 
-		// 1. Truncate/pad to the target dimension for this BU schema.
+		// 1. Truncate/pad to the target dimension. 2. Normalize for cosine distance.
 		emb = utils.TruncateEmbeddingToDim(emb, targetDim)
-
-		// 2. Normalize to 1.0 magnitude for accurate Cosine Distance
 		emb = utils.NormalizeEmbedding(emb)
 
-		sqlChunk := fmt.Sprintf("INSERT INTO %s.document_chunks (document_id, chunk_index, content, embedding, created_at) VALUES (?, ?, ?, ?::vector, now())", bu)
-		if err := database.DB.Exec(sqlChunk, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
+		const sqlChunk = `INSERT INTO public.document_chunks (bu_id, doc_id, chunk_index, content, embedding, created_at)
+VALUES (?, ?, ?, ?, ?::vector, now())`
+		if err := database.DB.Exec(sqlChunk, buID, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)
 		}
 	}
@@ -165,21 +173,21 @@ func embeddingTimeout() time.Duration {
 	return time.Duration(n) * time.Second
 }
 
-func (s *IndexingService) getVectorDimForBU(bu string) (int, error) {
+func (s *IndexingService) getVectorDim() (int, error) {
 	var typeStr string
-	sql := `
+	const sql = `
 SELECT format_type(a.atttypid, a.atttypmod)
 FROM pg_attribute a
 JOIN pg_class c ON c.oid = a.attrelid
 JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE n.nspname = ?
+WHERE n.nspname = 'public'
   AND c.relname = 'document_chunks'
   AND a.attname = 'embedding'
   AND a.attnum > 0
   AND NOT a.attisdropped
 LIMIT 1
 `
-	if err := database.DB.Raw(sql, bu).Scan(&typeStr).Error; err != nil {
+	if err := database.DB.Raw(sql).Scan(&typeStr).Error; err != nil {
 		return 0, err
 	}
 	typeStr = strings.TrimSpace(strings.ToLower(typeStr))
