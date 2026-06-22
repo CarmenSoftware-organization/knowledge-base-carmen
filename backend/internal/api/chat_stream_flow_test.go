@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/models"
@@ -481,5 +482,96 @@ func TestStreamFlow_LLMError(t *testing.T) {
 	// saveLog must NOT have been called (we return before saveLog in the error path)
 	if saveLogCalled {
 		t.Error("llm-error: saveLog was called, want no call on LLM error")
+	}
+}
+
+// errEmbed returns a transient embedding error (review finding #5).
+func errEmbed(_ string) ([]float32, int, error) {
+	return nil, 0, errors.New("embed boom")
+}
+
+// TestStreamFlow_EmbedError verifies a transient embedding failure emits an
+// error apology + done(0) and does NOT persist a misleading "no info" answer.
+func TestStreamFlow_EmbedError(t *testing.T) {
+	req := StreamChatRequest{Text: "answerable question", BU: "test_bu", Lang: "th"}
+	deps := baseDeps()
+	deps.classify = fakeClassify("tech_support", "")
+	deps.embed = errEmbed
+	saveCalled := false
+	deps.saveLog = func(_, _, _, _ string, _ []models.ChatSource, _ []float32) int64 {
+		saveCalled = true
+		return 0
+	}
+	types, lines := collectEvents(req, deps)
+
+	wantTypes := []string{"status", "chunk", "done"} // searching, apology, done(0)
+	if len(types) != len(wantTypes) {
+		t.Fatalf("embed-error: types %v, want %v", types, wantTypes)
+	}
+	var chunkData string
+	_ = eventData(lines, 1, &chunkData)
+	if !strings.Contains(chunkData, "ขออภัยครับ") {
+		t.Errorf("embed-error: chunk = %q, want apology", chunkData)
+	}
+	var logID int64
+	_ = eventData(lines, 2, &logID)
+	if logID != 0 {
+		t.Errorf("embed-error: done logID = %d, want 0", logID)
+	}
+	if saveCalled {
+		t.Error("embed-error: saveLog must not be called (no misleading persist)")
+	}
+}
+
+// TestStreamFlow_FallbackModel verifies that when the primary model fails before
+// emitting anything, the configured fallback model is retried (review finding #7).
+func TestStreamFlow_FallbackModel(t *testing.T) {
+	req := StreamChatRequest{Text: "q", BU: "test_bu", Lang: "th"}
+	chunks := []services.RetrievedChunk{{Path: "p.md", Title: "P", Content: "c"}}
+	deps := baseDeps()
+	deps.classify = fakeClassify("tech_support", "")
+	deps.embed = noopEmbed
+	deps.retrieve = fakeRetrieve(chunks)
+	deps.model = "primary-model"
+	deps.fallbackModel = "fallback-model"
+	deps.streamLLM = func(_ context.Context, model string, _ []openrouter.ChatMessage, onChunk func(string)) (string, openrouter.Usage, error) {
+		if model == "primary-model" {
+			return "", openrouter.Usage{}, errors.New("primary down")
+		}
+		onChunk("fallback answer")
+		return "stop", openrouter.Usage{}, nil
+	}
+	deps.saveLog = fixedSaveLog(7)
+	types, lines := collectEvents(req, deps)
+
+	// Must NOT be the error path: last two events are chunk(answer) then done(7).
+	if types[len(types)-1] != "done" {
+		t.Fatalf("fallback: last type = %q, want done", types[len(types)-1])
+	}
+	var logID int64
+	_ = eventData(lines, len(lines)-1, &logID)
+	if logID != 7 {
+		t.Errorf("fallback: done logID = %d, want 7 (fallback succeeded)", logID)
+	}
+	joined := strings.Join(lines, "")
+	if !strings.Contains(joined, "fallback answer") {
+		t.Error("fallback: expected the fallback model's answer in the stream")
+	}
+	if strings.Contains(joined, "เกิดข้อผิดพลาดในการสร้างคำตอบ") {
+		t.Error("fallback: error apology emitted despite a working fallback model")
+	}
+}
+
+// TestBuildContextFromChunks_RuneSafeTruncation verifies multibyte Thai content
+// is truncated on a rune boundary (review finding #8) — no broken UTF-8.
+func TestBuildContextFromChunks_RuneSafeTruncation(t *testing.T) {
+	thai := strings.Repeat("ก", 3000) // 3000 Thai runes (9000 bytes)
+	chunks := []services.RetrievedChunk{{Path: "p.md", Title: "P", Content: thai}}
+	ctx, _ := buildContextFromChunks(chunks, 1_000_000, 2000) // maxChunkContent = 2000 runes
+	if !utf8.ValidString(ctx) {
+		t.Error("context is not valid UTF-8 — byte-slice truncation split a Thai rune")
+	}
+	if got := strings.Count(ctx, "ก"); got != 2000 {
+		t.Errorf("truncated to %d ก runes, want 2000", got)
 	}
 }

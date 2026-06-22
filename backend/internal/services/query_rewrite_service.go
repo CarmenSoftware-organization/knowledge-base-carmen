@@ -2,7 +2,6 @@ package services
 
 import (
 	"log"
-	"os"
 	"strings"
 
 	"github.com/new-carmen/backend/internal/chatconfig"
@@ -23,15 +22,6 @@ type QueryRewriteService struct {
 	translateLLM      func(prompt string) (string, int, int, error)
 }
 
-// configDirForRewrite returns the chat config directory.
-// Reuses the same CHAT_CONFIG_DIR-aware logic already used by retrieval_service.go.
-func configDirForRewrite() string {
-	if d := os.Getenv("CHAT_CONFIG_DIR"); d != "" {
-		return d
-	}
-	return chatconfig.DefaultDir()
-}
-
 // NewQueryRewriteService loads prompt templates from prompts.yaml and wires
 // both LLM funcs to openrouter.ClassifyIntent (a single-turn chat completion
 // that already returns content + token counts). If config load fails the
@@ -39,7 +29,7 @@ func configDirForRewrite() string {
 func NewQueryRewriteService() *QueryRewriteService {
 	s := &QueryRewriteService{}
 
-	dir := configDirForRewrite()
+	dir := ConfigDir()
 	prompts, err := chatconfig.LoadPrompts(dir)
 	if err != nil {
 		log.Printf("[query_rewrite] prompts load failed, rewrite/translate disabled: %v", err)

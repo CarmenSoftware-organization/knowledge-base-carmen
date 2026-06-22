@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/new-carmen/backend/internal/security"
 )
 
 type StreamHistoryItem struct {
@@ -54,11 +55,19 @@ func parseStreamRequest(c *fiber.Ctx) (StreamChatRequest, error) {
 	if n := len([]rune(req.Text)); n < 1 || n > 2000 {
 		return req, fmt.Errorf("text must be 1–2000 chars")
 	}
-	if strings.TrimSpace(req.BU) == "" {
+	// bu becomes a Postgres schema name interpolated into retrieval SQL, so it
+	// MUST pass the slug whitelist (same guard the /ask path gets via middleware).
+	req.BU = strings.TrimSpace(req.BU)
+	if req.BU == "" {
 		return req, fmt.Errorf("bu is required")
+	}
+	if !security.ValidateSchema(req.BU) {
+		return req, fmt.Errorf("invalid bu")
 	}
 	if req.DBSchema == "" {
 		req.DBSchema = "carmen"
+	} else if !security.ValidateSchema(req.DBSchema) {
+		return req, fmt.Errorf("invalid db_schema")
 	}
 	if req.Lang != "en" {
 		req.Lang = "th"

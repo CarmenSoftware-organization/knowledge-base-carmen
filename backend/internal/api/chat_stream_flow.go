@@ -8,7 +8,6 @@ import (
 	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
-	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/openrouter"
 )
 
@@ -40,6 +39,10 @@ type streamDeps struct {
 	dailyLimit int
 	// model is the LLM model name; empty falls back to the client default.
 	model string
+	// fallbackModel is retried once if the primary streamLLM call errors before
+	// any content has been emitted (empty = no fallback). Parity with Python's
+	// models_to_try=[model, LLM_FALLBACK_MODEL].
+	fallbackModel string
 	// maxContextChars and maxChunkContent tune how much context to pass to LLM.
 	maxContextChars int
 	maxChunkContent int
@@ -122,8 +125,14 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	emit(streamEvent("status", locale.StatusSearching))
 
 	// ---------- 8. embed + retrieve ----------
-	var emb []float32
-	emb, _, _ = deps.embed(searchQuery)
+	emb, _, embErr := deps.embed(searchQuery)
+	if embErr != nil {
+		// A transient embedding failure is NOT a genuine no-match: emit an error
+		// apology and abort rather than persisting a misleading "no info" answer.
+		emit(streamEvent("chunk", "_(ขออภัยครับ เกิดข้อผิดพลาดในการค้นหาข้อมูล กรุณาลองใหม่อีกครั้ง)_"))
+		emit(streamEvent("done", 0))
+		return
+	}
 	var chunks []services.RetrievedChunk
 	if emb != nil {
 		chunks, _ = deps.retrieve(req.BU, searchQuery, emb)
@@ -206,6 +215,11 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 
 	// Fix 2: capture the LLM error so we can emit an apology and abort early.
 	finishReason, _, llmErr := deps.streamLLM(ctx, deps.model, messages, onChunk)
+	// Parity with Python's fallback model: if the primary call failed before
+	// streaming/buffering anything, retry once on the fallback model.
+	if llmErr != nil && deps.fallbackModel != "" && full.Len() == 0 && emittedLen == 0 {
+		finishReason, _, llmErr = deps.streamLLM(ctx, deps.fallbackModel, messages, onChunk)
+	}
 	if llmErr != nil {
 		emit(streamEvent("chunk", "_(ขออภัยครับ เกิดข้อผิดพลาดในการสร้างคำตอบ กรุณาลองใหม่อีกครั้ง)_"))
 		emit(streamEvent("done", 0))
@@ -293,12 +307,12 @@ func defaultSaveLog(svc *services.ChatHistoryService) func(bu, userID, question,
 				logID = 0
 			}
 		}()
-		maskedQ := utils.MaskPII(question)
 		buID, err := svc.GetBUIDFromSlug(bu)
 		if err != nil || buID == 0 {
 			return 0
 		}
-		id, err := svc.SaveWithID(buID, userID, maskedQ, answer, sources, emb)
+		// SaveWithID masks PII on the stored question; pass the raw text through.
+		id, err := svc.SaveWithID(buID, userID, question, answer, sources, emb)
 		if err != nil {
 			return 0
 		}
@@ -308,7 +322,7 @@ func defaultSaveLog(svc *services.ChatHistoryService) func(bu, userID, question,
 
 // newStreamDepsFromHandler wires up streamDeps from a real ChatHandler.
 // Task 6 calls this to build the deps for the Fiber streaming handler.
-func newStreamDepsFromHandler(h *ChatHandler, dailyLimit, maxContextChars, maxChunkContent int, model string, prompts chatconfig.Prompts) streamDeps {
+func newStreamDepsFromHandler(h *ChatHandler, dailyLimit, maxContextChars, maxChunkContent int, model, fallbackModel string, prompts chatconfig.Prompts) streamDeps {
 	return streamDeps{
 		classify:         h.intentRouter.Classify,
 		buildSearchQuery: h.rewrite.BuildSearchQuery,
@@ -324,6 +338,7 @@ func newStreamDepsFromHandler(h *ChatHandler, dailyLimit, maxContextChars, maxCh
 		prompts:         prompts,
 		dailyLimit:      dailyLimit,
 		model:           model,
+		fallbackModel:   fallbackModel,
 		maxContextChars: maxContextChars,
 		maxChunkContent: maxChunkContent,
 	}

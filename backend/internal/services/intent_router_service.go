@@ -102,7 +102,7 @@ ONE word:`, hint, utils.SanitizeForPrompt(message), ctx)
 // The vector index is built lazily on the first classification request via
 // ensureIndex() so that server startup never blocks on the LLM endpoint.
 func NewIntentRouterService() *IntentRouterService {
-	dir := configDir() // from retrieval_service.go (CHAT_CONFIG_DIR aware)
+	dir := ConfigDir()
 	tuning := defaultIntentTuning()
 	if t, err := chatconfig.LoadTuning(dir); err == nil {
 		tuning = t.Intent

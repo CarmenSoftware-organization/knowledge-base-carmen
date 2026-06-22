@@ -89,6 +89,10 @@ func (s *ChatHistoryService) SaveWithID(buID uint, userID, question, answer stri
 	if len(embedding) == 0 {
 		return 0, fmt.Errorf("embedding required to save chat history")
 	}
+	// PII-at-rest: mask the stored question on every save path (/ask, /stream,
+	// record-history). The LLM still receives the original text; only the DB copy
+	// is masked. MaskPII is idempotent, so a pre-masked caller is unaffected.
+	question = utils.MaskPII(question)
 	embedding = utils.TruncateEmbedding(embedding)
 	embStr := utils.Float32SliceToPgVector(embedding)
 
