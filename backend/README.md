@@ -29,26 +29,50 @@ make build
 
 ## Environment สำคัญ
 
+**Core**
 - `PORT` / `SERVER_PORT`
 - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SCHEMA`
 - `ADMIN_API_KEY`, `INTERNAL_API_KEY`
-- `PRIVACY_HMAC_SECRET`
+- `PRIVACY_HMAC_SECRET` — ใช้ HMAC hash user_id ก่อนเก็บ chat_history (ต้อง ≥32 ตัวอักษร)
 - `GIT_REPO_PATH`, `WIKI_CONTENT_PATH`
 - `GITHUB_TOKEN`, `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`, `GITHUB_BRANCH`
-- `OPENROUTER_API_KEY`, `OPENROUTER_EMBED_MODEL`
+
+**LLM / Embeddings (ใช้ทั้ง indexing + native chat — OpenAI-compatible เช่น OpenRouter)**
+- `OPENROUTER_API_KEY` / `LLM_API_KEY` — API key (chat อ่าน `LLM_API_KEY` ก่อน, fallback `OPENROUTER_API_KEY`)
+- `LLM_API_BASE` (default `https://openrouter.ai/api/v1`)
+- `LLM_CHAT_MODEL` (default `stepfun/step-3.5-flash:free`) — โมเดลตอบคำถาม
+- `LLM_INTENT_MODEL` (default `google/gemini-2.5-flash-lite`) — โมเดล intent classification + query rewrite/translate
+- `LLM_FALLBACK_MODEL` (optional) — retry 1 ครั้งเมื่อ chat model หลักล่มก่อน stream
+- `OPENROUTER_EMBED_MODEL` / `LLM_EMBED_MODEL` (default `qwen/qwen3-embedding-8b`)
+- `VECTOR_DIMENSION` (default 2000 ใน prod) — ต้องตรงกับมิติคอลัมน์ `vector(N)` ใน DB (ดู `migrations/README.md`)
+- `MAX_PROMPT_TOKENS` (default 6000)
+
+**Chat behaviour / limits**
+- `CHAT_CONFIG_DIR` (default `config`) — โฟลเดอร์ YAML (tuning/intents/path_rules/prompts); ตั้ง override เวลารัน test จาก subdir
+- `RATE_LIMIT_PER_MINUTE` (default `20/minute`) — per-IP rate limit บน `/api/chat/{ask,stream,feedback,clear}`
+- `DAILY_REQUEST_LIMIT` (default 1000, `0` = ไม่จำกัด) — daily budget cap (บังคับทั้ง /ask และ /stream)
+- `CHAT_CONTEXT_LIMIT`, `CHAT_MAX_CONTEXT_CHARS` (8000), `CHAT_MAX_CHUNK_CONTENT` (2000)
+- `CHAT_HISTORY_ENABLED` (true), `CHAT_HISTORY_SIMILARITY_THRESHOLD` (0.15) — semantic cache
+
+> พฤติกรรม RAG ปรับจูนผ่าน YAML ไม่ต้องแก้โค้ด: `config/{tuning,intents,path_rules,prompts}.yaml` (เกณฑ์ intent, top_k/max_distance/rrf_k, path boost, prompts, locale).
 
 ## API กลุ่มหลัก
 
 - System: `/health`, `/api/system/status`
 - Wiki: `/api/wiki/*`, `/wiki-assets/*`
 - Indexing: `/api/index/rebuild*`
-- Chat (native RAG): `/api/chat/*`
+- **Chat (native RAG):**
+  - `POST /api/chat/stream` — streaming NDJSON (`status`/`sources`/`chunk`/`suggestions`/`done`) — endpoint หลักที่ frontend ใช้
+  - `POST /api/chat/ask` — non-streaming JSON `{answer, sources}`
+  - `POST /api/chat/feedback/:message_id` — thumbs up/down (`{score: 1|-1, bu, username}`)
+  - `DELETE /api/chat/clear/:room_id` — เคลียร์ห้อง (no-op ack; history เป็นของ frontend)
+  - admin/internal: `POST /api/chat/record-history`, `GET /api/chat/history/list`, `POST /api/chat/route-test`, `POST /api/chat/intent-test`
 - FAQ: `/api/faq/*`
 - Activity: `/api/activity/*`
 - BU admin: `/api/business-units/*`
 - Webhook: `/webhook/github`
 
-> เส้นทางที่เป็น admin/internal ใช้ API key ผ่าน header (`X-Admin-Key`, `X-Internal-API-Key`)
+> เส้นทางที่เป็น admin/internal ใช้ API key ผ่าน header (`X-Admin-Key`, `X-Internal-API-Key`). `bu` ที่รับจาก body/query ถูก validate ด้วย slug whitelist ก่อนนำไปใช้เป็นชื่อ schema ใน SQL
 
 ## Migration / CLI Operations
 
