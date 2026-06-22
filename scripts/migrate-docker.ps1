@@ -17,12 +17,7 @@ if (-not $pgUser -or -not $pgDb) {
 }
 
 $files = @(
-    "backend/migrations/0001_init_documents.sql",
-    "backend/migrations/0002_setup_multi_bu.sql",
-    "backend/migrations/0003_create_activity_logs.sql",
-    "backend/migrations/0004_chat_history.sql",
-    "backend/migrations/0005_chat_history_privacy.sql",
-    "backend/migrations/0007_create_faq.sql"
+    "backend/migrations/0001_init_schema.sql"
 )
 
 foreach ($rel in $files) {
@@ -33,6 +28,4 @@ foreach ($rel in $files) {
 }
 
 Write-Host ""
-Write-Host "Core migrations finished (1536-dim path)."
-Write-Host "Optional: backend/migrations/0006_vector_2000.sql — see backend/migrations/README.md"
-Write-Host "Optional: backend/migrations/0008_clear_faq_carmen.sql"
+Write-Host "Schema applied (single file, 2000-dim). New BUs are provisioned at runtime via create_bu_tables(<slug>); see backend/migrations/README.md."

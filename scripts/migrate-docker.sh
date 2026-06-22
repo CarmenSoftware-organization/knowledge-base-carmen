@@ -27,18 +27,8 @@ migrate() {
   "${COMPOSE[@]}" exec -T db psql -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 < "$ROOT/$rel"
 }
 
-migrate backend/migrations/0001_init_documents.sql
-migrate backend/migrations/0002_setup_multi_bu.sql
-migrate backend/migrations/0003_create_activity_logs.sql
-migrate backend/migrations/0004_chat_history.sql
-migrate backend/migrations/0005_chat_history_privacy.sql
-migrate backend/migrations/0007_create_faq.sql
-migrate backend/migrations/0011_fts_gin_index.sql
-migrate backend/migrations/0012_chat_history_metrics.sql
+migrate backend/migrations/0001_init_schema.sql
 
 echo ""
-echo "Core migrations finished (1536-dim path)."
-echo "  0011 = FTS GIN index for native hybrid retrieval; 0012 = chat_history.metrics (feedback + cost logging)."
-echo "Optional: backend/migrations/0006_vector_2000.sql — see backend/migrations/README.md"
-echo "Optional: backend/migrations/0008_clear_faq_carmen.sql"
-echo "BU-specific: backend/migrations/0009_blueledgers_bu.sql, 0010_inventory_to_blueledgers_clear_bu_indexes.sql"
+echo "Schema applied (single file, 2000-dim). New BUs are provisioned at runtime"
+echo "via create_bu_tables(<slug>); see backend/migrations/README.md."
