@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -229,7 +230,7 @@ func (c *Client) StreamAnswer(ctx context.Context, model string, messages []Chat
 			}
 		}
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return finishReason, usage, fmt.Errorf("read stream: %w", err)

@@ -68,3 +68,30 @@ func TestStreamAnswer_HTTPError(t *testing.T) {
 		t.Fatal("expected error on HTTP 500")
 	}
 }
+
+func TestStreamAnswer_ContextCancelled(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fl, _ := w.(http.Flusher)
+		// Send one frame then block on context done
+		fmt.Fprintf(w, "data: {\"choices\":[{\"delta\":{\"content\":\"hi\"},\"finish_reason\":null}]}\n\n")
+		if fl != nil {
+			fl.Flush()
+		}
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	c := &Client{APIBase: srv.URL, httpClient: &http.Client{Timeout: 5 * time.Second}}
+	_, _, err := c.StreamAnswer(ctx, "m",
+		[]ChatMessage{{Role: "user", Content: "hi"}},
+		func(d string) {
+			if d != "" {
+				cancel()
+			}
+		})
+	if err == nil {
+		t.Fatal("expected error on context cancellation")
+	}
+}
