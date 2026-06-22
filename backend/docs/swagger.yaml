@@ -71,16 +71,11 @@ definitions:
           $ref: '#/definitions/models.RouteCandidate'
         type: array
     type: object
-host: localhost:8080
 info:
-  contact:
-    name: API
-  description: REST API for wiki, FAQ, chat (Go handler + Python proxy), indexing,
-    activity, and GitHub webhooks. Most routes accept optional `bu` query or `X-BU-Slug`
-    header (default from server config).
-  license:
-    name: Proprietary
-  termsOfService: https://swagger.io/terms/
+  contact: {}
+  description: REST API for wiki, FAQ, native RAG chat, indexing, activity, and GitHub
+    webhooks. Most routes accept optional `bu` query or `X-BU-Slug` header (default
+    from server config).
   title: New Carmen Backend API
   version: "1.0"
 paths:
@@ -175,19 +170,13 @@ paths:
   /api/chat/clear/{room_id}:
     delete:
       responses: {}
-      summary: Clear room (proxy)
+      summary: Clear room history (no-op ack; history is frontend-owned)
       tags:
       - chat
   /api/chat/feedback/{message_id}:
     post:
       responses: {}
-      summary: Message feedback (proxy)
-      tags:
-      - chat
-  /api/chat/history:
-    delete:
-      responses: {}
-      summary: Clear history (proxy)
+      summary: Message feedback (thumbs up/down)
       tags:
       - chat
   /api/chat/history/list:
@@ -251,31 +240,6 @@ paths:
       summary: Record chat turn (internal)
       tags:
       - chat
-  /api/chat/room-history/{room_id}:
-    get:
-      responses: {}
-      summary: Room history (proxy)
-      tags:
-      - chat
-  /api/chat/rooms:
-    post:
-      responses: {}
-      summary: Create chat room (proxy)
-      tags:
-      - chat
-  /api/chat/rooms/{bu}/{username}:
-    get:
-      description: Forwards to CHATBOT_URL; path and method vary.
-      responses: {}
-      summary: Proxy to Python chatbot
-      tags:
-      - chat
-  /api/chat/rooms/{room_id}:
-    delete:
-      responses: {}
-      summary: Delete room (proxy)
-      tags:
-      - chat
   /api/chat/route-test:
     post:
       consumes:
@@ -307,7 +271,7 @@ paths:
   /api/chat/stream:
     post:
       responses: {}
-      summary: Stream chat (proxy)
+      summary: Stream chat (native NDJSON RAG)
       tags:
       - chat
   /api/documents:
@@ -667,16 +631,4 @@ paths:
       summary: Static wiki asset
       tags:
       - wiki
-schemes:
-- http
-- https
-securityDefinitions:
-  AdminKey:
-    in: header
-    name: X-Admin-Key
-    type: apiKey
-  InternalKey:
-    in: header
-    name: X-Internal-API-Key
-    type: apiKey
 swagger: "2.0"

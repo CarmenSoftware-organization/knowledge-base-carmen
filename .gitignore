@@ -55,3 +55,4 @@ origin_main_files.txt
 # OS files
 .DS_Store
 Thumbs.db
+.claude/

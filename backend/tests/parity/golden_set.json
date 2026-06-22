@@ -1,0 +1,9 @@
+[
+  { "question": "how do I add a vendor?", "bu": "carmen", "expected_paths": ["%vendor%"] },
+  { "question": "วิธีบันทึกใบกำกับภาษีเจ้าหนี้", "bu": "carmen", "expected_paths": ["%ap%"] },
+  { "question": "how do I configure general ledger accounts?", "bu": "carmen", "expected_paths": ["%gl%"] },
+  { "question": "how to create an AR invoice?", "bu": "carmen", "expected_paths": ["%ar%"] },
+  { "question": "asset depreciation setup", "bu": "carmen", "expected_paths": ["%asset%"] },
+  { "question": "where do I configure chart of accounts?", "bu": "carmen", "expected_paths": ["%gl%"] },
+  { "question": "วิธีดูบัญชีแยกประเภท", "bu": "carmen", "expected_paths": ["%gl%"] }
+]

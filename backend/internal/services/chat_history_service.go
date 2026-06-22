@@ -89,6 +89,10 @@ func (s *ChatHistoryService) SaveWithID(buID uint, userID, question, answer stri
 	if len(embedding) == 0 {
 		return 0, fmt.Errorf("embedding required to save chat history")
 	}
+	// PII-at-rest: mask the stored question on every save path (/ask, /stream,
+	// record-history). The LLM still receives the original text; only the DB copy
+	// is masked. MaskPII is idempotent, so a pre-masked caller is unaffected.
+	question = utils.MaskPII(question)
 	embedding = utils.TruncateEmbedding(embedding)
 	embStr := utils.Float32SliceToPgVector(embedding)
 
@@ -120,6 +124,21 @@ func sourcesToJSON(sources interface{}) string {
 		return "[]"
 	}
 	return string(b)
+}
+
+// UpdateFeedback sets metrics.feedback for one message owned by (buID, userID).
+func (s *ChatHistoryService) UpdateFeedback(buID uint, messageID int64, userID string, score int) error {
+	const q = `UPDATE public.chat_history
+SET metrics = jsonb_set(COALESCE(metrics, '{}'), '{feedback}', to_jsonb(?::int))
+WHERE id = ? AND bu_id = ? AND user_id = ?`
+	res := database.DB.Exec(q, score, messageID, buID, userID)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("no chat_history row for id=%d bu=%d user matched", messageID, buID)
+	}
+	return nil
 }
 
 // GetBUIDFromSlug returns business_units.id for the given slug, or 0 if not found

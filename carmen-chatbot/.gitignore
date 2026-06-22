@@ -1,9 +1,0 @@
-.venv/
-.env
-__pycache__/
-tests/
-migrations/
-CLAUDE.md
-.claude/
-scripts/
-backend/config/intents_cache.npz

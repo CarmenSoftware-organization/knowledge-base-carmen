@@ -9,13 +9,7 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "https://swagger.io/terms/",
-        "contact": {
-            "name": "API"
-        },
-        "license": {
-            "name": "Proprietary"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -160,7 +154,7 @@ const docTemplate = `{
                 "tags": [
                     "chat"
                 ],
-                "summary": "Clear room (proxy)",
+                "summary": "Clear room history (no-op ack; history is frontend-owned)",
                 "responses": {}
             }
         },
@@ -169,16 +163,7 @@ const docTemplate = `{
                 "tags": [
                     "chat"
                 ],
-                "summary": "Message feedback (proxy)",
-                "responses": {}
-            }
-        },
-        "/api/chat/history": {
-            "delete": {
-                "tags": [
-                    "chat"
-                ],
-                "summary": "Clear history (proxy)",
+                "summary": "Message feedback (thumbs up/down)",
                 "responses": {}
             }
         },
@@ -279,43 +264,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/chat/room-history/{room_id}": {
-            "get": {
-                "tags": [
-                    "chat"
-                ],
-                "summary": "Room history (proxy)",
-                "responses": {}
-            }
-        },
-        "/api/chat/rooms": {
-            "post": {
-                "tags": [
-                    "chat"
-                ],
-                "summary": "Create chat room (proxy)",
-                "responses": {}
-            }
-        },
-        "/api/chat/rooms/{bu}/{username}": {
-            "get": {
-                "description": "Forwards to CHATBOT_URL; path and method vary.",
-                "tags": [
-                    "chat"
-                ],
-                "summary": "Proxy to Python chatbot",
-                "responses": {}
-            }
-        },
-        "/api/chat/rooms/{room_id}": {
-            "delete": {
-                "tags": [
-                    "chat"
-                ],
-                "summary": "Delete room (proxy)",
-                "responses": {}
-            }
-        },
         "/api/chat/route-test": {
             "post": {
                 "security": [
@@ -366,7 +314,7 @@ const docTemplate = `{
                 "tags": [
                     "chat"
                 ],
-                "summary": "Stream chat (proxy)",
+                "summary": "Stream chat (native NDJSON RAG)",
                 "responses": {}
             }
         },
@@ -1027,29 +975,17 @@ const docTemplate = `{
                 }
             }
         }
-    },
-    "securityDefinitions": {
-        "AdminKey": {
-            "type": "apiKey",
-            "name": "X-Admin-Key",
-            "in": "header"
-        },
-        "InternalKey": {
-            "type": "apiKey",
-            "name": "X-Internal-API-Key",
-            "in": "header"
-        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "",
 	BasePath:         "/",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{},
 	Title:            "New Carmen Backend API",
-	Description:      "REST API for wiki, FAQ, chat (Go handler + Python proxy), indexing, activity, and GitHub webhooks. Most routes accept optional `bu` query or `X-BU-Slug` header (default from server config).",
+	Description:      "REST API for wiki, FAQ, native RAG chat, indexing, activity, and GitHub webhooks. Most routes accept optional `bu` query or `X-BU-Slug` header (default from server config).",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

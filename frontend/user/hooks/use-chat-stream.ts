@@ -15,7 +15,7 @@ function summarizeProxyOrHtmlError(raw: string, httpStatus: number): string {
   const t = raw.trim();
   if (!t) {
     return httpStatus === 502
-      ? "502 Bad Gateway — backend หรือ chatbot บน Render ไม่ตอบชั่วคราว (deploy, sleep, หรือ PYTHON_CHATBOT_URL ผิด)"
+      ? "502 Bad Gateway — Go backend บน Render ไม่ตอบชั่วคราว (deploy หรือ sleep); ลองใหม่ใน 1–2 นาที"
       : `HTTP ${httpStatus}`;
   }
   const looksHtml =
@@ -24,7 +24,7 @@ function summarizeProxyOrHtmlError(raw: string, httpStatus: number): string {
     (t.includes("<head") && t.includes("<body"));
   if (looksHtml) {
     if (httpStatus === 502 || /\b502\b|Bad Gateway/i.test(t)) {
-      return "502 Bad Gateway — proxy ไม่ถึง Go หรือ Python chatbot; ลองใหม่ใน 1–2 นาที หรือเช็ค Render Dashboard (service + PYTHON_CHATBOT_URL)";
+      return "502 Bad Gateway — ไม่ถึง Go backend; ลองใหม่ใน 1–2 นาที หรือเช็ค Render Dashboard (service)";
     }
     if (httpStatus === 503 || /\b503\b/i.test(t)) {
       return "503 — บริการไม่พร้อมชั่วคราว; ลองใหม่ในไม่กี่นาที";
@@ -213,7 +213,8 @@ export async function executeStream(
           } else if (parsed.type === "suggestions") {
             bufferedSuggestions = parsed.data;
           } else if (parsed.type === "done") {
-            finalMsgId = String(parsed.id);
+            // Go emits {"type":"done","data":<logID>} — the message id is under data.
+            finalMsgId = String(parsed.data);
             const finalTimestamp = new Date().toISOString();
             setMessages((prev) =>
               prev.map((m) => m.id === botMsgId
@@ -234,7 +235,7 @@ export async function executeStream(
       try {
         const parsed = JSON.parse(lineBuffer.trim());
         if (parsed.type === "chunk") { typingBuffer += parsed.data; accumulated += parsed.data; }
-        else if (parsed.type === "done" && !finalMsgId) { finalMsgId = String(parsed.id); }
+        else if (parsed.type === "done" && !finalMsgId) { finalMsgId = String(parsed.data); }
         else if (parsed.type === "suggestions") { bufferedSuggestions = parsed.data; }
       } catch {
         // malformed final line — skip
