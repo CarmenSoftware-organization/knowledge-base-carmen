@@ -22,6 +22,7 @@ type RetrievedChunk struct {
 	Content string
 	RRF     float64
 	Boosted bool
+	Dist    float64
 }
 
 func contentKey(content string) string {
@@ -33,6 +34,7 @@ func contentKey(content string) string {
 // path boost, and returns the top cfg.TopK chunks (deduped by content hash).
 func FuseAndRank(vec, kw []ScoredRow, cfg chatconfig.RetrievalTuning, question string, rules []chatconfig.PathRule) []RetrievedChunk {
 	rowByKey := map[string]ScoredRow{}
+	vecKeySet := map[string]bool{}
 	vecKeys := make([]string, 0, len(vec))
 	for _, r := range vec {
 		k := contentKey(r.Content)
@@ -40,6 +42,7 @@ func FuseAndRank(vec, kw []ScoredRow, cfg chatconfig.RetrievalTuning, question s
 			rowByKey[k] = r
 		}
 		vecKeys = append(vecKeys, k)
+		vecKeySet[k] = true
 	}
 	kwKeys := make([]string, 0, len(kw))
 	for _, r := range kw {
@@ -52,20 +55,30 @@ func FuseAndRank(vec, kw []ScoredRow, cfg chatconfig.RetrievalTuning, question s
 
 	fused := utils.FuseRRF([][]string{vecKeys, kwKeys}, cfg.RRFK)
 
+	// Suppress path boosting entirely when the question is generic (≥5 matched rules),
+	// mirroring Python retrieval.py get_path_boost_patterns.
+	boostSuppressed := MatchedRuleCount(question, rules) >= 5
+
 	type scored struct {
 		key       string
 		effective float64
 		boosted   bool
+		dist      float64
 	}
 	ranked := make([]scored, 0, len(fused))
 	for k, base := range fused {
 		row := rowByKey[k]
-		boosted := MatchesPathRules(row.Path, question, rules)
+		boosted := !boostSuppressed && MatchesPathRules(row.Path, question, rules)
 		eff := base
 		if boosted {
 			eff += cfg.PathBoostRRF
 		}
-		ranked = append(ranked, scored{key: k, effective: eff, boosted: boosted})
+		// Carry vector distance; keyword-only rows get the Python sentinel 1.0.
+		dist := 1.0
+		if vecKeySet[k] {
+			dist = row.Dist
+		}
+		ranked = append(ranked, scored{key: k, effective: eff, boosted: boosted, dist: dist})
 	}
 	sort.Slice(ranked, func(i, j int) bool {
 		if ranked[i].effective != ranked[j].effective {
@@ -87,6 +100,7 @@ func FuseAndRank(vec, kw []ScoredRow, cfg chatconfig.RetrievalTuning, question s
 			Content: row.Content,
 			RRF:     s.effective,
 			Boosted: s.boosted,
+			Dist:    s.dist,
 		})
 	}
 	return out
