@@ -20,6 +20,7 @@ type ChatHandler struct {
 	wiki           *services.WikiService
 	logService     *services.ActivityLogService
 	historyService *services.ChatHistoryService
+	retrieval      *services.RetrievalService
 }
 
 func NewChatHandler() *ChatHandler {
@@ -30,6 +31,7 @@ func NewChatHandler() *ChatHandler {
 		wiki:           services.NewWikiService(),
 		logService:     services.NewActivityLogService(),
 		historyService: services.NewChatHistoryService(),
+		retrieval:      services.NewRetrievalService(),
 	}
 }
 
