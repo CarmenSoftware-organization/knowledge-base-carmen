@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/database"
@@ -21,13 +22,13 @@ func defaultRetrievalTuning() chatconfig.RetrievalTuning {
 	return chatconfig.RetrievalTuning{TopK: 4, MaxDistance: 0.45, FetchK: 20, RRFK: 60, PathBoostRRF: 0.02}
 }
 
-// configDir returns the chat config directory. It respects the CHAT_CONFIG_DIR
-// environment variable so tests (which run from internal/services/) can point
-// to the real config dir via t.Setenv("CHAT_CONFIG_DIR", "../../config").
-// When the env var is not set, chatconfig.DefaultDir() ("config") is used,
-// which resolves correctly when the server runs from the backend root.
-func configDir() string {
-	if d := os.Getenv("CHAT_CONFIG_DIR"); d != "" {
+// ConfigDir returns the chat config directory (tuning/intents/path_rules/prompts).
+// It respects the CHAT_CONFIG_DIR env override (so tests running from
+// internal/services/ can point to "../../config"); otherwise chatconfig.DefaultDir()
+// ("config") resolves from the backend root. Single source of truth for every
+// chat service + the API handler (no duplicated resolution logic).
+func ConfigDir() string {
+	if d := strings.TrimSpace(os.Getenv("CHAT_CONFIG_DIR")); d != "" {
 		return d
 	}
 	return chatconfig.DefaultDir()
@@ -37,7 +38,7 @@ func configDir() string {
 // On any load error it falls back to hard-coded defaults and logs a warning
 // so that the service never crashes the server on startup.
 func NewRetrievalService() *RetrievalService {
-	dir := configDir()
+	dir := ConfigDir()
 	tuning := defaultRetrievalTuning()
 	if t, err := chatconfig.LoadTuning(dir); err != nil {
 		log.Printf("[retrieval] tuning load failed, using defaults: %v", err)

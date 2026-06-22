@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -66,4 +67,36 @@ func TestStream_BadRequest_On_EmptyText(t *testing.T) {
 	if resp.StatusCode != fiber.StatusBadRequest {
 		t.Errorf("empty text should be 400, got %d", resp.StatusCode)
 	}
+}
+
+// TestStream_RejectsInvalidBU verifies the SQL-injection guard (review finding #1):
+// a bu that is not a valid schema slug is rejected with 400 before any SQL runs.
+func TestStream_RejectsInvalidBU(t *testing.T) {
+	prev := config.AppConfig
+	defer func() { config.AppConfig = prev }()
+	config.AppConfig = minimalConfig()
+	t.Setenv("CHAT_CONFIG_DIR", "../../config")
+
+	app := fiber.New()
+	h := NewChatHandler()
+	app.Post("/api/chat/stream", h.Stream)
+
+	for _, badBU := range []string{`public.chat_history;--`, `x" OR 1=1`, `a b`, `1abc`} {
+		body := `{"text":"hi","bu":` + jsonQuote(badBU) + `,"username":"u","room_id":"r"}`
+		req := httptest.NewRequest("POST", "/api/chat/stream", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := app.Test(req, -1)
+		if err != nil {
+			t.Fatalf("app.Test(%q): %v", badBU, err)
+		}
+		if resp.StatusCode != fiber.StatusBadRequest {
+			t.Errorf("bu=%q: status = %d, want 400 (invalid bu rejected)", badBU, resp.StatusCode)
+		}
+		resp.Body.Close()
+	}
+}
+
+func jsonQuote(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
 }

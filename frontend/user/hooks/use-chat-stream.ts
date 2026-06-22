@@ -213,7 +213,8 @@ export async function executeStream(
           } else if (parsed.type === "suggestions") {
             bufferedSuggestions = parsed.data;
           } else if (parsed.type === "done") {
-            finalMsgId = String(parsed.id);
+            // Go emits {"type":"done","data":<logID>} — the message id is under data.
+            finalMsgId = String(parsed.data);
             const finalTimestamp = new Date().toISOString();
             setMessages((prev) =>
               prev.map((m) => m.id === botMsgId
@@ -234,7 +235,7 @@ export async function executeStream(
       try {
         const parsed = JSON.parse(lineBuffer.trim());
         if (parsed.type === "chunk") { typingBuffer += parsed.data; accumulated += parsed.data; }
-        else if (parsed.type === "done" && !finalMsgId) { finalMsgId = String(parsed.id); }
+        else if (parsed.type === "done" && !finalMsgId) { finalMsgId = String(parsed.data); }
         else if (parsed.type === "suggestions") { bufferedSuggestions = parsed.data; }
       } catch {
         // malformed final line — skip

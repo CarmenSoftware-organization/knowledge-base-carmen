@@ -26,6 +26,15 @@ func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error)
 	rawUserID := c.Get("X-User-ID", "anonymous")
 	userID := services.HashUserID(rawUserID, config.AppConfig.Server.PrivacySecret)
 
+	// Daily budget gate — same cap the streaming path enforces, so /ask can't be
+	// used to bypass DAILY_REQUEST_LIMIT.
+	if !h.budget.CheckAndIncrement(chatCfg.DailyRequestLimit) {
+		return models.ChatAskResponse{
+			Answer:  "_(ขออภัยครับ ระบบมีการใช้งานเกินกำหนดสำหรับวันนี้ กรุณาลองใหม่พรุ่งนี้)_",
+			Sources: []models.ChatSource{},
+		}, fiber.StatusOK, nil
+	}
+
 	emb, _, err := h.createEmbedding(question)
 	if err != nil {
 		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("failed to create embedding")
@@ -198,11 +207,18 @@ func buildContextFromChunks(chunks []services.RetrievedChunk, maxContextChars, m
 	var b strings.Builder
 	sources := make([]models.ChatSource, 0, len(chunks))
 	for i, ch := range chunks {
-		content := ch.Content
-		if len(content) > maxChunkContent {
-			content = content[:maxChunkContent]
-		}
 		if b.Len() >= maxContextChars {
+			break
+		}
+		content := ch.Content
+		// Rune-safe truncation: a byte slice can split a multibyte UTF-8 rune
+		// (Thai is 3 bytes/rune), so truncate by rune count instead.
+		if r := []rune(content); len(r) > maxChunkContent {
+			content = string(r[:maxChunkContent])
+		}
+		// Don't overshoot the context budget by a whole chunk: stop before writing
+		// a chunk that would exceed maxContextChars (unless it's the first one).
+		if b.Len() > 0 && b.Len()+len(content) > maxContextChars {
 			break
 		}
 		b.WriteString("\n--- Context ")

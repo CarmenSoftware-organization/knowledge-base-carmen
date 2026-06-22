@@ -44,11 +44,7 @@ func NewChatHandler() *ChatHandler {
 	}
 	// Load the streaming prompt templates once; fall back to empty on failure
 	// so the handler still constructs (streaming degrades, never crashes).
-	dir := chatconfig.DefaultDir()
-	if d := strings.TrimSpace(os.Getenv("CHAT_CONFIG_DIR")); d != "" {
-		dir = d
-	}
-	if p, err := chatconfig.LoadPrompts(dir); err == nil {
+	if p, err := chatconfig.LoadPrompts(services.ConfigDir()); err == nil {
 		h.streamPrompts = *p
 	}
 	return h
@@ -70,6 +66,7 @@ func (h *ChatHandler) Stream(c *fiber.Ctx) error {
 		config.AppConfig.Chat.MaxContextChars,
 		config.AppConfig.Chat.MaxChunkContent,
 		req.Model,
+		config.AppConfig.LLM.FallbackModel,
 		h.streamPrompts,
 	)
 	// reqCtx (*fasthttp.RequestCtx) is passed into streamFlow as the context.Context
