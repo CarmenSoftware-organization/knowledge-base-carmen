@@ -94,7 +94,11 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 			canned = "_(ขออภัย ไม่สามารถตอบคำถามนี้ได้)_"
 		}
 		emit(streamEvent("chunk", canned))
-		logID := deps.saveLog(req.BU, req.Username, req.Text, canned, nil, nil)
+		// Fix 1: embed the query so SaveWithID gets a real embedding and returns
+		// a genuine log_id instead of 0.  If embedding fails, emb is nil and
+		// saveLog degrades gracefully to 0 — acceptable.
+		emb, _, _ := deps.embed(req.Text)
+		logID := deps.saveLog(req.BU, req.Username, req.Text, canned, nil, emb)
 		emit(streamEvent("done", logID))
 		return
 	}
@@ -200,7 +204,13 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 		}
 	}
 
-	finishReason, _, _ := deps.streamLLM(ctx, deps.model, messages, onChunk)
+	// Fix 2: capture the LLM error so we can emit an apology and abort early.
+	finishReason, _, llmErr := deps.streamLLM(ctx, deps.model, messages, onChunk)
+	if llmErr != nil {
+		emit(streamEvent("chunk", "_(ขออภัยครับ เกิดข้อผิดพลาดในการสร้างคำตอบ กรุณาลองใหม่อีกครั้ง)_"))
+		emit(streamEvent("done", 0))
+		return
+	}
 
 	// ---------- 14. Flush remaining clean text, suggestions, notices ----------
 	fullText := full.String()
@@ -215,18 +225,20 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 		emit(streamEvent("suggestions", suggestions))
 	}
 
-	// Truncation notice
-	if finishReason == "length" || finishReason == "max_tokens" {
+	// Fix 3 & 4: empty and truncation notices are mutually exclusive (if/else if).
+	// When clean is empty, emit EmptyResponseNotice and use it as the saved answer.
+	// A truncated response is necessarily non-empty, so empty takes precedence.
+	savedAnswer := clean
+	if strings.TrimSpace(clean) == "" {
+		notice := services.EmptyResponseNotice(req.Lang)
+		emit(streamEvent("chunk", notice))
+		savedAnswer = notice
+	} else if finishReason == "length" || finishReason == "max_tokens" {
 		emit(streamEvent("chunk", services.TruncationNotice(req.Lang)))
 	}
 
-	// Empty response notice
-	if strings.TrimSpace(clean) == "" {
-		emit(streamEvent("chunk", services.EmptyResponseNotice(req.Lang)))
-	}
-
 	// ---------- 15. saveLog; done ----------
-	logID := deps.saveLog(req.BU, req.Username, req.Text, clean, sources, emb)
+	logID := deps.saveLog(req.BU, req.Username, req.Text, savedAnswer, sources, emb)
 	emit(streamEvent("done", logID))
 }
 

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -370,5 +371,115 @@ func TestChunksToSources(t *testing.T) {
 	// Empty title falls back to path
 	if sources[1].Title != "c/d.md" {
 		t.Errorf("sources[1].Title = %q, want path fallback", sources[1].Title)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Test: Fix 1 — quick-reply saveLog receives a non-nil embedding
+// ---------------------------------------------------------------------------
+
+// TestStreamFlow_QuickReplyEmbedding verifies that the quick-reply path embeds
+// req.Text and passes the resulting vector to saveLog (Fix 1).
+func TestStreamFlow_QuickReplyEmbedding(t *testing.T) {
+	req := StreamChatRequest{
+		Text: "สวัสดี",
+		BU:   "test_bu",
+		Lang: "th",
+	}
+	deps := baseDeps()
+	deps.classify = fakeClassify("greeting", "สวัสดีครับ ยินดีให้บริการ")
+
+	var capturedEmb []float32
+	deps.saveLog = func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) int64 {
+		capturedEmb = emb
+		return 99
+	}
+	// noopEmbed returns []float32{0.1, 0.2} — non-nil
+	deps.embed = noopEmbed
+
+	types, lines := collectEvents(req, deps)
+
+	if len(types) != 2 || types[0] != "chunk" || types[1] != "done" {
+		t.Fatalf("quick-reply-emb: unexpected event sequence %v", types)
+	}
+
+	if len(capturedEmb) == 0 {
+		t.Error("quick-reply-emb: saveLog received nil/empty embedding, want non-nil (Fix 1)")
+	}
+
+	// done logID should be 99 (from our saveLog above)
+	var logID int64
+	if err := eventData(lines, 1, &logID); err != nil {
+		t.Fatalf("parse done data: %v", err)
+	}
+	if logID != 99 {
+		t.Errorf("quick-reply-emb: done logID = %d, want 99", logID)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Test: Fix 2 — streamLLM error emits apology + done(0) and stops
+// ---------------------------------------------------------------------------
+
+// TestStreamFlow_LLMError verifies that when streamLLM returns an error the
+// handler emits: status(searching), sources, status(composing), chunk(apology),
+// done(0) — and NO suggestions or notices after (Fix 2).
+func TestStreamFlow_LLMError(t *testing.T) {
+	req := StreamChatRequest{
+		Text: "how to create PO",
+		BU:   "test_bu",
+		Lang: "th",
+	}
+	chunks := []services.RetrievedChunk{
+		{Path: "docs/po.md", Title: "Purchase Order", Content: "PO content here"},
+	}
+	deps := baseDeps()
+	deps.classify = fakeClassify("tech_support", "")
+	deps.embed = noopEmbed
+	deps.retrieve = fakeRetrieve(chunks)
+	deps.streamLLM = func(_ context.Context, _ string, _ []openrouter.ChatMessage, _ func(string)) (string, openrouter.Usage, error) {
+		return "", openrouter.Usage{}, errors.New("LLM timeout")
+	}
+
+	saveLogCalled := false
+	deps.saveLog = func(_, _, _, _ string, _ []models.ChatSource, _ []float32) int64 {
+		saveLogCalled = true
+		return 0
+	}
+
+	types, lines := collectEvents(req, deps)
+
+	// Expected: status(searching), sources, status(composing), chunk(apology), done(0)
+	wantTypes := []string{"status", "sources", "status", "chunk", "done"}
+	if len(types) != len(wantTypes) {
+		t.Fatalf("llm-error: got types %v, want %v", types, wantTypes)
+	}
+	for i, want := range wantTypes {
+		if types[i] != want {
+			t.Errorf("llm-error: types[%d] = %q, want %q", i, types[i], want)
+		}
+	}
+
+	// chunk should contain apology text
+	var chunkData string
+	if err := eventData(lines, 3, &chunkData); err != nil {
+		t.Fatalf("llm-error: parse chunk data: %v", err)
+	}
+	if !strings.Contains(chunkData, "ขออภัยครับ") {
+		t.Errorf("llm-error: chunk data = %q, want apology text", chunkData)
+	}
+
+	// done data should be 0
+	var logID int64
+	if err := eventData(lines, 4, &logID); err != nil {
+		t.Fatalf("llm-error: parse done data: %v", err)
+	}
+	if logID != 0 {
+		t.Errorf("llm-error: done logID = %d, want 0", logID)
+	}
+
+	// saveLog must NOT have been called (we return before saveLog in the error path)
+	if saveLogCalled {
+		t.Error("llm-error: saveLog was called, want no call on LLM error")
 	}
 }
