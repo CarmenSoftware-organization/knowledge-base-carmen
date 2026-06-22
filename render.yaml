@@ -54,7 +54,7 @@ services:
       - key: GITHUB_REPO_OWNER
         value: CarmenSoftware-organization
       - key: GITHUB_REPO_NAME
-        value: kb-carmen
+        value: knowledge-base-carmen
       - key: GITHUB_BRANCH
         value: main
       - key: GITHUB_TOKEN
