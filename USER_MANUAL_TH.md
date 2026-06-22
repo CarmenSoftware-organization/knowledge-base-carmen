@@ -28,7 +28,7 @@
      - FAQ tree (`public.faq_*`)
 
 4. **Frontend Layer**
-   - Next.js (`frontend/user`) แสดงบทความ KB, FAQ, Activity และ Chat Widget
+   - Next.js (`frontend`) แสดงบทความ KB, FAQ, Activity และ Chat Widget
    - เรียก API ที่ Go Backend เป็นหลัก
 
 ---
@@ -36,7 +36,7 @@
 ## 2) โครงสร้างโฟลเดอร์ที่สำคัญ
 
 - `backend/` — Go Fiber API + migrations + reindex/sync logic + native RAG chatbot
-- `frontend/user/` — Next.js App Router UI
+- `frontend/` — Next.js App Router UI
 - `scripts/` — ชุดสคริปต์ import/sync/reindex/seed FAQ
 - `contents/` — ไฟล์ markdown เนื้อหาความรู้
 
@@ -46,7 +46,7 @@
 
 ### 3.1 Flow แสดงบทความ KB
 
-1. ผู้ใช้เปิดหน้าเว็บ (`frontend/user`)
+1. ผู้ใช้เปิดหน้าเว็บ (`frontend`)
 2. Frontend เรียก Go API เช่น:
    - `/api/wiki/categories`
    - `/api/wiki/category/:slug`
@@ -93,6 +93,8 @@
 
 ## 5.1 วิธีเร็วสุด: Docker Compose (แนะนำ)
 
+> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก (deploy บน Vercel)
+
 จาก root repo:
 
 ```bash
@@ -117,6 +119,8 @@ curl http://localhost:8080/health
 
 ## 5.2 รันแยกบริการแบบ Local
 
+> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก (deploy บน Vercel)
+
 ### Backend (Go)
 
 ```bash
@@ -136,10 +140,10 @@ make test
 make build
 ```
 
-### Frontend (Next.js)
+### Frontend (Next.js) — รันแยก / deploy บน Vercel
 
 ```bash
-cd frontend/user
+cd frontend
 npm install
 npm run dev
 ```

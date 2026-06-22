@@ -3,7 +3,7 @@
 ระบบ Knowledge Base + AI Chat ของ Carmen/Blueledgers ในรูปแบบ monorepo
 
 ประกอบด้วย:
-- `frontend/user` — Next.js UI (KB, FAQ, Activity, Floating Chat)
+- `frontend` — Next.js UI (KB, FAQ, Activity, Floating Chat)
 - `backend` — Go Fiber API (wiki, index, faq, activity, native RAG chatbot)
 - `scripts` — import Wiki.js, sync/reindex, FAQ seed, BU ops
 - `contents` — markdown source ของเอกสารความรู้ จัดเป็น `contents/<bu-slug>/...`
@@ -36,6 +36,8 @@
 
 ## Quick Start (Docker Compose)
 
+> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก
+
 ```bash
 cp docker-compose.env.example .env.docker
 # แก้ค่า secrets ใน .env.docker เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET
@@ -52,24 +54,27 @@ curl http://localhost:8080/health        # Go backend
 
 ## Quick Start (Run แยกบริการ)
 
+> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก
+
 ```bash
 # Backend (Go)
 cd backend && go mod download && cp .env.example .env && make run
 
-# Frontend (Next.js)
-cd frontend/user && npm install && npm run dev
+# Frontend (Next.js) — รันแยก (deploy บน Vercel)
+cd frontend && npm install && npm run dev
 ```
 
-คำสั่งหลักรายบริการอยู่ใน README ของแต่ละโฟลเดอร์ (`backend/`, `frontend/user/`)
+คำสั่งหลักรายบริการอยู่ใน README ของแต่ละโฟลเดอร์ (`backend/`, `frontend/`)
 
-## Deploy บน Render
+## Deploy
 
-โปรเจคนี้รองรับ Blueprint deploy ด้วย `render.yaml` สำหรับ:
-- `carmen-frontend` (Next.js Docker)
-- `carmen-backend` (Go Docker)
-- `carmen-db` (Render Postgres)
+| บริการ | Platform | วิธี |
+|--------|----------|------|
+| **Backend** (Go) | Render | `render.yaml` Blueprint — `carmen-backend` + `carmen-db` |
+| **Frontend** (Next.js) | Vercel | เชื่อมต่อ repo + ตั้ง Root Directory = `frontend` |
 
-หลัง push เปิด Render Blueprint แล้วตั้งค่า secret env ที่ `sync: false`
+Backend: หลัง push เปิด Render Blueprint แล้วตั้งค่า secret env ที่ `sync: false`  
+Frontend: ตั้ง `NEXT_PUBLIC_API_BASE` = URL ของ Go backend บน Vercel
 
 ## Workflow อัปเดตข้อมูลความรู้
 
@@ -98,5 +103,5 @@ CONTENTS_ROOT="$PWD/contents/<bu>" ./scripts/wikijs-import-contents.sh
 - `HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
 - `USER_MANUAL_TH.md` — คู่มือผู้ใช้ภาษาไทย
 - `backend/README.md`, `backend/migrations/README.md` — backend API + ลำดับ migration
-- `frontend/user/README.md` — frontend routes + env
+- `frontend/README.md` — frontend routes + env
 - RAG pipeline internals: ดู `docs/superpowers/plans/2026-06-22-chatbot-go-*`

@@ -56,3 +56,6 @@ origin_main_files.txt
 .DS_Store
 Thumbs.db
 .claude/
+
+# root ไม่มี Node project — กัน lockfile กำพร้าหลุดกลับมา
+/package-lock.json
