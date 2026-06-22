@@ -4,7 +4,7 @@
 # Usage:
 #   ./scripts/provision-bu.sh test
 #   BU=test ./scripts/provision-bu.sh
-#   API_BASE=https://kb-carmen.onrender.com ADMIN_KEY=xxx ./scripts/provision-bu.sh test
+#   API_BASE=https://knowledge-base-carmen.onrender.com ADMIN_KEY=xxx ./scripts/provision-bu.sh test
 
 set -euo pipefail
 
