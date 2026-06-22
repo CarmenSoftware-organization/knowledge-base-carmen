@@ -161,46 +161,20 @@ func OpChatHistoryList() {}
 // @Router /api/chat/route-test [post]
 func OpChatRouteTest() {}
 
-// @Summary Proxy to Python chatbot
-// @Description Forwards to CHATBOT_URL; path and method vary.
-// @Tags chat
-// @Router /api/chat/rooms/{bu}/{username} [get]
-func OpChatProxyRoomsGet() {}
-
-// @Summary Create chat room (proxy)
-// @Tags chat
-// @Router /api/chat/rooms [post]
-func OpChatProxyRoomsPost() {}
-
-// @Summary Delete room (proxy)
-// @Tags chat
-// @Router /api/chat/rooms/{room_id} [delete]
-func OpChatProxyRoomDelete() {}
-
-// @Summary Room history (proxy)
-// @Tags chat
-// @Router /api/chat/room-history/{room_id} [get]
-func OpChatProxyRoomHistory() {}
-
-// @Summary Clear history (proxy)
-// @Tags chat
-// @Router /api/chat/history [delete]
-func OpChatProxyHistoryDelete() {}
-
-// @Summary Clear room (proxy)
+// @Summary Clear room history (no-op ack; history is frontend-owned)
 // @Tags chat
 // @Router /api/chat/clear/{room_id} [delete]
-func OpChatProxyClear() {}
+func OpChatClear() {}
 
-// @Summary Stream chat (proxy)
+// @Summary Stream chat (native NDJSON RAG)
 // @Tags chat
 // @Router /api/chat/stream [post]
-func OpChatProxyStream() {}
+func OpChatStream() {}
 
-// @Summary Message feedback (proxy)
+// @Summary Message feedback (thumbs up/down)
 // @Tags chat
 // @Router /api/chat/feedback/{message_id} [post]
-func OpChatProxyFeedback() {}
+func OpChatFeedback() {}
 
 // @Summary Chat / wiki image
 // @Tags chat

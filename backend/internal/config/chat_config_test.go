@@ -61,19 +61,7 @@ func TestLoad_ChatDefaults(t *testing.T) {
 	if AppConfig.Chat.RateLimitPerMin != "20/minute" {
 		t.Errorf("RateLimitPerMin = %q", AppConfig.Chat.RateLimitPerMin)
 	}
-	if AppConfig.ChatNative.Stream || AppConfig.ChatNative.Rooms || AppConfig.ChatNative.Feedback {
-		t.Errorf("native flags should default false: %+v", AppConfig.ChatNative)
-	}
 	if AppConfig.LLM.FallbackModel != "" {
 		t.Errorf("FallbackModel = %q, want empty string", AppConfig.LLM.FallbackModel)
-	}
-}
-
-func TestLoad_ChatNativeFlagOn(t *testing.T) {
-	if err := isolatedLoad(t, "CHAT_NATIVE_STREAM=true"); err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-	if !AppConfig.ChatNative.Stream {
-		t.Error("CHAT_NATIVE_STREAM=true should enable native stream")
 	}
 }

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/constants"
@@ -55,12 +54,8 @@ func NewChatHandler() *ChatHandler {
 	return h
 }
 
-// Stream handles POST /api/chat/stream. When native streaming is disabled it
-// delegates to the Python proxy; otherwise it runs the native NDJSON flow.
+// Stream handles POST /api/chat/stream — the native NDJSON RAG flow.
 func (h *ChatHandler) Stream(c *fiber.Ctx) error {
-	if config.AppConfig == nil || !config.AppConfig.ChatNative.Stream {
-		return h.Proxy(c)
-	}
 	req, err := parseStreamRequest(c)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -93,35 +88,6 @@ func (h *ChatHandler) Stream(c *fiber.Ctx) error {
 	return nil
 }
 
-func (h *ChatHandler) Proxy(c *fiber.Ctx) error {
-	chatbotURL := strings.TrimRight(strings.TrimSpace(config.AppConfig.Server.ChatbotURL), "/")
-	if chatbotURL == "" {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
-			"error":   "chatbot_proxy_failed",
-			"message": "PYTHON_CHATBOT_URL is not set; deploy the Python chatbot service and set this env on the Go backend.",
-		})
-	}
-
-	target := chatbotURL + c.OriginalURL()
-
-	if err := proxy.Do(c, target); err != nil {
-		// Proxy failures often omit CORS on the error path → browser shows generic "Failed to fetch".
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
-			"error":   "chatbot_proxy_failed",
-			"message": "Could not reach the chat service at PYTHON_CHATBOT_URL. Check that carmen-chatbot is deployed and the URL is correct.",
-			"detail":  err.Error(),
-		})
-	}
-
-	origin := c.Get("Origin")
-	if origin != "" {
-		c.Set("Access-Control-Allow-Origin", origin)
-		c.Set("Access-Control-Allow-Credentials", "true")
-	}
-
-	return nil
-}
-
 func (h *ChatHandler) Image(c *fiber.Ctx) error {
 	bu := strings.TrimSpace(c.Query("bu"))
 	if bu == "" {
@@ -140,7 +106,7 @@ func (h *ChatHandler) Image(c *fiber.Ctx) error {
 		}
 	}
 
-	return h.Proxy(c)
+	return c.SendStatus(fiber.StatusNotFound)
 }
 
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {
@@ -155,13 +121,9 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	return c.JSON(resp)
 }
 
-// Feedback handles POST /api/chat/feedback/:message_id. When the native flag is
-// disabled it delegates to the Python proxy; otherwise it records a thumbs-up/down
+// Feedback handles POST /api/chat/feedback/:message_id — records a thumbs-up/down
 // score for the given message, scoped to the requesting user.
 func (h *ChatHandler) Feedback(c *fiber.Ctx) error {
-	if config.AppConfig == nil || !config.AppConfig.ChatNative.Feedback {
-		return h.Proxy(c)
-	}
 	messageID, err := strconv.ParseInt(c.Params("message_id"), 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid message_id"})
@@ -190,12 +152,8 @@ func (h *ChatHandler) Feedback(c *fiber.Ctx) error {
 
 // ClearRoom handles DELETE /api/chat/clear/:room_id. Chat history is owned by the
 // frontend (localStorage passed in each /stream call); there is no server-side room
-// state to clear. When the native flag is disabled it delegates to the Python proxy;
-// otherwise it acknowledges the clear with a simple ok response.
+// state to clear, so this acknowledges the clear with a simple ok response.
 func (h *ChatHandler) ClearRoom(c *fiber.Ctx) error {
-	if config.AppConfig == nil || !config.AppConfig.ChatNative.Feedback {
-		return h.Proxy(c)
-	}
 	return c.JSON(fiber.Map{"status": "ok", "room_id": c.Params("room_id")})
 }
 
