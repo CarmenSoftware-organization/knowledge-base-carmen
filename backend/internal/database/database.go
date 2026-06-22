@@ -136,28 +136,21 @@ END$$;`
 	return DB.Exec(sql).Error
 }
 
+// TruncateBUTables deletes one BU's documents (and chunks, via FK cascade).
 func TruncateBUTables(bu string) error {
 	if bu == "" {
 		return fmt.Errorf("bu cannot be empty")
 	}
-	sql := fmt.Sprintf("TRUNCATE TABLE %s.documents RESTART IDENTITY CASCADE", bu)
-	return DB.Exec(sql).Error
+	if !security.ValidateSchema(bu) {
+		return fmt.Errorf("invalid bu: %q", bu)
+	}
+	return DB.Exec(
+		`DELETE FROM public.documents WHERE bu_id = (SELECT id FROM public.business_units WHERE slug = ?)`,
+		bu,
+	).Error
 }
 
-// TruncateAllBUIndexTables runs TRUNCATE on <slug>.documents for every slug in public.business_units.
+// TruncateAllBUIndexTables clears the shared index tables for every BU.
 func TruncateAllBUIndexTables() error {
-	var slugs []string
-	if err := DB.Table("public.business_units").Order("id").Pluck("slug", &slugs).Error; err != nil {
-		return fmt.Errorf("list business_units: %w", err)
-	}
-	for _, slug := range slugs {
-		slug = strings.TrimSpace(slug)
-		if slug == "" || !security.ValidateSchema(slug) {
-			continue
-		}
-		if err := TruncateBUTables(slug); err != nil {
-			return fmt.Errorf("truncate %s.documents: %w", slug, err)
-		}
-	}
-	return nil
+	return DB.Exec(`TRUNCATE TABLE public.document_chunks, public.documents RESTART IDENTITY CASCADE`).Error
 }
