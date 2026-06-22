@@ -1,7 +1,9 @@
 package openrouter
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -129,6 +131,111 @@ Answer (สรุปเท่านั้น ไม่มีคำว่า Cont
 		return "", fmt.Errorf("empty chat response")
 	}
 	return strings.TrimSpace(res.Choices[0].Message.Content), nil
+}
+
+// ChatMessage is a single role/content turn sent to the chat completions API.
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// Usage holds token accounting returned on the final streaming frame.
+type Usage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+}
+
+type streamRequest struct {
+	Model         string        `json:"model"`
+	Messages      []ChatMessage `json:"messages"`
+	Stream        bool          `json:"stream"`
+	StreamOptions struct {
+		IncludeUsage bool `json:"include_usage"`
+	} `json:"stream_options"`
+}
+
+type streamFrame struct {
+	Choices []struct {
+		Delta struct {
+			Content string `json:"content"`
+		} `json:"delta"`
+		FinishReason *string `json:"finish_reason"`
+	} `json:"choices"`
+	Usage *Usage `json:"usage"`
+}
+
+// StreamAnswer streams a chat completion, invoking onChunk for each content
+// delta. It returns the last finish_reason seen and the usage frame (if any).
+func (c *Client) StreamAnswer(ctx context.Context, model string, messages []ChatMessage, onChunk func(delta string)) (string, Usage, error) {
+	if model == "" {
+		model = c.ChatModel
+	}
+	reqBody := streamRequest{Model: model, Messages: messages, Stream: true}
+	reqBody.StreamOptions.IncludeUsage = true
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", Usage{}, fmt.Errorf("marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST",
+		strings.TrimRight(c.APIBase, "/")+"/chat/completions", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", Usage{}, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
+	if c.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.APIKey)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", Usage{}, fmt.Errorf("send request: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", Usage{}, fmt.Errorf("openrouter error %d: %s", resp.StatusCode, string(body))
+	}
+
+	var (
+		finishReason string
+		usage        Usage
+	)
+	reader := bufio.NewReader(resp.Body)
+	for {
+		line, err := reader.ReadString('\n')
+		if len(line) > 0 {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "data:") {
+				payload := strings.TrimSpace(strings.TrimPrefix(trimmed, "data:"))
+				if payload == "[DONE]" {
+					break
+				}
+				var frame streamFrame
+				if jsonErr := json.Unmarshal([]byte(payload), &frame); jsonErr == nil {
+					for _, ch := range frame.Choices {
+						if ch.Delta.Content != "" && onChunk != nil {
+							onChunk(ch.Delta.Content)
+						}
+						if ch.FinishReason != nil && *ch.FinishReason != "" {
+							finishReason = *ch.FinishReason
+						}
+					}
+					if frame.Usage != nil {
+						usage = *frame.Usage
+					}
+				}
+			}
+		}
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return finishReason, usage, fmt.Errorf("read stream: %w", err)
+		}
+	}
+	return finishReason, usage, nil
 }
 
 func (c *Client) Embedding(text string) ([]float32, error) {
