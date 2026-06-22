@@ -4,7 +4,7 @@
 -- Idempotent — safe to re-run. Apply with psql (contains PL/pgSQL blocks):
 --   psql -U <user> -d <db> -v ON_ERROR_STOP=1 -f backend/migrations/0001_init_schema.sql
 -- Supersedes the former 0001–0012 migration chain. New BUs are provisioned at
--- runtime via create_bu_tables(<slug>), which inherits the 2000-dim columns + indexes.
+-- runtime by inserting into public.business_units; documents/chunks are shared tables keyed by bu_id.
 
 -- ── Extensions ───────────────────────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -25,46 +25,36 @@ VALUES ('Carmen Cloud', 'carmen', 'System for Carmen Cloud documents and Wiki'),
        ('Blueledgers', 'blueledgers', 'Wiki / KB documents for Blueledgers')
 ON CONFLICT (slug) DO NOTHING;
 
--- ── Per-BU schemas ───────────────────────────────────────────────────────────
-CREATE SCHEMA IF NOT EXISTS carmen;
-CREATE SCHEMA IF NOT EXISTS blueledgers;
+-- ── Documents + chunks (shared public tables, keyed by bu_id) ────────────────
+-- One row per document/chunk; tenants separated by bu_id (FK → business_units).
+-- bu_id is denormalized onto document_chunks so the vector filter sits on the
+-- same table as the embedding (works well with the ivfflat index).
+CREATE TABLE IF NOT EXISTS public.documents (
+    id         BIGSERIAL PRIMARY KEY,
+    bu_id      INT NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
+    path       TEXT NOT NULL,
+    title      TEXT,
+    source     TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (bu_id, path)
+);
+CREATE INDEX IF NOT EXISTS idx_documents_bu ON public.documents(bu_id);
 
--- ── create_bu_tables(schema): per-BU documents + chunks + indexes (2000-dim) ──
--- Embedding is VECTOR(2000). The ivfflat similarity index and the GIN FTS index
--- are created inside the function so BUs provisioned later get them automatically.
-CREATE OR REPLACE FUNCTION create_bu_tables(schema_name TEXT)
-RETURNS VOID AS $$
-BEGIN
-    EXECUTE format('
-        CREATE TABLE IF NOT EXISTS %I.documents (
-            id         BIGSERIAL PRIMARY KEY,
-            path       TEXT NOT NULL UNIQUE,
-            title      TEXT,
-            source     TEXT,
-            created_at TIMESTAMPTZ DEFAULT NOW(),
-            updated_at TIMESTAMPTZ DEFAULT NOW()
-        );
-
-        CREATE TABLE IF NOT EXISTS %I.document_chunks (
-            id          BIGSERIAL PRIMARY KEY,
-            document_id BIGINT NOT NULL REFERENCES %I.documents(id) ON DELETE CASCADE,
-            chunk_index INT NOT NULL,
-            content     TEXT,
-            embedding   VECTOR(2000),
-            created_at  TIMESTAMPTZ DEFAULT NOW()
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding
-            ON %I.document_chunks USING ivfflat (embedding vector_l2_ops) WITH (lists = 100);
-
-        CREATE INDEX IF NOT EXISTS document_chunks_content_fts_idx
-            ON %I.document_chunks USING gin (to_tsvector(''simple'', content));
-    ', schema_name, schema_name, schema_name, schema_name, schema_name);
-END;
-$$ LANGUAGE plpgsql;
-
-SELECT create_bu_tables('carmen');
-SELECT create_bu_tables('blueledgers');
+CREATE TABLE IF NOT EXISTS public.document_chunks (
+    id          BIGSERIAL PRIMARY KEY,
+    bu_id       INT NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
+    doc_id      BIGINT NOT NULL REFERENCES public.documents(id) ON DELETE CASCADE,
+    chunk_index INT NOT NULL,
+    content     TEXT,
+    embedding   VECTOR(2000),
+    created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_chunks_bu ON public.document_chunks(bu_id);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding
+    ON public.document_chunks USING ivfflat (embedding vector_l2_ops) WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS document_chunks_content_fts_idx
+    ON public.document_chunks USING gin (to_tsvector('simple', content));
 
 -- ── Chat history (similarity cache + privacy retention + metrics) ────────────
 CREATE TABLE IF NOT EXISTS public.chat_history (
