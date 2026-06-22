@@ -13,7 +13,7 @@ type ScoredRow struct {
 	Path    string
 	Title   string
 	Content string
-	Dist    float64
+	Dist    float64 `gorm:"column:dist"`
 }
 
 type RetrievedChunk struct {
