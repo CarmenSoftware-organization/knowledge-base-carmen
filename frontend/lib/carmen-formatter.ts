@@ -1,4 +1,5 @@
 import { extractYoutubeId } from "./utils";
+import { isYoutubeUrl } from "./url-safety";
 
 function escapeHtml(s: string): string {
   return String(s)
@@ -39,12 +40,7 @@ function processYoutube(text: string): string {
 function processImages(text: string, apiBase: string): string {
   const resolveUrl = (src: string) => {
     let u = src.trim().replace(/\\/g, "/");
-    if (
-      u.includes("youtube.com") ||
-      u.includes("youtu.be") ||
-      u.startsWith("data:")
-    )
-      return u;
+    if (isYoutubeUrl(u) || u.startsWith("data:")) return u;
     if (/^(http|https):/.test(u)) {
       if (
         u.includes("127.0.0.1") ||
@@ -104,7 +100,7 @@ function processImages(text: string, apiBase: string): string {
 function processLinks(text: string): string {
   const mdLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
   text = text.replace(mdLinkRegex, (match, label, url) => {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) return match;
+    if (isYoutubeUrl(url)) return match;
     return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="carmen-link">${escapeHtml(label)}</a>`;
   });
 

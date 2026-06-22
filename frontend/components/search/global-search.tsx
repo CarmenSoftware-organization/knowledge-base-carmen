@@ -22,15 +22,23 @@ function cleanSnippet(text: string) {
   if (!text) return "";
   text = text.replace(/^---[\s\S]*?---/, "");
 
-  return text
+  text = text
     .replace(/(\/public\/[^\s'"]+\.(png|jpg|jpeg|gif|svg|webp))/gi, "")
     .replace(/[^\s'"]+\.(png|jpg|jpeg|gif|svg|webp)/gi, "")
-    .replace(/(=?['"][^'"]+\.(png|jpg|jpeg|gif|svg|webp)['"]\s*\/?>)/gi, "")
-    .replace(/<img[^>]*>?/gi, "")
+    .replace(/(=?['"][^'"]+\.(png|jpg|jpeg|gif|svg|webp)['"]\s*\/?>)/gi, "");
+
+  // Strip HTML tags repeatedly until stable \u2014 a single pass can leave a tag
+  // behind for overlapping inputs like "<scr<script>ipt>".
+  let prev: string;
+  do {
+    prev = text;
+    text = text.replace(/<img[^>]*>?/gi, "").replace(/<[^>]*>?/g, "");
+  } while (text !== prev);
+
+  return text
     .replace(/(\/?>)/g, "")
     .replace(/[a-z0-9-]+\s*=\s*['"][^'"]*['"]/gi, "")
     .replace(/!?\[[^\]]*\]\([^)]*\)/g, "")
-    .replace(/<[^>]*>?/gm, "")
     .replace(/[#*`_~]/g, "")
     .replace(/\uFFFD/g, "")
     .replace(/\s+/g, " ")

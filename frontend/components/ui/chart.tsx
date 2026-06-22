@@ -103,7 +103,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart="${id.replace(/"/g, '\\"')}"] {
+${prefix} [data-chart="${id.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const safeKey = safeCssIdent(key)
