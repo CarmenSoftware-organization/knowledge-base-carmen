@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import HTMLtoDOCX from "html-to-docx";
-
-/** html-to-docx fetches images by HTTP URL internally — it does NOT support data: URIs.
- *  This function converts relative /... src paths to absolute http://origin/... so the
- *  library can fetch them. External https:// URLs are left unchanged. */
-function makeImagesAbsolute(html: string, baseUrl: string): string {
-  return html.replace(
-    /(<img[^>]+src=")(?!https?:|data:|blob:)(\/[^"]+)(")/gi,
-    (_, pre, path, post) => `${pre}${baseUrl}${path}${post}`
-  );
-}
+import { isUrlSafe } from "@/lib/ssrf-guard";
+import { rewriteAndFilterImages } from "@/lib/export-images";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +11,9 @@ export async function POST(req: NextRequest) {
     }
 
     const baseUrl = req.nextUrl.origin;
-    const processedHtml = makeImagesAbsolute(html, baseUrl);
+    // html-to-docx fetches image URLs itself, so resolve relative srcs to
+    // absolute and strip any <img> whose host is unsafe (SSRF) before handoff.
+    const processedHtml = await rewriteAndFilterImages(html, baseUrl, (u) => isUrlSafe(u));
     const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${processedHtml}</body></html>`;
 
     // html-to-docx returns Buffer in Node.js (not Blob)

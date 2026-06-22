@@ -1,29 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer";
-
-/** Fetch each image (absolute https:// or relative /) server-side and replace with
- *  base64 data URI so puppeteer can render them without hitting the SSRF block on localhost. */
-async function embedImages(html: string, baseUrl: string): Promise<string> {
-  const imgPattern = /(<img[^>]+src=")(?!data:|blob:)((?:https?:\/\/|\/)[^"]+)(")/gi;
-  const matches = [...html.matchAll(imgPattern)];
-  await Promise.all(
-    matches.map(async (m) => {
-      const raw = m[2];
-      const url = raw.startsWith("/") ? `${baseUrl}${raw}` : raw;
-      try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-        if (!res.ok) return;
-        const buf = Buffer.from(await res.arrayBuffer());
-        const mime = res.headers.get("content-type") ?? "image/png";
-        const dataUri = `data:${mime};base64,${buf.toString("base64")}`;
-        html = html.replace(m[0], `${m[1]}${dataUri}${m[3]}`);
-      } catch {
-        // keep original src if fetch fails
-      }
-    })
-  );
-  return html;
-}
+import { isUrlSafe } from "@/lib/ssrf-guard";
+import { embedSafeImages } from "@/lib/export-images";
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,9 +10,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "html is required" }, { status: 400 });
     }
 
-    // Embed images as base64 before puppeteer renders — puppeteer blocks localhost requests (SSRF guard)
+    // Embed images as base64 (SSRF-guarded) before puppeteer renders. Unsafe
+    // image hosts are stripped and never fetched server-side.
     const baseUrl = req.nextUrl.origin;
-    const embeddedHtml = await embedImages(html, baseUrl);
+    const embeddedHtml = await embedSafeImages(html, baseUrl, { isSafe: (u) => isUrlSafe(u) });
 
     const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -151,29 +130,23 @@ ${embeddedHtml}
     try {
       const page = await browser.newPage();
 
-      // Block file:// protocol and requests to private/internal networks to prevent SSRF
+      // Defense-in-depth: re-validate every network request puppeteer makes
+      // against the shared SSRF guard (DNS-resolves; covers 169.254 metadata,
+      // IPv6, and rebinding the old string checks missed). Safe images were
+      // already inlined as data: URIs above, so most requests are data:.
       await page.setRequestInterception(true);
-      page.on("request", (request) => {
+      page.on("request", async (request) => {
         const url = request.url();
-        if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("data:")) {
+        if (url.startsWith("data:")) {
+          request.continue();
+          return;
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
           request.abort();
           return;
         }
-        try {
-          const { hostname } = new URL(url);
-          const isInternal =
-            hostname === "localhost" ||
-            hostname === "127.0.0.1" ||
-            hostname === "::1" ||
-            /^10\./.test(hostname) ||
-            /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
-            /^192\.168\./.test(hostname);
-          if (isInternal) { request.abort(); return; }
-        } catch {
-          request.abort();
-          return;
-        }
-        request.continue();
+        if (await isUrlSafe(url)) request.continue();
+        else request.abort();
       });
 
       await page.setContent(fullHtml, { waitUntil: "networkidle0", timeout: 30000 });
