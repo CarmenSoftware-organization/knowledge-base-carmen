@@ -3,10 +3,10 @@ package api
 import (
 	"bufio"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/constants"
@@ -121,7 +121,7 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 // Feedback handles POST /api/chat/feedback/:message_id — records a thumbs-up/down
 // score for the given message, scoped to the requesting user.
 func (h *ChatHandler) Feedback(c *fiber.Ctx) error {
-	messageID, err := strconv.ParseInt(c.Params("message_id"), 10, 64)
+	messageID, err := uuid.Parse(c.Params("message_id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid message_id"})
 	}
@@ -137,7 +137,7 @@ func (h *ChatHandler) Feedback(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "score must be 1 or -1"})
 	}
 	buID, err := h.historyService.GetBUIDFromSlug(strings.TrimSpace(body.BU))
-	if err != nil || buID == 0 {
+	if err != nil || buID == uuid.Nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unknown bu"})
 	}
 	userID := services.HashUserID(body.Username, config.AppConfig.Server.PrivacySecret)

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/middleware"
 	"github.com/new-carmen/backend/internal/models"
@@ -29,7 +30,7 @@ func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
 	}
 
 	buID, err := h.historyService.GetBUIDFromSlug(bu)
-	if err != nil || buID == 0 {
+	if err != nil || buID == uuid.Nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu: " + bu})
 	}
 
@@ -60,7 +61,7 @@ func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
 func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	buID, err := h.historyService.GetBUIDFromSlug(bu)
-	if err != nil || buID == 0 {
+	if err != nil || buID == uuid.Nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu"})
 	}
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))

@@ -4,47 +4,48 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/database"
 )
 
 type FAQModule struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Slug      string `json:"slug"`
-	Icon      string `json:"icon,omitempty"`
-	SortOrder int    `json:"sort_order,omitempty"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	Icon      string    `json:"icon,omitempty"`
+	SortOrder int       `json:"sort_order,omitempty"`
 }
 
 type FAQSubmodule struct {
-	ID          int            `json:"id"`
-	Name        string         `json:"name"`
-	Slug        string         `json:"slug"`
-	Description string         `json:"description,omitempty"`
-	SortOrder   int            `json:"sort_order,omitempty"`
-	Categories  []FAQCategory  `json:"categories,omitempty"`
+	ID          uuid.UUID     `json:"id"`
+	Name        string        `json:"name"`
+	Slug        string        `json:"slug"`
+	Description string        `json:"description,omitempty"`
+	SortOrder   int           `json:"sort_order,omitempty"`
+	Categories  []FAQCategory `json:"categories,omitempty"`
 }
 
 type FAQCategory struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Slug      string `json:"slug"`
-	SortOrder int    `json:"sort_order,omitempty"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	SortOrder int       `json:"sort_order,omitempty"`
 }
 
 type FAQEntry struct {
-	ID           int      `json:"id"`
-	Title        string   `json:"title"`
-	SampleCase   string   `json:"sample_case,omitempty"`
-	ProblemCause string   `json:"problem_cause,omitempty"`
-	Solution     string   `json:"solution,omitempty"`
-	Tags         []string `json:"tags,omitempty"`
+	ID           uuid.UUID `json:"id"`
+	Title        string    `json:"title"`
+	SampleCase   string    `json:"sample_case,omitempty"`
+	ProblemCause string    `json:"problem_cause,omitempty"`
+	Solution     string    `json:"solution,omitempty"`
+	Tags         []string  `json:"tags,omitempty"`
 }
 
 type FAQCategoryResponse struct {
-	Module    FAQModule     `json:"module"`
-	Submodule FAQSubmodule  `json:"submodule"`
-	Category  FAQCategory   `json:"category"`
-	Items     []FAQEntry    `json:"items"`
+	Module    FAQModule    `json:"module"`
+	Submodule FAQSubmodule `json:"submodule"`
+	Category  FAQCategory  `json:"category"`
+	Items     []FAQEntry   `json:"items"`
 }
 
 type FAQEntryDetail struct {
@@ -61,16 +62,8 @@ func NewFAQService() *FAQService {
 }
 
 // resolveBU gets bu_id from business_units slug.
-func (s *FAQService) resolveBU(buSlug string) (int, error) {
-	var id int
-	err := database.DB.Raw(`SELECT id FROM public.business_units WHERE slug = ?`, buSlug).Scan(&id).Error
-	if err != nil {
-		return 0, fmt.Errorf("resolve BU: %w", err)
-	}
-	if id == 0 {
-		return 0, fmt.Errorf("BU not found: %s", buSlug)
-	}
-	return id, nil
+func (s *FAQService) resolveBU(buSlug string) (uuid.UUID, error) {
+	return database.BUIDForSlug(buSlug)
 }
 
 func (s *FAQService) ListModules(buSlug string) ([]FAQModule, error) {
@@ -105,7 +98,7 @@ func (s *FAQService) GetModuleWithChildren(buSlug, moduleSlug string) (map[strin
 	`, buID, moduleSlug).Scan(&mod).Error; err != nil {
 		return nil, fmt.Errorf("get module: %w", err)
 	}
-	if mod.ID == 0 {
+	if mod.ID == uuid.Nil {
 		return nil, fmt.Errorf("module not found: %s", moduleSlug)
 	}
 
@@ -156,7 +149,7 @@ func (s *FAQService) ListByCategory(buSlug, moduleSlug, subSlug, catSlug, q stri
 	`, buID, moduleSlug).Scan(&mod).Error; err != nil {
 		return nil, fmt.Errorf("get module: %w", err)
 	}
-	if mod.ID == 0 {
+	if mod.ID == uuid.Nil {
 		return nil, fmt.Errorf("module not found: %s", moduleSlug)
 	}
 
@@ -169,7 +162,7 @@ func (s *FAQService) ListByCategory(buSlug, moduleSlug, subSlug, catSlug, q stri
 	`, mod.ID, subSlug).Scan(&sub).Error; err != nil {
 		return nil, fmt.Errorf("get submodule: %w", err)
 	}
-	if sub.ID == 0 {
+	if sub.ID == uuid.Nil {
 		return nil, fmt.Errorf("submodule not found: %s", subSlug)
 	}
 
@@ -182,7 +175,7 @@ func (s *FAQService) ListByCategory(buSlug, moduleSlug, subSlug, catSlug, q stri
 	`, sub.ID, catSlug).Scan(&cat).Error; err != nil {
 		return nil, fmt.Errorf("get category: %w", err)
 	}
-	if cat.ID == 0 {
+	if cat.ID == uuid.Nil {
 		return nil, fmt.Errorf("category not found: %s", catSlug)
 	}
 
@@ -236,7 +229,7 @@ func (s *FAQService) GetEntryByID(buSlug, id string) (*FAQEntryDetail, error) {
 	`, id).Scan(&entry).Error; err != nil {
 		return nil, fmt.Errorf("get entry: %w", err)
 	}
-	if entry.ID == 0 {
+	if entry.ID == uuid.Nil {
 		return nil, fmt.Errorf("faq entry not found: %s", id)
 	}
 
@@ -279,10 +272,12 @@ func (s *FAQService) GetEntryByID(buSlug, id string) (*FAQEntryDetail, error) {
 	if err != nil {
 		return nil, err
 	}
-	var modBU int
+	// Row().Scan so the uuid destination's sql.Scanner is honored (GORM's
+	// Raw().Scan into a bare [16]byte mis-handles the pgx string value).
+	var modBU uuid.UUID
 	if err := database.DB.Raw(`
 		SELECT bu_id FROM public.faq_modules WHERE id = ?
-	`, mod.ID).Scan(&modBU).Error; err != nil {
+	`, mod.ID).Row().Scan(&modBU); err != nil {
 		return nil, fmt.Errorf("get module BU: %w", err)
 	}
 	if modBU != buID {
@@ -290,10 +285,9 @@ func (s *FAQService) GetEntryByID(buSlug, id string) (*FAQEntryDetail, error) {
 	}
 
 	return &FAQEntryDetail{
-		FAQEntry: entry,
-		Module:   mod,
+		FAQEntry:  entry,
+		Module:    mod,
 		Submodule: sub,
-		Category: cat,
+		Category:  cat,
 	}, nil
 }
-

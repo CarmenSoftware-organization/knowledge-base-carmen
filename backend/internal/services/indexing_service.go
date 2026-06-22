@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/security"
@@ -87,7 +88,7 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 	if err != nil {
 		return fmt.Errorf("resolve bu id: %w", err)
 	}
-	if buID == 0 {
+	if buID == uuid.Nil {
 		return fmt.Errorf("unknown bu: %q", bu)
 	}
 
@@ -101,14 +102,17 @@ func (s *IndexingService) indexSingle(bu, path string) error {
 		return fmt.Errorf("detect vector dimension: %w", err)
 	}
 
-	var docID int64
-	const sqlDoc = `INSERT INTO public.documents (bu_id, path, title, source, created_at, updated_at)
-VALUES (?, ?, ?, 'wiki', now(), now())
+	docID := uuid.Must(uuid.NewV7())
+	const sqlDoc = `INSERT INTO public.documents (id, bu_id, path, title, source, created_at, updated_at)
+VALUES (?, ?, ?, ?, 'wiki', now(), now())
 ON CONFLICT (bu_id, path) DO UPDATE SET title = EXCLUDED.title, updated_at = now()
 RETURNING id`
-	if err := database.DB.Raw(sqlDoc, buID, content.Path, content.Title).Scan(&docID).Error; err != nil {
+	// Use Row().Scan so the uuid destination's sql.Scanner is honored (GORM's
+	// Raw().Scan into a bare [16]byte mis-handles the pgx string value).
+	if err := database.DB.Raw(sqlDoc, docID, buID, content.Path, content.Title).Row().Scan(&docID); err != nil {
 		return fmt.Errorf("upsert document: %w", err)
 	}
+	// docID now holds the existing id on conflict, or the new id on insert.
 
 	if err := database.DB.Exec(`DELETE FROM public.document_chunks WHERE doc_id = ?`, docID).Error; err != nil {
 		return fmt.Errorf("delete old chunks: %w", err)
@@ -134,9 +138,9 @@ RETURNING id`
 		emb = utils.TruncateEmbeddingToDim(emb, targetDim)
 		emb = utils.NormalizeEmbedding(emb)
 
-		const sqlChunk = `INSERT INTO public.document_chunks (bu_id, doc_id, chunk_index, content, embedding, created_at)
-VALUES (?, ?, ?, ?, ?::vector, now())`
-		if err := database.DB.Exec(sqlChunk, buID, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
+		const sqlChunk = `INSERT INTO public.document_chunks (id, bu_id, doc_id, chunk_index, content, embedding, created_at)
+VALUES (?, ?, ?, ?, ?, ?::vector, now())`
+		if err := database.DB.Exec(sqlChunk, uuid.Must(uuid.NewV7()), buID, docID, i, chunkText, utils.Float32SliceToPgVector(emb)).Error; err != nil {
 			return fmt.Errorf("insert chunk %d: %w", i, err)
 		}
 	}

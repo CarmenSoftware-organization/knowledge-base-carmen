@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/security"
@@ -254,7 +255,7 @@ func listIndexedDocumentPaths(bu string) ([]string, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-	if buID == 0 {
+	if buID == uuid.Nil {
 		return []string{}, false, nil
 	}
 	var out []string

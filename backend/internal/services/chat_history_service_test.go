@@ -3,6 +3,7 @@ package services
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 )
@@ -13,9 +14,12 @@ func TestUpdateFeedback(t *testing.T) {
 
 	svc := NewChatHistoryService()
 
-	// Resolve a known BU id (use "carmen" slug which is expected to exist in test DB).
+	// Seed a known BU so the test runs on a fresh DB (no carmen row otherwise).
+	database.DB.Exec(`INSERT INTO public.business_units (name, slug) VALUES ('Carmen', 'carmen') ON CONFLICT (slug) DO NOTHING`)
+
+	// Resolve a known BU id (use "carmen" slug which now exists in the test DB).
 	buID, err := svc.GetBUIDFromSlug("carmen")
-	if err != nil || buID == 0 {
+	if err != nil || buID == uuid.Nil {
 		t.Skipf("BU 'carmen' not found — cannot run UpdateFeedback test: %v", err)
 	}
 

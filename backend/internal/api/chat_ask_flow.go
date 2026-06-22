@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/middleware"
 	"github.com/new-carmen/backend/internal/models"
@@ -102,7 +103,7 @@ func (h *ChatHandler) tryCachedAnswer(bu string, emb []float32, threshold float6
 		return models.ChatAskResponse{}, false
 	}
 	buID, err := h.historyService.GetBUIDFromSlug(bu)
-	if err != nil || buID == 0 {
+	if err != nil || buID == uuid.Nil {
 		return models.ChatAskResponse{}, false
 	}
 	cached, ok := h.historyService.FindSimilar(buID, emb, threshold)
@@ -241,7 +242,7 @@ func (h *ChatHandler) saveHistoryIfEnabled(enabled bool, bu, userID, question, a
 		return
 	}
 	buID, err := h.historyService.GetBUIDFromSlug(bu)
-	if err != nil || buID == 0 {
+	if err != nil || buID == uuid.Nil {
 		return
 	}
 	if err := h.historyService.Save(buID, userID, question, answer, sources, emb); err != nil {

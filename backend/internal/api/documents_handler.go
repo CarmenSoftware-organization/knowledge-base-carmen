@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/middleware"
 	"github.com/new-carmen/backend/internal/security"
@@ -14,13 +15,13 @@ func NewDocumentsHandler() *DocumentsHandler {
 }
 
 type documentRow struct {
-	ID         int64   `json:"id"`
-	Path       string  `json:"path"`
-	Title      string  `json:"title"`
-	Source     string  `json:"source"`
-	ChunkCount *int64  `json:"chunk_count,omitempty"`
-	CreatedAt  *string `json:"created_at,omitempty"`
-	UpdatedAt  *string `json:"updated_at,omitempty"`
+	ID         uuid.UUID `json:"id"`
+	Path       string    `json:"path"`
+	Title      string    `json:"title"`
+	Source     string    `json:"source"`
+	ChunkCount *int64    `json:"chunk_count,omitempty"`
+	CreatedAt  *string   `json:"created_at,omitempty"`
+	UpdatedAt  *string   `json:"updated_at,omitempty"`
 }
 
 func (h *DocumentsHandler) List(c *fiber.Ctx) error {
@@ -32,7 +33,7 @@ func (h *DocumentsHandler) List(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	if buID == 0 {
+	if buID == uuid.Nil {
 		return c.JSON(fiber.Map{"items": []documentRow{}})
 	}
 	var rows []documentRow

@@ -2,12 +2,14 @@ package database
 
 import (
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestTruncateBUTables_OnlyTargetBU(t *testing.T) {
 	mustConnect(t) // defined in bu_resolve_test.go
 
-	seed := func(slug string) int {
+	seed := func(slug string) uuid.UUID {
 		DB.Exec(`INSERT INTO public.business_units (name, slug) VALUES (?, ?) ON CONFLICT (slug) DO NOTHING`, slug, slug)
 		id, _ := BUIDForSlug(slug)
 		DB.Exec(`INSERT INTO public.documents (bu_id, path, title) VALUES (?, 'p.md', 'P')`, id)

@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/pkg/openrouter"
@@ -27,8 +28,8 @@ func dbAvailable(t *testing.T) {
 func TestRetrievalService_ReturnsChunks(t *testing.T) {
 	dbAvailable(t)
 	buID, err := database.BUIDForSlug("carmen")
-	if err != nil || buID == 0 {
-		t.Skipf("BU 'carmen' not found in this DB (id=%d, err=%v)", buID, err)
+	if err != nil || buID == uuid.Nil {
+		t.Skipf("BU 'carmen' not found in this DB (id=%s, err=%v)", buID, err)
 	}
 	s := NewRetrievalService()
 	// Use a question with an obvious answer in the seeded 'carmen' BU.

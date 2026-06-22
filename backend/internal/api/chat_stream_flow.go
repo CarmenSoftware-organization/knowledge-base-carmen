@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
@@ -29,10 +30,12 @@ type streamDeps struct {
 	// checkBudget reports whether the daily limit has not been exceeded and
 	// increments the counter.  Returns false when the limit is already reached.
 	checkBudget func(limit int) bool
-	// saveLog persists the Q&A and returns the new chat_history row id.
+	// saveLog persists the Q&A and returns the new chat_history row id (UUID
+	// string; empty string when nothing was persisted). The id is emitted as the
+	// "done" event payload and later round-trips to the feedback endpoint.
 	// bu: BU slug, userID: raw (will be hashed internally via defaultSaveLog),
 	// question: raw (will be PII-masked).
-	saveLog func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) int64
+	saveLog func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) string
 	// prompts are the loaded YAML prompt templates (BASE_PROMPT etc.).
 	prompts chatconfig.Prompts
 	// dailyLimit is the configured DailyRequestLimit (0 = unlimited).
@@ -82,7 +85,7 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	// ---------- 1. Budget gate ----------
 	if !deps.checkBudget(deps.dailyLimit) {
 		emit(streamEvent("chunk", "_(ขออภัยครับ ระบบมีการใช้งานเกินกำหนดสำหรับวันนี้ กรุณาลองใหม่พรุ่งนี้)_"))
-		emit(streamEvent("done", 0))
+		emit(streamEvent("done", ""))
 		return
 	}
 
@@ -130,7 +133,7 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 		// A transient embedding failure is NOT a genuine no-match: emit an error
 		// apology and abort rather than persisting a misleading "no info" answer.
 		emit(streamEvent("chunk", "_(ขออภัยครับ เกิดข้อผิดพลาดในการค้นหาข้อมูล กรุณาลองใหม่อีกครั้ง)_"))
-		emit(streamEvent("done", 0))
+		emit(streamEvent("done", ""))
 		return
 	}
 	var chunks []services.RetrievedChunk
@@ -222,7 +225,7 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	}
 	if llmErr != nil {
 		emit(streamEvent("chunk", "_(ขออภัยครับ เกิดข้อผิดพลาดในการสร้างคำตอบ กรุณาลองใหม่อีกครั้ง)_"))
-		emit(streamEvent("done", 0))
+		emit(streamEvent("done", ""))
 		return
 	}
 
@@ -297,26 +300,26 @@ func noInfoApology(lang string) string {
 // defaultSaveLog builds a saveLog function backed by a real ChatHistoryService.
 // question will be PII-masked and userID will be hashed before persistence
 // (hash happens inside ChatHistoryService.SaveWithID).
-func defaultSaveLog(svc *services.ChatHistoryService) func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) int64 {
-	return func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) (logID int64) {
+func defaultSaveLog(svc *services.ChatHistoryService) func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) string {
+	return func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) (logID string) {
 		// Logging must never crash an in-flight stream: a DB outage should
-		// degrade to log_id 0, not panic and drop the user's answer.
+		// degrade to an empty log id, not panic and drop the user's answer.
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("[chat] stream save log panic recovered: %v", r)
-				logID = 0
+				logID = ""
 			}
 		}()
 		buID, err := svc.GetBUIDFromSlug(bu)
-		if err != nil || buID == 0 {
-			return 0
+		if err != nil || buID == uuid.Nil {
+			return ""
 		}
 		// SaveWithID masks PII on the stored question; pass the raw text through.
 		id, err := svc.SaveWithID(buID, userID, question, answer, sources, emb)
 		if err != nil {
-			return 0
+			return ""
 		}
-		return id
+		return id.String()
 	}
 }
 

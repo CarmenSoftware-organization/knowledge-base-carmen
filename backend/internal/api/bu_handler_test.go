@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 )
@@ -55,9 +56,12 @@ func TestProvisionDeprovision_NoSchema(t *testing.T) {
 	}
 
 	// Seed one document, then deprovision and confirm cascade delete.
-	var buID int
-	database.DB.Raw(`SELECT id FROM public.business_units WHERE slug = ?`, slug).Scan(&buID)
-	if buID == 0 {
+	// Row().Scan so the uuid sql.Scanner is honored (GORM Raw().Scan mishandles [16]byte).
+	var buID uuid.UUID
+	if err := database.DB.Raw(`SELECT id FROM public.business_units WHERE slug = ?`, slug).Row().Scan(&buID); err != nil {
+		t.Fatalf("could not retrieve bu_id for slug %s: %v", slug, err)
+	}
+	if buID == uuid.Nil {
 		t.Fatalf("could not retrieve bu_id for slug %s", slug)
 	}
 	// Requires Task 1 migration: public.documents.bu_id FK with ON DELETE CASCADE.

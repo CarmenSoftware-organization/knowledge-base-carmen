@@ -43,7 +43,8 @@ func TestFeedback_InvalidScore_Returns400(t *testing.T) {
 	h := NewChatHandler()
 	app.Post("/api/chat/feedback/:message_id", h.Feedback)
 
-	req := httptest.NewRequest("POST", "/api/chat/feedback/42",
+	// Valid UUID message_id so the score check (not the id parse) is what rejects.
+	req := httptest.NewRequest("POST", "/api/chat/feedback/0190a000-0000-7000-8000-000000000042",
 		strings.NewReader(`{"score":5,"bu":"carmen","username":"alice"}`))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -58,7 +59,7 @@ func TestFeedback_InvalidScore_Returns400(t *testing.T) {
 	}
 }
 
-// TestFeedback_NonIntMessageID_Returns400 verifies that a non-integer path param
+// TestFeedback_NonIntMessageID_Returns400 verifies that a non-UUID path param
 // is rejected with 400 before body parsing or DB access.
 func TestFeedback_NonIntMessageID_Returns400(t *testing.T) {
 	prev := config.AppConfig
@@ -104,7 +105,8 @@ func TestFeedback_UnknownBU_Returns400(t *testing.T) {
 	h := NewChatHandler()
 	app.Post("/api/chat/feedback/:message_id", h.Feedback)
 
-	req := httptest.NewRequest("POST", "/api/chat/feedback/42",
+	// Valid UUID message_id so the handler reaches the BU lookup (not the id parse).
+	req := httptest.NewRequest("POST", "/api/chat/feedback/0190a000-0000-7000-8000-000000000042",
 		strings.NewReader(`{"score":1,"bu":"nonexistent_bu","username":"alice"}`))
 	req.Header.Set("Content-Type", "application/json")
 

@@ -54,14 +54,14 @@ func eventData(lines []string, idx int, out any) error {
 	return json.Unmarshal(ev.Data, out)
 }
 
-// noopSaveLog is a save function that does nothing and returns 0.
-func noopSaveLog(_ string, _ string, _ string, _ string, _ []models.ChatSource, _ []float32) int64 {
-	return 0
+// noopSaveLog is a save function that does nothing and returns an empty id.
+func noopSaveLog(_ string, _ string, _ string, _ string, _ []models.ChatSource, _ []float32) string {
+	return ""
 }
 
-// fixedSaveLog returns a constant logID.
-func fixedSaveLog(id int64) func(string, string, string, string, []models.ChatSource, []float32) int64 {
-	return func(_, _, _, _ string, _ []models.ChatSource, _ []float32) int64 {
+// fixedSaveLog returns a constant logID (UUID string).
+func fixedSaveLog(id string) func(string, string, string, string, []models.ChatSource, []float32) string {
+	return func(_, _, _, _ string, _ []models.ChatSource, _ []float32) string {
 		return id
 	}
 }
@@ -141,7 +141,8 @@ func TestStreamFlow_QuickReply(t *testing.T) {
 	}
 	deps := baseDeps()
 	deps.classify = fakeClassify("greeting", "สวัสดีครับ ยินดีให้บริการ")
-	deps.saveLog = fixedSaveLog(42)
+	const wantID = "0190a000-0000-7000-8000-000000000042"
+	deps.saveLog = fixedSaveLog(wantID)
 
 	types, lines := collectEvents(req, deps)
 
@@ -165,12 +166,12 @@ func TestStreamFlow_QuickReply(t *testing.T) {
 	}
 
 	// done data should be the logID
-	var logID int64
+	var logID string
 	if err := eventData(lines, 1, &logID); err != nil {
 		t.Fatalf("parse done data: %v", err)
 	}
-	if logID != 42 {
-		t.Errorf("done logID = %d, want 42", logID)
+	if logID != wantID {
+		t.Errorf("done logID = %q, want %q", logID, wantID)
 	}
 }
 
@@ -190,9 +191,9 @@ func TestStreamFlow_ZeroResults(t *testing.T) {
 	}
 	deps := baseDeps()
 	deps.classify = fakeClassify("tech_support", "")
-	deps.embed = nilEmbed                       // returns nil → retrieve not called
-	deps.retrieve = fakeRetrieve(nil)           // no chunks
-	deps.saveLog = fixedSaveLog(0)
+	deps.embed = nilEmbed             // returns nil → retrieve not called
+	deps.retrieve = fakeRetrieve(nil) // no chunks
+	deps.saveLog = fixedSaveLog("")
 
 	types, _ := collectEvents(req, deps)
 
@@ -232,7 +233,7 @@ func TestStreamFlow_FullPath(t *testing.T) {
 	deps.retrieve = fakeRetrieve(chunks)
 	// LLM emits text then suggestions
 	deps.streamLLM = fakeStreamLLM(`hello [SUGGESTIONS] ["q1"]`)
-	deps.saveLog = fixedSaveLog(7)
+	deps.saveLog = fixedSaveLog("0190a000-0000-7000-8000-000000000007")
 
 	types, _ := collectEvents(req, deps)
 
@@ -271,7 +272,7 @@ func TestStreamFlow_HistoryPath(t *testing.T) {
 	deps.embed = noopEmbed
 	deps.retrieve = fakeRetrieve(chunks)
 	deps.streamLLM = fakeStreamLLM("คำตอบ")
-	deps.saveLog = fixedSaveLog(0)
+	deps.saveLog = fixedSaveLog("")
 
 	types, lines := collectEvents(req, deps)
 
@@ -320,13 +321,13 @@ func TestStreamFlow_BudgetExceeded(t *testing.T) {
 		t.Errorf("budget-exceeded: types[1] = %q, want done", types[1])
 	}
 
-	// done data should be 0
-	var logID int64
+	// done data should be empty
+	var logID string
 	if err := eventData(lines, 1, &logID); err != nil {
 		t.Fatalf("parse done data: %v", err)
 	}
-	if logID != 0 {
-		t.Errorf("budget-exceeded: done logID = %d, want 0", logID)
+	if logID != "" {
+		t.Errorf("budget-exceeded: done logID = %q, want empty", logID)
 	}
 }
 
@@ -391,9 +392,10 @@ func TestStreamFlow_QuickReplyEmbedding(t *testing.T) {
 	deps.classify = fakeClassify("greeting", "สวัสดีครับ ยินดีให้บริการ")
 
 	var capturedEmb []float32
-	deps.saveLog = func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) int64 {
+	const wantID = "0190a000-0000-7000-8000-000000000099"
+	deps.saveLog = func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) string {
 		capturedEmb = emb
-		return 99
+		return wantID
 	}
 	// noopEmbed returns []float32{0.1, 0.2} — non-nil
 	deps.embed = noopEmbed
@@ -408,13 +410,13 @@ func TestStreamFlow_QuickReplyEmbedding(t *testing.T) {
 		t.Error("quick-reply-emb: saveLog received nil/empty embedding, want non-nil (Fix 1)")
 	}
 
-	// done logID should be 99 (from our saveLog above)
-	var logID int64
+	// done logID should be wantID (from our saveLog above)
+	var logID string
 	if err := eventData(lines, 1, &logID); err != nil {
 		t.Fatalf("parse done data: %v", err)
 	}
-	if logID != 99 {
-		t.Errorf("quick-reply-emb: done logID = %d, want 99", logID)
+	if logID != wantID {
+		t.Errorf("quick-reply-emb: done logID = %q, want %q", logID, wantID)
 	}
 }
 
@@ -443,9 +445,9 @@ func TestStreamFlow_LLMError(t *testing.T) {
 	}
 
 	saveLogCalled := false
-	deps.saveLog = func(_, _, _, _ string, _ []models.ChatSource, _ []float32) int64 {
+	deps.saveLog = func(_, _, _, _ string, _ []models.ChatSource, _ []float32) string {
 		saveLogCalled = true
-		return 0
+		return ""
 	}
 
 	types, lines := collectEvents(req, deps)
@@ -470,13 +472,13 @@ func TestStreamFlow_LLMError(t *testing.T) {
 		t.Errorf("llm-error: chunk data = %q, want apology text", chunkData)
 	}
 
-	// done data should be 0
-	var logID int64
+	// done data should be empty
+	var logID string
 	if err := eventData(lines, 4, &logID); err != nil {
 		t.Fatalf("llm-error: parse done data: %v", err)
 	}
-	if logID != 0 {
-		t.Errorf("llm-error: done logID = %d, want 0", logID)
+	if logID != "" {
+		t.Errorf("llm-error: done logID = %q, want empty", logID)
 	}
 
 	// saveLog must NOT have been called (we return before saveLog in the error path)
@@ -498,13 +500,13 @@ func TestStreamFlow_EmbedError(t *testing.T) {
 	deps.classify = fakeClassify("tech_support", "")
 	deps.embed = errEmbed
 	saveCalled := false
-	deps.saveLog = func(_, _, _, _ string, _ []models.ChatSource, _ []float32) int64 {
+	deps.saveLog = func(_, _, _, _ string, _ []models.ChatSource, _ []float32) string {
 		saveCalled = true
-		return 0
+		return ""
 	}
 	types, lines := collectEvents(req, deps)
 
-	wantTypes := []string{"status", "chunk", "done"} // searching, apology, done(0)
+	wantTypes := []string{"status", "chunk", "done"} // searching, apology, done(empty)
 	if len(types) != len(wantTypes) {
 		t.Fatalf("embed-error: types %v, want %v", types, wantTypes)
 	}
@@ -513,10 +515,10 @@ func TestStreamFlow_EmbedError(t *testing.T) {
 	if !strings.Contains(chunkData, "ขออภัยครับ") {
 		t.Errorf("embed-error: chunk = %q, want apology", chunkData)
 	}
-	var logID int64
+	var logID string
 	_ = eventData(lines, 2, &logID)
-	if logID != 0 {
-		t.Errorf("embed-error: done logID = %d, want 0", logID)
+	if logID != "" {
+		t.Errorf("embed-error: done logID = %q, want empty", logID)
 	}
 	if saveCalled {
 		t.Error("embed-error: saveLog must not be called (no misleading persist)")
@@ -541,17 +543,18 @@ func TestStreamFlow_FallbackModel(t *testing.T) {
 		onChunk("fallback answer")
 		return "stop", openrouter.Usage{}, nil
 	}
-	deps.saveLog = fixedSaveLog(7)
+	const wantID = "0190a000-0000-7000-8000-000000000007"
+	deps.saveLog = fixedSaveLog(wantID)
 	types, lines := collectEvents(req, deps)
 
-	// Must NOT be the error path: last two events are chunk(answer) then done(7).
+	// Must NOT be the error path: last two events are chunk(answer) then done(id).
 	if types[len(types)-1] != "done" {
 		t.Fatalf("fallback: last type = %q, want done", types[len(types)-1])
 	}
-	var logID int64
+	var logID string
 	_ = eventData(lines, len(lines)-1, &logID)
-	if logID != 7 {
-		t.Errorf("fallback: done logID = %d, want 7 (fallback succeeded)", logID)
+	if logID != wantID {
+		t.Errorf("fallback: done logID = %q, want %q (fallback succeeded)", logID, wantID)
 	}
 	joined := strings.Join(lines, "")
 	if !strings.Contains(joined, "fallback answer") {

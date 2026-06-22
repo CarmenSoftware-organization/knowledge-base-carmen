@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/utils"
@@ -25,11 +26,11 @@ func TestRetrieve_BUIsolation(t *testing.T) {
 	}
 
 	const slugA, slugB = "iso_test_a", "iso_test_b"
-	seedBU := func(slug string) int {
+	seedBU := func(slug string) uuid.UUID {
 		database.DB.Exec(`INSERT INTO public.business_units (name, slug) VALUES (?, ?) ON CONFLICT (slug) DO NOTHING`, strings.ToUpper(slug), slug)
 		id, err := database.BUIDForSlug(slug)
-		if err != nil || id == 0 {
-			t.Fatalf("seed bu %s: id=%d err=%v", slug, id, err)
+		if err != nil || id == uuid.Nil {
+			t.Fatalf("seed bu %s: id=%s err=%v", slug, id, err)
 		}
 		return id
 	}
@@ -46,16 +47,16 @@ func TestRetrieve_BUIsolation(t *testing.T) {
 	emb = utils.NormalizeEmbedding(emb)
 	embStr := utils.Float32SliceToPgVector(emb)
 
-	insert := func(buID int, path, content string) {
-		var docID int64
-		if err := database.DB.Raw(
-			`INSERT INTO public.documents (bu_id, path, title, source, created_at, updated_at)
-			 VALUES (?, ?, ?, 'test', now(), now()) RETURNING id`, buID, path, path).Scan(&docID).Error; err != nil {
+	insert := func(buID uuid.UUID, path, content string) {
+		docID := uuid.Must(uuid.NewV7())
+		if err := database.DB.Exec(
+			`INSERT INTO public.documents (id, bu_id, path, title, source, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, 'test', now(), now())`, docID, buID, path, path).Error; err != nil {
 			t.Fatalf("insert doc: %v", err)
 		}
 		if err := database.DB.Exec(
-			`INSERT INTO public.document_chunks (bu_id, doc_id, chunk_index, content, embedding, created_at)
-			 VALUES (?, ?, 0, ?, ?::vector, now())`, buID, docID, content, embStr).Error; err != nil {
+			`INSERT INTO public.document_chunks (id, bu_id, doc_id, chunk_index, content, embedding, created_at)
+			 VALUES (?, ?, ?, 0, ?, ?::vector, now())`, uuid.Must(uuid.NewV7()), buID, docID, content, embStr).Error; err != nil {
 			t.Fatalf("insert chunk: %v", err)
 		}
 	}
