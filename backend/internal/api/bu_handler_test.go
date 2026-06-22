@@ -57,7 +57,13 @@ func TestProvisionDeprovision_NoSchema(t *testing.T) {
 	// Seed one document, then deprovision and confirm cascade delete.
 	var buID int
 	database.DB.Raw(`SELECT id FROM public.business_units WHERE slug = ?`, slug).Scan(&buID)
-	database.DB.Exec(`INSERT INTO public.documents (bu_id, path, title) VALUES (?, 'd.md', 'D')`, buID)
+	if buID == 0 {
+		t.Fatalf("could not retrieve bu_id for slug %s", slug)
+	}
+	// Requires Task 1 migration: public.documents.bu_id FK with ON DELETE CASCADE.
+	if err := database.DB.Exec(`INSERT INTO public.documents (bu_id, path, title) VALUES (?, 'd.md', 'D')`, buID).Error; err != nil {
+		t.Fatalf("seed document insert failed: %v", err)
+	}
 
 	deprovReq := httptest.NewRequest("POST", "/deprov",
 		strings.NewReader(`{"slug":"prov_test_bu"}`))
