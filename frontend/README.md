@@ -18,7 +18,7 @@ Frontend สำหรับระบบ KB Carmen
 ## Run Local
 
 ```bash
-cd frontend/user
+cd frontend
 npm install
 npm run dev
 ```

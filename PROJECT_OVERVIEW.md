@@ -17,7 +17,7 @@ editor: markdown
                                     ▼
                         ┌───────────────────────┐
                         │  Frontend (Next.js)   │
-                        │  frontend/user        │
+                        │  frontend             │
                         └───────────┬───────────┘
                                     │ HTTPS
                                     ▼
@@ -124,7 +124,7 @@ knowledge-base-carmen/
 │   ├── config/               # YAML tunables (tuning/intents/path_rules/prompts)
 │   ├── migrations/           # numbered .sql files (PL/pgSQL friendly)
 │   └── pkg/                  # github + openrouter clients
-├── frontend/user/            # Next.js App Router
+├── frontend/                 # Next.js App Router
 │   ├── app/                  # routes (KB, FAQ, activity, admin, chat)
 │   ├── components/           # UI primitives + chat widget
 │   ├── lib/                  # API clients, config
@@ -141,7 +141,7 @@ knowledge-base-carmen/
 ## Flow สำคัญ
 
 ### 1. แสดงบทความ KB
-1. Browser เปิด `frontend/user`
+1. Browser เปิด `frontend`
 2. เรียก `/api/wiki/categories?bu=<slug>` → `/api/wiki/content/*` ที่ Go backend
 3. Go backend อ่าน markdown จาก `WIKI_CONTENT_PATH` (เช่น `/repo/contents/<bu>`) + metadata จาก `<bu>.documents`
 4. ส่ง markdown + assets กลับให้ frontend render
