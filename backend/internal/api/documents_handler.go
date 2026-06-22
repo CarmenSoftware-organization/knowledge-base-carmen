@@ -1,8 +1,6 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/middleware"
@@ -30,14 +28,22 @@ func (h *DocumentsHandler) List(c *fiber.Ctx) error {
 	if !security.ValidateSchema(bu) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu parameter"})
 	}
+	buID, err := database.BUIDForSlug(bu)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	if buID == 0 {
+		return c.JSON(fiber.Map{"items": []documentRow{}})
+	}
 	var rows []documentRow
-	sql := fmt.Sprintf(`
+	sql := `
 		SELECT d.id, d.path, d.title, d.source, d.created_at, d.updated_at,
-			(SELECT COUNT(*) FROM %s.document_chunks c WHERE c.document_id = d.id) AS chunk_count
-		FROM %s.documents d
+			(SELECT COUNT(*) FROM public.document_chunks c WHERE c.doc_id = d.id) AS chunk_count
+		FROM public.documents d
+		WHERE d.bu_id = ?
 		ORDER BY d.path ASC, d.id ASC
-	`, bu, bu)
-	err := database.DB.Raw(sql).Scan(&rows).Error
+	`
+	err = database.DB.Raw(sql, buID).Scan(&rows).Error
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

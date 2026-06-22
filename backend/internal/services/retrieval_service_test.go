@@ -26,9 +26,13 @@ func dbAvailable(t *testing.T) {
 
 func TestRetrievalService_ReturnsChunks(t *testing.T) {
 	dbAvailable(t)
+	buID, err := database.BUIDForSlug("carmen")
+	if err != nil || buID == 0 {
+		t.Skipf("BU 'carmen' not found in this DB (id=%d, err=%v)", buID, err)
+	}
 	s := NewRetrievalService()
 	// Use a question with an obvious answer in the seeded 'carmen' BU.
-	rows, err := s.fetchKeyword("carmen", "vendor")
+	rows, err := s.fetchKeyword(buID, "vendor")
 	if err != nil {
 		t.Fatalf("fetchKeyword: %v", err)
 	}

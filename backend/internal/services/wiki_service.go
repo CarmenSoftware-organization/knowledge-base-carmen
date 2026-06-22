@@ -431,8 +431,16 @@ func removeDots(s string) string {
 	return re.ReplaceAllString(s, "$1")
 }
 
-// SearchInContent performs a semantic search using pgvector in a BU's schema.
+// SearchInContent performs a semantic search for a BU's documents (filtered by bu_id).
 func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) {
+	buID, err := database.BUIDForSlug(bu)
+	if err != nil {
+		return nil, err
+	}
+	if buID == 0 {
+		return nil, fmt.Errorf("unknown bu: %q", bu)
+	}
+
 	emb, err := s.embedLLM.Embedding(query)
 	if err != nil {
 		return nil, fmt.Errorf("create embedding: %w", err)
@@ -441,7 +449,7 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 	embStr := utils.Float32SliceToPgVector(emb)
 
 	cfg := config.AppConfig.WikiSearch
-	sql := fmt.Sprintf(`
+	sql := `
         WITH vector_results AS (
             SELECT
                 d.path,
@@ -453,16 +461,16 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
                     WHEN dc.content ILIKE ? THEN 0.3
                     ELSE 0
                 END AS text_boost
-            FROM %s.document_chunks dc
-            JOIN %s.documents d ON dc.document_id = d.id
-            WHERE (dc.embedding <=> ?::vector) < ?
+            FROM public.document_chunks dc
+            JOIN public.documents d ON dc.doc_id = d.id
+            WHERE (dc.embedding <=> ?::vector) < ? AND dc.bu_id = ?
         )
         SELECT path, title, snippet,
                (vector_dist - text_boost) AS final_score
         FROM vector_results
         ORDER BY final_score ASC
         LIMIT ?
-    `, bu, bu)
+    `
 
 	query = removeDots(query)
 
@@ -475,11 +483,12 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 		FinalScore float64
 	}
 	if err := database.DB.Raw(sql,
-		embStr,    // vector compare (SELECT)
-		likeQuery, // title boost
-		likeQuery, // content boost
-		embStr,    // WHERE vector compare
+		embStr,               // vector compare (SELECT)
+		likeQuery,            // title boost
+		likeQuery,            // content boost
+		embStr,               // WHERE vector compare
 		cfg.VectorDistanceMax,
+		buID,
 		cfg.SearchLimit,
 	).Scan(&rows).Error; err != nil {
 		return nil, fmt.Errorf("hybrid search: %w", err)
@@ -513,6 +522,14 @@ func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) 
 		return nil, nil
 	}
 
+	buID, err := database.BUIDForSlug(bu)
+	if err != nil {
+		return nil, err
+	}
+	if buID == 0 {
+		return nil, fmt.Errorf("unknown bu: %q", bu)
+	}
+
 	// Build (d.title ILIKE ? OR dc.content ILIKE ?) OR ... for each term
 	var conditions []string
 	var args []interface{}
@@ -526,15 +543,15 @@ func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) 
 	searchLimit := config.AppConfig.WikiSearch.SearchLimit
 	sql := fmt.Sprintf(`
 		SELECT DISTINCT ON (d.path) d.path, d.title, dc.content AS snippet
-		FROM %s.document_chunks dc
-		JOIN %s.documents d ON dc.document_id = d.id
-		WHERE %s
+		FROM public.document_chunks dc
+		JOIN public.documents d ON dc.doc_id = d.id
+		WHERE %s AND dc.bu_id = ?
 		ORDER BY d.path, CASE WHEN d.title ILIKE ? THEN 0 ELSE 1 END
 		LIMIT ?
-	`, bu, bu, whereClause)
+	`, whereClause)
 
-	// Add primary term for ORDER BY (use first term) and limit
-	args = append(args, "%"+terms[0]+"%", searchLimit)
+	// Add buID (for AND dc.bu_id = ?), primary term for ORDER BY (use first term), and limit
+	args = append(args, buID, "%"+terms[0]+"%", searchLimit)
 
 	var rows []struct {
 		Path    string
