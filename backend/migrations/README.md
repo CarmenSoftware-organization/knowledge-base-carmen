@@ -45,15 +45,9 @@ docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
 
 ---
 
-## วิธีสำรอง: Go binary ใน container `backend`
+## อย่าใช้ Go binary `./server migrate` กับไฟล์นี้
 
-เหมาะกับไฟล์ที่คำสั่งสั้น ไม่มี `$$` ซับซ้อน:
-
-```bash
-docker compose --env-file .env.docker exec backend ./server migrate migrations/0001_init_documents.sql
-```
-
-ค่าเริ่มต้นของคำสั่ง `migrate` โดยไม่ระบุ path ชี้ไปที่ `migrations/0004_chat_history.sql` — ควรระบุ path ให้ชัดทุกครั้ง
+`0001_init_schema.sql` มี PL/pgSQL (`DO $$ … $$`, ฟังก์ชัน, trigger) — ตัว `./server migrate` ของ Go แยกคำสั่งด้วย `;` จะตัดบล็อกเหล่านี้ผิดและทำให้คอร์รัปต์ ใช้ `psql` ตามวิธีแนะนำด้านบนเท่านั้น
 
 ---
 
