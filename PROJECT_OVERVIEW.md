@@ -109,7 +109,7 @@ editor: markdown
 ## โครงสร้างโฟลเดอร์ (repo)
 
 ```
-kb-carmen/
+knowledge-base-carmen/
 ├── backend/                  # Go Fiber API (wiki, FAQ, indexing, native RAG chat)
 │   ├── cmd/server/main.go    # entry point + CLI ops (migrate/reindex/reset)
 │   ├── internal/
