@@ -45,7 +45,7 @@ func (idx *IntentIndex) Match(queryEmb []float32, haveHistory bool) (IntentMatch
 	if len(idx.matrix) == 0 {
 		return IntentMatch{}, false
 	}
-	q := utils.NormalizeEmbedding(queryEmb)
+	q := utils.NormalizeEmbedding(utils.TruncateEmbedding(queryEmb))
 
 	type scored struct {
 		label string
@@ -73,20 +73,21 @@ func (idx *IntentIndex) Match(queryEmb []float32, haveHistory bool) (IntentMatch
 	}
 	if best.score >= idx.tuning.SoftZoneMin {
 		votes := map[string]int{}
+		// firstSeen tracks first-appearance order (by descending score) for each label.
+		// Python tie-breaks by the label whose highest-scoring example appeared first.
+		var firstSeen []string
 		for _, s := range top {
 			if s.score >= idx.tuning.SoftZoneMin {
+				if _, seen := votes[s.label]; !seen {
+					firstSeen = append(firstSeen, s.label)
+				}
 				votes[s.label]++
 			}
 		}
 		if len(votes) > 0 {
 			topCat, topCnt := "", 0
-			// deterministic: highest count, tie-break by label
-			labels := make([]string, 0, len(votes))
-			for l := range votes {
-				labels = append(labels, l)
-			}
-			sort.Strings(labels)
-			for _, l := range labels {
+			// deterministic: highest count, tie-break by first-appearance (highest score wins)
+			for _, l := range firstSeen {
 				if votes[l] > topCnt {
 					topCnt, topCat = votes[l], l
 				}
@@ -111,7 +112,7 @@ func (idx *IntentIndex) best(queryEmb []float32) (string, float64) {
 	if len(idx.matrix) == 0 {
 		return "", 0
 	}
-	q := utils.NormalizeEmbedding(queryEmb)
+	q := utils.NormalizeEmbedding(utils.TruncateEmbedding(queryEmb))
 	bestLabel, bestScore := "", -1.0
 	for i, row := range idx.matrix {
 		if sc := dot(row, q); sc > bestScore {

@@ -19,7 +19,7 @@ type IntentResult struct {
 	CannedResponse  string
 	LLMInputTokens  int
 	LLMOutputTokens int
-	EmbedTokens     int    // placeholder; embedding client does not yet return token counts
+	EmbedTokens     int    // prompt-token count from the intent embedding call
 	Source          string
 }
 
