@@ -43,7 +43,7 @@ npm test
 
 ## Integration หลักกับ Backend
 
-เรียก API ผ่าน Go backend เป็นหลัก (Go จะ proxy `/api/chat/*` ไป Python chatbot ให้):
+เรียก API ผ่าน Go backend เป็นหลัก (Go ให้บริการ `/api/chat/*` แบบ native RAG ในตัว):
 - Wiki: `/api/wiki/*`
 - Chat: `/api/chat/ask`, `/api/chat/stream`, `/api/chat/feedback/*`
 - Activity: `/api/activity/*`
