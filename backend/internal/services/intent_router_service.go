@@ -18,7 +18,7 @@ type IntentResult struct {
 	CannedResponse  string
 	LLMInputTokens  int
 	LLMOutputTokens int
-	EmbedTokens     int
+	EmbedTokens     int    // placeholder; embedding client does not yet return token counts
 	Source          string
 }
 
@@ -36,7 +36,17 @@ var intentKeywords = []string{
 	"OUT_OF_SCOPE", "CONFUSION", "TECH_SUPPORT",
 }
 
-var intentSplit = regexp.MustCompile(`[\s\n.,!?\-]+`)
+var intentSplit = regexp.MustCompile(`[\s.,!?-]+`)
+
+func defaultIntentTuning() chatconfig.IntentTuning {
+	return chatconfig.IntentTuning{
+		DefaultThreshold: 0.90, SoftZoneMin: 0.75, SoftZoneVotes: 2,
+		CategoryThresholds: map[string]float64{
+			"greeting": 0.90, "thanks": 0.90, "company_info": 0.82,
+			"capabilities": 0.88, "out_of_scope": 0.88, "confusion": 0.92,
+		},
+	}
+}
 
 // ParseIntentWord extracts the first recognized intent category word from an
 // LLM reply. Splits on whitespace/punctuation, uppercases each token, and
@@ -89,19 +99,7 @@ ONE word:`, hint, utils.SanitizeForPrompt(message), ctx)
 // regex and LLM tiers still work.
 func NewIntentRouterService() *IntentRouterService {
 	dir := configDir() // from retrieval_service.go (CHAT_CONFIG_DIR aware)
-	tuning := chatconfig.IntentTuning{
-		DefaultThreshold: 0.90,
-		SoftZoneMin:      0.75,
-		SoftZoneVotes:    2,
-		CategoryThresholds: map[string]float64{
-			"greeting":     0.90,
-			"thanks":       0.90,
-			"company_info": 0.82,
-			"capabilities": 0.88,
-			"out_of_scope": 0.88,
-			"confusion":    0.92,
-		},
-	}
+	tuning := defaultIntentTuning()
 	if t, err := chatconfig.LoadTuning(dir); err == nil {
 		tuning = t.Intent
 	} else {
@@ -114,15 +112,9 @@ func NewIntentRouterService() *IntentRouterService {
 
 	client := openrouter.NewClient()
 	s := &IntentRouterService{
-		tuning:   tuning,
-		embedOne: client.Embedding,
-		classifyLLM: func(prompt string) (string, int, int, error) {
-			raw, in, out, err := client.ClassifyIntent(prompt)
-			if err != nil {
-				return "", 0, 0, err
-			}
-			return raw, in, out, nil
-		},
+		tuning:      tuning,
+		embedOne:    client.Embedding,
+		classifyLLM: client.ClassifyIntent,
 	}
 
 	if intents, err := chatconfig.LoadIntents(dir); err != nil {
