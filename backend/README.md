@@ -85,7 +85,7 @@ go run cmd/server/main.go reset index <bu>|all      # truncate <bu>.documents/do
 go run cmd/server/main.go reset all                 # truncate public activity/chat tables
 ```
 
-> ⚠️ **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$` เช่น `0002_setup_multi_bu.sql`) — Go binary ตัด `;` ผิด ใช้ `psql` หรือ `scripts/migrate-docker.sh` ตามลำดับใน `migrations/README.md`
+> ⚠️ **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$` เช่น `0001_init_schema.sql`) — Go binary ตัด `;` ผิด ใช้ `psql` หรือ `scripts/migrate-docker.sh` ตามลำดับใน `migrations/README.md`
 
 ## Auto-provision (GitHub Actions)
 
