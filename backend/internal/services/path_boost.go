@@ -57,6 +57,12 @@ func likeMatch(subject, pattern string) bool {
 	}
 }
 
+// LikeMatch reports whether subject matches a SQL-LIKE glob pattern ('%' wildcard),
+// case-insensitively. Supports %x%, x%, %x, and exact x.
+func LikeMatch(subject, pattern string) bool {
+	return likeMatch(strings.ToLower(subject), strings.ToLower(pattern))
+}
+
 func containsInOrder(subject string, frags []string) bool {
 	idx := 0
 	for _, f := range frags {
