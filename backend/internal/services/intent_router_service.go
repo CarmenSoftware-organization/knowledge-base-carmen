@@ -27,7 +27,7 @@ type IntentResult struct {
 type IntentRouterService struct {
 	idx         *IntentIndex
 	tuning      chatconfig.IntentTuning
-	embedOne    func(string) ([]float32, error)
+	embedOne    func(string) ([]float32, int, error)
 	classifyLLM func(prompt string) (intent string, inTok, outTok int, err error)
 }
 
@@ -113,7 +113,7 @@ func NewIntentRouterService() *IntentRouterService {
 	client := openrouter.NewClient()
 	s := &IntentRouterService{
 		tuning:      tuning,
-		embedOne:    client.Embedding,
+		embedOne:    client.EmbeddingWithTokens,
 		classifyLLM: client.ClassifyIntent,
 	}
 
@@ -140,7 +140,8 @@ func (s *IntentRouterService) Classify(message, lang string, haveHistory bool) I
 	var vecBestScore float64
 	embedTokens := 0
 	if s.idx != nil && s.embedOne != nil {
-		if emb, err := s.embedOne(message); err == nil {
+		if emb, tok, err := s.embedOne(message); err == nil {
+			embedTokens = tok
 			if m, ok := s.idx.Match(emb, haveHistory); ok {
 				return IntentResult{
 					Type:           m.Intent,

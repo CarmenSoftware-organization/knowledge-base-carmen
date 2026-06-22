@@ -54,11 +54,34 @@ func TestClassify_VectorHardTier(t *testing.T) {
 			tuning: intentTuning(),
 			canned: map[string]map[string]string{"thanks": {"th": "ยินดีค่ะ"}},
 		},
-		embedOne: func(string) ([]float32, error) { return unit(1, 0), nil },
+		embedOne: func(string) ([]float32, int, error) { return unit(1, 0), 7, nil },
 	}
 	r := s.Classify("appreciate the help mate", "th", false)
 	if r.Type != "thanks" || r.Source != "vector_hard" || r.CannedResponse != "ยินดีค่ะ" {
 		t.Errorf("vector hard tier = %+v", r)
+	}
+	if r.EmbedTokens != 7 {
+		t.Errorf("EmbedTokens = %d, want 7", r.EmbedTokens)
+	}
+}
+
+func TestClassify_VectorSoftTier(t *testing.T) {
+	s := &IntentRouterService{
+		tuning: intentTuning(),
+		idx: &IntentIndex{
+			matrix: [][]float32{unit(4, 3), unit(4, 3.2), unit(0, 1)},
+			labels: []string{"thanks", "thanks", "greeting"},
+			tuning: intentTuning(),
+			canned: map[string]map[string]string{"thanks": {"th": "ยินดีค่ะ"}},
+		},
+		embedOne: func(string) ([]float32, int, error) { return unit(1, 0), 5, nil },
+	}
+	r := s.Classify("appreciate that", "th", false)
+	if r.Type != "thanks" || r.Source != "vector_soft" {
+		t.Errorf("vector soft tier = %+v", r)
+	}
+	if r.EmbedTokens != 5 {
+		t.Errorf("EmbedTokens = %d, want 5", r.EmbedTokens)
 	}
 }
 

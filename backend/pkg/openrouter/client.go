@@ -240,7 +240,8 @@ func (c *Client) StreamAnswer(ctx context.Context, model string, messages []Chat
 	return finishReason, usage, nil
 }
 
-func (c *Client) Embedding(text string) ([]float32, error) {
+// EmbeddingWithTokens returns the embedding plus the prompt-token count from the response usage.
+func (c *Client) EmbeddingWithTokens(text string) ([]float32, int, error) {
 	reqBody := EmbeddingsRequest{
 		Model: c.EmbedModel,
 		Input: []string{text},
@@ -248,12 +249,12 @@ func (c *Client) Embedding(text string) ([]float32, error) {
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
+		return nil, 0, fmt.Errorf("marshal request: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", strings.TrimRight(c.APIBase, "/")+"/embeddings", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return nil, 0, fmt.Errorf("create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -263,29 +264,34 @@ func (c *Client) Embedding(text string) ([]float32, error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("send request: %w", err)
+		return nil, 0, fmt.Errorf("send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
+		return nil, 0, fmt.Errorf("read response: %w", err)
 	}
 
 	if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("openrouter error %d: %s", resp.StatusCode, string(body))
+		return nil, 0, fmt.Errorf("openrouter error %d: %s", resp.StatusCode, string(body))
 	}
 
 	var res EmbeddingsResponse
 	if err := json.Unmarshal(body, &res); err != nil {
-		return nil, fmt.Errorf("unmarshal response: %w", err)
+		return nil, 0, fmt.Errorf("unmarshal response: %w", err)
 	}
 
 	if len(res.Data) == 0 {
-		return nil, fmt.Errorf("empty embedding response")
+		return nil, 0, fmt.Errorf("empty embedding response")
 	}
 
-	return res.Data[0].Embedding, nil
+	return res.Data[0].Embedding, res.Usage.PromptTokens, nil
+}
+
+func (c *Client) Embedding(text string) ([]float32, error) {
+	v, _, err := c.EmbeddingWithTokens(text)
+	return v, err
 }
 
 // EmbeddingBatch embeds multiple texts in a single request, returning vectors
