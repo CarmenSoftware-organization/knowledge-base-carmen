@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 )
@@ -25,18 +26,21 @@ func TestIndexing_WritesPublicTables(t *testing.T) {
 	const slug = "idx_test_bu"
 	database.DB.Exec(`INSERT INTO public.business_units (name, slug) VALUES ('IDX','idx_test_bu') ON CONFLICT (slug) DO NOTHING`)
 	buID, err := database.BUIDForSlug(slug)
-	if err != nil || buID == 0 {
-		t.Fatalf("seed bu: id=%d err=%v", buID, err)
+	if err != nil || buID == uuid.Nil {
+		t.Fatalf("seed bu: id=%s err=%v", buID, err)
 	}
 	t.Cleanup(func() { database.DB.Exec(`DELETE FROM public.business_units WHERE slug = ?`, slug) })
 
-	upsert := func(title string) int64 {
-		var id int64
+	// Mirrors indexSingle: supply a fresh v7 id in VALUES but KEEP RETURNING id so
+	// a conflict returns the pre-existing row id (proving in-place update).
+	upsert := func(title string) uuid.UUID {
+		id := uuid.Must(uuid.NewV7())
+		// Row().Scan so the uuid sql.Scanner is honored (GORM Raw().Scan mishandles [16]byte).
 		err := database.DB.Raw(
-			`INSERT INTO public.documents (bu_id, path, title, source, created_at, updated_at)
-			 VALUES (?, ?, ?, 'wiki', now(), now())
+			`INSERT INTO public.documents (id, bu_id, path, title, source, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, 'wiki', now(), now())
 			 ON CONFLICT (bu_id, path) DO UPDATE SET title = EXCLUDED.title, updated_at = now()
-			 RETURNING id`, buID, "doc.md", title).Scan(&id).Error
+			 RETURNING id`, id, buID, "doc.md", title).Row().Scan(&id)
 		if err != nil {
 			t.Fatalf("upsert: %v", err)
 		}
@@ -45,7 +49,7 @@ func TestIndexing_WritesPublicTables(t *testing.T) {
 	id1 := upsert("first")
 	id2 := upsert("second") // same (bu_id, path) → must update, not duplicate
 	if id1 != id2 {
-		t.Fatalf("ON CONFLICT (bu_id, path) did not update in place: %d vs %d", id1, id2)
+		t.Fatalf("ON CONFLICT (bu_id, path) did not update in place: %s vs %s", id1, id2)
 	}
 
 	var count int

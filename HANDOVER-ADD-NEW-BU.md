@@ -98,7 +98,9 @@ VALUES ('ACME', 'acme', 'Wiki / KB documents for ACME')
 ON CONFLICT (slug) DO NOTHING;
 ```
 
-ตาราง `public.documents` และ `public.document_chunks` เป็นตารางร่วม — ไม่ต้องสร้าง schema แยกหรือเรียก `create_bu_tables()`; ข้อมูลของ BU ใหม่จะถูก insert โดยใช้ `bu_id` ที่ได้จาก record ข้างต้นโดยอัตโนมัติ
+`id` จะเป็น UUID ที่ DB สร้างให้อัตโนมัติ (`DEFAULT gen_random_uuid()`) หรือ app สร้างด้วย `uuid.NewV7()` — ไม่ต้องระบุเอง
+
+ตาราง `public.documents` และ `public.document_chunks` เป็นตารางร่วม — ไม่ต้องสร้าง schema แยกหรือเรียก `create_bu_tables()`; ข้อมูลของ BU ใหม่จะถูก insert โดยใช้ `bu_id` (UUID) ที่ได้จาก record ข้างต้นโดยอัตโนมัติ
 
 ### 3.2 สร้างโครงสร้าง content
 
@@ -315,7 +317,7 @@ contents/acme/
 
 ## 7) เช็กลิสต์ก่อนส่งงาน/สอนงาน
 
-- [ ] เพิ่ม BU ใน `public.business_units` แล้ว (ตาราง documents/chunks เป็น public tables ร่วม ไม่ต้องสร้าง schema แยก)
+- [ ] เพิ่ม BU ใน `public.business_units` แล้ว (id เป็น UUID, ตาราง documents/chunks เป็น public tables ร่วม แยกด้วย `bu_id` UUID, ไม่ต้องสร้าง schema แยก)
 - [ ] มี `contents/<slug>/index.md` แล้ว
 - [ ] มีบทความ `.md` เปิดอ่านได้จริง
 - [ ] รูปในบทความโหลดได้ (`/wiki-assets/...` หรือ relative path ถูก)

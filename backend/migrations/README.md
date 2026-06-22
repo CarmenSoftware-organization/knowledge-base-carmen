@@ -26,7 +26,7 @@ docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db -
 
 ---
 
-## Schema — ลำดับไฟล์ (`0001` → `0002`, embedding **2000**)
+## Schema — ลำดับไฟล์ (`0001` → `0002` → `0003`, embedding **2000**)
 
 DB ใหม่รันตามลำดับ (idempotent, รันซ้ำได้):
 
@@ -37,15 +37,19 @@ docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
   -v ON_ERROR_STOP=1 < backend/migrations/0001_init_schema.sql
 docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
   -v ON_ERROR_STOP=1 < backend/migrations/0002_migrate_per_bu_to_public.sql
+docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
+  -v ON_ERROR_STOP=1 < backend/migrations/0003_convert_ids_to_uuid.sql
 ```
 
-**`0001_init_schema.sql`** — สร้าง end-state ทั้งหมด: extension `vector`/`pgcrypto`, `public.business_units` (+ seed carmen/blueledgers), ตารางร่วม `public.documents`/`public.document_chunks` (keyed by `bu_id`, `VECTOR(2000)` + ivfflat + GIN FTS index), `public.chat_history` (+ trigger/`purge_expired_chat_history()`/`metrics`), `public.activity_logs`, และตาราง `faq_*`.
+**`0001_init_schema.sql`** — สร้าง end-state ทั้งหมด: extension `vector`/`pgcrypto`, `public.business_units` (+ seed carmen/blueledgers), ตารางร่วม `public.documents`/`public.document_chunks` (keyed by `bu_id`, `VECTOR(2000)` + ivfflat + GIN FTS index), `public.chat_history` (+ trigger/`purge_expired_chat_history()`/`metrics`), `public.activity_logs`, และตาราง `faq_*`. **UUID-native**: ทุก PK เป็น `UUID PRIMARY KEY DEFAULT gen_random_uuid()` และทุก FK (`bu_id`, `doc_id`, ฯลฯ) เป็น `UUID` — DB ใหม่ได้ UUID ทันที
 
 **`0002_migrate_per_bu_to_public.sql`** — (one-time, idempotent) คัดลอกข้อมูลจาก schema เก่าแบบ per-BU เข้า `public.documents`/`public.document_chunks` แล้ว drop schema เก่าทิ้ง; ปลอดภัย (no-op) บน DB ใหม่ที่ไม่มี schema เก่า
 
+**`0003_convert_ids_to_uuid.sql`** — (one-time, after `0001`+`0002`) แปลง id/FK จาก INT เป็น UUID สำหรับ DB ที่สร้างก่อนจะ UUID-native; ทำงาน 3 phase (FK remap แบบ atomic); guarded — no-op ถ้า column เป็น UUID แล้ว; รันบน DB ใหม่ที่ UUID-native อยู่แล้วก็ปลอดภัย (ข้ามการแปลงอัตโนมัติ)
+
 - **มิติ = 2000** ตรงกับ `VECTOR_DIMENSION` ใน `render.yaml` — ตั้ง `VECTOR_DIMENSION=2000` ให้ตรง
-- BU ใหม่ provision ตอน runtime โดย INSERT แถวใน `public.business_units` (เอกสาร/chunk เป็นตารางร่วมใน `public` แยกด้วย `bu_id`)
-- ไฟล์ migration เดิม (0001–0012) ถูกยุบรวมเป็นไฟล์นี้แล้ว; ใช้กับ **DB ใหม่** (DB เดิมที่ migrate แล้วไม่ต้องรันซ้ำ)
+- BU ใหม่ provision ตอน runtime โดย INSERT แถวใน `public.business_units` (id เป็น UUID, เอกสาร/chunk เป็นตารางร่วมใน `public` แยกด้วย `bu_id` ซึ่งเป็น UUID เช่นกัน)
+- ไฟล์ migration เดิม (0001–0012) ถูกยุบรวมเป็นไฟล์นี้แล้ว; ใช้กับ **DB ใหม่** (DB เดิมที่ migrate ด้วย 0001+0002 แล้ว ไม่ต้องรัน 0001/0002 ซ้ำ — แต่ต้องรัน 0003 เพื่อแปลง id เป็น UUID)
 
 ---
 

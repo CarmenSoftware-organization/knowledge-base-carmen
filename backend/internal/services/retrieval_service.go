@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/utils"
@@ -62,7 +63,7 @@ func (s *RetrievalService) Retrieve(bu, question string, emb []float32) ([]Retri
 	if err != nil {
 		return nil, err
 	}
-	if buID == 0 {
+	if buID == uuid.Nil {
 		return nil, fmt.Errorf("unknown bu: %q", bu)
 	}
 	embStr := utils.Float32SliceToPgVector(utils.TruncateEmbedding(emb))
@@ -87,7 +88,7 @@ func (s *RetrievalService) Retrieve(bu, question string, emb []float32) ([]Retri
 //   - strict < on cosine distance (not <=)
 //   - excludes index.md files
 //   - LIMITs to fetch_k
-func (s *RetrievalService) fetchVector(buID int, embStr string) ([]ScoredRow, error) {
+func (s *RetrievalService) fetchVector(buID uuid.UUID, embStr string) ([]ScoredRow, error) {
 	const query = `
 SELECT d.path, d.title, dc.content, (dc.embedding <=> CAST(? AS vector)) AS dist
 FROM public.document_chunks dc
@@ -109,7 +110,7 @@ LIMIT ?
 //   - NO index.md exclusion (intentionally different from vector query)
 //   - ts_rank_cd for ranking
 //   - LIMITs to fetch_k
-func (s *RetrievalService) fetchKeyword(buID int, question string) ([]ScoredRow, error) {
+func (s *RetrievalService) fetchKeyword(buID uuid.UUID, question string) ([]ScoredRow, error) {
 	const query = `
 SELECT d.path, d.title, dc.content
 FROM public.document_chunks dc

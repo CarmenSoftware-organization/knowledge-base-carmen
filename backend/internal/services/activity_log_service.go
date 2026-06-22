@@ -3,6 +3,7 @@ package services
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/models"
 	"gorm.io/gorm"
@@ -16,7 +17,7 @@ func NewActivityLogService() *ActivityLogService {
 
 // Log records a new activity in the system
 func (s *ActivityLogService) Log(buSlug string, userID string, action string, category string, details interface{}, userAgent string) error {
-	var buID *uint
+	var buID *uuid.UUID
 	if buSlug != "" {
 		var bu models.BusinessUnit
 		if err := database.DB.Where("slug = ?", buSlug).First(&bu).Error; err == nil {
@@ -26,6 +27,7 @@ func (s *ActivityLogService) Log(buSlug string, userID string, action string, ca
 	}
 
 	logEntry := models.ActivityLog{
+		ID:        uuid.Must(uuid.NewV7()),
 		BUID:      buID,
 		UserID:    userID,
 		Action:    action,
@@ -102,7 +104,7 @@ type SummaryEntry struct {
 // GetMonthlySummary returns a summary of activities grouped by month
 func (s *ActivityLogService) GetMonthlySummary(buSlug string, year int) ([]SummaryEntry, error) {
 	var results []SummaryEntry
-	
+
 	query := database.DB.Table("public.activity_logs").
 		Select("TO_CHAR(timestamp, 'YYYY-MM') as period, action, category, count(*) as count").
 		Group("period, action, category").
@@ -111,7 +113,7 @@ func (s *ActivityLogService) GetMonthlySummary(buSlug string, year int) ([]Summa
 	if buSlug != "" {
 		query = query.Joins("JOIN public.business_units bu ON bu.id = activity_logs.bu_id").Where("bu.slug = ?", buSlug)
 	}
-	
+
 	if year > 0 {
 		query = query.Where("EXTRACT(YEAR FROM timestamp) = ?", year)
 	}
@@ -123,7 +125,7 @@ func (s *ActivityLogService) GetMonthlySummary(buSlug string, year int) ([]Summa
 // GetYearlySummary returns a summary of activities grouped by year
 func (s *ActivityLogService) GetYearlySummary(buSlug string) ([]SummaryEntry, error) {
 	var results []SummaryEntry
-	
+
 	query := database.DB.Table("public.activity_logs").
 		Select("EXTRACT(YEAR FROM timestamp)::text as period, action, category, count(*) as count").
 		Group("period, action, category").

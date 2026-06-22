@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/nlp"
@@ -437,7 +438,7 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	if buID == 0 {
+	if buID == uuid.Nil {
 		return nil, fmt.Errorf("unknown bu: %q", bu)
 	}
 
@@ -483,10 +484,10 @@ func (s *WikiService) SearchInContent(bu, query string) ([]SearchResult, error) 
 		FinalScore float64
 	}
 	if err := database.DB.Raw(sql,
-		embStr,               // vector compare (SELECT)
-		likeQuery,            // title boost
-		likeQuery,            // content boost
-		embStr,               // WHERE vector compare
+		embStr,    // vector compare (SELECT)
+		likeQuery, // title boost
+		likeQuery, // content boost
+		embStr,    // WHERE vector compare
 		cfg.VectorDistanceMax,
 		buID,
 		cfg.SearchLimit,
@@ -526,7 +527,7 @@ func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	if buID == 0 {
+	if buID == uuid.Nil {
 		return nil, fmt.Errorf("unknown bu: %q", bu)
 	}
 

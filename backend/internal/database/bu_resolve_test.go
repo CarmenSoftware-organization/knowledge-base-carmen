@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/config"
 )
 
@@ -23,20 +24,24 @@ func mustConnect(t *testing.T) {
 func TestBUIDForSlug_KnownAndUnknown(t *testing.T) {
 	mustConnect(t)
 
+	// Seed a known BU so the resolver has something to find (fresh test DBs have
+	// no BU rows). ON CONFLICT keeps an existing carmen row untouched.
+	DB.Exec(`INSERT INTO public.business_units (name, slug) VALUES ('Carmen', 'carmen') ON CONFLICT (slug) DO NOTHING`)
+
 	id, err := BUIDForSlug("carmen")
 	if err != nil {
 		t.Fatalf("BUIDForSlug(carmen) error: %v", err)
 	}
-	if id <= 0 {
-		t.Fatalf("expected positive id for carmen, got %d", id)
+	if id == uuid.Nil {
+		t.Fatalf("expected non-nil id for carmen, got %s", id)
 	}
 
 	missing, err := BUIDForSlug("no_such_bu_xyz")
 	if err != nil {
 		t.Fatalf("unknown slug should not error, got: %v", err)
 	}
-	if missing != 0 {
-		t.Fatalf("expected 0 for unknown slug, got %d", missing)
+	if missing != uuid.Nil {
+		t.Fatalf("expected uuid.Nil for unknown slug, got %s", missing)
 	}
 
 	if _, err := BUIDForSlug("bad-slug!!"); err == nil {
