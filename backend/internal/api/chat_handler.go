@@ -76,6 +76,12 @@ func (h *ChatHandler) Stream(c *fiber.Ctx) error {
 		req.Model,
 		h.streamPrompts,
 	)
+	// reqCtx (*fasthttp.RequestCtx) is passed into streamFlow as the context.Context
+	// for the LLM call. This is safe: fasthttp runs the body-stream writer in a
+	// goroutine whose pipe the server drains synchronously before releasing the
+	// ctx, so reqCtx stays live for the whole stream. It also gives us request-
+	// scoped cancellation — when the client disconnects, reqCtx.Done() fires and
+	// the in-flight LLM stream is cancelled (parity with Python's is_disconnected).
 	reqCtx := c.Context()
 	reqCtx.SetBodyStreamWriter(func(w *bufio.Writer) {
 		streamFlow(reqCtx, req, deps, func(line string) {
