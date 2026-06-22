@@ -1,6 +1,6 @@
 # คู่มือการใช้งานระบบ KB-Carmen (ฉบับภาษาไทย)
 
-เอกสารนี้สรุปการทำงานทั้งระบบของโปรเจค `kb-carmen` แบบ end-to-end:
+เอกสารนี้สรุปการทำงานทั้งระบบของโปรเจค `knowledge-base-carmen` แบบ end-to-end:
 - Frontend (เว็บ Knowledge Base + Chat Widget)
 - Backend (Go API + native RAG chatbot)
 - ขั้นตอนเพิ่ม/ซิงก์ข้อมูลไป Wiki.js และ PostgreSQL

@@ -20,7 +20,7 @@ SOURCE_ROOTS = [
     Path("/Users/sunshine/Documents/Carmen Cloud/GL"),
 ]
 
-TARGET_FAQ_ROOT = Path("/Users/sunshine/Documents/GitHub/kb-carmen/contents/carmen/faq")
+TARGET_FAQ_ROOT = Path("/Users/sunshine/Documents/GitHub/knowledge-base-carmen/contents/carmen/faq")
 TARGET_IMAGES_ROOT = TARGET_FAQ_ROOT / "_images"
 
 DEFAULT_TAGS = "carmen,faq,documentation"
