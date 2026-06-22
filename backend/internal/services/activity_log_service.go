@@ -27,6 +27,7 @@ func (s *ActivityLogService) Log(buSlug string, userID string, action string, ca
 	}
 
 	logEntry := models.ActivityLog{
+		ID:        uuid.Must(uuid.NewV7()),
 		BUID:      buID,
 		UserID:    userID,
 		Action:    action,
