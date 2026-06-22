@@ -44,7 +44,9 @@ Consolidate the two runtime services into one. Reimplement the Python chatbot's 
 **Key technical findings:**
 - FTS uses `to_tsvector('simple', dc.content)` computed at query time — Go can run identical SQL; **no schema migration required** (a GIN index is a perf-only addition).
 - RRF is done in app code (`1/(k+rank)` + path boost) — straightforward to port.
-- NDJSON protocol: `{"type":"chunk","data":...}` → `{"type":"sources","data":[...]}` → `{"type":"done","data":"<log_id>"}`.
+- NDJSON protocol (richer than first surveyed — confirmed by deep read of `chat_service.py`): `status` (analyzing/searching/composing) → `sources` → `chunk*` → `suggestions` (extracted from a trailing `[SUGGESTIONS]` tag) → `done` (`data` = `log_id` string). Quick-reply and budget-exceeded cases emit `chunk` + `done`.
+- The pipeline uses **multiple LLM models**: a chat model, a **separate intent model**, an embed model, plus **query rewrite** (when history exists) and **translate** (non-Thai → Thai) steps. Intent routing is **3-tier**: regex fast-track → vector similarity (with soft-zone voting) → LLM fallback.
+- Retrieval details to preserve: Thai detection (≥15% Thai chars → skip FTS), `d.path NOT LIKE '%index.md'`, `top_k=4` / `fetch_k=20` / `max_distance=0.45` / `rrf_k=60` / `path_boost_rrf=0.02`, image-path resolution to `/images/...`.
 
 ## Target End-State
 
