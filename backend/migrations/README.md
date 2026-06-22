@@ -82,7 +82,7 @@ docker compose --env-file .env.docker exec backend ./server migrate migrations/0
 
 - **ไม่แนะนำ** ใช้ `preDeployCommand: ./server migrate` แบบรันทุกครั้งที่ deploy — บางไฟล์ (เช่น `0002`) มี PL/pgSQL ที่ binary แยกด้วย `;` ไม่ปลอดภัย
 - รัน migration **ครั้งแรก** ผ่าน **Render Shell** ของ service `carmen-backend` หรือใช้ **PSQL** จากหน้า Database (เมนู Connect) แล้วรันคำสั่งจากไฟล์ `.sql` ตามลำดับในตารางด้านบน
-- หลังได้ URL ของ `carmen-backend` และ `carmen-chatbot` แล้ว ตั้ง `PYTHON_CHATBOT_URL` / `GO_BACKEND_URL` ใน Dashboard แล้ว redeploy (ดูคอมเมนต์ใน `render.yaml`)
+- ตั้งค่า LLM env (`LLM_API_KEY`/`LLM_API_BASE`/`LLM_CHAT_MODEL`/`LLM_INTENT_MODEL`) บน `carmen-backend` ใน Dashboard แล้ว redeploy — ดูคอมเมนต์ใน `render.yaml` (chat ทำงาน native ใน Go backend ไม่มี service Python แยกแล้ว)
 
 ## Vercel (Frontend)
 

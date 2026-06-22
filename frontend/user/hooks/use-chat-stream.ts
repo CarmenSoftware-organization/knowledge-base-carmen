@@ -15,7 +15,7 @@ function summarizeProxyOrHtmlError(raw: string, httpStatus: number): string {
   const t = raw.trim();
   if (!t) {
     return httpStatus === 502
-      ? "502 Bad Gateway — backend หรือ chatbot บน Render ไม่ตอบชั่วคราว (deploy, sleep, หรือ PYTHON_CHATBOT_URL ผิด)"
+      ? "502 Bad Gateway — Go backend บน Render ไม่ตอบชั่วคราว (deploy หรือ sleep); ลองใหม่ใน 1–2 นาที"
       : `HTTP ${httpStatus}`;
   }
   const looksHtml =
@@ -24,7 +24,7 @@ function summarizeProxyOrHtmlError(raw: string, httpStatus: number): string {
     (t.includes("<head") && t.includes("<body"));
   if (looksHtml) {
     if (httpStatus === 502 || /\b502\b|Bad Gateway/i.test(t)) {
-      return "502 Bad Gateway — proxy ไม่ถึง Go หรือ Python chatbot; ลองใหม่ใน 1–2 นาที หรือเช็ค Render Dashboard (service + PYTHON_CHATBOT_URL)";
+      return "502 Bad Gateway — ไม่ถึง Go backend; ลองใหม่ใน 1–2 นาที หรือเช็ค Render Dashboard (service)";
     }
     if (httpStatus === 503 || /\b503\b/i.test(t)) {
       return "503 — บริการไม่พร้อมชั่วคราว; ลองใหม่ในไม่กี่นาที";
