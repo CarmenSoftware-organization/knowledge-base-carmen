@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bufio"
 	"os"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/proxy"
+	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/constants"
 	"github.com/new-carmen/backend/internal/models"
@@ -22,10 +24,13 @@ type ChatHandler struct {
 	historyService *services.ChatHistoryService
 	retrieval      *services.RetrievalService
 	intentRouter   *services.IntentRouterService
+	budget         *services.DailyBudget
+	rewrite        *services.QueryRewriteService
+	streamPrompts  chatconfig.Prompts
 }
 
 func NewChatHandler() *ChatHandler {
-	return &ChatHandler{
+	h := &ChatHandler{
 		llm:            openrouter.NewClient(),
 		embedLLM:       openrouter.NewClient(),
 		router:         services.NewQuestionRouterService(),
@@ -34,7 +39,51 @@ func NewChatHandler() *ChatHandler {
 		historyService: services.NewChatHistoryService(),
 		retrieval:      services.NewRetrievalService(),
 		intentRouter:   services.NewIntentRouterService(),
+		budget:         services.NewDailyBudget(),
+		rewrite:        services.NewQueryRewriteService(),
 	}
+	// Load the streaming prompt templates once; fall back to empty on failure
+	// so the handler still constructs (streaming degrades, never crashes).
+	dir := chatconfig.DefaultDir()
+	if d := strings.TrimSpace(os.Getenv("CHAT_CONFIG_DIR")); d != "" {
+		dir = d
+	}
+	if p, err := chatconfig.LoadPrompts(dir); err == nil {
+		h.streamPrompts = *p
+	}
+	return h
+}
+
+// Stream handles POST /api/chat/stream. When native streaming is disabled it
+// delegates to the Python proxy; otherwise it runs the native NDJSON flow.
+func (h *ChatHandler) Stream(c *fiber.Ctx) error {
+	if config.AppConfig == nil || !config.AppConfig.ChatNative.Stream {
+		return h.Proxy(c)
+	}
+	req, err := parseStreamRequest(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	c.Set("Content-Type", "application/x-ndjson")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+
+	deps := newStreamDepsFromHandler(
+		h,
+		config.AppConfig.Chat.DailyRequestLimit,
+		config.AppConfig.Chat.MaxContextChars,
+		config.AppConfig.Chat.MaxChunkContent,
+		req.Model,
+		h.streamPrompts,
+	)
+	reqCtx := c.Context()
+	reqCtx.SetBodyStreamWriter(func(w *bufio.Writer) {
+		streamFlow(reqCtx, req, deps, func(line string) {
+			_, _ = w.WriteString(line)
+			_ = w.Flush()
+		})
+	})
+	return nil
 }
 
 func (h *ChatHandler) Proxy(c *fiber.Ctx) error {

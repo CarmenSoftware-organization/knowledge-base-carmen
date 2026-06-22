@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"github.com/new-carmen/backend/internal/chatconfig"
@@ -271,7 +272,15 @@ func noInfoApology(lang string) string {
 // question will be PII-masked and userID will be hashed before persistence
 // (hash happens inside ChatHistoryService.SaveWithID).
 func defaultSaveLog(svc *services.ChatHistoryService) func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) int64 {
-	return func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) int64 {
+	return func(bu, userID, question, answer string, sources []models.ChatSource, emb []float32) (logID int64) {
+		// Logging must never crash an in-flight stream: a DB outage should
+		// degrade to log_id 0, not panic and drop the user's answer.
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[chat] stream save log panic recovered: %v", r)
+				logID = 0
+			}
+		}()
 		maskedQ := utils.MaskPII(question)
 		buID, err := svc.GetBUIDFromSlug(bu)
 		if err != nil || buID == 0 {
@@ -289,10 +298,8 @@ func defaultSaveLog(svc *services.ChatHistoryService) func(bu, userID, question,
 // Task 6 calls this to build the deps for the Fiber streaming handler.
 func newStreamDepsFromHandler(h *ChatHandler, dailyLimit, maxContextChars, maxChunkContent int, model string, prompts chatconfig.Prompts) streamDeps {
 	return streamDeps{
-		classify: h.intentRouter.Classify,
-		buildSearchQuery: func(message, historyText string, haveHistory bool) (string, bool, int, int) {
-			return message, false, 0, 0
-		},
+		classify:         h.intentRouter.Classify,
+		buildSearchQuery: h.rewrite.BuildSearchQuery,
 		embed: func(text string) ([]float32, int, error) {
 			return h.embedLLM.EmbeddingWithTokens(text)
 		},
@@ -300,7 +307,7 @@ func newStreamDepsFromHandler(h *ChatHandler, dailyLimit, maxContextChars, maxCh
 		streamLLM: func(ctx context.Context, model string, msgs []openrouter.ChatMessage, onChunk func(string)) (string, openrouter.Usage, error) {
 			return h.llm.StreamAnswer(ctx, model, msgs, onChunk)
 		},
-		checkBudget:     func(limit int) bool { return true },
+		checkBudget:     h.budget.CheckAndIncrement,
 		saveLog:         defaultSaveLog(h.historyService),
 		prompts:         prompts,
 		dailyLimit:      dailyLimit,

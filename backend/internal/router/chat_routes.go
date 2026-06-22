@@ -21,7 +21,7 @@ func RegisterPublicChat(app *fiber.App) {
 	app.Get("/api/chat/room-history/:room_id", chatHandler.Proxy)
 	app.Delete("/api/chat/history", chatHandler.Proxy)
 	app.Delete("/api/chat/clear/:room_id", chatHandler.Proxy)
-	app.Post("/api/chat/stream", chatHandler.Proxy)
+	app.Post("/api/chat/stream", chatHandler.Stream)
 	app.Post("/api/chat/feedback/:message_id", chatHandler.Proxy)
 
 	app.Get("/images/*", chatHandler.Image)
