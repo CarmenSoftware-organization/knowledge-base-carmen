@@ -38,10 +38,11 @@ type intentCompletionsResponse struct {
 	} `json:"usage"`
 }
 
-// ClassifyIntent sends a single-turn chat completion request for intent
-// classification. It uses the dedicated IntentModel if configured, otherwise
-// falls back to ChatModel. Returns the trimmed response content and token counts.
-func (c *Client) ClassifyIntent(prompt string) (content string, inTok int, outTok int, err error) {
+// Complete sends a one-shot chat completion using the IntentModel (falls back
+// to ChatModel), temperature 0, and the given maxTokens limit. It is the
+// single HTTP entry-point for all single-turn completions (intent, rewrite,
+// translate). Returns trimmed content and usage token counts.
+func (c *Client) Complete(prompt string, maxTokens int) (content string, inTok int, outTok int, err error) {
 	model := c.ChatModel
 	if config.AppConfig != nil && config.AppConfig.LLM.IntentModel != "" {
 		model = config.AppConfig.LLM.IntentModel
@@ -50,7 +51,7 @@ func (c *Client) ClassifyIntent(prompt string) (content string, inTok int, outTo
 	reqBody := intentCompletionsRequest{
 		Model:       model,
 		Temperature: 0,
-		MaxTokens:   20,
+		MaxTokens:   maxTokens,
 		Messages: []intentChatMessage{
 			{Role: "user", Content: prompt},
 		},
@@ -93,4 +94,12 @@ func (c *Client) ClassifyIntent(prompt string) (content string, inTok int, outTo
 	}
 
 	return strings.TrimSpace(res.Choices[0].Message.Content), res.Usage.PromptTokens, res.Usage.CompletionTokens, nil
+}
+
+// ClassifyIntent sends a single-turn chat completion request for intent
+// classification. It uses the dedicated IntentModel if configured, otherwise
+// falls back to ChatModel. Returns the trimmed response content and token counts.
+// max_tokens is fixed at 20 — sufficient for one-word intent labels.
+func (c *Client) ClassifyIntent(prompt string) (content string, inTok int, outTok int, err error) {
+	return c.Complete(prompt, 20)
 }
