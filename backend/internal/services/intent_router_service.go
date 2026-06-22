@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/new-carmen/backend/internal/chatconfig"
 	"github.com/new-carmen/backend/internal/config"
@@ -29,6 +30,9 @@ type IntentRouterService struct {
 	tuning      chatconfig.IntentTuning
 	embedOne    func(string) ([]float32, int, error)
 	classifyLLM func(prompt string) (intent string, inTok, outTok int, err error)
+	intents     map[string]chatconfig.Intent
+	embedBatch  func([]string) ([][]float32, error)
+	idxOnce     sync.Once
 }
 
 var intentKeywords = []string{
@@ -93,10 +97,10 @@ ONE word:`, hint, utils.SanitizeForPrompt(message), ctx)
 }
 
 // NewIntentRouterService builds a production IntentRouterService. It loads
-// tuning and intents from the CHAT_CONFIG_DIR-aware config directory, builds
-// the vector index via the openrouter client, and wires up the live embedOne
-// and classifyLLM functions. On build failure the index is left nil so the
-// regex and LLM tiers still work.
+// tuning and intents from the CHAT_CONFIG_DIR-aware config directory (cheap,
+// no network) and wires up the live embedOne and classifyLLM functions.
+// The vector index is built lazily on the first classification request via
+// ensureIndex() so that server startup never blocks on the LLM endpoint.
 func NewIntentRouterService() *IntentRouterService {
 	dir := configDir() // from retrieval_service.go (CHAT_CONFIG_DIR aware)
 	tuning := defaultIntentTuning()
@@ -115,17 +119,35 @@ func NewIntentRouterService() *IntentRouterService {
 		tuning:      tuning,
 		embedOne:    client.EmbeddingWithTokens,
 		classifyLLM: client.ClassifyIntent,
+		embedBatch:  client.EmbeddingBatch,
 	}
 
 	if intents, err := chatconfig.LoadIntents(dir); err != nil {
 		log.Printf("[intent] intents load failed: %v", err)
-	} else if idx, err := BuildIntentIndex(intents, tuning, client.EmbeddingBatch); err != nil {
-		log.Printf("[intent] index build failed (regex+LLM only): %v", err)
 	} else {
-		s.idx = idx
+		s.intents = intents
 	}
 
 	return s
+}
+
+// ensureIndex lazily builds the vector index on the first call. It is
+// race-safe via sync.Once. If idx was injected directly (tests), it is a no-op.
+func (s *IntentRouterService) ensureIndex() {
+	s.idxOnce.Do(func() {
+		if s.idx != nil { // already injected (tests) — do not rebuild
+			return
+		}
+		if s.intents == nil || s.embedBatch == nil {
+			return
+		}
+		idx, err := BuildIntentIndex(s.intents, s.tuning, s.embedBatch)
+		if err != nil {
+			log.Printf("[intent] lazy index build failed (regex+LLM only): %v", err)
+			return
+		}
+		s.idx = idx
+	})
 }
 
 // Classify runs the three-tier pipeline: regex → vector → LLM.
@@ -136,6 +158,7 @@ func (s *IntentRouterService) Classify(message, lang string, haveHistory bool) I
 	}
 
 	// Tier 2 — vector index
+	s.ensureIndex()
 	var vecBestIntent string
 	var vecBestScore float64
 	embedTokens := 0
