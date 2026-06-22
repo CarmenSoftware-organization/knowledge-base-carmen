@@ -33,15 +33,17 @@ function isLocalPath(raw: string): boolean {
  * data: URIs, and protocol-relative URLs.
  */
 export function safeImageSrc(raw: string): string | null {
-  if (isLocalPath(raw)) return raw;
+  // encodeURI escapes HTML meta-characters (< > ") while leaving valid URLs
+  // functional, neutralising the value before it reaches the DOM sink.
+  if (isLocalPath(raw)) return encodeURI(raw);
   let proto: string;
   try {
     proto = new URL(raw).protocol;
   } catch {
     return null;
   }
-  if (proto === "http:" || proto === "https:" || proto === "blob:") return raw;
-  if (proto === "data:" && /^\s*data:image\//i.test(raw)) return raw;
+  if (proto === "http:" || proto === "https:" || proto === "blob:") return encodeURI(raw);
+  if (proto === "data:" && /^\s*data:image\//i.test(raw)) return encodeURI(raw);
   return null;
 }
 
@@ -52,12 +54,12 @@ export function safeImageSrc(raw: string): string | null {
  * navigating to them can execute script or leave the origin unexpectedly.
  */
 export function safeLinkHref(raw: string): string | null {
-  if (isLocalPath(raw)) return raw;
+  if (isLocalPath(raw)) return encodeURI(raw);
   let proto: string;
   try {
     proto = new URL(raw).protocol;
   } catch {
     return null;
   }
-  return proto === "http:" || proto === "https:" ? raw : null;
+  return proto === "http:" || proto === "https:" ? encodeURI(raw) : null;
 }
