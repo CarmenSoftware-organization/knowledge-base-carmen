@@ -6,10 +6,9 @@ import (
 	"testing"
 )
 
-// isolatedLoad writes a temp override .env that resets fields under test to
-// their hardcoded defaults, points BACKEND_DOTENV at that file (loaded last
-// by loadDotEnv, so it wins over backend/.env), then calls Load().
-// t.Setenv restores every env var automatically after the test.
+// isolatedLoad runs config.Load() with the given KEY=VALUE overrides applied last (via BACKEND_DOTENV),
+// resetting any other fields to code defaults. It mutates the global AppConfig and is NOT parallel-safe
+// (do not call t.Parallel() in tests that use it). Reuse it for any new config tests in this package.
 func isolatedLoad(t *testing.T, extra ...string) error {
 	t.Helper()
 
@@ -64,6 +63,9 @@ func TestLoad_ChatDefaults(t *testing.T) {
 	}
 	if AppConfig.ChatNative.Stream || AppConfig.ChatNative.Rooms || AppConfig.ChatNative.Feedback {
 		t.Errorf("native flags should default false: %+v", AppConfig.ChatNative)
+	}
+	if AppConfig.LLM.FallbackModel != "" {
+		t.Errorf("FallbackModel = %q, want empty string", AppConfig.LLM.FallbackModel)
 	}
 }
 
