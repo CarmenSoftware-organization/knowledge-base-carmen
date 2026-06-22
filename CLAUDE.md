@@ -39,7 +39,7 @@ npm run dev | npm run build | npm run lint | npm test
 # Chatbot is native in the Go backend — no separate service.
 # DB/LLM-gated chat tests: RUN_DB_TESTS=1 go test ./tests/parity/... ./internal/services/... (needs reachable DB + LLM key)
 
-# Whole stack
+# Whole stack (db + backend only — frontend runs separately / Vercel)
 docker compose --env-file .env.docker up --build
 ./scripts/migrate-docker.sh                             # first-time migrations (psql via db container)
 
