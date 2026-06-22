@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/new-carmen/backend/internal/constants"
 	"github.com/new-carmen/backend/internal/services"
 )
@@ -63,6 +64,9 @@ func (h *FAQHandler) GetEntry(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id is required"})
+	}
+	if _, err := uuid.Parse(id); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid id"})
 	}
 	bu := c.Query("bu", constants.DefaultBU)
 	entry, err := h.faqService.GetEntryByID(bu, id)

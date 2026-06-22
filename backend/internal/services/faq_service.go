@@ -244,15 +244,30 @@ func (s *FAQService) GetEntryByID(buSlug, id string) (*FAQEntryDetail, error) {
 		return nil, fmt.Errorf("get category: %w", err)
 	}
 
-	var sub FAQSubmodule
+	// Use a flat struct (no Categories slice) to avoid GORM treating the
+	// slice field as a foreign-key relation during Raw().Scan().
+	var subRow struct {
+		ID          uuid.UUID `gorm:"column:id"`
+		Name        string    `gorm:"column:name"`
+		Slug        string    `gorm:"column:slug"`
+		Description string    `gorm:"column:description"`
+		SortOrder   int       `gorm:"column:sort_order"`
+	}
 	if err := database.DB.Raw(`
 		SELECT s.id, s.name, s.slug, COALESCE(s.description, '') AS description, COALESCE(s.sort_order, 0) AS sort_order
 		FROM public.faq_submodules s
 		JOIN public.faq_categories c ON c.submodule_id = s.id
 		JOIN public.faq_entries e ON e.category_id = c.id
 		WHERE e.id = ?
-	`, id).Scan(&sub).Error; err != nil {
+	`, id).Scan(&subRow).Error; err != nil {
 		return nil, fmt.Errorf("get submodule: %w", err)
+	}
+	sub := FAQSubmodule{
+		ID:          subRow.ID,
+		Name:        subRow.Name,
+		Slug:        subRow.Slug,
+		Description: subRow.Description,
+		SortOrder:   subRow.SortOrder,
 	}
 
 	var mod FAQModule
