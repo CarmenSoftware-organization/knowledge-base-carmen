@@ -87,5 +87,5 @@ docker compose --env-file .env.docker exec backend ./server migrate migrations/0
 ## Vercel (Frontend)
 
 - Root Directory: `frontend`
-- ตั้ง `NEXT_PUBLIC_API_BASE` = URL ของ Go backend (`https://xxx.fly.dev` หรือ Render ฯลฯ — ให้ตรงกับที่ browser เรียก)
+- ตั้ง `NEXT_PUBLIC_API_BASE` = URL ของ Go backend บน Render (`https://knowledge-base-carmen-backend.onrender.com` — ให้ตรงกับที่ browser เรียก)
 - โปรเจกต์มี `frontend/vercel.json` ตั้ง region **Singapore (`sin1`)**

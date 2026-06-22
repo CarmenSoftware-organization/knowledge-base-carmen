@@ -1,5 +1,5 @@
 "use client";
-// frontend/user/hooks/use-chat-stream.ts
+// frontend/hooks/use-chat-stream.ts
 //
 // Encapsulates the streaming-chat logic (executeStream + stopGeneration).
 // All React state lives in the parent hook (use-carmen-chat.ts); this file

@@ -1,4 +1,4 @@
-// frontend/user/configs/locales.ts
+// frontend/configs/locales.ts
 
 export type LocaleKey = "th" | "en";
 
