@@ -106,6 +106,21 @@ func (idx *IntentIndex) Canned(intent, lang string) string {
 	return ""
 }
 
+// best returns the top label/score for the LLM hint (no decisioning).
+func (idx *IntentIndex) best(queryEmb []float32) (string, float64) {
+	if len(idx.matrix) == 0 {
+		return "", 0
+	}
+	q := utils.NormalizeEmbedding(queryEmb)
+	bestLabel, bestScore := "", -1.0
+	for i, row := range idx.matrix {
+		if sc := dot(row, q); sc > bestScore {
+			bestScore, bestLabel = sc, idx.labels[i]
+		}
+	}
+	return bestLabel, bestScore
+}
+
 // BuildIntentIndex embeds all intents.yaml examples (batched) into a normalized
 // matrix. embedBatch is injected (openrouter.EmbeddingBatch) so callers without
 // LLM access can pass a stub. Returns nil index + error on embed failure.
