@@ -19,7 +19,6 @@ type Config struct {
 	Git         GitConfig
 	WikiSearch  WikiSearchConfig
 	Chat        ChatConfig
-	ChatNative  ChatNativeConfig
 	Translation TranslationConfig
 	LLM         LLMConfig
 }
@@ -45,7 +44,6 @@ type TranslationConfig struct {
 type ServerConfig struct {
 	Port           string
 	Host           string
-	ChatbotURL     string
 	Environment    string
 	StrictEnvOnly  bool
 	CORSOrigins    string
@@ -108,12 +106,6 @@ type ChatConfig struct {
 	WebhookIndexTimeoutMin     int
 	DailyRequestLimit          int
 	RateLimitPerMin            string
-}
-
-type ChatNativeConfig struct {
-	Stream   bool
-	Rooms    bool
-	Feedback bool
 }
 
 var AppConfig *Config
@@ -272,7 +264,6 @@ func Load() error {
 		Server: ServerConfig{
 			Port:           listenPort(),
 			Host:           getEnv("SERVER_HOST", "localhost"),
-			ChatbotURL:     getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
 			Environment:    environment,
 			StrictEnvOnly:  strictEnvOnly,
 			CORSOrigins:    getEnv("CORS_ORIGINS", defaultCORS),
@@ -332,11 +323,6 @@ func Load() error {
 			DailyRequestLimit:          getEnvAsInt("DAILY_REQUEST_LIMIT", 1000),
 			RateLimitPerMin:            getEnv("RATE_LIMIT_PER_MINUTE", "20/minute"),
 		},
-		ChatNative: ChatNativeConfig{
-			Stream:   getEnvAsBool("CHAT_NATIVE_STREAM", false),
-			Rooms:    getEnvAsBool("CHAT_NATIVE_ROOMS", false),
-			Feedback: getEnvAsBool("CHAT_NATIVE_FEEDBACK", false),
-		},
 		Translation: TranslationConfig{
 			APIKey:     getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
 			Enabled:    getEnvAsBool("TRANSLATION_ENABLED", true),
@@ -363,7 +349,6 @@ func ensureStrictEnv() error {
 		"ENVIRONMENT",
 		"SERVER_HOST",
 		"SERVER_PORT",
-		"PYTHON_CHATBOT_URL",
 		"CORS_ORIGINS",
 		"ADMIN_API_KEY",
 		"INTERNAL_API_KEY",

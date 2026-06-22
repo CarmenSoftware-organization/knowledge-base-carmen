@@ -1,8 +1,7 @@
 # render.yaml — Full Docker deployment on Render
 #
 # Services:
-#   carmen-backend   -> Docker (Go Fiber)
-#   carmen-chatbot   -> Docker (Python FastAPI)
+#   carmen-backend   -> Docker (Go Fiber; serves the native RAG chatbot at /api/chat/*)
 #   carmen-frontend  -> Docker (Next.js)
 #
 # First-time setup:
@@ -66,6 +65,16 @@ services:
       - key: OPENROUTER_EMBED_MODEL
         value: qwen/qwen3-embedding-8b
 
+      # Native chatbot LLM config (was the Python carmen-chatbot service)
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_API_BASE
+        value: https://openrouter.ai/api/v1
+      - key: LLM_CHAT_MODEL
+        value: stepfun/step-3.5-flash:free
+      - key: LLM_INTENT_MODEL
+        value: google/gemini-2.5-flash-lite
+
       - key: TRANSLATION_ENABLED
         value: "false"
       - key: GOOGLE_TRANSLATE_API_KEY
@@ -82,65 +91,6 @@ services:
 
       - key: CORS_ORIGINS
         value: "*"
-
-      - key: PYTHON_CHATBOT_URL
-        fromService:
-          type: web
-          name: carmen-chatbot
-          envVarKey: RENDER_EXTERNAL_URL
-
-  # ─── Chatbot (FastAPI in Docker) ───────────────────────────────────────────
-  - type: web
-    name: carmen-chatbot
-    runtime: docker
-    plan: free
-    dockerContext: .
-    dockerfilePath: ./carmen-chatbot/Dockerfile
-    healthCheckPath: /api/health
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: PORT
-        value: "8000"
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        value: "6432"
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        sync: false
-      - key: DB_SSLMODE
-        value: require
-      - key: DB_SCHEMA
-        value: carmen,public
-      - key: VECTOR_DIMENSION
-        value: "2000"
-      - key: WIKI_CONTENT_PATH
-        value: /app/carmen_cloud
-      - key: LLM_API_BASE
-        value: https://openrouter.ai/api/v1
-      - key: LLM_CHAT_MODEL
-        value: stepfun/step-3.5-flash:free
-      - key: LLM_INTENT_MODEL
-        value: google/gemini-2.5-flash-lite
-      - key: LLM_EMBED_MODEL
-        value: qwen/qwen3-embedding-8b
-      - key: LLM_API_KEY
-        sync: false
-      - key: PRIVACY_HMAC_SECRET
-        sync: false
-      - key: CORS_ORIGINS
-        value: "*"
-      - key: GO_BACKEND_URL
-        fromService:
-          type: web
-          name: carmen-backend
-          envVarKey: RENDER_EXTERNAL_URL
-      - key: GO_BACKEND_INTERNAL_API_KEY
-        sync: false
 
   # ─── Frontend (Next.js in Docker) ──────────────────────────────────────────
   - type: web

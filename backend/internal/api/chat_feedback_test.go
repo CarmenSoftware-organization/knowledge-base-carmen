@@ -10,12 +10,11 @@ import (
 	"github.com/new-carmen/backend/internal/config"
 )
 
-// minimalFeedbackConfig builds a config with ChatNative.Feedback controlled by the caller.
-// It reuses the PrivacySecret and LLM fields already established by minimalConfig.
-func minimalFeedbackConfig(nativeFeedback bool) *config.Config {
+// minimalFeedbackConfig builds just enough AppConfig for NewChatHandler() to
+// construct and for the Feedback handler to run (PrivacySecret + LLM + Chat).
+func minimalFeedbackConfig() *config.Config {
 	return &config.Config{
 		Server: config.ServerConfig{
-			ChatbotURL:    "",
 			PrivacySecret: "0123456789abcdef0123456789abcdef",
 		},
 		Chat: config.ChatConfig{
@@ -29,37 +28,6 @@ func minimalFeedbackConfig(nativeFeedback bool) *config.Config {
 			EmbedModel:  "e",
 			IntentModel: "i",
 		},
-		ChatNative: config.ChatNativeConfig{
-			Stream:   false,
-			Feedback: nativeFeedback,
-		},
-	}
-}
-
-// TestFeedback_FlagOff_DelegatesToProxy verifies that when ChatNative.Feedback is
-// false the handler falls through to Proxy, which returns 502 when no chatbot URL is set.
-func TestFeedback_FlagOff_DelegatesToProxy(t *testing.T) {
-	prev := config.AppConfig
-	defer func() { config.AppConfig = prev }()
-	config.AppConfig = minimalFeedbackConfig(false)
-	t.Setenv("CHAT_CONFIG_DIR", "../../config")
-
-	app := fiber.New()
-	h := NewChatHandler()
-	app.Post("/api/chat/feedback/:message_id", h.Feedback)
-
-	req := httptest.NewRequest("POST", "/api/chat/feedback/42",
-		strings.NewReader(`{"score":1,"bu":"carmen","username":"alice"}`))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := app.Test(req, -1)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != fiber.StatusBadGateway {
-		t.Errorf("flag off should delegate to Proxy (502 with no chatbot URL), got %d", resp.StatusCode)
 	}
 }
 
@@ -68,7 +36,7 @@ func TestFeedback_FlagOff_DelegatesToProxy(t *testing.T) {
 func TestFeedback_InvalidScore_Returns400(t *testing.T) {
 	prev := config.AppConfig
 	defer func() { config.AppConfig = prev }()
-	config.AppConfig = minimalFeedbackConfig(true)
+	config.AppConfig = minimalFeedbackConfig()
 	t.Setenv("CHAT_CONFIG_DIR", "../../config")
 
 	app := fiber.New()
@@ -95,7 +63,7 @@ func TestFeedback_InvalidScore_Returns400(t *testing.T) {
 func TestFeedback_NonIntMessageID_Returns400(t *testing.T) {
 	prev := config.AppConfig
 	defer func() { config.AppConfig = prev }()
-	config.AppConfig = minimalFeedbackConfig(true)
+	config.AppConfig = minimalFeedbackConfig()
 	t.Setenv("CHAT_CONFIG_DIR", "../../config")
 
 	app := fiber.New()
@@ -125,7 +93,7 @@ func TestFeedback_NonIntMessageID_Returns400(t *testing.T) {
 func TestFeedback_UnknownBU_Returns400(t *testing.T) {
 	prev := config.AppConfig
 	defer func() { config.AppConfig = prev }()
-	config.AppConfig = minimalFeedbackConfig(true)
+	config.AppConfig = minimalFeedbackConfig()
 	t.Setenv("CHAT_CONFIG_DIR", "../../config")
 
 	// Use Fiber's recover middleware so a nil-DB panic becomes a 500 rather than

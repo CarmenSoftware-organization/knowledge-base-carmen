@@ -4,10 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-Monorepo, three runtime services sharing one Postgres+pgvector:
+Monorepo, two runtime services sharing one Postgres+pgvector:
 
-- `backend/` — Go Fiber API. Owns wiki/FAQ/activity/indexing; **proxies `/api/chat/*` to the Python service** via `PYTHON_CHATBOT_URL`.
-- `carmen-chatbot/` — Python FastAPI RAG (intent → hybrid retrieval pgvector+FTS+RRF → LLM), streams NDJSON.
+- `backend/` — Go Fiber API. Owns wiki/FAQ/activity/indexing **and the native RAG chatbot at `/api/chat/*`** (intent → hybrid retrieval pgvector+FTS+RRF → LLM, streams NDJSON). The chatbot is tuned via YAML in `backend/config/{tuning,intents,path_rules,prompts}.yaml` (no code change/restart for tuning). The former Python `carmen-chatbot/` service was migrated into the Go backend and removed.
 - `frontend/user/` — Next.js App Router. Talks only to the Go backend.
 - `contents/<bu>/...` — markdown source-of-truth (the Go indexer reads this into `<bu>.documents` / `<bu>.document_chunks`).
 
@@ -37,9 +36,8 @@ go run cmd/server/main.go reset all                     # truncate public activi
 # Frontend (from frontend/user/)
 npm run dev | npm run build | npm run lint | npm test
 
-# Chatbot (from carmen-chatbot/)
-python start_server.py                                  # or: uvicorn backend.main:app --reload
-pytest
+# Chatbot is native in the Go backend — no separate service.
+# DB/LLM-gated chat tests: RUN_DB_TESTS=1 go test ./tests/parity/... ./internal/services/... (needs reachable DB + LLM key)
 
 # Whole stack
 docker compose --env-file .env.docker up --build
@@ -50,19 +48,19 @@ docker compose --env-file .env.docker up --build
 ./scripts/sync-wiki-and-reindex-bu.sh <bu>
 ```
 
-Health: `:8080/health` (Go), `:8000/api/health` (Python). Swagger: `:8080/swagger/index.html`.
+Health: `:8080/health` (Go backend, serves `/api/chat/*` natively). Swagger: `:8080/swagger/index.html`.
 
 ## Non-obvious conventions
 
 - **Run migrations with `psql`, not `./server migrate`.** The Go migrate splits on `;` and corrupts files with `DO $$ … $$` / PL/pgSQL (notably `0002_setup_multi_bu.sql`). Use `scripts/migrate-docker.sh`. Order is in `backend/migrations/README.md`.
-- **Admin/internal endpoints need header auth.** `X-Admin-Key` (`ADMIN_API_KEY`) for ops; `X-Internal-API-Key` (`INTERNAL_API_KEY`) for backend↔chatbot.
+- **Admin/internal endpoints need header auth.** `X-Admin-Key` (`ADMIN_API_KEY`) for ops; `X-Internal-API-Key` (`INTERNAL_API_KEY`) for internal record-history.
 - **Markdown frontmatter is parsed** — every file in `contents/` needs the YAML block (`title/description/published/date/tags/editor: markdown/dateCreated`). Optional second YAML block with `weight` orders the sidebar. See `HANDOVER-ADD-NEW-BU.md` §5.
-- **Chatbot behavior is tuned via YAML**, not code: `carmen-chatbot/backend/config/{tuning,intents,path_rules,prompts}.yaml`.
+- **Chatbot behavior is tuned via YAML**, not code: `backend/config/{tuning,intents,path_rules,prompts}.yaml`. Native chat endpoints are flag-free (always native); the RAG flow lives in `backend/internal/api/chat_stream_flow.go` + `internal/services/{retrieval,intent_router_service,query_rewrite,prompt}_service.go`.
 - **Frontend API base** is resolved in `frontend/user/lib/config.ts` (`NEXT_PUBLIC_API_BASE` / `NEXT_PUBLIC_USE_REMOTE_API`). Selected BU lives in cookie `selected_bu`.
 
 ## Where to look next
 
 - `HANDOVER-ADD-NEW-BU.md` — full BU runbook + markdown format
 - `backend/migrations/README.md` — migration order + dimension variants
-- `carmen-chatbot/{HANDOVER,TUNING_GUIDE,chatbot-flow}.md` — RAG internals
-- Per-service `README.md` in `backend/`, `frontend/user/`, `carmen-chatbot/`
+- `docs/superpowers/plans/2026-06-22-chatbot-go-*` — the Python→Go chatbot migration specs/plans (RAG internals, parity notes)
+- Per-service `README.md` in `backend/`, `frontend/user/`
