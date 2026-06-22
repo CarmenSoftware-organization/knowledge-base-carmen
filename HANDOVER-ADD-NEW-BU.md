@@ -1,6 +1,6 @@
 # Handover: วิธีเพิ่ม BU ใหม่ + ฟอร์แมต Markdown
 
-เอกสารนี้สรุปขั้นตอนแบบใช้งานจริงสำหรับคนใหม่ที่ต้องเพิ่ม Business Unit (BU) ในโปรเจกต์ `kb-carmen` และแปลงไฟล์เป็น `.md` ให้ตรงฟอร์แมตที่ระบบอ่านได้
+เอกสารนี้สรุปขั้นตอนแบบใช้งานจริงสำหรับคนใหม่ที่ต้องเพิ่ม Business Unit (BU) ในโปรเจกต์ `knowledge-base-carmen` และแปลงไฟล์เป็น `.md` ให้ตรงฟอร์แมตที่ระบบอ่านได้
 
 > สำหรับภาพรวมสถาปัตยกรรม ดู `PROJECT_OVERVIEW.md` / `CLAUDE.md`
 > สำหรับลำดับ migration + dimension variants ดู `backend/migrations/README.md`
@@ -47,7 +47,7 @@
 
 ต้องตั้ง GitHub Actions secrets:
 
-- `BACKEND_BASE_URL` เช่น `https://kb-carmen.onrender.com`
+- `BACKEND_BASE_URL` เช่น `https://knowledge-base-carmen.onrender.com`
 - `BACKEND_ADMIN_API_KEY` ให้ตรงกับ `ADMIN_API_KEY` ของ backend
 
 ต้องมี backend env อย่างน้อย:
@@ -69,7 +69,7 @@
 หรือสั่งผ่าน script โดยตรง:
 
 ```bash
-API_BASE=https://kb-carmen.onrender.com ADMIN_KEY="<admin-key>" ./scripts/deprovision-bu.sh <bu>
+API_BASE=https://knowledge-base-carmen.onrender.com ADMIN_KEY="<admin-key>" ./scripts/deprovision-bu.sh <bu>
 ```
 
 ---

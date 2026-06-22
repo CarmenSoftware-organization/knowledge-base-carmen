@@ -4,7 +4,7 @@
 # Usage:
 #   ./scripts/deprovision-bu.sh suntest
 #   BU=suntest ./scripts/deprovision-bu.sh
-#   API_BASE=https://kb-carmen.onrender.com ADMIN_KEY=xxx ./scripts/deprovision-bu.sh suntest
+#   API_BASE=https://knowledge-base-carmen.onrender.com ADMIN_KEY=xxx ./scripts/deprovision-bu.sh suntest
 
 set -euo pipefail
 
