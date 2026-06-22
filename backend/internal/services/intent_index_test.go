@@ -66,3 +66,16 @@ func TestIntentIndex_NoMatchFallsThrough(t *testing.T) {
 		t.Error("low score must fall through (ok=false)")
 	}
 }
+
+func TestIntentIndex_ConfusionHardMatchNoHistory(t *testing.T) {
+	idx := &IntentIndex{
+		matrix: [][]float32{unit(1, 0)},
+		labels: []string{"confusion"},
+		tuning: intentTuning(),
+	}
+	// Query parallel to the confusion row → score ≈ 1.0 ≥ 0.92, no history → hard match.
+	m, ok := idx.Match(unit(1, 0), false)
+	if !ok || m.Intent != "confusion" || m.Source != "vector_hard" {
+		t.Fatalf("confusion hard match (no history) = (%+v,%v), want confusion/vector_hard/true", m, ok)
+	}
+}
