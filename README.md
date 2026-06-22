@@ -4,19 +4,17 @@
 
 ประกอบด้วย:
 - `frontend/user` — Next.js UI (KB, FAQ, Activity, Floating Chat)
-- `backend` — Go Fiber API (wiki, index, faq, activity, chat proxy)
-- `carmen-chatbot` — Python FastAPI RAG chatbot (NDJSON stream)
+- `backend` — Go Fiber API (wiki, index, faq, activity, native RAG chatbot)
 - `scripts` — import Wiki.js, sync/reindex, FAQ seed, BU ops
 - `contents` — markdown source ของเอกสารความรู้ จัดเป็น `contents/<bu-slug>/...`
 
 ## สถาปัตยกรรม
 
 1. Frontend เรียก Go backend เป็นหลัก (`/api/wiki/*`, `/api/chat/*`, `/api/faq/*`, `/api/activity/*`, `/api/business-units`)
-2. Go backend proxy `/api/chat/*` ไป Python chatbot (`PYTHON_CHATBOT_URL`)
-3. Python chatbot ทำ intent + retrieval (pgvector + FTS + RRF) → LLM → stream NDJSON กลับ
-4. ทั้งสอง backend ใช้ Postgres+pgvector ตัวเดียวกัน
-5. เอกสารถูกอ่านจาก markdown ใน `contents/<bu>/...` แล้ว index ลง `<bu>.documents` / `<bu>.document_chunks`
-6. FAQ แยกอยู่ใน `public.faq_*` (seed ด้วย `scripts/build_faq_seed_sql.py`)
+2. Go backend ให้บริการ `/api/chat/*` โดยตรง (native RAG — intent → hybrid retrieval pgvector+FTS+RRF → LLM → stream NDJSON)
+3. Go backend ใช้ Postgres+pgvector ตัวเดียวกันกับส่วน wiki/index
+4. เอกสารถูกอ่านจาก markdown ใน `contents/<bu>/...` แล้ว index ลง `<bu>.documents` / `<bu>.document_chunks`
+5. FAQ แยกอยู่ใน `public.faq_*` (seed ด้วย `scripts/build_faq_seed_sql.py`)
 
 ### Multi-BU model
 
@@ -48,7 +46,6 @@ docker compose --env-file .env.docker up --build
 ตรวจ health:
 ```bash
 curl http://localhost:8080/health        # Go backend
-curl http://localhost:8000/api/health    # Python chatbot
 ```
 
 > **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$`) — มันจะตัด `;` ผิด ใช้ `migrate-docker.sh` หรือ `psql` ตรงๆ ตามลำดับใน `backend/migrations/README.md`
@@ -59,22 +56,17 @@ curl http://localhost:8000/api/health    # Python chatbot
 # Backend (Go)
 cd backend && go mod download && cp .env.example .env && make run
 
-# Chatbot (Python)
-cd carmen-chatbot && python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt && cp .env.example .env && python start_server.py
-
 # Frontend (Next.js)
 cd frontend/user && npm install && npm run dev
 ```
 
-คำสั่งหลักรายบริการอยู่ใน README ของแต่ละโฟลเดอร์ (`backend/`, `frontend/user/`, `carmen-chatbot/`)
+คำสั่งหลักรายบริการอยู่ใน README ของแต่ละโฟลเดอร์ (`backend/`, `frontend/user/`)
 
 ## Deploy บน Render
 
 โปรเจคนี้รองรับ Blueprint deploy ด้วย `render.yaml` สำหรับ:
 - `carmen-frontend` (Next.js Docker)
 - `carmen-backend` (Go Docker)
-- `carmen-chatbot` (Python Docker)
 - `carmen-db` (Render Postgres)
 
 หลัง push เปิด Render Blueprint แล้วตั้งค่า secret env ที่ `sync: false`
@@ -107,4 +99,4 @@ CONTENTS_ROOT="$PWD/contents/<bu>" ./scripts/wikijs-import-contents.sh
 - `USER_MANUAL_TH.md` — คู่มือผู้ใช้ภาษาไทย
 - `backend/README.md`, `backend/migrations/README.md` — backend API + ลำดับ migration
 - `frontend/user/README.md` — frontend routes + env
-- `carmen-chatbot/README.md`, `TUNING_GUIDE.md`, `HANDOVER.md` — RAG pipeline + การปรับจูน
+- RAG pipeline internals: ดู `docs/superpowers/plans/2026-06-22-chatbot-go-*`

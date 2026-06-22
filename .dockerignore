@@ -16,5 +16,4 @@
 **/__pycache__
 **/*.pyc
 
-carmen-chatbot/**/node_modules
 backend/tmp
