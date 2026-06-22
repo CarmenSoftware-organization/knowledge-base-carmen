@@ -2,7 +2,7 @@
 #
 # Services:
 #   carmen-backend   -> Docker (Go Fiber; serves the native RAG chatbot at /api/chat/*)
-#   carmen-frontend  -> Docker (Next.js)
+# Frontend deploy แยกที่ Vercel (native Next.js build) — ไม่อยู่ใน blueprint นี้
 #
 # First-time setup:
 # 1) Push this file to Git provider and create Blueprint on Render
@@ -90,21 +90,5 @@ services:
         sync: false
 
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://knowledge-base-carmen.vercel.app"
 
-  # ─── Frontend (Next.js in Docker) ──────────────────────────────────────────
-  - type: web
-    name: carmen-frontend
-    runtime: docker
-    plan: free
-    dockerContext: ./frontend/user
-    dockerfilePath: ./frontend/user/Dockerfile
-    healthCheckPath: /
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_API_BASE
-        fromService:
-          type: web
-          name: carmen-backend
-          envVarKey: RENDER_EXTERNAL_URL
