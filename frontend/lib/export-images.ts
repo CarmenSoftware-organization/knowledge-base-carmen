@@ -6,6 +6,8 @@
  * before any server-side fetch. Images whose target is unsafe are stripped.
  */
 
+import { safeFetch } from "./ssrf-guard";
+
 export type UrlSafetyCheck = (url: string) => Promise<boolean>;
 
 type Classified =
@@ -75,10 +77,7 @@ export function rewriteAndFilterImages(
   });
 }
 
-type FetchLike = (
-  url: string,
-  init?: { redirect?: "manual"; signal?: AbortSignal }
-) => Promise<{
+type FetchLike = (url: string) => Promise<{
   ok: boolean;
   status: number;
   headers: { get: (name: string) => string | null };
@@ -94,25 +93,25 @@ export interface EmbedDeps {
 /**
  * PDF: fetch each safe image server-side and inline it as a base64 data URI so
  * the renderer never issues the request itself. Unsafe images are stripped and
- * never fetched. Redirects are not followed (`redirect: "manual"`). data:/blob:
+ * never fetched. The fetch (default {@link safeFetch}) pins the connection to a
+ * DNS-validated address (no rebinding) and does not follow redirects. data:/blob:
  * images are left untouched.
  */
 export function embedSafeImages(html: string, baseUrl: string, deps: EmbedDeps): Promise<string> {
-  const fetchFn = deps.fetchFn ?? (globalThis.fetch as unknown as FetchLike);
   const timeoutMs = deps.timeoutMs ?? 8000;
+  const fetchFn: FetchLike = deps.fetchFn ?? ((u) => safeFetch(u, { timeoutMs }));
 
   return rewriteImgTags(html, async (src) => {
     const c = classify(src, baseUrl);
     if (c.kind === "keep") return { keep: true, src };
     if (c.kind === "strip") return { keep: false };
+    // Pre-filter: strip clearly-unsafe hosts before attempting any connection.
     if (!(await deps.isSafe(c.url))) return { keep: false };
 
     try {
-      const signal =
-        typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
-          ? AbortSignal.timeout(timeoutMs)
-          : undefined;
-      const res = await fetchFn(c.url, { redirect: "manual", signal });
+      // safeFetch re-resolves + pins the IP at connect time, closing the TOCTOU
+      // window between the isSafe check above and the actual request.
+      const res = await fetchFn(c.url);
       if (!res.ok) return { keep: true, src: c.url }; // redirect/error → leave as absolute URL
       const buf = Buffer.from(await res.arrayBuffer());
       const mime = res.headers.get("content-type") ?? "image/png";

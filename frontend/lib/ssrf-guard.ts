@@ -129,3 +129,104 @@ export async function isUrlSafe(
   if (!results || results.length === 0) return false;
   return results.every((r) => !isBlockedIp(r.address));
 }
+
+// ── IP-pinned fetch ──────────────────────────────────────────────────────────
+// isUrlSafe() validates a host, but a separate fetch re-resolves DNS — a rebinding
+// attacker can pass validation then serve an internal IP to the fetch (TOCTOU).
+// makeGuardedLookup closes that gap: used as the `lookup` option of node http(s),
+// the SAME resolution it validates is the one the socket connects to. TLS SNI and
+// the Host header still use the original hostname, so cert validation is unaffected.
+
+type RawLookupCb = (err: Error | null, address?: unknown, family?: number) => void;
+export type RawLookup = (hostname: string, options: { all?: boolean }, cb: RawLookupCb) => void;
+
+const defaultRawLookup: RawLookup = (hostname, options, cb) => {
+  import("node:dns")
+    .then((m) => (m.lookup as unknown as RawLookup)(hostname, options, cb))
+    .catch((e) => cb(e as Error));
+};
+
+/**
+ * A node `lookup`-compatible function that resolves a hostname, rejects the
+ * connection if ANY resolved address is internal, and otherwise hands the socket
+ * a validated address. Pass as the `lookup` option to http(s).request.
+ */
+export function makeGuardedLookup(rawLookup: RawLookup = defaultRawLookup) {
+  return (
+    hostname: string,
+    options: { all?: boolean } | RawLookupCb,
+    callback?: RawLookupCb
+  ): void => {
+    const cb = (typeof options === "function" ? options : callback) as RawLookupCb;
+    const wantAll = typeof options === "object" && options !== null && options.all === true;
+    rawLookup(hostname, { all: true }, (err, addresses) => {
+      if (err) return cb(err);
+      const list = (Array.isArray(addresses)
+        ? addresses
+        : [{ address: addresses, family: 4 }]) as Array<{ address: string; family: number }>;
+      const blocked = list.find((a) => isBlockedIp(a.address));
+      if (blocked) return cb(new Error(`SSRF blocked: ${hostname} resolved to ${blocked.address}`));
+      if (wantAll) return cb(null, list);
+      cb(null, list[0].address, list[0].family);
+    });
+  };
+}
+
+export interface SafeFetchResponse {
+  ok: boolean;
+  status: number;
+  headers: { get: (name: string) => string | null };
+  arrayBuffer: () => Promise<ArrayBuffer>;
+}
+
+/**
+ * GET a URL with SSRF protection: http(s) only, the connection is pinned to a
+ * DNS-validated address (no rebinding), the body is size-capped, and redirects
+ * are NOT followed (a 3xx returns ok=false). Rejects on invalid/blocked targets.
+ */
+export async function safeFetch(
+  rawUrl: string,
+  opts?: { timeoutMs?: number; maxBytes?: number }
+): Promise<SafeFetchResponse> {
+  const timeoutMs = opts?.timeoutMs ?? 8000;
+  const maxBytes = opts?.maxBytes ?? 20 * 1024 * 1024;
+
+  const url = new URL(rawUrl); // throws on malformed — caller handles
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error(`unsupported protocol: ${url.protocol}`);
+  }
+  const mod = url.protocol === "https:" ? await import("node:https") : await import("node:http");
+
+  return new Promise<SafeFetchResponse>((resolve, reject) => {
+    const req = mod.request(
+      url,
+      { method: "GET", lookup: makeGuardedLookup() as never, timeout: timeoutMs },
+      (res) => {
+        const status = res.statusCode ?? 0;
+        const chunks: Buffer[] = [];
+        let total = 0;
+        res.on("data", (c: Buffer) => {
+          total += c.length;
+          if (total > maxBytes) {
+            req.destroy(new Error("response exceeds max size"));
+            return;
+          }
+          chunks.push(c);
+        });
+        res.on("end", () => {
+          const body = Buffer.concat(chunks);
+          resolve({
+            ok: status >= 200 && status < 300,
+            status,
+            headers: { get: (n) => (res.headers[n.toLowerCase()] as string) ?? null },
+            arrayBuffer: async () =>
+              body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+          });
+        });
+      }
+    );
+    req.on("timeout", () => req.destroy(new Error("request timed out")));
+    req.on("error", reject);
+    req.end();
+  });
+}

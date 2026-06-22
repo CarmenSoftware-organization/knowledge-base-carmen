@@ -1,4 +1,4 @@
-import { isBlockedIp, isUrlSafe } from "@/lib/ssrf-guard";
+import { isBlockedIp, isUrlSafe, makeGuardedLookup } from "@/lib/ssrf-guard";
 
 describe("isBlockedIp", () => {
   it("blocks IPv4 loopback (whole 127.0.0.0/8)", () => {
@@ -106,5 +106,51 @@ describe("isUrlSafe", () => {
   it("rejects hostnames that fail to resolve", async () => {
     const lookup = fakeLookup({});
     expect(await isUrlSafe("https://does-not-exist.invalid/x", lookup)).toBe(false);
+  });
+});
+
+describe("makeGuardedLookup (IP-pinning for fetch connect)", () => {
+  // fake node-style dns.lookup callback (all:true form returns an array)
+  const fakeRaw =
+    (map: Record<string, string[]>) =>
+    (hostname: string, _options: unknown, cb: (e: Error | null, a?: unknown, f?: number) => void) => {
+      const addrs = map[hostname];
+      if (!addrs) return cb(new Error(`ENOTFOUND ${hostname}`));
+      cb(null, addrs.map((address) => ({ address, family: address.includes(":") ? 6 : 4 })));
+    };
+
+  it("returns the resolved address for a public host", (done) => {
+    const lk = makeGuardedLookup(fakeRaw({ "cdn.example.com": ["93.184.216.34"] }) as never);
+    lk("cdn.example.com", { all: false }, (err: Error | null, addr?: string, fam?: number) => {
+      expect(err).toBeNull();
+      expect(addr).toBe("93.184.216.34");
+      expect(fam).toBe(4);
+      done();
+    });
+  });
+
+  it("errors (does not connect) when the host resolves to an internal address", (done) => {
+    const lk = makeGuardedLookup(fakeRaw({ "evil.example.com": ["169.254.169.254"] }) as never);
+    lk("evil.example.com", {}, (err: Error | null, addr?: string) => {
+      expect(err).toBeTruthy();
+      expect(addr).toBeUndefined();
+      done();
+    });
+  });
+
+  it("errors when ANY resolved address is internal (multi-A rebinding)", (done) => {
+    const lk = makeGuardedLookup(fakeRaw({ "mixed.example.com": ["93.184.216.34", "10.0.0.5"] }) as never);
+    lk("mixed.example.com", {}, (err: Error | null) => {
+      expect(err).toBeTruthy();
+      done();
+    });
+  });
+
+  it("propagates resolution failure", (done) => {
+    const lk = makeGuardedLookup(fakeRaw({}) as never);
+    lk("nope.invalid", {}, (err: Error | null) => {
+      expect(err).toBeTruthy();
+      done();
+    });
   });
 });
