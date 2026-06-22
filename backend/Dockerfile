@@ -16,6 +16,10 @@ WORKDIR /app
 
 COPY --from=builder /out/server ./server
 COPY migrations ./migrations
+# Native RAG chat reads these YAML files at runtime via ConfigDir() == "config"
+# (relative to WORKDIR /app). Without them the prompts/intents/path-rules/tuning
+# fail to load and chat runs degraded (empty system prompt, no intent examples).
+COPY config ./config
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
