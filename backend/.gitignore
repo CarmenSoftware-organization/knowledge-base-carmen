@@ -39,3 +39,6 @@ wiki-content/
 
 # compiled server binary (build artifact)
 /server
+
+# downloaded Go toolchain tarballs — ห้าม commit (เคยมี 68MB หลุดเข้า history)
+*.tar.gz
