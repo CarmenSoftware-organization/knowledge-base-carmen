@@ -1,0 +1,7 @@
+[
+  { "message": "สวัสดีครับ", "have_history": false, "expected": "greeting", "tier": "regex" },
+  { "message": "thank you", "have_history": false, "expected": "thanks", "tier": "regex" },
+  { "message": "ทำอะไรได้บ้าง", "have_history": false, "expected": "capabilities", "tier": "regex" },
+  { "message": "งง", "have_history": false, "expected": "confusion", "tier": "regex" },
+  { "message": "how do I create an AP invoice?", "have_history": false, "expected": "tech_support", "tier": "vector_or_llm" }
+]

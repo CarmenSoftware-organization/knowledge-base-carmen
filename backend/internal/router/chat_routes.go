@@ -13,6 +13,7 @@ func RegisterPublicChat(app *fiber.App) {
 	app.Post("/api/chat/record-history", middleware.RequireInternalAPIKey, chatHandler.RecordHistory)
 	app.Get("/api/chat/history/list", middleware.RequireAdminKey, chatHandler.ListHistory)
 	app.Post("/api/chat/route-test", middleware.RequireAdminKey, chatHandler.RouteOnly)
+	app.Post("/api/chat/intent-test", middleware.RequireAdminKey, chatHandler.IntentTest)
 
 	app.Get("/api/chat/rooms/:bu/:username", chatHandler.Proxy)
 	app.Post("/api/chat/rooms", chatHandler.Proxy)

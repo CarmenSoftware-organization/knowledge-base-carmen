@@ -21,6 +21,7 @@ type ChatHandler struct {
 	logService     *services.ActivityLogService
 	historyService *services.ChatHistoryService
 	retrieval      *services.RetrievalService
+	intentRouter   *services.IntentRouterService
 }
 
 func NewChatHandler() *ChatHandler {
@@ -32,6 +33,7 @@ func NewChatHandler() *ChatHandler {
 		logService:     services.NewActivityLogService(),
 		historyService: services.NewChatHistoryService(),
 		retrieval:      services.NewRetrievalService(),
+		intentRouter:   services.NewIntentRouterService(),
 	}
 }
 
@@ -95,4 +97,29 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 		})
 	}
 	return c.JSON(resp)
+}
+
+// IntentTest is an admin endpoint that exposes the intent classification pipeline
+// for offline testing and debugging. POST body: { "message": "...", "lang": "th", "have_history": false }.
+func (h *ChatHandler) IntentTest(c *fiber.Ctx) error {
+	var req struct {
+		Message     string `json:"message"`
+		Lang        string `json:"lang"`
+		HaveHistory bool   `json:"have_history"`
+	}
+	if err := c.BodyParser(&req); err != nil || strings.TrimSpace(req.Message) == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "message is required"})
+	}
+	if req.Lang == "" {
+		req.Lang = "th"
+	}
+	r := h.intentRouter.Classify(req.Message, req.Lang, req.HaveHistory)
+	return c.JSON(fiber.Map{
+		"type":              r.Type,
+		"source":            r.Source,
+		"canned_response":   r.CannedResponse,
+		"embed_tokens":      r.EmbedTokens,
+		"llm_input_tokens":  r.LLMInputTokens,
+		"llm_output_tokens": r.LLMOutputTokens,
+	})
 }
