@@ -3,6 +3,7 @@ package api
 import (
 	"bufio"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -152,6 +153,39 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 		})
 	}
 	return c.JSON(resp)
+}
+
+// Feedback handles POST /api/chat/feedback/:message_id. When the native flag is
+// disabled it delegates to the Python proxy; otherwise it records a thumbs-up/down
+// score for the given message, scoped to the requesting user.
+func (h *ChatHandler) Feedback(c *fiber.Ctx) error {
+	if config.AppConfig == nil || !config.AppConfig.ChatNative.Feedback {
+		return h.Proxy(c)
+	}
+	messageID, err := strconv.ParseInt(c.Params("message_id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid message_id"})
+	}
+	var body struct {
+		Score    int    `json:"score"`
+		BU       string `json:"bu"`
+		Username string `json:"username"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid body"})
+	}
+	if body.Score != 1 && body.Score != -1 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "score must be 1 or -1"})
+	}
+	buID, err := h.historyService.GetBUIDFromSlug(strings.TrimSpace(body.BU))
+	if err != nil || buID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unknown bu"})
+	}
+	userID := services.HashUserID(body.Username, config.AppConfig.Server.PrivacySecret)
+	if err := h.historyService.UpdateFeedback(buID, messageID, userID, body.Score); err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "feedback target not found"})
+	}
+	return c.JSON(fiber.Map{"status": "ok"})
 }
 
 // IntentTest is an admin endpoint that exposes the intent classification pipeline
