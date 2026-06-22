@@ -1,0 +1,26 @@
+- keywords: ["vendor", "ap-vendor", "ผู้ขาย", "ร้านค้า"]
+  patterns: ["%vendor%", "%ผู้ขาย%", "%ร้านค้า%"]
+
+- keywords: ["configuration", "company profile", "chart of account", "department", "currency", "payment type", "permission", "cf-", "สิทธิ์การใช้งาน", "กำหนดสิทธิ์", "พาสเวิร์ด", "รหัสผ่าน", "Permissions", "Users", "Chart of Account"]
+  patterns: ["%configuration%", "%cf-%"]
+
+- keywords: [" ar ", "ar-", "ar invoice", "ar receipt", "ลูกค้า", "receipt", "contract", "folio", "ใบเสร็จ", "ลูกหนี้", "ชำระหนี้", "ใบกำกับภาษี", "เงินมัดจำ", "Aging", "Settle", "Deposit"]
+  patterns: ["%ar-%", "%ar\\%", "%/ar/%"]
+
+- keywords: ["ap", " ap ", "ap-", "ap invoice", "ap payment", "เจ้าหนี้", "cheque", "wht", "หัก ณ ที่จ่าย", "input tax", "ภาษีซื้อ", "rdprep", "สรรพากร", "Payment", "Withholding Tax", "Petty Cash", "ภาษีหัก ณ ที่จ่าย", "กระทบยอด", "ยันยอด", "เงินสดย่อย", "ภ.ง.ด.3", "ภ.ง.ด.53"]
+  patterns: ["%ap-%", "%ap\\%", "%/ap/%"]
+
+- keywords: ["asset", "สินทรัพย์", "as-", "ทะเบียนสินทรัพย์", "asset register", "asset disposal", "ค่าเสื่อมราคา", "ตัดจำหน่าย", "โอนย้ายทรัพย์สิน", "Depreciation", "Disposal", "Salvage", "Asset Life", "Acquire Date", "Pre-Register Asset", "Barcode"]
+  patterns: ["%as-%", "%asset%"]
+
+- keywords: [" gl ", "gl ", "general ledger", "journal voucher", "voucher", "บัญชีแยกประเภท", "ผังบัญชี", "allocation", "amortization", "budget", "recurring", "สมุดบัญชีรายวัน", "ปิดงวด", "Journal Voucher", "JV", "Template", "Posting"]
+  patterns: ["%gl%", "%c-%"]
+
+- keywords: ["dashboard", "สถิติ", "revenue", "occupancy", "adr", "revpar", "trevpar", "p&l", "กำไรขาดทุน"]
+  patterns: ["%dashboard%"]
+
+- keywords: ["workbook", "excel", "refresh", "formula", "function", "add-in", "upload", "import"]
+  patterns: ["%workbook%", "%wb-%", "%excel%"]
+
+- keywords: ["comment", "activity log", "document management", "ไฟล์แนบ", "รูปภาพแนบ", "ประวัติเอกสาร", "คอมเมนต์", "ความคิดเห็น"]
+  patterns: ["%comment%", "%cm-%"]
