@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -285,4 +286,50 @@ func (c *Client) Embedding(text string) ([]float32, error) {
 	}
 
 	return res.Data[0].Embedding, nil
+}
+
+// EmbeddingBatch embeds multiple texts in a single request, returning vectors
+// ordered to match the input (by the response's Index field).
+func (c *Client) EmbeddingBatch(texts []string) ([][]float32, error) {
+	if len(texts) == 0 {
+		return [][]float32{}, nil
+	}
+	reqBody := EmbeddingsRequest{Model: c.EmbedModel, Input: texts}
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+	req, err := http.NewRequest("POST", strings.TrimRight(c.APIBase, "/")+"/embeddings", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.APIKey)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
+	if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("openrouter error %d: %s", resp.StatusCode, string(body))
+	}
+	var res EmbeddingsResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("unmarshal response: %w", err)
+	}
+	if len(res.Data) != len(texts) {
+		return nil, fmt.Errorf("embedding count mismatch: got %d want %d", len(res.Data), len(texts))
+	}
+	sort.Slice(res.Data, func(i, j int) bool { return res.Data[i].Index < res.Data[j].Index })
+	out := make([][]float32, len(res.Data))
+	for i := range res.Data {
+		out[i] = res.Data[i].Embedding
+	}
+	return out, nil
 }
