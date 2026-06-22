@@ -12,9 +12,14 @@ DO $$
 DECLARE r RECORD;
 BEGIN
   FOR r IN SELECT id, slug FROM public.business_units LOOP
+    -- Skip a BU that has no legacy schema OR was already migrated. The copy
+    -- below is one atomic DO block, so any existing public.documents rows for
+    -- this bu_id mean it was fully copied — re-running must not duplicate chunks.
     IF EXISTS (
       SELECT 1 FROM information_schema.tables
       WHERE table_schema = r.slug AND table_name = 'documents'
+    ) AND NOT EXISTS (
+      SELECT 1 FROM public.documents WHERE bu_id = r.id
     ) THEN
       -- 1) copy documents, remembering the old id in legacy_id
       EXECUTE format(
