@@ -17,8 +17,10 @@ CREATE TABLE IF NOT EXISTS public.business_units (
     slug        TEXT NOT NULL UNIQUE,
     description TEXT,
     created_at  TIMESTAMPTZ DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ DEFAULT NOW()
+    updated_at  TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at  TIMESTAMPTZ
 );
+CREATE INDEX IF NOT EXISTS idx_business_units_deleted_at ON public.business_units(deleted_at);
 
 INSERT INTO public.business_units (name, slug, description)
 VALUES ('Carmen Cloud', 'carmen', 'System for Carmen Cloud documents and Wiki'),
@@ -122,6 +124,7 @@ CREATE TABLE IF NOT EXISTS public.activity_logs (
     action     TEXT NOT NULL,
     category   TEXT NOT NULL,
     details    JSONB,
+    user_agent TEXT,
     timestamp  TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
