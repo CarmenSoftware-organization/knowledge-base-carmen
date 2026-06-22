@@ -122,6 +122,21 @@ func sourcesToJSON(sources interface{}) string {
 	return string(b)
 }
 
+// UpdateFeedback sets metrics.feedback for one message owned by (buID, userID).
+func (s *ChatHistoryService) UpdateFeedback(buID uint, messageID int64, userID string, score int) error {
+	const q = `UPDATE public.chat_history
+SET metrics = jsonb_set(COALESCE(metrics, '{}'), '{feedback}', to_jsonb(?::int))
+WHERE id = ? AND bu_id = ? AND user_id = ?`
+	res := database.DB.Exec(q, score, messageID, buID, userID)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("no chat_history row for id=%d bu=%d user matched", messageID, buID)
+	}
+	return nil
+}
+
 // GetBUIDFromSlug returns business_units.id for the given slug, or 0 if not found
 func (s *ChatHistoryService) GetBUIDFromSlug(slug string) (uint, error) {
 	var id uint
