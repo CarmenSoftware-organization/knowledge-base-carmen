@@ -12,7 +12,7 @@ import (
 )
 
 // RetrievalService holds tuning constants and path-boost rules loaded from
-// YAML at startup. It provides hybrid cosine+FTS retrieval over a BU schema.
+// YAML at startup. It provides hybrid cosine+FTS retrieval over a BU's documents (filtered by bu_id).
 type RetrievalService struct {
 	tuning chatconfig.RetrievalTuning
 	rules  []chatconfig.PathRule

@@ -5,6 +5,8 @@
 -- Idempotent and safe on a fresh DB (loop bodies are skipped when no legacy
 -- schema exists). Apply with psql AFTER 0001_init_schema.sql.
 
+BEGIN;
+
 -- Temp column to carry the old per-schema documents.id through the copy.
 ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS legacy_id BIGINT;
 
@@ -56,3 +58,5 @@ END $$;
 
 -- Drop the now-unused provisioning function.
 DROP FUNCTION IF EXISTS create_bu_tables(TEXT);
+
+COMMIT;

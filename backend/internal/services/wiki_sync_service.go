@@ -250,22 +250,16 @@ func listMarkdownRelativePaths(root string) ([]string, error) {
 }
 
 func listIndexedDocumentPaths(bu string) ([]string, bool, error) {
-	if !security.ValidateSchema(bu) {
-		return nil, false, fmt.Errorf("invalid bu schema: %s", bu)
-	}
-
-	var exists bool
-	existsSQL := fmt.Sprintf("SELECT to_regclass('%s.documents') IS NOT NULL", bu)
-	if err := database.DB.Raw(existsSQL).Scan(&exists).Error; err != nil {
+	buID, err := database.BUIDForSlug(bu)
+	if err != nil {
 		return nil, false, err
 	}
-	if !exists {
+	if buID == 0 {
 		return []string{}, false, nil
 	}
-
 	var out []string
-	sql := fmt.Sprintf("SELECT path FROM %s.documents WHERE source = 'wiki' ORDER BY path", bu)
-	if err := database.DB.Raw(sql).Scan(&out).Error; err != nil {
+	sql := `SELECT path FROM public.documents WHERE bu_id = ? AND source = 'wiki' ORDER BY path`
+	if err := database.DB.Raw(sql, buID).Scan(&out).Error; err != nil {
 		return nil, true, err
 	}
 	return out, true, nil
