@@ -1,5 +1,5 @@
 "use client";
-// frontend/user/hooks/useCarmenChat.ts
+// frontend/hooks/useCarmenChat.ts
 
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
