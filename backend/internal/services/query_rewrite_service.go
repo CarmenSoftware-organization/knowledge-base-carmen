@@ -49,8 +49,8 @@ func NewQueryRewriteService() *QueryRewriteService {
 	s.translateTemplate = prompts.TranslatePrompt
 
 	client := openrouter.NewClient()
-	s.rewriteLLM = client.ClassifyIntent
-	s.translateLLM = client.ClassifyIntent
+	s.rewriteLLM = func(p string) (string, int, int, error) { return client.Complete(p, 500) }
+	s.translateLLM = func(p string) (string, int, int, error) { return client.Complete(p, 100) }
 
 	return s
 }
