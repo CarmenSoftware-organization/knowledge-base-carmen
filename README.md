@@ -36,6 +36,8 @@
 
 ## Quick Start (Docker Compose)
 
+> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก
+
 ```bash
 cp docker-compose.env.example .env.docker
 # แก้ค่า secrets ใน .env.docker เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET

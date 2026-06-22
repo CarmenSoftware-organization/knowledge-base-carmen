@@ -93,6 +93,8 @@
 
 ## 5.1 วิธีเร็วสุด: Docker Compose (แนะนำ)
 
+> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก (deploy บน Vercel)
+
 จาก root repo:
 
 ```bash
