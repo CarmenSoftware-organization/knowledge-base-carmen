@@ -188,6 +188,17 @@ func (h *ChatHandler) Feedback(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"status": "ok"})
 }
 
+// ClearRoom handles DELETE /api/chat/clear/:room_id. Chat history is owned by the
+// frontend (localStorage passed in each /stream call); there is no server-side room
+// state to clear. When the native flag is disabled it delegates to the Python proxy;
+// otherwise it acknowledges the clear with a simple ok response.
+func (h *ChatHandler) ClearRoom(c *fiber.Ctx) error {
+	if config.AppConfig == nil || !config.AppConfig.ChatNative.Feedback {
+		return h.Proxy(c)
+	}
+	return c.JSON(fiber.Map{"status": "ok", "room_id": c.Params("room_id")})
+}
+
 // IntentTest is an admin endpoint that exposes the intent classification pipeline
 // for offline testing and debugging. POST body: { "message": "...", "lang": "th", "have_history": false }.
 func (h *ChatHandler) IntentTest(c *fiber.Ctx) error {
