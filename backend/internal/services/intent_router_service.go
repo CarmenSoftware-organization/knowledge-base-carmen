@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/new-carmen/backend/internal/chatconfig"
+	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/utils"
 	"github.com/new-carmen/backend/pkg/openrouter"
 )
@@ -105,6 +106,10 @@ func NewIntentRouterService() *IntentRouterService {
 		tuning = t.Intent
 	} else {
 		log.Printf("[intent] tuning load failed, using defaults: %v", err)
+	}
+
+	if config.AppConfig == nil {
+		return &IntentRouterService{tuning: tuning}
 	}
 
 	client := openrouter.NewClient()
