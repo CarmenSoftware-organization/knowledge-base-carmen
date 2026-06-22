@@ -26,6 +26,20 @@ func MatchesPathRules(path, question string, rules []chatconfig.PathRule) bool {
 	return false
 }
 
+// MatchedRuleCount returns how many rules have at least one keyword present in
+// the question (one count per rule). Used to suppress path boosting for generic
+// queries, mirroring retrieval.py get_path_boost_patterns.
+func MatchedRuleCount(question string, rules []chatconfig.PathRule) int {
+	lq := strings.ToLower(question)
+	n := 0
+	for _, rule := range rules {
+		if anyKeywordInQuestion(rule.Keywords, lq) {
+			n++
+		}
+	}
+	return n
+}
+
 func anyKeywordInQuestion(keywords []string, lqQuestion string) bool {
 	for _, kw := range keywords {
 		kw = strings.TrimSpace(strings.ToLower(kw))

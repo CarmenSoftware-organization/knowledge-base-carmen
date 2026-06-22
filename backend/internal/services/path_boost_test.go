@@ -6,6 +6,19 @@ import (
 	"github.com/new-carmen/backend/internal/chatconfig"
 )
 
+func TestMatchedRuleCount(t *testing.T) {
+	rules := []chatconfig.PathRule{
+		{Keywords: []string{"vendor", "ผู้ขาย"}, Patterns: []string{"%vendor%"}},
+		{Keywords: []string{"ap", "เจ้าหนี้"}, Patterns: []string{"%ap-%", "%/ap/%"}},
+	}
+	if got := MatchedRuleCount("how to add a vendor and ap invoice", rules); got != 2 {
+		t.Errorf("both rules matched: got %d, want 2", got)
+	}
+	if got := MatchedRuleCount("unrelated question about weather", rules); got != 0 {
+		t.Errorf("no rules matched: got %d, want 0", got)
+	}
+}
+
 func TestMatchesPathRules(t *testing.T) {
 	rules := []chatconfig.PathRule{
 		{Keywords: []string{"vendor", "ผู้ขาย"}, Patterns: []string{"%vendor%"}},

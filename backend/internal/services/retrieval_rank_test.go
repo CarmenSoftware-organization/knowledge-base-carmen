@@ -59,3 +59,61 @@ func TestFuseAndRank_PathBoostLifts(t *testing.T) {
 		t.Error("y should be marked Boosted")
 	}
 }
+
+func TestFuseAndRank_BoostSuppressedWhenManyRules(t *testing.T) {
+	// 5 rules all matching the question → boost suppressed even if path matches rule 1.
+	rules := []chatconfig.PathRule{
+		{Keywords: []string{"k1"}, Patterns: []string{"%p1%"}},
+		{Keywords: []string{"k2"}, Patterns: []string{"%p2%"}},
+		{Keywords: []string{"k3"}, Patterns: []string{"%p3%"}},
+		{Keywords: []string{"k4"}, Patterns: []string{"%p4%"}},
+		{Keywords: []string{"k5"}, Patterns: []string{"%p5%"}},
+	}
+	vec := []ScoredRow{
+		{Path: "x/p1/y.md", Title: "T", Content: "content1", Dist: 0.10},
+	}
+	c := cfg()
+	c.TopK = 5
+	got := FuseAndRank(vec, nil, c, "k1 k2 k3 k4 k5", rules)
+	if len(got) == 0 {
+		t.Fatal("expected at least one result")
+	}
+	if got[0].Boosted {
+		t.Error("boost should be suppressed when >=5 rules match the question")
+	}
+}
+
+func TestFuseAndRank_DistSentinel(t *testing.T) {
+	// vec row gets real Dist; keyword-only row gets sentinel 1.0.
+	vec := []ScoredRow{
+		{Path: "p/vec.md", Title: "V", Content: "vector content", Dist: 0.12},
+	}
+	kw := []ScoredRow{
+		{Path: "p/kw.md", Title: "K", Content: "keyword content"},
+	}
+	c := cfg()
+	c.TopK = 10
+	got := FuseAndRank(vec, kw, c, "q", nil)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 results, got %d", len(got))
+	}
+	var vecChunk, kwChunk *RetrievedChunk
+	for i := range got {
+		switch got[i].Content {
+		case "vector content":
+			vecChunk = &got[i]
+		case "keyword content":
+			kwChunk = &got[i]
+		}
+	}
+	if vecChunk == nil || kwChunk == nil {
+		t.Fatal("could not find both chunks in output")
+	}
+	const eps = 0.001
+	if vecChunk.Dist < 0.12-eps || vecChunk.Dist > 0.12+eps {
+		t.Errorf("vector chunk Dist = %v, want ~0.12", vecChunk.Dist)
+	}
+	if kwChunk.Dist != 1.0 {
+		t.Errorf("keyword-only chunk Dist = %v, want 1.0 (sentinel)", kwChunk.Dist)
+	}
+}
