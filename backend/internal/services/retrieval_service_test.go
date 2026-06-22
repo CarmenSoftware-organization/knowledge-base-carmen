@@ -6,6 +6,7 @@ import (
 
 	"github.com/new-carmen/backend/internal/config"
 	"github.com/new-carmen/backend/internal/database"
+	"github.com/new-carmen/backend/pkg/openrouter"
 )
 
 // dbAvailable connects using the loaded config; skips the test when the remote
@@ -50,5 +51,34 @@ func TestNewRetrievalService_LoadsTuning(t *testing.T) {
 	s := NewRetrievalService()
 	if s.tuning.TopK != 4 || s.tuning.RRFK != 60 || s.tuning.MaxDistance != 0.45 {
 		t.Errorf("tuning not loaded: %+v", s.tuning)
+	}
+}
+
+func TestRetrievalService_Retrieve_EndToEnd(t *testing.T) {
+	dbAvailable(t)
+	t.Setenv("CHAT_CONFIG_DIR", "../../config")
+
+	// Get embedding for query
+	embedder := openrouter.NewClient()
+	emb, err := embedder.Embedding("vendor")
+	if err != nil {
+		t.Skipf("embedding/LLM unreachable: %v", err)
+	}
+
+	// Retrieve chunks for the embedding
+	rs := NewRetrievalService()
+	chunks, err := rs.Retrieve("carmen", "vendor", emb)
+	if err != nil {
+		t.Fatalf("Retrieve: %v", err)
+	}
+
+	// Validate results
+	if len(chunks) == 0 {
+		t.Skip("no chunks for this query in this DB — not a logic failure")
+	}
+	for _, c := range chunks {
+		if c.Path == "" || c.Content == "" {
+			t.Errorf("chunk missing fields: %+v", c)
+		}
 	}
 }
