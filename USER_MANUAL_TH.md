@@ -2,8 +2,7 @@
 
 เอกสารนี้สรุปการทำงานทั้งระบบของโปรเจค `kb-carmen` แบบ end-to-end:
 - Frontend (เว็บ Knowledge Base + Chat Widget)
-- Backend (Go API)
-- Chatbot Service (Python FastAPI + RAG)
+- Backend (Go API + native RAG chatbot)
 - ขั้นตอนเพิ่ม/ซิงก์ข้อมูลไป Wiki.js และ PostgreSQL
 - คำสั่งใช้งานหลักสำหรับทีม Dev/Ops/Content
 
@@ -22,17 +21,13 @@
    - เหมาะสำหรับการจัดการหน้าเอกสารในระบบ Wiki
 
 3. **Backend + Database Layer**
-   - Go Backend (`backend`) เป็น API กลาง
+   - Go Backend (`backend`) เป็น API กลาง รวม native RAG chatbot ที่ `/api/chat/*`
    - PostgreSQL + pgvector เก็บ:
      - ดัชนีเอกสาร (`<bu>.documents`, `<bu>.document_chunks`)
      - แชต/กิจกรรม (`public.chat_history`, `public.activity_logs`)
      - FAQ tree (`public.faq_*`)
 
-4. **Chatbot Layer**
-   - Python Chatbot (`carmen-chatbot`) ทำงาน RAG/Intent/Stream
-   - Go Backend ทำหน้าที่ proxy บาง endpoint ไปยัง Python
-
-5. **Frontend Layer**
+4. **Frontend Layer**
    - Next.js (`frontend/user`) แสดงบทความ KB, FAQ, Activity และ Chat Widget
    - เรียก API ที่ Go Backend เป็นหลัก
 
@@ -40,9 +35,8 @@
 
 ## 2) โครงสร้างโฟลเดอร์ที่สำคัญ
 
-- `backend/` — Go Fiber API + migrations + reindex/sync logic
+- `backend/` — Go Fiber API + migrations + reindex/sync logic + native RAG chatbot
 - `frontend/user/` — Next.js App Router UI
-- `carmen-chatbot/` — Python FastAPI chatbot + RAG pipeline
 - `scripts/` — ชุดสคริปต์ import/sync/reindex/seed FAQ
 - `contents/` — ไฟล์ markdown เนื้อหาความรู้
 
@@ -64,14 +58,13 @@
 
 1. ผู้ใช้พิมพ์คำถามใน Floating Chat
 2. Frontend ยิง `POST /api/chat/stream` ไป Go Backend
-3. Go proxy ไป Python Chatbot (`PYTHON_CHATBOT_URL`)
-4. Python ทำ pipeline:
+3. Go Backend ประมวลผล native RAG pipeline:
    - Intent detection
    - Query rewrite (กรณี follow-up)
-   - Retrieval จาก PostgreSQL (`documents/chunks`)
+   - Retrieval จาก PostgreSQL (`documents/chunks`) ผ่าน hybrid search (pgvector + FTS + RRF)
    - สร้าง prompt + เรียก LLM
    - ส่งผลแบบ NDJSON stream (`chunk`, `status`, `sources`, `suggestions`, `done`)
-5. Frontend แสดงผลแบบพิมพ์ทีละตัว + แหล่งอ้างอิง
+4. Frontend แสดงผลแบบพิมพ์ทีละตัว + แหล่งอ้างอิง
 
 ### 3.3 Flow อัปเดตข้อมูลความรู้
 
@@ -120,7 +113,6 @@ health check:
 
 ```bash
 curl http://localhost:8080/health
-curl http://localhost:8000/api/health
 ```
 
 ## 5.2 รันแยกบริการแบบ Local
@@ -142,23 +134,6 @@ make run
 make dev
 make test
 make build
-```
-
-### Chatbot (Python)
-
-```bash
-cd carmen-chatbot
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python start_server.py
-```
-
-หรือ:
-
-```bash
-uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 ### Frontend (Next.js)
@@ -188,22 +163,14 @@ npm test
 - `ADMIN_API_KEY` (ใช้กับ endpoint admin)
 - `INTERNAL_API_KEY` (internal record-history)
 - `PRIVACY_HMAC_SECRET` (hash user id)
-- `PYTHON_CHATBOT_URL` (URL Python chatbot)
 - `GIT_REPO_PATH`, `WIKI_CONTENT_PATH`
 - `GITHUB_TOKEN`, `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`, `GITHUB_BRANCH`
 - `OPENROUTER_API_KEY`, `OPENROUTER_EMBED_MODEL`
-
-## 6.2 Chatbot (Python)
-
-- `LLM_API_KEY`, `LLM_API_BASE`
-- `LLM_CHAT_MODEL`, `LLM_INTENT_MODEL`, `LLM_EMBED_MODEL`
-- `DB_*` (เชื่อม PostgreSQL)
+- `LLM_API_KEY`, `LLM_API_BASE`, `LLM_CHAT_MODEL`, `LLM_INTENT_MODEL`, `LLM_EMBED_MODEL` (native RAG chatbot)
 - `VECTOR_DIMENSION` (ต้องตรงกับ schema DB)
-- `GO_BACKEND_URL`, `GO_BACKEND_INTERNAL_API_KEY`
-- `PRIVACY_HMAC_SECRET` (ต้องใช้ค่าเดียวกับ Go)
 - `RATE_LIMIT_PER_MINUTE`, `DAILY_REQUEST_LIMIT`
 
-## 6.3 Frontend
+## 6.2 Frontend
 
 - `NEXT_PUBLIC_API_BASE` (ชี้ไป Go backend)
 - `NEXT_PUBLIC_USE_REMOTE_API` (กรณี dev แต่ต้องการใช้ remote API)
@@ -392,7 +359,6 @@ curl -H "X-Admin-Key: <admin-key>" "http://localhost:8080/api/wiki/sync/audit"
 
 ```bash
 curl http://localhost:8080/health
-curl http://localhost:8000/api/health
 ```
 
 ---
@@ -444,7 +410,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_<bu>_faq.sql
 
 ## 13) หมายเหตุสำคัญด้านความปลอดภัย/การใช้งาน
 
-- ตั้งค่า `PRIVACY_HMAC_SECRET` ให้แข็งแรงและใช้ค่าเดียวกันระหว่าง Go + Python
+- ตั้งค่า `PRIVACY_HMAC_SECRET` ให้แข็งแรง
 - `ADMIN_API_KEY`/`INTERNAL_API_KEY` ห้าม hardcode ในโค้ดหรือ push ขึ้น repo
 - ใน production ควรจำกัด `CORS_ORIGINS` เฉพาะโดเมนจริง
 - ตรวจให้ `VECTOR_DIMENSION` ตรงกับ column ใน DB migration
@@ -457,12 +423,11 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_<bu>_faq.sql
 - [ ] ตั้งค่า secrets ครบ (`OPENROUTER_API_KEY`, `JWT_SECRET`, `PRIVACY_HMAC_SECRET`, `GITHUB_TOKEN`)
 - [ ] `VECTOR_DIMENSION` ตรงกับ migration variant ที่รัน (1536 / 2000 / 4096)
 - [ ] รัน migrations ครบ (ผ่าน psql ตามลำดับใน `backend/migrations/README.md`)
-- [ ] ทดสอบ `health` ของ Go/Python
+- [ ] ทดสอบ `health` ของ Go backend (`curl http://.../health`)
 - [ ] ทดสอบ `/api/wiki/sync` + `/api/index/rebuild`
 - [ ] ทดสอบ chat stream + feedback
 - [ ] ทดสอบ FAQ API
 - [ ] ทดสอบ CORS จาก frontend domain จริง
-- [ ] `PYTHON_CHATBOT_URL` ใน Go backend ชี้ไป URL จริง (ไม่ใช่ `localhost`/placeholder)
 - [ ] ตั้ง GitHub Actions secrets `BACKEND_BASE_URL` + `BACKEND_ADMIN_API_KEY` (ถ้าใช้ auto-provision workflow)
 
 ---
@@ -473,5 +438,5 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_<bu>_faq.sql
 - `CLAUDE.md` — guidance สำหรับ Claude Code
 - `HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
 - `backend/migrations/README.md` — ลำดับ migration + dimension variants
-- `carmen-chatbot/{HANDOVER,TUNING_GUIDE,chatbot-flow}.md` — RAG pipeline + การปรับจูน
+- RAG pipeline internals: ดู `docs/superpowers/plans/2026-06-22-chatbot-go-*`
 

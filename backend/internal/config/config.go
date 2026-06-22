@@ -24,11 +24,14 @@ type Config struct {
 }
 
 type LLMConfig struct {
-	APIKey     string
-	APIBase    string
-	ChatModel  string
-	EmbedModel string
-	TimeoutSec int
+	APIKey          string
+	APIBase         string
+	ChatModel       string
+	EmbedModel      string
+	IntentModel     string
+	FallbackModel   string
+	MaxPromptTokens int
+	TimeoutSec      int
 }
 
 type TranslationConfig struct {
@@ -41,7 +44,6 @@ type TranslationConfig struct {
 type ServerConfig struct {
 	Port           string
 	Host           string
-	ChatbotURL     string
 	Environment    string
 	StrictEnvOnly  bool
 	CORSOrigins    string
@@ -102,6 +104,8 @@ type ChatConfig struct {
 	HistorySimilarityThreshold float64
 	IndexingTimeoutMin         int
 	WebhookIndexTimeoutMin     int
+	DailyRequestLimit          int
+	RateLimitPerMin            string
 }
 
 var AppConfig *Config
@@ -260,7 +264,6 @@ func Load() error {
 		Server: ServerConfig{
 			Port:           listenPort(),
 			Host:           getEnv("SERVER_HOST", "localhost"),
-			ChatbotURL:     getEnv("PYTHON_CHATBOT_URL", "http://localhost:8000"),
 			Environment:    environment,
 			StrictEnvOnly:  strictEnvOnly,
 			CORSOrigins:    getEnv("CORS_ORIGINS", defaultCORS),
@@ -317,6 +320,8 @@ func Load() error {
 			HistorySimilarityThreshold: getEnvAsFloat("CHAT_HISTORY_SIMILARITY_THRESHOLD", 0.15),
 			IndexingTimeoutMin:         getEnvAsInt("INDEXING_TIMEOUT_MINUTES", 60),
 			WebhookIndexTimeoutMin:     getEnvAsInt("WEBHOOK_INDEXING_TIMEOUT_MINUTES", 30),
+			DailyRequestLimit:          getEnvAsInt("DAILY_REQUEST_LIMIT", 1000),
+			RateLimitPerMin:            getEnv("RATE_LIMIT_PER_MINUTE", "20/minute"),
 		},
 		Translation: TranslationConfig{
 			APIKey:     getEnv("GOOGLE_TRANSLATE_API_KEY", ""),
@@ -325,11 +330,14 @@ func Load() error {
 			TimeoutSec: getEnvAsInt("TRANSLATION_TIMEOUT_SECONDS", 30),
 		},
 		LLM: LLMConfig{
-			APIKey:     getEnvFirst([]string{"LLM_API_KEY", "OPENROUTER_API_KEY"}, ""),
-			APIBase:    getEnv("LLM_API_BASE", "https://openrouter.ai/api/v1"),
-			ChatModel:  getEnvFirst([]string{"LLM_CHAT_MODEL", "OPENROUTER_CHAT_MODEL"}, "openai/gpt-4o-mini"),
-			EmbedModel: getEnvFirst([]string{"LLM_EMBED_MODEL", "OPENROUTER_EMBED_MODEL"}, "qwen/qwen3-embedding-8b"),
-			TimeoutSec: getEnvAsInt("LLM_TIMEOUT_SECONDS", 60),
+			APIKey:          getEnvFirst([]string{"LLM_API_KEY", "OPENROUTER_API_KEY"}, ""),
+			APIBase:         getEnv("LLM_API_BASE", "https://openrouter.ai/api/v1"),
+			ChatModel:       getEnvFirst([]string{"LLM_CHAT_MODEL", "OPENROUTER_CHAT_MODEL"}, "openai/gpt-4o-mini"),
+			EmbedModel:      getEnvFirst([]string{"LLM_EMBED_MODEL", "OPENROUTER_EMBED_MODEL"}, "qwen/qwen3-embedding-8b"),
+			IntentModel:     getEnvFirst([]string{"LLM_INTENT_MODEL", "OPENROUTER_INTENT_MODEL"}, "google/gemini-2.5-flash-lite"),
+			FallbackModel:   getEnv("LLM_FALLBACK_MODEL", ""),
+			MaxPromptTokens: getEnvAsInt("MAX_PROMPT_TOKENS", 6000),
+			TimeoutSec:      getEnvAsInt("LLM_TIMEOUT_SECONDS", 60),
 		},
 	}
 
@@ -341,7 +349,6 @@ func ensureStrictEnv() error {
 		"ENVIRONMENT",
 		"SERVER_HOST",
 		"SERVER_PORT",
-		"PYTHON_CHATBOT_URL",
 		"CORS_ORIGINS",
 		"ADMIN_API_KEY",
 		"INTERNAL_API_KEY",

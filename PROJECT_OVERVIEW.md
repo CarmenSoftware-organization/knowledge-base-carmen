@@ -27,26 +27,23 @@ editor: markdown
                         │  - wiki / faq /       │
                         │    activity /         │
                         │    indexing           │
-                        │  - proxies /api/chat  │
-                        └─┬───────────────────┬─┘
-                          │                   │
-                          │                   │ /api/chat/stream
-                          ▼                   ▼
-              ┌───────────────────────┐  ┌───────────────────────┐
-              │  Postgres + pgvector  │  │  Python FastAPI       │
-              │  (Neon / Render)      │◄─┤  carmen-chatbot/      │
-              │                       │  │  - intent router      │
-              │  <bu>.documents       │  │  - hybrid retrieval   │
-              │  <bu>.document_chunks │  │  - LLM generation     │
-              │  public.faq_*         │  └───────────┬───────────┘
-              │  public.chat_history  │              │
-              │  public.activity_logs │              │ embeddings + LLM
-              └───────────▲───────────┘              ▼
-                          │                ┌───────────────────────┐
-                          │                │  OpenRouter           │
-                          │                │  (chat / intent /     │
-                          │                │   embedding model)    │
-                          │                └───────────────────────┘
+                        │  - native RAG chat    │
+                        │    /api/chat/*        │
+                        │    (intent → hybrid   │
+                        │     retrieval → LLM)  │
+                        └─┬─────────────────────┘
+                          │
+                          ▼
+              ┌───────────────────────┐       ┌───────────────────────┐
+              │  Postgres + pgvector  │       │  OpenRouter           │
+              │  (Neon / Render)      │       │  (chat / intent /     │
+              │                       │       │   embedding model)    │
+              │  <bu>.documents       │       └───────────────────────┘
+              │  <bu>.document_chunks │
+              │  public.faq_*         │
+              │  public.chat_history  │
+              │  public.activity_logs │
+              └───────────▲───────────┘
                           │
                 ┌─────────┴──────────┐
                 │  GitHub Actions    │
@@ -63,8 +60,7 @@ editor: markdown
 | ฝั่ง | บทบาท | สถานะ |
 |------|--------|--------|
 | **Frontend** | Next.js App Router — KB browse, FAQ, Activity, floating chat widget | ✅ ใช้งานจริง |
-| **Go Backend** | Fiber API — wiki/faq/activity/indexing + proxy `/api/chat/*` ไป Python | ✅ ใช้งานจริง |
-| **Python Chatbot** | FastAPI RAG — intent + retrieval + LLM, NDJSON streaming | ✅ ใช้งานจริง |
+| **Go Backend** | Fiber API — wiki/faq/activity/indexing + native RAG chatbot (`/api/chat/*`: intent → hybrid retrieval pgvector+FTS+RRF → LLM, NDJSON streaming) | ✅ ใช้งานจริง |
 | **Postgres + pgvector** | metadata + vector index + chat history + activity logs | ✅ Neon / Render Postgres |
 | **OpenRouter** | LLM (chat/intent) + embedding service | ✅ ผ่าน `LLM_*` env |
 | **GitHub Actions** | Auto provision/sync/reindex เมื่อ push `contents/**` เข้า main | ✅ `.github/workflows/auto-provision-sync-reindex.yml` |
@@ -90,15 +86,9 @@ editor: markdown
 | Framework | Fiber v2 |
 | ORM | GORM (เฉพาะบางส่วน — ส่วนใหญ่ใช้ raw SQL) |
 | โครงสร้าง | `internal/{api,router,services,database,middleware,config,security,...}` |
-| External | OpenRouter (embed), GitHub (sync), Python chatbot (proxy) |
-
-### Python Chatbot
-| รายการ | เทคโนโลยี |
-|--------|-----------|
-| Framework | FastAPI + uvicorn |
-| Architecture | Pure Python orchestration (ไม่ใช้ LangChain) — ดู `HANDOVER.md` |
-| Retrieval | pgvector + Postgres FTS + Reciprocal Rank Fusion |
-| Config | YAML (`backend/config/{tuning,intents,path_rules,prompts}.yaml`) |
+| External | OpenRouter (embed + LLM), GitHub (sync) |
+| RAG pipeline | intent router → hybrid retrieval (pgvector + FTS + RRF) → LLM, NDJSON streaming |
+| Chat config | YAML (`backend/config/{tuning,intents,path_rules,prompts}.yaml`) |
 
 ### Database
 | รายการ | เทคโนโลยี |
@@ -120,7 +110,7 @@ editor: markdown
 
 ```
 kb-carmen/
-├── backend/                  # Go Fiber API
+├── backend/                  # Go Fiber API (wiki, FAQ, indexing, native RAG chat)
 │   ├── cmd/server/main.go    # entry point + CLI ops (migrate/reindex/reset)
 │   ├── internal/
 │   │   ├── api/              # request handlers
@@ -131,14 +121,9 @@ kb-carmen/
 │   │   ├── middleware/       # CORS, request id, recovery
 │   │   ├── config/           # env loader
 │   │   └── nlp/              # text utilities
+│   ├── config/               # YAML tunables (tuning/intents/path_rules/prompts)
 │   ├── migrations/           # numbered .sql files (PL/pgSQL friendly)
 │   └── pkg/                  # github + openrouter clients
-├── carmen-chatbot/
-│   └── backend/
-│       ├── api/              # FastAPI routes
-│       ├── core/             # rate limit, errors, settings
-│       ├── llm/              # chat_service, intent_router, retrieval, llm_client
-│       └── config/           # YAML tunables (hot-reload สำหรับบางไฟล์)
 ├── frontend/user/            # Next.js App Router
 │   ├── app/                  # routes (KB, FAQ, activity, admin, chat)
 │   ├── components/           # UI primitives + chat widget
@@ -163,10 +148,9 @@ kb-carmen/
 
 ### 2. ถามแชต
 1. User พิมพ์ใน floating chat → frontend ยิง `POST /api/chat/stream`
-2. Go backend proxy ไป Python (`PYTHON_CHATBOT_URL`)
-3. Python ทำ pipeline: intent → query rewrite (ถ้ามี history) → translate (ถ้าไม่ใช่ไทย) → hybrid retrieval (pgvector + FTS + RRF + path boost) → LLM
-4. ส่ง NDJSON events (`status`, `chunk`, `sources`, `suggestions`, `done`) กลับ
-5. Python บันทึก `public.chat_history` (มี HMAC mask + token tracking)
+2. Go backend ประมวลผล native RAG pipeline: intent → query rewrite (ถ้ามี history) → translate (ถ้าไม่ใช่ไทย) → hybrid retrieval (pgvector + FTS + RRF + path boost) → LLM
+3. ส่ง NDJSON events (`status`, `chunk`, `sources`, `suggestions`, `done`) กลับ
+4. Go บันทึก `public.chat_history` (มี HMAC mask + token tracking)
 
 ### 3. อัปเดตเนื้อหา
 1. Author commit markdown ใต้ `contents/<bu>/` แล้ว push เข้า `main`
@@ -186,4 +170,4 @@ kb-carmen/
 - `USER_MANUAL_TH.md` — คู่มือผู้ใช้/ops
 - `HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
 - `backend/migrations/README.md` — ลำดับ migration + dimension variants
-- `carmen-chatbot/{TUNING_GUIDE,HANDOVER,chatbot-flow}.md` — RAG pipeline
+- RAG pipeline internals: ดู `docs/superpowers/plans/2026-06-22-chatbot-go-*`

@@ -8,18 +8,11 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/database"
 	"github.com/new-carmen/backend/internal/middleware"
 	"github.com/new-carmen/backend/internal/models"
 	"github.com/new-carmen/backend/internal/services"
 	"github.com/new-carmen/backend/internal/utils"
 )
-
-type chunkRow struct {
-	Path    string
-	Title   string
-	Content string
-}
 
 func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error) {
 	req, err := parseAskRequest(c)
@@ -33,7 +26,16 @@ func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error)
 	rawUserID := c.Get("X-User-ID", "anonymous")
 	userID := services.HashUserID(rawUserID, config.AppConfig.Server.PrivacySecret)
 
-	emb, embStr, err := h.createEmbedding(question)
+	// Daily budget gate — same cap the streaming path enforces, so /ask can't be
+	// used to bypass DAILY_REQUEST_LIMIT.
+	if !h.budget.CheckAndIncrement(chatCfg.DailyRequestLimit) {
+		return models.ChatAskResponse{
+			Answer:  "_(ขออภัยครับ ระบบมีการใช้งานเกินกำหนดสำหรับวันนี้ กรุณาลองใหม่พรุ่งนี้)_",
+			Sources: []models.ChatSource{},
+		}, fiber.StatusOK, nil
+	}
+
+	emb, _, err := h.createEmbedding(question)
 	if err != nil {
 		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("failed to create embedding")
 	}
@@ -52,12 +54,12 @@ func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error)
 		}
 	}
 
-	rows, err := h.queryVectorRows(bu, question, embStr, chatCfg.ContextLimit, useRouter)
+	chunks, err := h.retrieval.Retrieve(bu, question, emb)
 	if err != nil {
-		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("failed to query vector index")
+		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("retrieval failed: %w", err)
 	}
 
-	context, sources := buildContextFromRows(rows, chatCfg.MaxContextChars, chatCfg.MaxChunkContent)
+	context, sources := buildContextFromChunks(chunks, chatCfg.MaxContextChars, chatCfg.MaxChunkContent)
 	answer, err := h.llm.GenerateAnswer(context, question)
 	if err != nil {
 		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("failed to generate answer")
@@ -201,66 +203,22 @@ func (h *ChatHandler) buildRoutedContext(bu string, candidates []models.RouteCan
 	return strings.TrimSpace(b.String()), sources
 }
 
-func (h *ChatHandler) queryVectorRows(bu, question, embStr string, limit int, useRouter bool) ([]chunkRow, error) {
-	pathWhere, pathArgs := buildPathFilterFromQuestion(question)
-	if useRouter {
-		if routedWhere, routedArgs, ok := h.buildRoutePathWhere(question); ok {
-			pathWhere = routedWhere
-			pathArgs = routedArgs
-		}
-	}
-
-	query := fmt.Sprintf(`
-SELECT d.path, d.title, dc.content
-FROM %s.document_chunks dc
-JOIN %s.documents d ON dc.document_id = d.id
-`, bu, bu) + pathWhere + `
-ORDER BY dc.embedding <-> ?::vector
-LIMIT ?
-`
-	args := make([]any, 0, len(pathArgs)+2)
-	args = append(args, pathArgs...)
-	args = append(args, embStr, limit)
-
-	var rows []chunkRow
-	if err := database.DB.Raw(query, args...).Scan(&rows).Error; err != nil {
-		return nil, err
-	}
-	return rows, nil
-}
-
-func (h *ChatHandler) buildRoutePathWhere(question string) (string, []any, bool) {
-	res, err := h.router.RouteQuestion(question)
-	if err != nil || len(res.Candidates) == 0 {
-		return "", nil, false
-	}
-	paths := make([]string, 0, len(res.Candidates))
-	for _, cnd := range res.Candidates {
-		if p := strings.TrimSpace(cnd.Path); p != "" {
-			paths = append(paths, p)
-		}
-	}
-	if len(paths) == 0 {
-		return "", nil, false
-	}
-	placeholders := make([]string, len(paths))
-	args := make([]any, len(paths))
-	for i, p := range paths {
-		placeholders[i] = "d.path = ?"
-		args[i] = p
-	}
-	return "WHERE (" + strings.Join(placeholders, " OR ") + ")", args, true
-}
-
-func buildContextFromRows(rows []chunkRow, maxContextChars, maxChunkContent int) (string, []models.ChatSource) {
+func buildContextFromChunks(chunks []services.RetrievedChunk, maxContextChars, maxChunkContent int) (string, []models.ChatSource) {
 	var b strings.Builder
-	sources := make([]models.ChatSource, 0, len(rows))
-	for i, row := range rows {
-		content := row.Content
-		if len(content) > maxChunkContent {
-			content = content[:maxChunkContent]
-		}
+	sources := make([]models.ChatSource, 0, len(chunks))
+	for i, ch := range chunks {
 		if b.Len() >= maxContextChars {
+			break
+		}
+		content := ch.Content
+		// Rune-safe truncation: a byte slice can split a multibyte UTF-8 rune
+		// (Thai is 3 bytes/rune), so truncate by rune count instead.
+		if r := []rune(content); len(r) > maxChunkContent {
+			content = string(r[:maxChunkContent])
+		}
+		// Don't overshoot the context budget by a whole chunk: stop before writing
+		// a chunk that would exceed maxContextChars (unless it's the first one).
+		if b.Len() > 0 && b.Len()+len(content) > maxContextChars {
 			break
 		}
 		b.WriteString("\n--- Context ")
@@ -269,11 +227,11 @@ func buildContextFromRows(rows []chunkRow, maxContextChars, maxChunkContent int)
 		b.WriteString(content)
 		b.WriteString("\n")
 
-		title := strings.TrimSpace(row.Title)
+		title := strings.TrimSpace(ch.Title)
 		if title == "" {
-			title = row.Path
+			title = ch.Path
 		}
-		sources = append(sources, models.ChatSource{ArticleID: row.Path, Title: title})
+		sources = append(sources, models.ChatSource{ArticleID: ch.Path, Title: title})
 	}
 	return b.String(), sources
 }

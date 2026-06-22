@@ -1,6 +1,6 @@
 {
     "git.ignoreLimitWarning": true,
     "gopls": {
-        "build.directoryFilters": ["-frontend", "-carmen-chatbot"]
+        "build.directoryFilters": ["-frontend"]
     }
 }
