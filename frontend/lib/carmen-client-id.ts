@@ -5,13 +5,18 @@ export function getOrCreateClientId(): string {
   if (typeof window === "undefined") return "anon";
   let id = localStorage.getItem(STORAGE_KEY);
   if (!id) {
-    id =
-      "anon_" +
-      (typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : Math.random().toString(36).substring(2, 15) +
-          Date.now().toString(36));
+    id = "anon_" + secureRandomId();
     localStorage.setItem(STORAGE_KEY, id);
   }
   return id;
+}
+
+/** Cryptographically secure random id (Web Crypto is standard in all supported browsers). */
+function secureRandomId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { safeImageSrc, safeLinkHref } from "@/lib/url-safety";
 
 interface Props {
   src: string | null;
@@ -19,9 +20,14 @@ export default function ImageLightbox({ src, onClose }: Props) {
     }
   }, [src, handleKeyDown]);
 
+  // Validate scheme before using src in the DOM: only safe image schemes render
+  // the preview, and the "open in new tab" link is restricted to http(s)/relative.
+  const safeSrc = src ? safeImageSrc(String(src)) : null;
+  const safeHref = src ? safeLinkHref(String(src)) : null;
+
   return (
     <AnimatePresence>
-      {src && (
+      {src && safeSrc && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -44,8 +50,8 @@ export default function ImageLightbox({ src, onClose }: Props) {
 
           {/* Image */}
           <motion.img
-            key={src}
-            src={src}
+            key={safeSrc}
+            src={safeSrc}
             alt="Preview"
             initial={{ scale: 0.85, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -56,27 +62,18 @@ export default function ImageLightbox({ src, onClose }: Props) {
             draggable={false}
           />
 
-          {/* Open in new tab link */}
-          {(() => {
-            const s = String(src);
-            const isSafe =
-              s.startsWith("/") ||
-              s.startsWith("http://") ||
-              s.startsWith("https://") ||
-              s.startsWith("data:") ||
-              s.startsWith("blob:");
-            return isSafe ? (
-              <a
-                href={s}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="absolute bottom-4 right-4 text-xs text-white/50 hover:text-white/80 underline transition-colors"
-              >
-                เปิดในแท็บใหม่ ↗
-              </a>
-            ) : null;
-          })()}
+          {/* Open in new tab link (http(s)/relative only) */}
+          {safeHref && (
+            <a
+              href={safeHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-4 right-4 text-xs text-white/50 hover:text-white/80 underline transition-colors"
+            >
+              เปิดในแท็บใหม่ ↗
+            </a>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
