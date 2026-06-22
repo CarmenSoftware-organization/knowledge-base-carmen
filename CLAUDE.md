@@ -8,18 +8,18 @@ Monorepo, two runtime services sharing one Postgres+pgvector:
 
 - `backend/` — Go Fiber API. Owns wiki/FAQ/activity/indexing **and the native RAG chatbot at `/api/chat/*`** (intent → hybrid retrieval pgvector+FTS+RRF → LLM, streams NDJSON). The chatbot is tuned via YAML in `backend/config/{tuning,intents,path_rules,prompts}.yaml` (no code change/restart for tuning). The former Python `carmen-chatbot/` service was migrated into the Go backend and removed.
 - `frontend/` — Next.js App Router. Talks only to the Go backend.
-- `contents/<bu>/...` — markdown source-of-truth (the Go indexer reads this into `<bu>.documents` / `<bu>.document_chunks`).
+- `contents/<bu>/...` — markdown source-of-truth (the Go indexer reads this into `public.documents` / `public.document_chunks` filtered by `bu_id`).
 
 ### Multi-BU model (the big idea)
-Each Business Unit is a Postgres **schema** registered in `public.business_units`. Routing is by `?bu=<slug>`. Same slug used everywhere: `business_units.slug`, schema name, `contents/<slug>/` folder.
+Each Business Unit is a **row** in `public.business_units` (id = bu_id). All tenant tables (`documents`, `document_chunks`, `chat_history`, `activity_logs`, `faq_*`) live in the `public` schema and filter by `bu_id`. Routing is by `?bu=<slug>` → resolved to `bu_id` via `database.BUIDForSlug`.
 
-- Slug regex: `^[a-zA-Z_][a-zA-Z0-9_]*$` — **no dashes** (it's a schema name).
+- Slug regex: `^[a-zA-Z_][a-zA-Z0-9_]*$` — **no dashes** (slug is the `contents/<slug>` folder name + routing key).
 - `contents/training_center/<module>/...` collapses to a single BU `training_center`.
 - Push to `main` under `contents/**` triggers `.github/workflows/auto-provision-sync-reindex.yml` → provision/deprovision + sync + reindex via the backend admin API.
 - FAQ is the exception: lives in `public.faq_*`, seeded separately via `scripts/build_faq_seed_sql.py`.
 
 ### Embedding dimension
-Vector column dim must match `VECTOR_DIMENSION` env and the embed model. Migrations carry 1536/2000/4096 variants — pick one path per `backend/migrations/README.md`. New BUs created via `create_bu_tables()` inherit whatever dimension the function was last redefined with.
+Vector column dim must match `VECTOR_DIMENSION` env and the embed model. Migrations carry 1536/2000/4096 variants — pick one path per `backend/migrations/README.md`. New BUs are rows in `public.business_units`; documents/chunks are shared public tables at the dimension defined in `0001_init_schema.sql`.
 
 ## Commands
 

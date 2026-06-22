@@ -12,9 +12,8 @@
 ขั้นต่ำต้องมี 4 ส่วนนี้:
 
 1. **DB**
-   - มี record ใน `public.business_units`
-   - มี schema ของ BU ใหม่ (เช่น `newbu`)
-   - มีตาราง `documents`, `document_chunks` ใน schema นั้น
+   - มี record ใน `public.business_units` (ระบุ slug ของ BU ใหม่)
+   - ตาราง `public.documents` / `public.document_chunks` เป็นตารางร่วม — ไม่ต้องสร้าง schema แยก; ข้อมูล BU แยกกันด้วยคอลัมน์ `bu_id`
 2. **Content ใน repo**
    - มีโฟลเดอร์ `contents/<bu-slug>/`
    - มี `index.md` ระดับ root ของ BU
@@ -35,14 +34,14 @@
 เมื่อมี push เข้า `main` และไฟล์อยู่ใต้ `contents/**` จะทำอัตโนมัติ:
 
 1. Detect BU ที่เปลี่ยนจาก path `contents/<bu>/...`
-2. เรียก `POST /api/business-units/provision` (สร้าง/อัปเดต BU + schema + tables)
+2. เรียก `POST /api/business-units/provision` (insert/update แถวใน `public.business_units`; ตาราง documents/chunks เป็นตารางร่วม ไม่ต้องสร้าง schema ใหม่)
 3. เรียก `POST /api/wiki/sync`
 4. เรียก `POST /api/index/rebuild?bu=<bu>` สำหรับ BU ที่เปลี่ยน
 
 และถ้าลบโฟลเดอร์ BU ออกจาก `contents/<bu>/` จนไม่เหลือไฟล์แล้ว:
 
 1. Detect BU ที่ถูกลบ
-2. เรียก `POST /api/business-units/deprovision` (ลบ BU จาก `public.business_units` + `DROP SCHEMA ... CASCADE`)
+2. เรียก `POST /api/business-units/deprovision` (ลบแถว BU จาก `public.business_units`; documents/chunks ใน `public` ถูกลบอัตโนมัติด้วย CASCADE)
 3. เรียก `POST /api/wiki/sync`
 
 ต้องตั้ง GitHub Actions secrets:
@@ -78,10 +77,9 @@ API_BASE=https://knowledge-base-carmen.onrender.com ADMIN_KEY="<admin-key>" ./sc
 
 - ใช้ `slug` ตัวพิมพ์เล็ก เช่น `newbu`, `acme_finance`
 - ใช้ได้เฉพาะ pattern นี้: `^[a-zA-Z_][a-zA-Z0-9_]*$`
-- ห้ามมี dash (`-`) ในชื่อ schema DB
+- ห้ามมี dash (`-`) (slug ถูกใช้เป็น folder name และ routing key)
 - แนะนำให้ใช้ slug เดียวกันทั้ง:
   - `public.business_units.slug`
-  - schema ชื่อเดียวกัน
   - โฟลเดอร์ `contents/<slug>`
 
 ---
@@ -98,17 +96,9 @@ API_BASE=https://knowledge-base-carmen.onrender.com ADMIN_KEY="<admin-key>" ./sc
 INSERT INTO public.business_units (name, slug, description)
 VALUES ('ACME', 'acme', 'Wiki / KB documents for ACME')
 ON CONFLICT (slug) DO NOTHING;
-
-CREATE SCHEMA IF NOT EXISTS acme;
-SELECT create_bu_tables('acme');
 ```
 
-ถ้าระบบใช้ vector 2000 อยู่ ให้เช็คชนิดคอลัมน์ embedding ของ BU ใหม่:
-
-```sql
-ALTER TABLE acme.document_chunks
-  ALTER COLUMN embedding TYPE vector(2000);
-```
+ตาราง `public.documents` และ `public.document_chunks` เป็นตารางร่วม — ไม่ต้องสร้าง schema แยกหรือเรียก `create_bu_tables()`; ข้อมูลของ BU ใหม่จะถูก insert โดยใช้ `bu_id` ที่ได้จาก record ข้างต้นโดยอัตโนมัติ
 
 ### 3.2 สร้างโครงสร้าง content
 
@@ -186,7 +176,7 @@ go run cmd/server/main.go reindex all
 **Reset index**
 
 ```bash
-# ล้าง index ของ BU เดียว (ลบ documents/chunks ใน schema นั้น)
+# ล้าง index ของ BU เดียว (ลบ documents/chunks ของ BU นั้นใน public tables)
 go run cmd/server/main.go reset index acme
 
 # ล้าง index ทุก BU
@@ -325,8 +315,7 @@ contents/acme/
 
 ## 7) เช็กลิสต์ก่อนส่งงาน/สอนงาน
 
-- [ ] เพิ่ม BU ใน `public.business_units` แล้ว
-- [ ] สร้าง schema BU และตารางด้วย `create_bu_tables('<slug>')` แล้ว
+- [ ] เพิ่ม BU ใน `public.business_units` แล้ว (ตาราง documents/chunks เป็น public tables ร่วม ไม่ต้องสร้าง schema แยก)
 - [ ] มี `contents/<slug>/index.md` แล้ว
 - [ ] มีบทความ `.md` เปิดอ่านได้จริง
 - [ ] รูปในบทความโหลดได้ (`/wiki-assets/...` หรือ relative path ถูก)
@@ -340,7 +329,7 @@ contents/acme/
 
 - **404 บทความ**
   - path/ชื่อไฟล์ไม่ตรงจริงบนดิสก์
-  - BU slug ผิดหรือไม่ตรง schema
+  - BU slug ผิดหรือไม่ตรง record ใน `public.business_units`
 - **ค้นหาไม่เจอ**
   - ลืม reindex
   - reindex ล้มเหลวที่ embedding/model

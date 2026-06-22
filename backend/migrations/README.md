@@ -26,21 +26,25 @@ docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db -
 
 ---
 
-## Schema — ไฟล์เดียว (`0001_init_schema.sql`, embedding **2000**)
+## Schema — ลำดับไฟล์ (`0001` → `0002`, embedding **2000**)
 
-DB ใหม่รันไฟล์เดียวจบ (idempotent, รันซ้ำได้):
+DB ใหม่รันตามลำดับ (idempotent, รันซ้ำได้):
 
 ```bash
 ./scripts/migrate-docker.sh        # หรือ .\scripts\migrate-docker.ps1
-# หรือรันตรง:
+# หรือรันทีละไฟล์ตามลำดับ:
 docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
   -v ON_ERROR_STOP=1 < backend/migrations/0001_init_schema.sql
+docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
+  -v ON_ERROR_STOP=1 < backend/migrations/0002_migrate_per_bu_to_public.sql
 ```
 
-ไฟล์นี้สร้าง end-state ทั้งหมด: extension `vector`/`pgcrypto`, `public.business_units` (+ seed carmen/blueledgers), schema `carmen`/`blueledgers`, ฟังก์ชัน `create_bu_tables()` (สร้าง `documents`/`document_chunks` ที่ `VECTOR(2000)` + ivfflat + GIN FTS index), `public.chat_history` (+ trigger/`purge_expired_chat_history()`/`metrics`), `public.activity_logs`, และตาราง `faq_*`.
+**`0001_init_schema.sql`** — สร้าง end-state ทั้งหมด: extension `vector`/`pgcrypto`, `public.business_units` (+ seed carmen/blueledgers), ตารางร่วม `public.documents`/`public.document_chunks` (keyed by `bu_id`, `VECTOR(2000)` + ivfflat + GIN FTS index), `public.chat_history` (+ trigger/`purge_expired_chat_history()`/`metrics`), `public.activity_logs`, และตาราง `faq_*`.
+
+**`0002_migrate_per_bu_to_public.sql`** — (one-time, idempotent) คัดลอกข้อมูลจาก schema เก่าแบบ per-BU เข้า `public.documents`/`public.document_chunks` แล้ว drop schema เก่าทิ้ง; ปลอดภัย (no-op) บน DB ใหม่ที่ไม่มี schema เก่า
 
 - **มิติ = 2000** ตรงกับ `VECTOR_DIMENSION` ใน `render.yaml` — ตั้ง `VECTOR_DIMENSION=2000` ให้ตรง
-- BU ใหม่ provision ตอน runtime ด้วย `SELECT create_bu_tables('<slug>');` — ได้ตาราง + index ครบที่ 2000 อัตโนมัติ
+- BU ใหม่ provision ตอน runtime โดย INSERT แถวใน `public.business_units` (เอกสาร/chunk เป็นตารางร่วมใน `public` แยกด้วย `bu_id`)
 - ไฟล์ migration เดิม (0001–0012) ถูกยุบรวมเป็นไฟล์นี้แล้ว; ใช้กับ **DB ใหม่** (DB เดิมที่ migrate แล้วไม่ต้องรันซ้ำ)
 
 ---
