@@ -15,12 +15,7 @@ func RegisterPublicChat(app *fiber.App) {
 	app.Post("/api/chat/route-test", middleware.RequireAdminKey, chatHandler.RouteOnly)
 	app.Post("/api/chat/intent-test", middleware.RequireAdminKey, chatHandler.IntentTest)
 
-	app.Get("/api/chat/rooms/:bu/:username", chatHandler.Proxy)
-	app.Post("/api/chat/rooms", chatHandler.Proxy)
-	app.Delete("/api/chat/rooms/:room_id", chatHandler.Proxy)
-	app.Get("/api/chat/room-history/:room_id", chatHandler.Proxy)
-	app.Delete("/api/chat/history", chatHandler.Proxy)
-	app.Delete("/api/chat/clear/:room_id", chatHandler.Proxy)
+	app.Delete("/api/chat/clear/:room_id", chatHandler.ClearRoom)
 	app.Post("/api/chat/stream", chatHandler.Stream)
 	app.Post("/api/chat/feedback/:message_id", chatHandler.Feedback)
 
