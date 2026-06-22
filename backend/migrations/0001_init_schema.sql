@@ -12,7 +12,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ── Business units (tenant registry) ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.business_units (
-    id          SERIAL PRIMARY KEY,
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name        TEXT NOT NULL UNIQUE,
     slug        TEXT NOT NULL UNIQUE,
     description TEXT,
@@ -30,8 +30,8 @@ ON CONFLICT (slug) DO NOTHING;
 -- bu_id is denormalized onto document_chunks so the vector filter sits on the
 -- same table as the embedding (works well with the ivfflat index).
 CREATE TABLE IF NOT EXISTS public.documents (
-    id         BIGSERIAL PRIMARY KEY,
-    bu_id      INT NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bu_id      UUID NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
     path       TEXT NOT NULL,
     title      TEXT,
     source     TEXT,
@@ -42,9 +42,9 @@ CREATE TABLE IF NOT EXISTS public.documents (
 CREATE INDEX IF NOT EXISTS idx_documents_bu ON public.documents(bu_id);
 
 CREATE TABLE IF NOT EXISTS public.document_chunks (
-    id          BIGSERIAL PRIMARY KEY,
-    bu_id       INT NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
-    doc_id      BIGINT NOT NULL REFERENCES public.documents(id) ON DELETE CASCADE,
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bu_id       UUID NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
+    doc_id      UUID NOT NULL REFERENCES public.documents(id) ON DELETE CASCADE,
     chunk_index INT NOT NULL,
     content     TEXT,
     embedding   VECTOR(2000),
@@ -58,8 +58,8 @@ CREATE INDEX IF NOT EXISTS document_chunks_content_fts_idx
 
 -- ── Chat history (similarity cache + privacy retention + metrics) ────────────
 CREATE TABLE IF NOT EXISTS public.chat_history (
-    id                 BIGSERIAL PRIMARY KEY,
-    bu_id              INT NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bu_id              UUID NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
     user_id            TEXT,
     question           TEXT NOT NULL,
     answer             TEXT NOT NULL,
@@ -116,8 +116,8 @@ $$;
 
 -- ── Activity logs ────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.activity_logs (
-    id         BIGSERIAL PRIMARY KEY,
-    bu_id      INT REFERENCES public.business_units(id) ON DELETE SET NULL,
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bu_id      UUID REFERENCES public.business_units(id) ON DELETE SET NULL,
     user_id    TEXT,
     action     TEXT NOT NULL,
     category   TEXT NOT NULL,
@@ -132,8 +132,8 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_category  ON public.activity_logs(c
 
 -- ── FAQ (BU-aware hierarchy) ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.faq_modules (
-    id         SERIAL PRIMARY KEY,
-    bu_id      INT NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bu_id      UUID NOT NULL REFERENCES public.business_units(id) ON DELETE CASCADE,
     name       TEXT NOT NULL,
     slug       TEXT NOT NULL,
     icon       TEXT,
@@ -144,8 +144,8 @@ CREATE TABLE IF NOT EXISTS public.faq_modules (
 );
 
 CREATE TABLE IF NOT EXISTS public.faq_submodules (
-    id          SERIAL PRIMARY KEY,
-    module_id   INT NOT NULL REFERENCES public.faq_modules(id) ON DELETE CASCADE,
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    module_id   UUID NOT NULL REFERENCES public.faq_modules(id) ON DELETE CASCADE,
     name        TEXT NOT NULL,
     slug        TEXT NOT NULL,
     description TEXT,
@@ -156,8 +156,8 @@ CREATE TABLE IF NOT EXISTS public.faq_submodules (
 );
 
 CREATE TABLE IF NOT EXISTS public.faq_categories (
-    id           SERIAL PRIMARY KEY,
-    submodule_id INT NOT NULL REFERENCES public.faq_submodules(id) ON DELETE CASCADE,
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    submodule_id UUID NOT NULL REFERENCES public.faq_submodules(id) ON DELETE CASCADE,
     name         TEXT NOT NULL,
     slug         TEXT NOT NULL,
     sort_order   INT DEFAULT 0,
@@ -167,8 +167,8 @@ CREATE TABLE IF NOT EXISTS public.faq_categories (
 );
 
 CREATE TABLE IF NOT EXISTS public.faq_entries (
-    id            BIGSERIAL PRIMARY KEY,
-    category_id   INT NOT NULL REFERENCES public.faq_categories(id) ON DELETE CASCADE,
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category_id   UUID NOT NULL REFERENCES public.faq_categories(id) ON DELETE CASCADE,
     title         TEXT NOT NULL,
     sample_case   TEXT,
     problem_cause TEXT,
@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS public.faq_entries (
 );
 
 CREATE TABLE IF NOT EXISTS public.faq_related (
-    faq_id         BIGINT NOT NULL REFERENCES public.faq_entries(id) ON DELETE CASCADE,
-    related_faq_id BIGINT NOT NULL REFERENCES public.faq_entries(id) ON DELETE CASCADE,
+    faq_id         UUID NOT NULL REFERENCES public.faq_entries(id) ON DELETE CASCADE,
+    related_faq_id UUID NOT NULL REFERENCES public.faq_entries(id) ON DELETE CASCADE,
     PRIMARY KEY (faq_id, related_faq_id)
 );
