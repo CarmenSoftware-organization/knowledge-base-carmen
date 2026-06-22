@@ -3,7 +3,6 @@ package parity
 import (
 	"encoding/json"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/new-carmen/backend/internal/config"
@@ -62,9 +61,8 @@ func TestGoldenSetRecall(t *testing.T) {
 }
 
 func anyPathMatches(chunks []services.RetrievedChunk, glob string) bool {
-	needle := strings.ToLower(strings.Trim(glob, "%"))
 	for _, c := range chunks {
-		if strings.Contains(strings.ToLower(c.Path), needle) {
+		if services.LikeMatch(c.Path, glob) {
 			return true
 		}
 	}

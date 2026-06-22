@@ -16,6 +16,8 @@ Add objects to `golden_set.json`:
 ```json
 { "question": "...", "bu": "carmen", "expected_paths": ["%specific-doc%"] }
 ```
+`expected_paths` use SQL-LIKE glob semantics (`%x%` substring, `x%` prefix, `%x` suffix, or exact `x`) and are matched via `services.LikeMatch`.
+
 Pick questions whose correct document is unambiguous. Tighten globs from broad
 (`%vendor%`) to specific document slugs as you learn the content. Target 30–50
 entries across intents/modules (AP, AR, GL, Asset, Configuration, …).
