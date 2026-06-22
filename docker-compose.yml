@@ -67,7 +67,7 @@ services:
       LLM_API_BASE: ${LLM_API_BASE:-https://openrouter.ai/api/v1}
       LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-stepfun/step-3.5-flash:free}
       LLM_INTENT_MODEL: ${LLM_INTENT_MODEL:-google/gemini-2.5-flash-lite}
-      VECTOR_DIMENSION: ${VECTOR_DIMENSION:-1536}
+      VECTOR_DIMENSION: ${VECTOR_DIMENSION:-2000}
       PRIVACY_HMAC_SECRET: ${PRIVACY_HMAC_SECRET:-carmen-docker-dev-privacy-secret-min-32-chars-required}
     volumes:
       # Repo mount: wiki markdown + carmen_cloud + .git for sync (needs write for git pull)

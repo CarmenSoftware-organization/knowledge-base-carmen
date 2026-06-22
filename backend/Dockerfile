@@ -11,7 +11,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/server ./cmd/serv
 
 # Runtime
 FROM alpine:3.19
-RUN apk add --no-cache ca-certificates git tzdata wget
+RUN apk add --no-cache ca-certificates git tzdata wget postgresql-client
 WORKDIR /app
 
 COPY --from=builder /out/server ./server
