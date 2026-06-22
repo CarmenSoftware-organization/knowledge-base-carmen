@@ -49,7 +49,7 @@ docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
 
 - **มิติ = 2000** ตรงกับ `VECTOR_DIMENSION` ใน `render.yaml` — ตั้ง `VECTOR_DIMENSION=2000` ให้ตรง
 - BU ใหม่ provision ตอน runtime โดย INSERT แถวใน `public.business_units` (id เป็น UUID, เอกสาร/chunk เป็นตารางร่วมใน `public` แยกด้วย `bu_id` ซึ่งเป็น UUID เช่นกัน)
-- ไฟล์ migration เดิม (0001–0012) ถูกยุบรวมเป็นไฟล์นี้แล้ว; ใช้กับ **DB ใหม่** (DB เดิมที่ migrate แล้วไม่ต้องรันซ้ำ)
+- ไฟล์ migration เดิม (0001–0012) ถูกยุบรวมเป็นไฟล์นี้แล้ว; ใช้กับ **DB ใหม่** (DB เดิมที่ migrate ด้วย 0001+0002 แล้ว ไม่ต้องรัน 0001/0002 ซ้ำ — แต่ต้องรัน 0003 เพื่อแปลง id เป็น UUID)
 
 ---
 

@@ -98,7 +98,9 @@ VALUES ('ACME', 'acme', 'Wiki / KB documents for ACME')
 ON CONFLICT (slug) DO NOTHING;
 ```
 
-`id` จะเป็น UUID ที่ DB สร้างให้อัตโนมัติ (`DEFAULT gen_random_uuid()`) หรือ app สร้างด้วย `uuid.NewV7()` — ไม่ต้องระบุเอง ตาราง `public.documents` และ `public.document_chunks` เป็นตารางร่วม — ไม่ต้องสร้าง schema แยกหรือเรียก `create_bu_tables()`; ข้อมูลของ BU ใหม่จะถูก insert โดยใช้ `bu_id` (UUID) ที่ได้จาก record ข้างต้นโดยอัตโนมัติ
+`id` จะเป็น UUID ที่ DB สร้างให้อัตโนมัติ (`DEFAULT gen_random_uuid()`) หรือ app สร้างด้วย `uuid.NewV7()` — ไม่ต้องระบุเอง
+
+ตาราง `public.documents` และ `public.document_chunks` เป็นตารางร่วม — ไม่ต้องสร้าง schema แยกหรือเรียก `create_bu_tables()`; ข้อมูลของ BU ใหม่จะถูก insert โดยใช้ `bu_id` (UUID) ที่ได้จาก record ข้างต้นโดยอัตโนมัติ
 
 ### 3.2 สร้างโครงสร้าง content
 

@@ -13,7 +13,7 @@ Monorepo, two runtime services sharing one Postgres+pgvector:
 ### Multi-BU model (the big idea)
 Each Business Unit is a **row** in `public.business_units` (id = bu_id). All tenant tables (`documents`, `document_chunks`, `chat_history`, `activity_logs`, `faq_*`) live in the `public` schema and filter by `bu_id`. Routing is by `?bu=<slug>` → resolved to `bu_id` via `database.BUIDForSlug`.
 
-- **All ids are `UUID`** — every PK and FK (`bu_id`, `doc_id`, faq ids, chat log ids) is `UUID`. The app generates ids with `uuid.NewV7()` (`github.com/google/uuid`); columns also carry `DEFAULT gen_random_uuid()` as a DB-level fallback. API id fields (chat `log_id`, feedback `message_id`, `/api/documents` id, faq ids) are UUID strings.
+- **All ids are `UUID`** — every PK and FK (`bu_id`, `doc_id`, faq ids, chat log ids) is `UUID`. The app generates ids with `uuid.NewV7()` (`github.com/google/uuid`); columns also carry `DEFAULT gen_random_uuid()` as a DB-level fallback. API id fields (chat `log_id`, feedback `message_id`, `/api/documents` id, faq ids, chat-history list id) are UUID strings.
 - Slug regex: `^[a-zA-Z_][a-zA-Z0-9_]*$` — **no dashes** (slug is the `contents/<slug>` folder name + routing key).
 - `contents/training_center/<module>/...` collapses to a single BU `training_center`.
 - Push to `main` under `contents/**` triggers `.github/workflows/auto-provision-sync-reindex.yml` → provision/deprovision + sync + reindex via the backend admin API.
