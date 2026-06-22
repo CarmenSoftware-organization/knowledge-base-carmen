@@ -30,7 +30,7 @@ go test ./tests/... -run TestName -v                    # single test
 
 # Backend CLI ops (server binary doubles as a CLI)
 go run cmd/server/main.go reindex <bu>|all
-go run cmd/server/main.go reset index <bu>|all          # truncate <bu>.documents/document_chunks
+go run cmd/server/main.go reset index <bu>|all          # delete a BU's rows in public.documents/document_chunks (all = TRUNCATE both)
 go run cmd/server/main.go reset all                     # truncate public activity/chat tables
 
 # Frontend (from frontend/)
