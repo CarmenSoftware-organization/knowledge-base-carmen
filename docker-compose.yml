@@ -11,7 +11,8 @@
 #
 # Health: GET http://<host>:8080/health (Go backend serves /api/chat/* natively)
 #
-# Stack: db → backend (Go, native RAG chatbot at /api/chat/*) → frontend
+# Stack: db → backend (Go, native RAG chatbot at /api/chat/*)
+# Frontend ไม่อยู่ใน compose แล้ว — รัน local ด้วย `cd frontend && npm run dev`, deploy → Vercel
 
 services:
   db:
@@ -80,21 +81,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 40s
-
-  frontend:
-    build:
-      context: ./frontend/user
-      dockerfile: Dockerfile
-      args:
-        DOCKER_BUILD: "1"
-    restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-    environment:
-      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8080}
-    depends_on:
-      backend:
-        condition: service_healthy
 
 volumes:
   pgdata:
