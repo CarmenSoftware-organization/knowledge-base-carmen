@@ -30,6 +30,10 @@ backend/wikijs.token
 .env.docker.local
 docker-compose.override.yml
 
+# Python bytecode (scripts/)
+__pycache__/
+*.pyc
+
 # Dependencies
 node_modules/
 .pnp
