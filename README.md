@@ -13,24 +13,25 @@
 1. Frontend เรียก Go backend เป็นหลัก (`/api/wiki/*`, `/api/chat/*`, `/api/faq/*`, `/api/activity/*`, `/api/business-units`)
 2. Go backend ให้บริการ `/api/chat/*` โดยตรง (native RAG — intent → hybrid retrieval pgvector+FTS+RRF → LLM → stream NDJSON)
 3. Go backend ใช้ Postgres+pgvector ตัวเดียวกันกับส่วน wiki/index
-4. เอกสารถูกอ่านจาก markdown ใน `contents/<bu>/...` แล้ว index ลง `<bu>.documents` / `<bu>.document_chunks`
+4. เอกสารถูกอ่านจาก markdown ใน `contents/<bu>/...` แล้ว index ลง `public.documents` / `public.document_chunks` (แยกแต่ละ BU ด้วยคอลัมน์ `bu_id`)
 5. FAQ แยกอยู่ใน `public.faq_*` (seed ด้วย `scripts/build_faq_seed_sql.py`)
 
 ### Multi-BU model
 
-แต่ละ Business Unit คือ Postgres **schema** ที่ลงทะเบียนใน `public.business_units` — ใช้ slug เดียวกันทั้ง schema name และโฟลเดอร์ `contents/<slug>/`
+แต่ละ Business Unit คือ **แถว** ใน `public.business_units` (`id` = `bu_id` ชนิด UUID) — ทุกตารางข้อมูล (`documents`, `document_chunks`, `chat_history`, `activity_logs`, `faq_*`) อยู่ใน schema `public` แยกแต่ละ BU ด้วยคอลัมน์ `bu_id` ใช้ slug เดียวกันทั้ง routing key และโฟลเดอร์ `contents/<slug>/`
 
-- Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$` (**ห้ามมี `-`** เพราะใช้เป็นชื่อ schema)
-- เลือก BU ผ่าน query `?bu=<slug>` ในทุก endpoint
+- ทุก id/FK เป็น **UUID** (UUIDv7 generate ฝั่ง Go ด้วย `uuid.NewV7()`)
+- Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$` (slug = ชื่อโฟลเดอร์ `contents/<slug>/` + routing key)
+- เลือก BU ผ่าน query `?bu=<slug>` ในทุก endpoint (resolve เป็น `bu_id` ด้วย `database.BUIDForSlug`)
 - รายละเอียดเพิ่ม BU ใหม่: ดู `HANDOVER-ADD-NEW-BU.md`
 
 ### Auto-provision (production)
 
 มี workflow `.github/workflows/auto-provision-sync-reindex.yml` — push ไฟล์ใต้ `contents/**` เข้า `main` แล้วระบบจะ:
 1. Detect BU ที่เปลี่ยนจาก path
-2. เรียก `POST /api/business-units/provision` (สร้าง schema + tables)
+2. เรียก `POST /api/business-units/provision` (insert แถวใน `public.business_units` — ไม่มีการสร้าง schema)
 3. เรียก `POST /api/wiki/sync` แล้ว `POST /api/index/rebuild?bu=<bu>`
-4. ถ้าลบโฟลเดอร์ BU จนหมด จะ deprovision (drop schema)
+4. ถ้าลบโฟลเดอร์ BU จนหมด จะ deprovision (ลบแถว BU — `documents`/`document_chunks` cascade ตาม `bu_id`)
 
 ต้องตั้ง GitHub Actions secrets: `BACKEND_BASE_URL`, `BACKEND_ADMIN_API_KEY`
 
