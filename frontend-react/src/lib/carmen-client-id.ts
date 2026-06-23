@@ -2,7 +2,7 @@
 const STORAGE_KEY = "carmen_client_id";
 
 export function getOrCreateClientId(): string {
-  if (typeof window === "undefined") return "anon";
+  if (typeof window === "undefined" || typeof localStorage === "undefined" || !localStorage) return "anon";
   let id = localStorage.getItem(STORAGE_KEY);
   if (!id) {
     id = "anon_" + secureRandomId();
