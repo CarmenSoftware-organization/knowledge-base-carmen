@@ -12,8 +12,7 @@ import FaqPath, { faqPathLoader } from "@/routes/faq/path";
 import Activity from "@/routes/activity";
 import AdminActivity, { adminActivityLoader } from "@/routes/admin-activity";
 import Chat from "@/routes/chat";
-
-const ph = (id: string) => <div data-testid={`route-${id}`} />;
+import NotFound from "@/routes/not-found";
 
 export const routes: RouteObject[] = [
   {
@@ -34,13 +33,13 @@ export const routes: RouteObject[] = [
         loader: categoryLoader,
         errorElement: <CategoriesError />,
       },
-      { path: "categories/:category/*", element: <Article />, loader: articleLoader, errorElement: <CategoriesError /> },
+      { path: "categories/:category/*", element: <Article />, loader: articleLoader, errorElement: <NotFound /> },
       { path: "faq", element: <Faq />, loader: faqLoader },
-      { path: "faq/*", element: <FaqPath />, loader: faqPathLoader, errorElement: <CategoriesError /> },
+      { path: "faq/*", element: <FaqPath />, loader: faqPathLoader, errorElement: <NotFound /> },
       { path: "activity", element: <Activity /> },
       { path: "admin/activity", element: <AdminActivity />, loader: adminActivityLoader },
       { path: "chat", element: <Chat /> },
-      { path: "*", element: ph("not-found") },
+      { path: "*", element: <NotFound /> },
     ],
   },
 ];

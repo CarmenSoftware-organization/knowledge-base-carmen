@@ -25,6 +25,6 @@ describe("router", () => {
   it("renders not-found for unknown path", async () => {
     const r = createMemoryRouter(routes, { initialEntries: ["/nope"] });
     render(<RouterProvider router={r} />);
-    expect(await screen.findByTestId("route-not-found")).toBeInTheDocument();
+    expect(await screen.findByRole("heading")).toBeInTheDocument();
   });
 });
