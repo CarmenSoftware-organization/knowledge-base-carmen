@@ -35,7 +35,8 @@ export type FaqPathLoaderData = {
   items: FaqWikiItem[];
   folders: ReturnType<typeof buildFaqNav>["folders"];
   articles: ReturnType<typeof buildFaqNav>["articles"];
-  breadcrumbItems: { label: string; href?: string }[];
+  categoryName: string;
+  dynamicCrumbs: { label: string; href?: string }[];
   leafTitle: string;
   indexContent: {
     data: Record<string, unknown>;
@@ -101,11 +102,9 @@ export async function faqPathLoader({
     folderIndexTitles.get(leafKey) ||
     faqSegmentLabel(pathSegments[pathSegments.length - 1] ?? "");
 
-  /* Build breadcrumb in loader (no t() needed for FAQ path labels) */
-  const breadcrumbItems: { label: string; href?: string }[] = [
-    { label: "หมวดหมู่", href: "/categories" },
-    { label: categoryName, href: "/faq" },
-  ];
+  /* Build only dynamic (per-path-segment) crumbs here — the static translated
+     crumbs are prepended in the component where t() is available. */
+  const dynamicCrumbs: { label: string; href?: string }[] = [];
 
   for (let i = 0; i < pathSegments.length; i++) {
     const crumbKey = pathSegments.slice(0, i + 1).join("/");
@@ -118,13 +117,13 @@ export async function faqPathLoader({
         indexContent && typeof indexContent.data.title === "string"
           ? indexContent.data.title
           : null;
-      breadcrumbItems.push({ label: titleFromIndex || label });
+      dynamicCrumbs.push({ label: titleFromIndex || label });
     } else {
       const href = `/faq/${pathSegments
         .slice(0, i + 1)
         .map((s) => encodeURIComponent(s))
         .join("/")}`;
-      breadcrumbItems.push({ label, href });
+      dynamicCrumbs.push({ label, href });
     }
   }
 
@@ -134,7 +133,8 @@ export async function faqPathLoader({
     items: data.items as FaqWikiItem[],
     folders: nav.folders,
     articles: nav.articles,
-    breadcrumbItems,
+    categoryName,
+    dynamicCrumbs,
     leafTitle,
     indexContent,
   };
@@ -154,10 +154,17 @@ export default function FaqPath() {
     items,
     folders,
     articles,
-    breadcrumbItems,
+    categoryName,
+    dynamicCrumbs,
     leafTitle,
     indexContent,
   } = data;
+
+  const breadcrumbItems: { label: string; href?: string }[] = [
+    { label: t("common.categories"), href: "/categories" },
+    { label: categoryName, href: "/faq" },
+    ...dynamicCrumbs,
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
