@@ -1,27 +1,24 @@
 # Database migrations (PostgreSQL + pgvector)
 
-รัน **ครั้งเดียวต่อ DB ใหม่** หลัง container `db` ขึ้นแล้ว (และมี extension/pgvector พร้อมตามไฟล์)
+รัน **ครั้งเดียวต่อ DB ใหม่** กับ Postgres ภายนอกที่ตั้งไว้ใน `backend/.env.docker` (ต้องมี extension/pgvector พร้อม)
 
-## วิธีแนะนำ: `psql` ใน container `db`
+## วิธีแนะนำ: `migrate-docker.sh` (psql กับ DB ภายนอก)
 
 รองรับ PL/pgSQL / `DO $$` / ฟังก์ชันยาว — ปลอดภัยกว่าการรันผ่าน `./server migrate` ของ Go ที่แยกคำสั่งด้วย `;` (อาจตัดคำสั่งผิดกับบางไฟล์)
 
-จาก **root ของ repo** (หลัง `docker compose --env-file .env.docker up -d`):
+จาก **root ของ repo** (ตั้ง `DB_*` ใน `backend/.env.docker` ก่อน — สคริปต์ใช้ one-off pgvector container ต่อ DB ภายนอก ไม่ต้องมี psql บนเครื่อง):
 
 ```bash
 # Bash / Git Bash
 ./scripts/migrate-docker.sh
 ```
 
-```powershell
-# PowerShell (ที่ root ของ repo)
-.\scripts\migrate-docker.ps1
-```
+> หมายเหตุ: `migrate-docker.ps1` (PowerShell) ยังชี้ db container เดิม ยังไม่อัปเดตให้ DB ภายนอก — ใช้ `migrate-docker.sh` ไปก่อน
 
-หรือรันทีละไฟล์ด้วยมือ (ตัวอย่าง user/db ตาม `.env.docker`):
+หรือส่ง path ไฟล์เป็น argument (apply ทีละไฟล์ตามต้องการ):
 
 ```bash
-docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db -v ON_ERROR_STOP=1 < backend/migrations/0001_init_schema.sql
+./scripts/migrate-docker.sh backend/migrations/0001_init_schema.sql
 ```
 
 ---
@@ -31,14 +28,12 @@ docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db -
 DB ใหม่รันตามลำดับ (idempotent, รันซ้ำได้):
 
 ```bash
-./scripts/migrate-docker.sh        # หรือ .\scripts\migrate-docker.ps1
-# หรือรันทีละไฟล์ตามลำดับ:
-docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
-  -v ON_ERROR_STOP=1 < backend/migrations/0001_init_schema.sql
-docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
-  -v ON_ERROR_STOP=1 < backend/migrations/0002_migrate_per_bu_to_public.sql
-docker compose --env-file .env.docker exec -T db psql -U postgres -d carmen_db \
-  -v ON_ERROR_STOP=1 < backend/migrations/0003_convert_ids_to_uuid.sql
+./scripts/migrate-docker.sh        # ไม่ใส่ arg = apply 0001_init_schema.sql (DB ใหม่)
+# หรือ apply หลายไฟล์ตามลำดับ:
+./scripts/migrate-docker.sh \
+  backend/migrations/0001_init_schema.sql \
+  backend/migrations/0002_migrate_per_bu_to_public.sql \
+  backend/migrations/0003_convert_ids_to_uuid.sql
 ```
 
 **`0001_init_schema.sql`** — สร้าง end-state ทั้งหมด: extension `vector`/`pgcrypto`, `public.business_units` (+ seed carmen/blueledgers), ตารางร่วม `public.documents`/`public.document_chunks` (keyed by `bu_id`, `VECTOR(2000)` + ivfflat + GIN FTS index), `public.chat_history` (+ trigger/`purge_expired_chat_history()`/`metrics`), `public.activity_logs`, และตาราง `faq_*`. **UUID-native**: ทุก PK เป็น `UUID PRIMARY KEY DEFAULT gen_random_uuid()` และทุก FK (`bu_id`, `doc_id`, ฯลฯ) เป็น `UUID` — DB ใหม่ได้ UUID ทันที

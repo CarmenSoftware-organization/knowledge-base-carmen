@@ -15,7 +15,7 @@
 | `scripts/` | Provision / sync / import ops scripts | — |
 | `docs/` | Design specs & implementation plans | `docs/superpowers/` |
 | `manual/` | Runbooks & user/handover manuals | — |
-| root config | Docker, deploy, Go workspace, dev runners | `docker-compose.yml`, `render.yaml` |
+| root config | deploy + dev runners | `render.yaml`, `run_dev.sh` |
 
 ## `backend/` — Go Fiber API
 
@@ -54,7 +54,7 @@ Business Units:
 - `scripts/` — `provision-bu.sh`, `sync-wiki-and-reindex-bu.sh`, FAQ seed builders, import tools, `gen_sitemap.py`.
 - `docs/superpowers/{specs,plans}/` — design specs and step-by-step implementation plans.
 - `manual/` — `HANDOVER-ADD-NEW-BU.md`, `PROJECT_OVERVIEW.md`, `USER_MANUAL_TH.md`.
-- root — `docker-compose.yml`, `render.yaml`, `go.work`, `run_dev.sh` / `run_dev.ps1`.
+- root — `render.yaml`, `run_dev.sh` / `run_dev.ps1`; `backend/docker-compose.yml` (backend-only stack, external DB).
 
 ## Directory tree (auto-generated)
 

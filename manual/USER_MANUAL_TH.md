@@ -94,17 +94,18 @@
 
 ## 5.1 วิธีเร็วสุด: Docker Compose (แนะนำ)
 
-> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก (deploy บน Vercel)
+> **หมายเหตุ:** `docker compose` (อยู่ที่ `backend/`) รันเฉพาะ `backend` — ต่อ Postgres ภายนอกผ่าน `backend/.env.docker`; frontend รันแยกต่างหาก (deploy บน Vercel)
 
-จาก root repo:
+จาก `backend/`:
 
 ```bash
+cd backend
 cp docker-compose.env.example .env.docker
-# แก้ค่าที่จำเป็นใน .env.docker เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET, GITHUB_TOKEN
+# แก้ค่าใน .env.docker: DB_* (Postgres ภายนอก) + secrets เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET, GITHUB_TOKEN
 docker compose --env-file .env.docker up --build
 ```
 
-รัน migration ครั้งแรก:
+รัน migration ครั้งแรก (กับ DB ภายนอก, จาก root ของ repo):
 
 ```bash
 ./scripts/migrate-docker.sh
@@ -120,7 +121,7 @@ curl http://localhost:8080/health
 
 ## 5.2 รันแยกบริการแบบ Local
 
-> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก (deploy บน Vercel)
+> **หมายเหตุ:** `docker compose` (อยู่ที่ `backend/`) รันเฉพาะ `backend` — ต่อ Postgres ภายนอกผ่าน `backend/.env.docker`; frontend รันแยกต่างหาก (deploy บน Vercel)
 
 ### Backend (Go)
 

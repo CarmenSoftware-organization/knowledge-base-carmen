@@ -37,13 +37,14 @@
 
 ## Quick Start (Docker Compose)
 
-> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก
+> **หมายเหตุ:** `docker compose` (อยู่ที่ `backend/`) รันเฉพาะ `backend` — ต่อ Postgres ภายนอกผ่าน `backend/.env.docker`; frontend รันแยกต่างหาก
 
 ```bash
+cd backend
 cp docker-compose.env.example .env.docker
-# แก้ค่า secrets ใน .env.docker เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET
+# แก้ค่าใน .env.docker: DB_* (Postgres ภายนอก) + secrets เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET
 docker compose --env-file .env.docker up --build
-./scripts/migrate-docker.sh    # รัน migration ครั้งแรก (ใช้ psql ใน container db)
+cd .. && ./scripts/migrate-docker.sh    # migration ครั้งแรกกับ DB ภายนอก (จาก root)
 ```
 
 ตรวจ health:
@@ -55,7 +56,7 @@ curl http://localhost:8080/health        # Go backend
 
 ## Quick Start (Run แยกบริการ)
 
-> **หมายเหตุ:** `docker compose` รันเฉพาะ `db` + `backend` — frontend รันแยกต่างหาก
+> **หมายเหตุ:** `docker compose` (อยู่ที่ `backend/`) รันเฉพาะ `backend` — ต่อ Postgres ภายนอกผ่าน `backend/.env.docker`; frontend รันแยกต่างหาก
 
 ```bash
 # Backend (Go)

@@ -40,9 +40,9 @@ npm run dev | npm run build | npm run lint | npm test
 # Chatbot is native in the Go backend — no separate service.
 # DB/LLM-gated chat tests: RUN_DB_TESTS=1 go test ./tests/parity/... ./internal/services/... (needs reachable DB + LLM key)
 
-# Whole stack (db + backend only — frontend runs separately / Vercel)
-docker compose --env-file .env.docker up --build
-./scripts/migrate-docker.sh                             # first-time migrations (psql via db container)
+# Backend stack (compose lives in backend/) — connects to an EXTERNAL Postgres via backend/.env.docker
+(cd backend && docker compose --env-file .env.docker up --build)
+./scripts/migrate-docker.sh                             # first-time migrations against the external DB (from root)
 
 # Content ops
 ./scripts/provision-bu.sh <bu>                          # API_BASE + ADMIN_KEY env required
@@ -54,7 +54,7 @@ Health: `:8080/health` (Go backend, serves `/api/chat/*` natively). Swagger: `:8
 ## Non-obvious conventions
 
 - **Run migrations with `psql`, not `./server migrate`.** The Go migrate splits on `;` and corrupts files with `DO $$ … $$` / PL/pgSQL (notably `0002_setup_multi_bu.sql`). Use `scripts/migrate-docker.sh`. Order is in `backend/migrations/README.md`.
-- **Local docker DB — port + env-file gotchas.** `.env.docker` is gitignored; create it from `docker-compose.env.example`. If a native Postgres already holds host `:5432`, set `POSTGRES_PORT=5433` in `.env.docker` and connect via `127.0.0.1:5433` (not `localhost`, which may resolve to `::1` → the native PG). `backend/.env` points at the remote dev DB and is loaded with `godotenv.Overload`, so plain env vars don't override it — to point Go tests at the local container, put `DB_*`/`VECTOR_DIMENSION=2000` in a temp file and run `BACKEND_DOTENV=<file> RUN_DB_TESTS=1 go test …` (BACKEND_DOTENV is loaded last and wins).
+- **Docker compose + env-file gotchas.** Compose lives at `backend/docker-compose.yml` and runs the **backend only** — it connects to an **external** Postgres via `DB_*` in `backend/.env.docker` (gitignored; create from `backend/docker-compose.env.example`; `DB_HOST` defaults to `host.docker.internal`). Run compose from `backend/`; apply migrations with `./scripts/migrate-docker.sh` (from root, against that external DB). `backend/.env` points at the remote dev DB and is loaded with `godotenv.Overload`, so plain env vars don't override it — to point Go tests at another DB, put `DB_*`/`VECTOR_DIMENSION=2000` in a temp file and run `BACKEND_DOTENV=<file> RUN_DB_TESTS=1 go test …` (BACKEND_DOTENV is loaded last and wins).
 - **Admin/internal endpoints need header auth.** `X-Admin-Key` (`ADMIN_API_KEY`) for ops; `X-Internal-API-Key` (`INTERNAL_API_KEY`) for internal record-history.
 - **Markdown frontmatter is parsed** — every file in `contents/` needs the YAML block (`title/description/published/date/tags/editor: markdown/dateCreated`). Optional second YAML block with `weight` orders the sidebar. See `manual/HANDOVER-ADD-NEW-BU.md` §5.
 - **Chatbot behavior is tuned via YAML**, not code: `backend/config/{tuning,intents,path_rules,prompts}.yaml`. Native chat endpoints are flag-free (always native); the RAG flow lives in `backend/internal/api/chat_stream_flow.go` + `internal/services/{retrieval,intent_router_service,query_rewrite,prompt}_service.go`.
