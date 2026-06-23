@@ -57,6 +57,8 @@ services:
       LLM_INTENT_MODEL: ${LLM_INTENT_MODEL:-google/gemini-2.5-flash-lite}
       VECTOR_DIMENSION: ${VECTOR_DIMENSION:-2000}
       PRIVACY_HMAC_SECRET: ${PRIVACY_HMAC_SECRET:-carmen-docker-dev-privacy-secret-min-32-chars-required}
+      # HTML→PDF sidecar
+      GOTENBERG_URL: http://gotenberg:3000
     volumes:
       # Repo mount: wiki markdown + carmen_cloud + .git for sync (needs write for git pull).
       # compose lives in backend/, so .. = repo root.
@@ -70,3 +72,23 @@ services:
       timeout: 5s
       retries: 5
       start_period: 40s
+
+  # ─── Gotenberg (HTML→PDF via Chromium) ─────────────────────────────────────
+  # Reachable from the backend service at http://gotenberg:3000 (compose network).
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped
+    # internal only; the backend reaches it on the compose network
+    expose:
+      - "3000"
+    # Security hardening: block external http(s) loads so injected <script> or
+    # <img> tags cannot reach internal services via Gotenberg's Chromium.
+    # data: and file: URLs are NOT blocked — inlined images use data: URIs and
+    # the uploaded HTML is a local file.
+    # verify flag vs Gotenberg 8 docs — https://gotenberg.dev/docs/configuration
+    command:
+      - "gotenberg"
+      - "--chromium-deny-list=^https?://"
+    # Additionally isolate this service at the network level (docker networks /
+    # platform-level firewall rules) so Chromium cannot make outbound connections
+    # even if the deny-list is bypassed.

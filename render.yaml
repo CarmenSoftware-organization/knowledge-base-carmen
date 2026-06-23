@@ -96,3 +96,23 @@ services:
 
       - key: CORS_ORIGINS
         value: "https://knowledge-base-carmen.vercel.app"
+
+      # HTML→PDF sidecar (set to the gotenberg service URL Render assigns)
+      # NOTE: Render free services spin down on idle — the first export after
+      # idle incurs a Gotenberg cold start (slow but functional).
+      - key: GOTENBERG_URL
+        value: https://gotenberg.onrender.com  # set to the gotenberg service URL Render assigns
+
+  # ─── Gotenberg (HTML→PDF via Chromium) — used by /api/export/pdf ─────────────
+  - type: web
+    name: gotenberg
+    runtime: image
+    image:
+      url: gotenberg/gotenberg:8
+    plan: free
+    # Security hardening: pass --chromium-deny-list to block external http(s) loads.
+    # Render image services support startCommand for entrypoint overrides.
+    # verify flag vs Gotenberg 8 docs — https://gotenberg.dev/docs/configuration
+    # Also configure Render's network rules to isolate this service from internal
+    # endpoints (defense-in-depth; the deny-list alone may not cover all vectors).
+    startCommand: "gotenberg --chromium-deny-list=^https?://"
