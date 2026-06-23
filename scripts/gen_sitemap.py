@@ -48,3 +48,58 @@ def read_frontmatter_title(md_path: Path):
     except (OSError, UnicodeDecodeError):
         return None
     return None
+
+
+def count_md(directory: Path) -> int:
+    """Count ``*.md`` files recursively under a directory."""
+    return sum(1 for _ in directory.rglob("*.md"))
+
+
+def _subdirs(directory: Path):
+    """Sorted, filtered immediate subdirectories."""
+    return sorted(
+        (p for p in directory.iterdir() if p.is_dir() and p.name not in IGNORE_DIRS),
+        key=lambda p: p.name.lower(),
+    )
+
+
+def _dir_label(directory: Path) -> str:
+    """Directory name with an optional index.md title annotation."""
+    label = directory.name + "/"
+    index = directory / "index.md"
+    if index.is_file():
+        title = read_frontmatter_title(index)
+        if title:
+            label += f"  — {title}"
+    return label
+
+
+def _walk_contents(contents_dir: Path, depth: int, lines: list) -> None:
+    """Collapse contents/ at the BU level: BU (md count) + first-level categories."""
+    bu_indent = INDENT * (depth - 1)
+    cat_indent = INDENT * depth
+    for bu in _subdirs(contents_dir):
+        lines.append(f"{bu_indent}{bu.name}/  ({count_md(bu)} md)")
+        for category in _subdirs(bu):
+            lines.append(f"{cat_indent}{_dir_label(category)}")
+
+
+def _walk(directory: Path, depth: int, rel: str, lines: list) -> None:
+    for sub in _subdirs(directory):
+        rel_sub = f"{rel}/{sub.name}" if rel else sub.name
+        indent = INDENT * (depth - 1)
+        if rel_sub == CONTENTS_DIR:
+            lines.append(f"{indent}{sub.name}/")
+            _walk_contents(sub, depth + 1, lines)
+            continue
+        lines.append(f"{indent}{_dir_label(sub)}")
+        if depth < MAX_DEPTH:
+            _walk(sub, depth + 1, rel_sub, lines)
+
+
+def build_tree(root=None) -> str:
+    """Return the directories-only tree text for the repo."""
+    root = Path(root) if root else REPO_ROOT
+    lines = ["."]
+    _walk(root, 1, "", lines)
+    return "\n".join(lines)
