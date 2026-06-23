@@ -12,4 +12,10 @@ describe("carmen-message export", () => {
     expect(src).not.toContain("/api/export/docx");
     expect(src).not.toContain("handleExportDocx");
   });
+
+  it("still contains DOMPurify.sanitize for XSS mitigation", () => {
+    const src = readFileSync(SRC_PATH, "utf8");
+    expect(src).toContain("DOMPurify.sanitize");
+    expect(src).toContain("afterSanitizeAttributes");
+  });
 });
