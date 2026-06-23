@@ -27,7 +27,9 @@ export function MobileSidebar({ faqItems, changelogItems }: MobileSidebarProps) 
   const reduceMotion = useReducedMotion();
   const pathname = useLocation().pathname;
   const params = useParams();
-  const isArticlePage = !!params.article;
+  // React Router exposes the `categories/:category/*` splat as params["*"],
+  // not params.article (which was the Next.js [...article] catch-all name).
+  const isArticlePage = !!params["*"];
 
   const hideKbManualMenu =
     pathname === "/faq" ||
