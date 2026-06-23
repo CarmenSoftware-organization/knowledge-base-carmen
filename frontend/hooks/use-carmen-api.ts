@@ -113,7 +113,7 @@ export function createCarmenApi(baseUrl: string) {
       updated_at: new Date().toISOString(),
     };
     try {
-      let rooms = await getRooms();
+      const rooms = await getRooms();
       rooms.unshift(room);
       while (rooms.length > MAX_ROOMS) {
         const removed = rooms.pop()!;

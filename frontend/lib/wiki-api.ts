@@ -147,6 +147,8 @@ export async function getCategory(
   fetchOptions?: RequestInit,
 ): Promise<{
   category: string;
+  // Optional human-readable category title; the API may include it (falls back to "FAQ" when absent).
+  title?: string;
   items: (WikiListItem & { slug: string })[];
 }> {
   const selectedBU = bu || getSelectedBUClient();

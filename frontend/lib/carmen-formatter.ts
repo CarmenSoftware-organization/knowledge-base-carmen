@@ -39,7 +39,7 @@ function processYoutube(text: string): string {
 
 function processImages(text: string, apiBase: string): string {
   const resolveUrl = (src: string) => {
-    let u = src.trim().replace(/\\/g, "/");
+    const u = src.trim().replace(/\\/g, "/");
     if (isYoutubeUrl(u) || u.startsWith("data:")) return u;
     if (/^(http|https):/.test(u)) {
       if (

@@ -121,7 +121,7 @@ describe("makeGuardedLookup (IP-pinning for fetch connect)", () => {
 
   it("returns the resolved address for a public host", (done) => {
     const lk = makeGuardedLookup(fakeRaw({ "cdn.example.com": ["93.184.216.34"] }) as never);
-    lk("cdn.example.com", { all: false }, (err: Error | null, addr?: string, fam?: number) => {
+    lk("cdn.example.com", { all: false }, (err: Error | null, addr?: unknown, fam?: number) => {
       expect(err).toBeNull();
       expect(addr).toBe("93.184.216.34");
       expect(fam).toBe(4);
@@ -131,7 +131,7 @@ describe("makeGuardedLookup (IP-pinning for fetch connect)", () => {
 
   it("errors (does not connect) when the host resolves to an internal address", (done) => {
     const lk = makeGuardedLookup(fakeRaw({ "evil.example.com": ["169.254.169.254"] }) as never);
-    lk("evil.example.com", {}, (err: Error | null, addr?: string) => {
+    lk("evil.example.com", {}, (err: Error | null, addr?: unknown) => {
       expect(err).toBeTruthy();
       expect(addr).toBeUndefined();
       done();

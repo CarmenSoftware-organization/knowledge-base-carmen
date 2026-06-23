@@ -149,7 +149,9 @@ ${embeddedHtml}
         else request.abort();
       });
 
-      await page.setContent(fullHtml, { waitUntil: "networkidle0", timeout: 30000 });
+      // puppeteer 25 dropped networkidle0/networkidle2 from setContent's waitUntil
+      // (only 'load' | 'domcontentloaded' remain); 'load' waits for images/resources.
+      await page.setContent(fullHtml, { waitUntil: "load", timeout: 30000 });
 
       const pdfBuffer = await page.pdf({
         format: "A4",

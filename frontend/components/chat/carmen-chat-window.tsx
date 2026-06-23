@@ -191,7 +191,7 @@ export default function CarmenChatWindow({ state }: Props) {
         className="hidden sm:flex flex-col overflow-hidden border border-black/10 shadow-2xl bg-white/60 dark:bg-slate-900/60 z-[2000001] touch-none fixed carmen-chat-box"
       >
         <ChatContent state={state} theme={theme} isResizing={isResizing} onDragStart={handlePointerDown}
-          isInputFocused={isInputFocused} setIsInputFocused={setIsInputFocused} // Pass down
+          setIsInputFocused={setIsInputFocused} // Pass down
         />
       </motion.div>
 
@@ -205,7 +205,7 @@ export default function CarmenChatWindow({ state }: Props) {
         exit="exit"
       >
         <ChatContent state={state} theme={theme} isResizing={isResizing}
-          isInputFocused={isInputFocused} setIsInputFocused={setIsInputFocused} // Pass down
+          setIsInputFocused={setIsInputFocused} // Pass down
         />
       </motion.div>
       <style jsx global>{`
