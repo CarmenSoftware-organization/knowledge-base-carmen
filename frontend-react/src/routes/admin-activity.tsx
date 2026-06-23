@@ -23,7 +23,7 @@ export const adminActivityLoader: LoaderFunction = async () => {
     const res = await fetch(
       `${API_BASE}/api/activity/list?bu=${DEFAULT_BU}&limit=50&offset=0&source=all`,
       {
-        headers: { "Cache-Control": "no-cache" },
+        cache: "no-store",
       },
     );
     if (!res.ok) {
