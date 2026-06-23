@@ -1,5 +1,7 @@
 # New Carmen — backend-only stack (Go API; connects to an EXTERNAL Postgres+pgvector)
+# This compose lives in backend/ — run the commands below from the backend/ dir.
 # Usage:
+#   cd backend
 #   cp docker-compose.env.example .env.docker
 #   # edit .env.docker — set DB_* (external Postgres) + secrets (JWT, OPENROUTER_API_KEY, GITHUB_TOKEN, …)
 #   docker compose --env-file .env.docker up --build
@@ -7,9 +9,9 @@
 # DB: this compose no longer runs a Postgres container. Point the backend at an
 # external Postgres+pgvector via DB_* in .env.docker (remote dev DB, host PG, …).
 #
-# Migrations: run them against that external DB directly (psql "<conn>" < file).
-#   NOTE: scripts/migrate-docker.sh assumed a local `db` container and no longer
-#   applies here. See backend/migrations/README.md for order + dimension variants.
+# Migrations: apply them to that external DB with `./scripts/migrate-docker.sh`
+#   (run from repo root; reads backend/.env.docker). See backend/migrations/README.md
+#   for order + dimension variants.
 #
 # Health: GET http://<host>:8080/health (Go backend serves /api/chat/* natively)
 #
@@ -19,7 +21,7 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
@@ -56,8 +58,9 @@ services:
       VECTOR_DIMENSION: ${VECTOR_DIMENSION:-2000}
       PRIVACY_HMAC_SECRET: ${PRIVACY_HMAC_SECRET:-carmen-docker-dev-privacy-secret-min-32-chars-required}
     volumes:
-      # Repo mount: wiki markdown + carmen_cloud + .git for sync (needs write for git pull)
-      - .:/repo
+      # Repo mount: wiki markdown + carmen_cloud + .git for sync (needs write for git pull).
+      # compose lives in backend/, so .. = repo root.
+      - ..:/repo
     # Resolve host.docker.internal on Linux too (no-op on Mac/Windows)
     extra_hosts:
       - "host.docker.internal:host-gateway"
