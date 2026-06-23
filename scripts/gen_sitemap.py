@@ -103,3 +103,16 @@ def build_tree(root=None) -> str:
     lines = ["."]
     _walk(root, 1, "", lines)
     return "\n".join(lines)
+
+
+def replace_marker_span(content: str, tree: str) -> str:
+    """Replace the text between the AUTO-TREE markers with a fenced tree block."""
+    if BEGIN_MARKER not in content or END_MARKER not in content:
+        raise ValueError("sitemap.md is missing the AUTO-TREE markers")
+    begin = content.index(BEGIN_MARKER)
+    end = content.index(END_MARKER)
+    if end < begin:
+        raise ValueError("AUTO-TREE markers are out of order")
+    head = content[: begin + len(BEGIN_MARKER)]
+    tail = content[end:]
+    return f"{head}\n```\n{tree}\n```\n{tail}"

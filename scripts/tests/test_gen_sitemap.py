@@ -74,6 +74,26 @@ class GenSitemapTest(unittest.TestCase):
         self._make_fixture()
         self.assertEqual(gen_sitemap.count_md(self.tmp / "contents/carmen"), 3)
 
+    def test_replace_only_between_markers(self):
+        content = (
+            "intro\n"
+            + gen_sitemap.BEGIN_MARKER
+            + "\n```\nOLD\n```\n"
+            + gen_sitemap.END_MARKER
+            + "\noutro\n"
+        )
+        out = gen_sitemap.replace_marker_span(content, "NEWTREE")
+        self.assertIn("intro", out)
+        self.assertIn("outro", out)
+        self.assertIn("NEWTREE", out)
+        self.assertNotIn("OLD", out)
+        self.assertEqual(out.count(gen_sitemap.BEGIN_MARKER), 1)
+        self.assertEqual(out.count(gen_sitemap.END_MARKER), 1)
+
+    def test_missing_markers_raises(self):
+        with self.assertRaises(ValueError):
+            gen_sitemap.replace_marker_span("no markers here", "x")
+
 
 if __name__ == "__main__":
     unittest.main()
