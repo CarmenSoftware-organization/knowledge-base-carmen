@@ -11,6 +11,7 @@ import Faq, { faqLoader } from "@/routes/faq/index";
 import FaqPath, { faqPathLoader } from "@/routes/faq/path";
 import Activity from "@/routes/activity";
 import AdminActivity, { adminActivityLoader } from "@/routes/admin-activity";
+import Chat from "@/routes/chat";
 
 const ph = (id: string) => <div data-testid={`route-${id}`} />;
 
@@ -38,7 +39,7 @@ export const routes: RouteObject[] = [
       { path: "faq/*", element: <FaqPath />, loader: faqPathLoader, errorElement: <CategoriesError /> },
       { path: "activity", element: <Activity /> },
       { path: "admin/activity", element: <AdminActivity />, loader: adminActivityLoader },
-      { path: "chat", element: ph("chat") },
+      { path: "chat", element: <Chat /> },
       { path: "*", element: ph("not-found") },
     ],
   },
