@@ -13,7 +13,10 @@
 ./scripts/migrate-docker.sh
 ```
 
-> หมายเหตุ: `migrate-docker.ps1` (PowerShell) ยังชี้ db container เดิม ยังไม่อัปเดตให้ DB ภายนอก — ใช้ `migrate-docker.sh` ไปก่อน
+```powershell
+# PowerShell (เทียบเท่า migrate-docker.sh — migrate กับ DB ภายนอกตาม backend/.env.docker)
+.\scripts\migrate-docker.ps1
+```
 
 หรือส่ง path ไฟล์เป็น argument (apply ทีละไฟล์ตามต้องการ):
 
