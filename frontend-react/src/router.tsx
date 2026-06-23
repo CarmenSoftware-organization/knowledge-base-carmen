@@ -9,6 +9,8 @@ import Category, { categoryLoader } from "@/routes/categories/category";
 import Article, { articleLoader } from "@/routes/categories/article";
 import Faq, { faqLoader } from "@/routes/faq/index";
 import FaqPath, { faqPathLoader } from "@/routes/faq/path";
+import Activity from "@/routes/activity";
+import AdminActivity, { adminActivityLoader } from "@/routes/admin-activity";
 
 const ph = (id: string) => <div data-testid={`route-${id}`} />;
 
@@ -34,8 +36,8 @@ export const routes: RouteObject[] = [
       { path: "categories/:category/*", element: <Article />, loader: articleLoader, errorElement: <CategoriesError /> },
       { path: "faq", element: <Faq />, loader: faqLoader },
       { path: "faq/*", element: <FaqPath />, loader: faqPathLoader, errorElement: <CategoriesError /> },
-      { path: "activity", element: ph("activity") },
-      { path: "admin/activity", element: ph("admin-activity") },
+      { path: "activity", element: <Activity /> },
+      { path: "admin/activity", element: <AdminActivity />, loader: adminActivityLoader },
       { path: "chat", element: ph("chat") },
       { path: "*", element: ph("not-found") },
     ],
