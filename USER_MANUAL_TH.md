@@ -23,7 +23,7 @@
 3. **Backend + Database Layer**
    - Go Backend (`backend`) เป็น API กลาง รวม native RAG chatbot ที่ `/api/chat/*`
    - PostgreSQL + pgvector เก็บ:
-     - ดัชนีเอกสาร (`<bu>.documents`, `<bu>.document_chunks`)
+     - ดัชนีเอกสาร (`public.documents`, `public.document_chunks` แยกแต่ละ BU ด้วยคอลัมน์ `bu_id`)
      - แชต/กิจกรรม (`public.chat_history`, `public.activity_logs`)
      - FAQ tree (`public.faq_*`)
 
@@ -71,7 +71,7 @@
 1. แก้ไฟล์ markdown ใน `contents/<bu>/...`
 2. (ทางเลือก) import ไป Wiki.js ด้วยสคริปต์
 3. เรียก backend sync + reindex
-4. Go สร้าง/อัปเดต index ใน `<bu>.documents` และ `<bu>.document_chunks`
+4. Go สร้าง/อัปเดต index ใน `public.documents` และ `public.document_chunks` (แยกด้วย `bu_id`)
 5. Chatbot ใช้ดัชนีใหม่ตอบคำถาม
 
 ---
@@ -80,9 +80,10 @@
 
 ระบบรองรับหลาย BU เช่น `carmen`, `blueledgers`, `training_center`
 
-- แต่ละ BU = Postgres **schema** ที่ลงทะเบียนใน `public.business_units`
-- ใช้ slug เดียวกันทั้ง schema name, `business_units.slug`, และโฟลเดอร์ `contents/<slug>/`
-- Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$` — **ห้ามมี `-`** (เพราะใช้เป็นชื่อ schema)
+- แต่ละ BU = **แถว** ใน `public.business_units` (`id` = `bu_id` ชนิด UUID) — ทุกตารางข้อมูล (`documents`, `document_chunks`, `chat_history`, `activity_logs`, `faq_*`) อยู่ใน schema `public` แยกแต่ละ BU ด้วยคอลัมน์ `bu_id`
+- ทุก id/FK เป็น **UUID** (UUIDv7 generate ฝั่ง Go ด้วย `uuid.NewV7()`)
+- ใช้ slug เดียวกันทั้ง `business_units.slug`, routing key (`?bu=<slug>`) และโฟลเดอร์ `contents/<slug>/`
+- Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$` (slug = ชื่อโฟลเดอร์ `contents/<slug>/` + routing key)
 - เลือก BU ผ่าน query `?bu=<slug>` (frontend เก็บค่าใน cookie `selected_bu`)
 - การ reindex ต้องระบุ BU ให้ชัดเจนเพื่อไม่ให้ผิด tenant
 - รายละเอียดการเพิ่ม/ลบ BU: ดู `HANDOVER-ADD-NEW-BU.md`
@@ -109,7 +110,7 @@ docker compose --env-file .env.docker up --build
 ./scripts/migrate-docker.sh
 ```
 
-> ⚠️ **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$` เช่น `0002_setup_multi_bu.sql`) — Go binary ตัด `;` ผิด ใช้ `migrate-docker.sh` (ผ่าน psql) หรือ `psql` ตรงๆ ตามลำดับใน `backend/migrations/README.md`
+> ⚠️ **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$` เช่น `0001_init_schema.sql`, `0003_convert_ids_to_uuid.sql`) — Go binary ตัด `;` ผิด ใช้ `migrate-docker.sh` (ผ่าน psql) หรือ `psql` ตรงๆ ตามลำดับใน `backend/migrations/README.md`
 
 health check:
 
@@ -190,11 +191,11 @@ npm test
 แค่ commit markdown ใต้ `contents/<bu>/` แล้ว push เข้า `main` — workflow `.github/workflows/auto-provision-sync-reindex.yml` จะทำให้อัตโนมัติ:
 
 1. Detect BU ที่เปลี่ยนจาก path
-2. `POST /api/business-units/provision` (สร้าง schema + tables ถ้ายังไม่มี)
+2. `POST /api/business-units/provision` (insert แถวใน `public.business_units` — ไม่มีการสร้าง schema)
 3. `POST /api/wiki/sync`
 4. `POST /api/index/rebuild?bu=<bu>` ทุก BU ที่เปลี่ยน
 
-ถ้าลบโฟลเดอร์ BU จนไม่เหลือไฟล์ → workflow จะ **deprovision** (drop schema) อัตโนมัติ
+ถ้าลบโฟลเดอร์ BU จนไม่เหลือไฟล์ → workflow จะ **deprovision** (ลบแถว BU — `documents`/`document_chunks` cascade ตาม `bu_id`) อัตโนมัติ
 
 ต้องตั้ง GitHub Actions secrets: `BACKEND_BASE_URL`, `BACKEND_ADMIN_API_KEY`
 
@@ -271,7 +272,7 @@ go run ./cmd/server/main.go reindex blueledgers
    - ใช้กับหน้า/endpoint FAQ
    - เติมข้อมูลผ่าน `build_faq_seed_sql.py` + `psql`
 
-2. **Vector index (`<bu>.documents`, `<bu>.document_chunks`)**
+2. **Vector index (`public.documents`, `public.document_chunks` แยกด้วย `bu_id`)**
    - ใช้กับ semantic retrieval ของ chatbot/search
    - เติมผ่าน flow sync/reindex
 
@@ -427,7 +428,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_<bu>_faq.sql
 ## 14) เช็กลิสต์ก่อนขึ้น Production
 
 - [ ] ตั้งค่า secrets ครบ (`OPENROUTER_API_KEY`, `JWT_SECRET`, `PRIVACY_HMAC_SECRET`, `GITHUB_TOKEN`)
-- [ ] `VECTOR_DIMENSION` ตรงกับ migration variant ที่รัน (1536 / 2000 / 4096)
+- [ ] `VECTOR_DIMENSION` ตรงกับมิติของ column ใน DB (canonical = **2000** ใน `0001_init_schema.sql`)
 - [ ] รัน migrations ครบ (ผ่าน psql ตามลำดับใน `backend/migrations/README.md`)
 - [ ] ทดสอบ `health` ของ Go backend (`curl http://.../health`)
 - [ ] ทดสอบ `/api/wiki/sync` + `/api/index/rebuild`
