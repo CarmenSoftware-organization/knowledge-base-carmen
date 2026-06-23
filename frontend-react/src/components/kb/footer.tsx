@@ -1,0 +1,195 @@
+'use client';
+
+import { Link } from "react-router-dom";
+
+import { Mail, Phone, Clock } from "lucide-react";
+import { motion, Variants } from "framer-motion";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
+
+
+export function KBFooter() {
+  const zohoSupportFormSrc =
+    "https://forms.zohopublic.com/carmensoftware/form/Contactforsupport/formperma/u00Cn7XaD_LKMPjMYBVbZxAe7redlAiayQxwJJqnsLI?zf_enablecamera=true";
+
+  const footerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+    }
+  };
+
+  const sectionVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" }
+    }
+  };
+
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+    setMounted(true);
+  }, []);
+
+  const logoSrc =
+    mounted && resolvedTheme === "dark"
+      ? "/carmen-logo-light.png"
+      : "/carmen02-logo.png";
+
+
+  return (
+    <footer
+      id="footer-contact"
+      className="border-t border-border bg-background text-foreground overflow-hidden"
+    >
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={footerVariants}
+        className="mx-auto max-w-6xl lg:max-w-7xl px-6 py-8 md:py-10"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-10 lg:grid-cols-12 gap-10 lg:gap-12 items-stretch">
+
+          {/* === Part 1: Brand & Contact === */}
+          <motion.div
+            variants={sectionVariants}
+            className="md:col-span-5 lg:col-span-5 flex flex-col gap-8 text-center md:text-left items-center md:items-start"
+          >
+            <div className="space-y-5 w-full">
+
+              <Link to="/" className="block w-fit mx-auto lg:mx-0 group">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="relative h-10 w-40 sm:h-11 sm:w-44 transition-transform duration-300"
+                >
+                 <img
+                    src={logoSrc}
+                    alt="Carmen Logo"
+                    className="object-contain object-center lg:object-left absolute inset-0 w-full h-full"
+                  />
+                </motion.div>
+              </Link>
+
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto lg:mx-0">
+                CARMEN is here for you. If you have any questions, you can rest easy knowing you have fast, reliable support.
+              </p>
+
+              <div className="space-y-2">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                  Contact
+                </h3>
+
+                <ul className="space-y-2 text-sm flex flex-col items-center lg:items-start">
+                  <motion.li whileHover={{ x: 5 }} className="flex items-center gap-3 transition-colors hover:text-primary cursor-default">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span>support@carmensoftware.com</span>
+                  </motion.li>
+
+                  <motion.li whileHover={{ x: 5 }} className="flex items-center gap-3 transition-colors hover:text-primary cursor-default">
+                    <Phone className="h-4 w-4 text-primary" />
+                    <span>02-284-0429</span>
+                  </motion.li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Line Card */}
+            <div className="w-full flex flex-col items-center lg:items-start gap-2">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                Line Official
+              </h3>
+
+              <motion.a
+                href="https://line.me/R/ti/p/%40gbl2238o#~"
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ y: -5 }}
+                whileTap={{ scale: 0.98 }}
+                className="group relative flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl border border-border bg-card w-full sm:w-fit transition-all hover:bg-muted hover:shadow-lg cursor-pointer"
+              >
+                {/* QR */}
+                <div className="relative bg-background p-2 rounded-xl shadow-sm border border-border group-hover:border-primary transition-all shrink-0">
+                  <img src="/line-carmen.png" alt="Line QR" width={80} height={80} className="rounded-lg" />
+                </div>
+
+                {/* Text */}
+                <div className="flex flex-col items-center sm:items-start">
+                  <p className="text-base font-black tracking-tight text-foreground group-hover:text-primary transition-colors">
+                    @carmensoftware
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mb-2">
+                    Scan or Click to add friend
+                  </p>
+
+                  <div className="bg-primary text-primary-foreground text-[10px] font-bold px-4 py-1.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5">
+                    Add Friend
+                  </div>
+                </div>
+              </motion.a>
+            </div>
+          </motion.div>
+
+          {/* === Part 2: Contact Form === */}
+          <motion.div variants={sectionVariants} className="md:col-span-5 lg:col-span-7 flex flex-col">
+            <div className="h-full p-6 md:p-8 rounded-3xl border border-border bg-card shadow-sm flex flex-col">
+
+              <div className="mb-6 text-center md:text-left">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <h3 className="text-lg font-bold text-foreground">Contact Support</h3>
+                  <a
+                    href={zohoSupportFormSrc}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-bold text-primary underline-offset-4 hover:underline"
+                  >
+                    Open in new tab
+                  </a>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  ทีมงานจะตอบกลับโดยเร็วที่สุด
+                </p>
+              </div>
+
+              <div className="w-full overflow-hidden rounded-2xl border border-border bg-background">
+                <iframe
+                  title="Customer Support Request"
+                  aria-label="Customer Support Request"
+                  frameBorder={0}
+                  allow="camera;"
+                  src={zohoSupportFormSrc}
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  scrolling="yes"
+                  className="block w-full border-0 h-[78vh] min-h-[520px] max-h-[720px] md:h-[62vh] md:min-h-[560px] md:max-h-[740px] lg:h-[520px] lg:min-h-0 lg:max-h-none xl:h-[560px]"
+                />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* === Bottom === */}
+        <motion.div
+          variants={sectionVariants}
+          className="mt-10 pt-6 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-muted-foreground"
+        >
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[10px] uppercase tracking-widest font-medium">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3" /> 09:00 – 18:00 (Mon-Fri)
+            </span>
+            <span className="text-primary font-bold">One Support Team</span>
+          </div>
+
+          <p className="text-[10px]">
+            © 2021 <span className="text-foreground font-bold">Carmen Software</span>. All Rights Reserved.
+          </p>
+        </motion.div>
+
+      </motion.div>
+    </footer>
+  );
+}
