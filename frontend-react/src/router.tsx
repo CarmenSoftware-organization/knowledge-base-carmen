@@ -6,6 +6,7 @@ import Categories, { categoriesLoader } from "@/routes/categories/index";
 import CategoriesLoading from "@/routes/categories/loading";
 import CategoriesError from "@/routes/categories/error";
 import Category, { categoryLoader } from "@/routes/categories/category";
+import Article, { articleLoader } from "@/routes/categories/article";
 
 const ph = (id: string) => <div data-testid={`route-${id}`} />;
 
@@ -28,7 +29,7 @@ export const routes: RouteObject[] = [
         loader: categoryLoader,
         errorElement: <CategoriesError />,
       },
-      { path: "categories/:category/*", element: ph("article") },
+      { path: "categories/:category/*", element: <Article />, loader: articleLoader, errorElement: <CategoriesError /> },
       { path: "faq", element: ph("faq") },
       { path: "faq/*", element: ph("faq-path") },
       { path: "activity", element: ph("activity") },
