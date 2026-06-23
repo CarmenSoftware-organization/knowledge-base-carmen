@@ -15,7 +15,10 @@ export function ThemeToggle({ compact }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+    setMounted(true);
+  }, []);
   if (!mounted) return null;
 
   const isDark = resolvedTheme === "dark";

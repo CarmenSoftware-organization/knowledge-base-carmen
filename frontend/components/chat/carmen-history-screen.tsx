@@ -13,7 +13,7 @@ interface Props {
     onDelete: (roomId: string) => void;
     isProcessing?: boolean;
     theme?: string;
-    t: any;
+    t: (key: string) => string;
 }
 
 export default function CarmenHistoryScreen({

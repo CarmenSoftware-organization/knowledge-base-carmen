@@ -144,7 +144,10 @@ export function BULandingCards({ items }: Props) {
   const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+    setMounted(true);
+  }, []);
 
   const logoPop = logoVariants(reduceMotion);
   const cardsContainer = cardsContainerVariants(reduceMotion);

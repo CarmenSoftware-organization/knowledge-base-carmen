@@ -158,7 +158,7 @@ const CategoryItemRow = memo(function CategoryItemRow({
       let siblings = roots;
       for (const fp of folderParts) {
         const nextKey = parentKey ? `${parentKey}/${fp}` : fp;
-        const node = ensureNode(siblings, nextKey, folderLabel(categoryItem.slug, fp), weight);
+        ensureNode(siblings, nextKey, folderLabel(categoryItem.slug, fp), weight);
         if (!childMap.has(nextKey)) childMap.set(nextKey, {});
         siblings = childMap.get(nextKey)!;
         parentKey = nextKey;
@@ -168,7 +168,6 @@ const CategoryItemRow = memo(function CategoryItemRow({
       if (folderParts.length === 1) {
         leafNode.articles.push(article);
       } else {
-        const lastKey = folderParts.join("/");
         const lastNode = (() => {
           let cur = roots[folderParts[0]];
           for (let i = 1; i < folderParts.length; i++) {
@@ -223,6 +222,7 @@ const CategoryItemRow = memo(function CategoryItemRow({
     }
     const autoExpanded = [...new Set(folderChain)];
     if (autoExpanded.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
       setExpandedFolders((prev) => Array.from(new Set([...prev, ...autoExpanded])));
     }
   }, [categoryItem.articles, pathname]);
@@ -367,6 +367,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
     setIsLoading(true);
 
     getSidebarTree(bu)
@@ -391,6 +392,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
   useEffect(() => {
     const match = pathname.match(/\/categories\/([^/]+)/);
     if (match) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
       setExpandedCategories((prev) =>
         prev.includes(match[1]) ? prev : [...prev, match[1]]
       );

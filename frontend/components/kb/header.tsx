@@ -84,7 +84,10 @@ export function KBHeader() {
   const scrollRaf = useRef<number>(0);
   const menuOpenRef = useRef({ mobile: false });
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     menuOpenRef.current = { mobile: mobileMenuOpen };
@@ -96,6 +99,7 @@ export function KBHeader() {
 
   useEffect(() => {
     if (mobileMenuOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
       setScrollHidden(false);
     }
   }, [mobileMenuOpen]);
@@ -144,10 +148,12 @@ export function KBHeader() {
 
   useEffect(() => {
     lastScrollY.current = typeof window !== "undefined" ? window.scrollY : 0;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
     setScrollHidden(false);
   }, [pathname]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
     setMobileMenuOpen(false);
   }, [pathname]);
 

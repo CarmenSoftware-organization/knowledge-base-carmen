@@ -48,6 +48,7 @@ export function TableOfContents({
       });
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
     setHeadings(elements);
     if (elements.length > 0) setActiveId(elements[0].id);
   }, [locale]);

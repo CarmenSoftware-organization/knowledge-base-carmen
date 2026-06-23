@@ -15,12 +15,12 @@ interface MessageListProps {
     retryMessage: (text: string) => void;
     theme: string;
     isResizing: boolean;
-    t: any;
+    t: (key: string) => string;
 }
 
-export const MessageList = React.memo(({
+export const MessageList = React.memo(function MessageList({
     bodyRef, messages, showSuggestions, suggestions, sendMessage, sendFeedback, retryMessage, theme, isResizing, t
-}: MessageListProps) => {
+}: MessageListProps) {
     return (
         <div
             ref={bodyRef}
@@ -51,7 +51,7 @@ export const MessageList = React.memo(({
                         className="flex flex-col gap-4"
                     >
                         <AnimatePresence initial={false}>
-                            {messages.map((msg: any) => (
+                            {messages.map((msg: DisplayMessage) => (
                                 <motion.div
                                     key={msg.id}
                                     initial={{ opacity: 0, y: 14, scale: 0.96 }}

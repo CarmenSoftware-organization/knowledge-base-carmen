@@ -121,7 +121,7 @@ export async function executeStream(
         username: config.username,
         room_id: processingRoomId,
         prompt_extend: config.promptExtend,
-        history: history.messages.filter((m: any) => m.id !== botMsgId && m.id !== userMsgId),
+        history: history.messages.filter((m) => m.id !== botMsgId && m.id !== userMsgId),
         lang: locale,
         referrer_page: config.referrer_page ?? (typeof window !== "undefined" ? window.location.pathname : null),
       }),
@@ -136,7 +136,14 @@ export async function executeStream(
         const j = JSON.parse(raw) as { message?: string; error?: string; detail?: unknown };
         // FastAPI validation errors return detail as an array of objects — flatten to string
         const detailStr = Array.isArray(j.detail)
-          ? j.detail.map((d: any) => d.msg ?? JSON.stringify(d)).filter(Boolean).join("; ")
+          ? j.detail
+              .map((d) =>
+                d && typeof d === "object" && "msg" in d
+                  ? (d as { msg?: string }).msg ?? JSON.stringify(d)
+                  : JSON.stringify(d),
+              )
+              .filter(Boolean)
+              .join("; ")
           : typeof j.detail === "string" ? j.detail : undefined;
         msg = [j.message, detailStr, j.error].filter(Boolean).join(" — ") || raw;
         if (!msg.trim()) msg = summarizeProxyOrHtmlError(raw, response.status);
@@ -256,8 +263,8 @@ export async function executeStream(
       check();
     });
 
-  } catch (e: any) {
-    if (e.name === "AbortError") {
+  } catch (e: unknown) {
+    if (e instanceof Error && e.name === "AbortError") {
       if (isUserStopRef.current) {
         const finalHtml = formatCarmenMessage(accumulated + `\n\n**${t("chat.status_stopped")}**`, api.baseUrl);
         setMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, html: finalHtml } : m));
@@ -270,7 +277,11 @@ export async function executeStream(
         statusTimers.current.forEach(clearTimeout);
         statusTimers.current = [];
         const detail = sanitizeErrorMessageForUi(
-          (e instanceof Error ? e.message : typeof e === "string" ? e : String(e?.message ?? "")).trim()
+          (e instanceof Error
+            ? e.message
+            : typeof e === "string"
+              ? e
+              : String((e as { message?: unknown })?.message ?? "")).trim()
         );
         setMessages((prev) =>
           prev.map((m) =>

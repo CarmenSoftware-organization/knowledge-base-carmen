@@ -6,7 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { articleDisplayMap, cleanTitle } from "@/configs/sidebar-map";
 import { displayWikiArticleTitle } from "@/lib/wiki-utils";
 import { ArrowRight } from "lucide-react";
-import { wikiPathToRoute } from "@/lib/wiki-api";
+import { wikiPathToRoute, type WikiListItem } from "@/lib/wiki-api";
+
+type ArticleGridItem = WikiListItem & { slug: string };
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -26,7 +28,7 @@ const itemVariants: Variants = {
 };
 
 export function ArticleGridTransition(props: {
-  items: any[];
+  items: ArticleGridItem[];
   /** Kept for call-site compatibility; links use item.path via wikiPathToRoute */
   category?: string;
 }) {
@@ -41,7 +43,7 @@ export function ArticleGridTransition(props: {
       viewport={{ once: true }}
       className="grid gap-4 sm:grid-cols-2 mb-10"
     >
-      {filteredItems.map((item: any) => {
+      {filteredItems.map((item: ArticleGridItem) => {
         const displayTitle =
           articleDisplayMap[item.slug] ||
           displayWikiArticleTitle(item.title, item.slug, item.path) ||

@@ -55,6 +55,7 @@ export function ActivityLogTable({ bu }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- toggle loading state before the async data fetch below
     setLoading(true);
     getActivityLogs(bu, PAGE_SIZE, (currentPage - 1) * PAGE_SIZE, sourceFilter)
       .then((data) => {

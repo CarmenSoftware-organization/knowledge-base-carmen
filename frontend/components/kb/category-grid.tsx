@@ -25,7 +25,9 @@ const itemVariants: Variants = {
   }
 };
 
-export function CategoryGrid({ items }: { items: any[] }) {
+type CategoryGridItem = { slug: string; title: string };
+
+export function CategoryGrid({ items }: { items: CategoryGridItem[] }) {
   const t = useTranslations("category");
   const visible = items.filter(
     (c: { slug: string }) => c.slug !== "changelog" && c.slug !== "faq"

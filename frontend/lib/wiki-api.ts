@@ -213,7 +213,6 @@ export function wikiPathToRoute(path: string): string {
   }
 
   const category = encodeURIComponent(parts[0]);
-  const relPath = parts.slice(1).join("/");
   const file = parts[parts.length - 1];
   const baseName = file.replace(/\.md$/i, "");
 

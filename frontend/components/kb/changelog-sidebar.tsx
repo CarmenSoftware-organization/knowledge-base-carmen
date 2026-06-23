@@ -50,8 +50,6 @@ export function ChangelogSidebarNav({
 
   if (!items?.length) return null;
 
-  let lastYear = "";
-
   return (
     <motion.nav
       className={cn(
@@ -77,13 +75,16 @@ export function ChangelogSidebarNav({
         </Link>
       )}
 
-      {items.map((item) => {
+      {items.map((item, i) => {
         const href = wikiPathToRoute(item.path);
         const active = pathsMatch(pathname, href);
         const ts = changelogItemTimestamp(item);
         const y = yearLabel(ts);
-        const showYearHeader = y !== lastYear;
-        if (showYearHeader) lastYear = y;
+        const prevItem = items[i - 1];
+        const prevYear = prevItem
+          ? yearLabel(changelogItemTimestamp(prevItem))
+          : "";
+        const showYearHeader = y !== prevYear;
 
         return (
           <div key={item.path}>

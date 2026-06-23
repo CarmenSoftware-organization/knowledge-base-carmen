@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
+import { CarmenChatConfig } from "@/hooks/use-carmen-chat";
 
 interface ChatHeaderProps {
     isExpanded: boolean;
@@ -10,17 +11,17 @@ interface ChatHeaderProps {
     isProcessing: () => boolean;
     showRoomDropdown: boolean;
     setShowRoomDropdown: (val: boolean) => void;
-    config: any;
+    config: CarmenChatConfig;
     currentRoomId: string | null;
     setClearModal: (val: boolean) => void;
-    setAlertModal: (val: { open: boolean; title: string; description: string; variant?: "danger" | "info" | "success" }) => void;
-    t: any;
+    setAlertModal: (val: { open: boolean; title: string; description: string; variant: "danger" | "info" | "success" }) => void;
+    t: (key: string) => string;
 }
 
-export const ChatHeader = React.memo(({
+export const ChatHeader = React.memo(function ChatHeader({
     isExpanded, onDragStart, toggleExpand, toggleOpen, isProcessing,
     showRoomDropdown, setShowRoomDropdown, config, currentRoomId, setClearModal, setAlertModal, t
-}: ChatHeaderProps) => {
+}: ChatHeaderProps) {
     return (
         <motion.div
             layout

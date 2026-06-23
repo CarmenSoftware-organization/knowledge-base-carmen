@@ -259,6 +259,7 @@ export function FaqSidebarNav({
 
   useEffect(() => {
     const auto = faqExpandedFolderKeys(pathname, items);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
     setExpanded((prev) => [...new Set([...auto, ...prev])]);
   }, [pathname, items]);
 

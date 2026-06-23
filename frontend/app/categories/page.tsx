@@ -17,7 +17,7 @@ export default async function CategoriesPage() {
   let data;
   try {
     data = await getCategories(bu, { next: { revalidate: 300 } });
-  } catch (error) {
+  } catch {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <KBHeader />

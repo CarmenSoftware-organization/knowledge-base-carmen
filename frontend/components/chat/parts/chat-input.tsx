@@ -1,10 +1,11 @@
 "use client";
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CarmenChatConfig } from "@/hooks/use-carmen-chat";
 
 interface ChatInputProps {
     isResizing: boolean;
-    config: any;
+    config: CarmenChatConfig;
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     inputRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -18,12 +19,12 @@ interface ChatInputProps {
     isProcessing?: boolean;
     stopGeneration?: () => void;
     forceScrollToBottom?: () => void;
-    t: any;
+    t: (key: string) => string;
 }
 
-export const ChatInput = React.memo(({
+export const ChatInput = React.memo(function ChatInput({
     isResizing, config, fileInputRef, handleFileChange, inputRef, inputValue, handleInput, handleKeyDown, setIsInputFocused, sendMessage, imageBase64, setImageBase64, isProcessing, stopGeneration, forceScrollToBottom, t
-}: ChatInputProps) => {
+}: ChatInputProps) {
     return (
         <>
             <AnimatePresence>
@@ -36,6 +37,7 @@ export const ChatInput = React.memo(({
                         transition={{ duration: 0.2 }}
                     >
                         <div className="relative w-12 h-12 flex-shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- dynamic user image; next/image needs known dimensions */}
                             <img src={imageBase64} alt="preview" className="w-full h-full object-cover rounded-xl border-2 border-white dark:border-slate-700 shadow-md" />
                             <button onClick={() => setImageBase64(null)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-[10px] hover:bg-red-200 shadow">×</button>
                         </div>

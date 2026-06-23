@@ -5,7 +5,7 @@ interface Props {
   suggestions: string[];
   onSelect: (text: string) => void;
   theme?: string;
-  t: any;
+  t: (path: string) => string;
 }
 
 export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b", t }: Props) {
@@ -20,6 +20,7 @@ export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b"
 
   useEffect(() => {
     indexRef.current = 0;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset typewriter animation state before (re)starting the interval
     setTypedTitle(""); setShowDesc(false); setShowChips(false);
     const iv = setInterval(() => {
       if (indexRef.current < WELCOME_TITLE.length) {
@@ -31,7 +32,7 @@ export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b"
       }
     }, 40);
     return () => clearInterval(iv);
-  }, []);
+  }, [WELCOME_TITLE]);
 
   function handleSelect(text: string, idx: number) {
     if (isExiting) return;

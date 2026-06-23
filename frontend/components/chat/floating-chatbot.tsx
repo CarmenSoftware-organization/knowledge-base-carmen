@@ -7,6 +7,7 @@ import { getOrCreateClientId } from "@/lib/carmen-client-id";
 import { getSelectedBUClient } from "@/lib/wiki-api";
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import type { LocaleKey } from "@/configs/locales";
 
 interface Props extends Partial<CarmenChatConfig> {
   bu?: string;
@@ -36,6 +37,7 @@ export default function FloatingChatBot({
       : clientId ?? "Guest";
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
     setClientId(getOrCreateClientId());
   }, []);
 
@@ -55,7 +57,7 @@ export default function FloatingChatBot({
     apiBase: resolvedApiBase,
     theme,
     title,
-    locale: locale as any,
+    locale: locale as LocaleKey,
     promptExtend,
     showClear,
     showAttach,

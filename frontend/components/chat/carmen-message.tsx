@@ -476,7 +476,8 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
             className="flex flex-wrap items-start justify-start gap-2 mb-1 overflow-hidden p-1 -ml-1"
           >
             {msg.suggestions.map((s, i) => {
-              const text = typeof s === 'string' ? s : (s as any).question || (s as any).text || (s as any).title || String(s);
+              const obj = s as unknown as { question?: string; text?: string; title?: string };
+              const text = typeof s === 'string' ? s : obj.question || obj.text || obj.title || String(s);
               return (
                 <motion.button
                   key={`${msg.id}-sugg-${i}`}

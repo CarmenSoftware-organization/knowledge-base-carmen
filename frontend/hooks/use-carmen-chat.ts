@@ -67,13 +67,18 @@ export interface UseCarmenChatReturn {
   suggestions: string[];
   config: CarmenChatConfig;
   api: CarmenApi;
-  t: any;
+  t: (path: string) => string;
   setInputValue: (val: string) => void;
   setImageBase64: (val: string | null) => void;
   setShowRoomDropdown: (val: boolean) => void;
-  setDeleteModal: (val: any) => void;
+  setDeleteModal: (val: { open: boolean; roomId: string | null }) => void;
   setClearModal: (val: boolean) => void;
-  setAlertModal: (val: any) => void;
+  setAlertModal: (val: {
+    open: boolean;
+    title: string;
+    description: string;
+    variant?: "danger" | "info" | "success";
+  }) => void;
   toggleOpen: () => void;
   toggleExpand: () => void;
   createNewChat: () => void;
@@ -168,13 +173,13 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   // Locale-aware translator that respects config.locale
   const translator = (path: string) => {
     const parts = path.split(".");
-    let current: any = locales[locale];
+    let current: unknown = locales[locale];
     for (const part of parts) {
       if (current && typeof current === "object" && part in current) {
-        current = current[part];
+        current = (current as Record<string, unknown>)[part];
       } else {
         // Fallback to next-intl if key missing in hardcoded locales
-        try { return t(path); } catch (e) { return path; }
+        try { return t(path); } catch { return path; }
       }
     }
     return typeof current === "string" ? current : path;
@@ -182,6 +187,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   useEffect(() => {
     const ui = readUiState(config.bu);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
     if (ui.open) setIsOpen(true);
     if (ui.expanded) setIsExpanded(true);
 
@@ -266,7 +272,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
           }
 
           return { ...room, lastMessage: snippet };
-        } catch (e) {
+        } catch {
           return { ...room, lastMessage: "ไม่มีข้อความ" };
         }
       })
@@ -592,7 +598,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
     setShowRoomDropdown,
     setDeleteModal,
     setClearModal,
-    setAlertModal,
+    setAlertModal: setAlertModal as UseCarmenChatReturn["setAlertModal"],
     toggleOpen,
     toggleExpand,
     createNewChat: stableCreateNewChat,

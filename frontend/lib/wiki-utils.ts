@@ -64,6 +64,6 @@ export function displayWikiArticleTitle(
   return t;
 }
 
-export function getCategoryColor(slug: string) {
+export function getCategoryColor(_slug: string) {
   return "bg-primary/10 text-primary border-primary/20";
 }

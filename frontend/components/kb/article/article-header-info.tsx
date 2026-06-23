@@ -8,7 +8,7 @@ interface ArticleHeaderInfoProps {
 
 export function ArticleHeaderInfo({
   title,
-  description,
+  description: _description,
   formattedDate,
   tags,
   editor

@@ -21,8 +21,8 @@ export function ActivityControls({ bu }: ActivityControlsProps) {
       toast.success("Sync สำเร็จ", { description: res.message });
       // Reload page to see new logs possibly
       setTimeout(() => window.location.reload(), 1500);
-    } catch (err: any) {
-      toast.error("Sync ล้มเหลว", { description: err.message });
+    } catch (err: unknown) {
+      toast.error("Sync ล้มเหลว", { description: err instanceof Error ? err.message : String(err) });
     } finally {
       setSyncing(false);
     }
@@ -33,8 +33,8 @@ export function ActivityControls({ bu }: ActivityControlsProps) {
     try {
       const res = await rebuildIndex(bu);
       toast.success("เริ่ม Reindex แล้ว", { description: res.message });
-    } catch (err: any) {
-      toast.error("Reindex ล้มเหลว", { description: err.message });
+    } catch (err: unknown) {
+      toast.error("Reindex ล้มเหลว", { description: err instanceof Error ? err.message : String(err) });
     } finally {
       setIndexing(false);
     }

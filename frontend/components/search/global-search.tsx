@@ -3,7 +3,7 @@
 import { Search, Loader2, FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { articleDisplayMap, cleanTitle } from "@/configs/sidebar-map";
@@ -103,11 +103,11 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
   }, []);
 
   const router = useRouter();
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const isHeader = variant === "header";
 
   useEffect(() => {
     if (defaultValue) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
       setSearchQuery(defaultValue);
     }
   }, [defaultValue]);
@@ -115,6 +115,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
   useEffect(() => {
     const q = searchQuery.trim();
     if (q.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
       setSuggestions([]);
       setShowDropdown(false);
       return;

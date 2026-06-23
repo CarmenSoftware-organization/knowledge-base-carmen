@@ -31,7 +31,10 @@ export function KBFooter() {
 
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+    setMounted(true);
+  }, []);
 
   const logoSrc =
     mounted && resolvedTheme === "dark"

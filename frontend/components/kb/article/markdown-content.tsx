@@ -236,6 +236,7 @@ function renderMarkdownImage({
 }: ImageRenderArgs & { imgProps: Record<string, unknown> }) {
   if (/^(https?:|data:)/i.test(src)) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element -- dynamic markdown image; next/image needs known dimensions
       <img
         {...imgProps}
         src={src}
@@ -258,6 +259,7 @@ function renderMarkdownImage({
     titleStr && !sanitizeImgAlt(titleStr, assetRelative) ? undefined : titleStr;
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- dynamic markdown image; next/image needs known dimensions
     <img
       {...imgProps}
       src={resolvedSrc}

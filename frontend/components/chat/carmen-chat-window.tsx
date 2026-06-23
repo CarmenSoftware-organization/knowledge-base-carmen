@@ -101,7 +101,7 @@ export default function CarmenChatWindow({ state }: Props) {
       rafId: 0
     };
 
-    window.addEventListener("pointermove", handlePointerMove as any, { passive: false });
+    window.addEventListener("pointermove", handlePointerMove, { passive: false });
     window.addEventListener("pointerup", handlePointerUp);
   };
 
@@ -140,7 +140,7 @@ export default function CarmenChatWindow({ state }: Props) {
   };
 
   const handlePointerUp = () => {
-    window.removeEventListener("pointermove", handlePointerMove as any);
+    window.removeEventListener("pointermove", handlePointerMove);
     window.removeEventListener("pointerup", handlePointerUp);
 
     const d = dragState.current;
@@ -160,7 +160,9 @@ export default function CarmenChatWindow({ state }: Props) {
       }
     }, 150); // Small wait to allow the LERP to visibly complete its journey
 
+    // eslint-disable-next-line react-hooks/immutability -- DOM side-effect in event handler
     document.body.style.userSelect = "";
+    // eslint-disable-next-line react-hooks/immutability -- DOM side-effect in event handler
     document.body.style.webkitUserSelect = "";
   };
 
