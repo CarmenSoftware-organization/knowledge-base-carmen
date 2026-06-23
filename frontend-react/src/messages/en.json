@@ -1,0 +1,160 @@
+{
+  "article": {
+    "onThisPage": "On this page"
+  },
+  "common": {
+    "categories": "Categories",
+    "categoriesAll": "All Categories",
+    "home": "Home",
+    "forStaff": "For Staff",
+    "viewCategory": "View Category",
+    "articles": "articles",
+    "search": "Search",
+    "buSwitcherLabel": "Business unit",
+    "buSwitcherHint": "Choose your business unit to show guides for your product",
+    "buSwitcherPlaceholder": "Select unit",
+    "languageLabel": "Language",
+    "languageHint": "Switch Thai / English for supported content",
+    "contactCenter": "Contact Center"
+  },
+  "buLanding": {
+    "flairBadge": "Knowledge hub",
+    "brandLine1": "Carmen Cloud",
+    "brandLine2": "Learning Center",
+    "brandLine3": "Self Learning Portal",
+    "introLead": "Welcome to Carmen’s self-learning portal. Content is organized by business unit so you can find guides and articles that match the product you actually use without mixing unrelated topics.",
+    "contactSupport": "Contact Support",
+    "cardFallback": "Click the card to browse document categories for this unit.",
+    "buActionGuidesTitle": "All guides",
+    "buActionGuidesHint": "Open every category and article for this unit",
+    "buActionFaqTitle": "FAQ",
+    "buActionFaqHint": "Frequently asked questions for this unit",
+    "empty": "No business units are available right now.",
+    "whatIsTitle": "What is KB Carmen",
+    "whatIsLead": "KB Carmen is built to help hotel teams access practical finance and accounting knowledge faster, aligned with the same Carmen principles: accuracy, operational efficiency, and auditability.",
+    "whatIsSubLead": "Its goal is simple: reduce trial-and-error, speed up onboarding, and keep teams working with one consistent operational standard.",
+    "whatIsPoint1": "Knowledge is organized by business unit and document category to reduce search time.",
+    "whatIsPoint2": "Guides explain connected workflows across PMS, API-ready integration, and accounting operations.",
+    "whatIsPoint3": "Supports cloud-based working and reporting habits teams already use in daily operations.",
+    "whatIsPoint4": "Helps new staff ramp up faster while keeping existing teams aligned to shared standards."
+  },
+  "hero": {
+    "badge": "Knowledge Base",
+    "title": "Knowledge Hub",
+    "titleFor": "for {buName}",
+    "subtitle": "Search guides, articles, and answers for every question about using {buName} accounting management system",
+    "popular": "Popular:",
+    "compactBadge": "Search",
+    "compactTitle": "Already know the topic or guide name?",
+    "compactSubtitle": "Type your search below. You don’t have to pick a business unit first."
+  },
+  "quickHelp": {
+    "title": "Need more help?",
+    "subtitleLine1": "If you can’t find the answer in the guide,",
+    "subtitleLine2": "our support team is ready to help you 24/7.",
+    "chatButton": "Chat with us",
+    "emailButton": "Send email",
+    "phoneTitle": "Call us",
+    "phoneHours": "Mon-Fri 9:00-18:00",
+    "emailTitle": "Email",
+    "emailReplyTime": "Reply within 24 hours"
+  },
+  "search": {
+    "placeholderHeader": "Search guides...",
+    "placeholderHero": "Search guide name or content...",
+    "placeholderMobile": "Search guides or content...",
+    "searchButton": "Search",
+    "results": "Search Results",
+    "navigate": "↑↓ to navigate"
+  },
+  "category": {
+    "selectTitle": "Select Category",
+    "selectDescription": "Choose the category you want to learn",
+    "articlesCount": "{count} articles",
+    "documents": "Document Categories",
+    "articlesInCategory": "Articles in this category",
+    "allArticlesInCategory": "All articles in this category",
+    "emptyList": "No categories to show",
+    "emptyListHint": "The API returned an empty list. Check NEXT_PUBLIC_API_BASE on Vercel and that your hosted backend includes the same wiki markdown files as local."
+  },
+  "errors": {
+    "loadFailed": "Unable to load data",
+    "systemError": "Temporary system error. Please try again later."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "This page may have been removed, renamed, or never existed.",
+    "backHome": "Back to Home",
+    "browseCategories": "Browse Categories"
+  },
+  "activity": {
+    "title": "Activity Logs",
+    "description": "Usage and search history within the system (Business Unit: {bu})"
+  },
+  "chat": {
+    "placeholder": "Type your message here...",
+    "status_thinking": "Thinking...",
+    "status_analyzing": "Analyzing query...",
+    "status_searching": "Searching knowledge base...",
+    "status_composing": "Composing answer...",
+    "status_waiting": "Waiting in queue...",
+    "status_processing": "Processing...",
+    "status_stopped": "[Generation stopped]",
+    "error_title": "Connection error occurred",
+    "error_retry": "Retry",
+    "error_connection": "Connection error occurred",
+    "retry": "Retry",
+    "queued": "Queued",
+    "new_chat_block": "Cannot create a new chat while processing. Please wait.",
+    "switch_room_block": "Cannot switch rooms while processing. Please wait.",
+    "delete_room_block": "Cannot delete rooms while processing. Please wait.",
+    "clear_history_block": "Cannot clear chat while processing. Please wait.",
+    "remaining_queue": "+ {count} more in queue",
+    "stop_generation": "Stop generation",
+    "ai_disclaimer": "Carmen AI may make mistakes. Verify important info.",
+    "file_too_large": "File too large. Maximum size is 5MB.",
+    "proactive_settings_message": "Need help with system settings?",
+    "proactive_settings_sub": "Ask Carmen anytime!",
+    "proactive_home_message": "Looking for a guide?",
+    "proactive_home_sub": "Ask Carmen for help!"
+  },
+  "header": {
+    "history": "Chat History",
+    "expand": "Expand Window",
+    "collapse": "Collapse Window",
+    "clear": "Clear Chat",
+    "close": "Close",
+    "status_online": "AI Knowledge Base Online"
+  },
+  "modal": {
+    "delete_title": "Delete this room?",
+    "delete_desc": "The selected conversation will be permanently deleted.",
+    "delete_confirm": "Delete",
+    "clear_title": "Clear history?",
+    "clear_desc": "All messages in this room will be removed.",
+    "clear_confirm": "Clear",
+    "cancel": "Cancel",
+    "ok": "OK"
+  },
+  "tools": {
+    "copy": "Copy content",
+    "copied": "Copied!",
+    "helpful": "Helpful",
+    "incorrect": "Incorrect",
+    "scroll_down": "Scroll to bottom",
+    "attach": "Attach image",
+    "send": "Send message"
+  },
+  "welcome": {
+    "title": "Hi! Carmen is here to help.",
+    "desc": "Ask anything about the corporate manual or start a new conversation below.",
+    "new_chat": "New Chat",
+    "default_suggestions": [
+      "The refresh button in workbook doesn't work, what should I do?",
+      "Can I record purchase tax invoices in Excel and then import them?",
+      "Can Carmen upload files to the Revenue Department's RDPrep program?",
+      "Can I create a receipt without selecting an invoice?",
+      "Can I record a JV with unbalanced debit and credit?"
+    ]
+  }
+}
