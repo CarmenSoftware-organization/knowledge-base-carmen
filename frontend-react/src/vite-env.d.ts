@@ -2,7 +2,9 @@
 
 // Allow side-effect CSS imports from @fontsource/* packages (no bundled type defs)
 declare module "@fontsource/geist-sans";
+declare module "@fontsource/geist-sans/*.css";
 declare module "@fontsource/geist-mono";
+declare module "@fontsource/geist-mono/*.css";
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE?: string;
