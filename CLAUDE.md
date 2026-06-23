@@ -62,6 +62,7 @@ Health: `:8080/health` (Go backend, serves `/api/chat/*` natively). Swagger: `:8
 
 ## Where to look next
 
+- `sitemap.md` — repo structure map (narrative + auto-generated tree; refresh with `python3 scripts/gen_sitemap.py`)
 - `manual/HANDOVER-ADD-NEW-BU.md` — full BU runbook + markdown format
 - `backend/migrations/README.md` — migration order + dimension variants
 - `docs/superpowers/plans/2026-06-22-chatbot-go-*` — the Python→Go chatbot migration specs/plans (RAG internals, parity notes)
