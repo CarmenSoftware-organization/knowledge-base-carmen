@@ -21,6 +21,12 @@ type Config struct {
 	Chat        ChatConfig
 	Translation TranslationConfig
 	LLM         LLMConfig
+	Export      ExportConfig
+}
+
+type ExportConfig struct {
+	GotenbergURL string
+	ImageBaseURL string
 }
 
 type LLMConfig struct {
@@ -338,6 +344,10 @@ func Load() error {
 			FallbackModel:   getEnv("LLM_FALLBACK_MODEL", ""),
 			MaxPromptTokens: getEnvAsInt("MAX_PROMPT_TOKENS", 6000),
 			TimeoutSec:      getEnvAsInt("LLM_TIMEOUT_SECONDS", 60),
+		},
+		Export: ExportConfig{
+			GotenbergURL: getEnv("GOTENBERG_URL", ""),
+			ImageBaseURL: getEnv("EXPORT_IMAGE_BASE_URL", ""),
 		},
 	}
 
