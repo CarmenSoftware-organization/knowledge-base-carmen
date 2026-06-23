@@ -441,9 +441,9 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_<bu>_faq.sql
 
 ## 15) เอกสารอ้างอิงเพิ่มเติม
 
-- `README.md` — Quick start + ภาพรวมสั้น
-- `CLAUDE.md` — guidance สำหรับ Claude Code
+- `../README.md` — Quick start + ภาพรวมสั้น
+- `../CLAUDE.md` — guidance สำหรับ Claude Code
 - `HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
-- `backend/migrations/README.md` — ลำดับ migration + dimension variants
-- RAG pipeline internals: ดู `docs/superpowers/plans/2026-06-22-chatbot-go-*`
+- `../backend/migrations/README.md` — ลำดับ migration + dimension variants
+- RAG pipeline internals: ดู `../docs/superpowers/plans/2026-06-22-chatbot-go-*`
 

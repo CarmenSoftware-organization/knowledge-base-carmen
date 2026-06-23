@@ -23,7 +23,7 @@
 - ทุก id/FK เป็น **UUID** (UUIDv7 generate ฝั่ง Go ด้วย `uuid.NewV7()`)
 - Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$` (slug = ชื่อโฟลเดอร์ `contents/<slug>/` + routing key)
 - เลือก BU ผ่าน query `?bu=<slug>` ในทุก endpoint (resolve เป็น `bu_id` ด้วย `database.BUIDForSlug`)
-- รายละเอียดเพิ่ม BU ใหม่: ดู `HANDOVER-ADD-NEW-BU.md`
+- รายละเอียดเพิ่ม BU ใหม่: ดู `manual/HANDOVER-ADD-NEW-BU.md`
 
 ### Auto-provision (production)
 
@@ -101,8 +101,8 @@ CONTENTS_ROOT="$PWD/contents/<bu>" ./scripts/wikijs-import-contents.sh
 ## เอกสารย่อย
 
 - `CLAUDE.md` — guidance สำหรับ Claude Code (สรุปสถาปัตยกรรม + gotchas)
-- `HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
-- `USER_MANUAL_TH.md` — คู่มือผู้ใช้ภาษาไทย
+- `manual/HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
+- `manual/USER_MANUAL_TH.md` — คู่มือผู้ใช้ภาษาไทย
 - `backend/README.md`, `backend/migrations/README.md` — backend API + ลำดับ migration
 - `frontend/README.md` — frontend routes + env
 - RAG pipeline internals: ดู `docs/superpowers/plans/2026-06-22-chatbot-go-*`

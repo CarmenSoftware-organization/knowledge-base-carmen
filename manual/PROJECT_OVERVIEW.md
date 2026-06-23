@@ -166,9 +166,9 @@ knowledge-base-carmen/
 
 ## เอกสารอ้างอิงเพิ่มเติม
 
-- `README.md` — quick start
-- `CLAUDE.md` — guidance สำหรับ Claude Code
+- `../README.md` — quick start
+- `../CLAUDE.md` — guidance สำหรับ Claude Code
 - `USER_MANUAL_TH.md` — คู่มือผู้ใช้/ops
 - `HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
-- `backend/migrations/README.md` — ลำดับ migration + dimension variants
+- `../backend/migrations/README.md` — ลำดับ migration + dimension variants
 - RAG pipeline internals: ดู `docs/superpowers/plans/2026-06-22-chatbot-go-*`

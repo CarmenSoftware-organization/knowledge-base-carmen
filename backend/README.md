@@ -89,7 +89,7 @@ go run cmd/server/main.go reset all                 # truncate public activity/c
 
 ## Auto-provision (GitHub Actions)
 
-Push markdown ใต้ `contents/<bu>/` เข้า `main` → workflow `.github/workflows/auto-provision-sync-reindex.yml` เรียก `provision/sync/rebuild` ผ่าน admin API ให้อัตโนมัติ ดูรายละเอียดใน `HANDOVER-ADD-NEW-BU.md`
+Push markdown ใต้ `contents/<bu>/` เข้า `main` → workflow `.github/workflows/auto-provision-sync-reindex.yml` เรียก `provision/sync/rebuild` ผ่าน admin API ให้อัตโนมัติ ดูรายละเอียดใน `../manual/HANDOVER-ADD-NEW-BU.md`
 
 ## Swagger (OpenAPI)
 

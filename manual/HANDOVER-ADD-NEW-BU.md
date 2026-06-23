@@ -2,8 +2,8 @@
 
 เอกสารนี้สรุปขั้นตอนแบบใช้งานจริงสำหรับคนใหม่ที่ต้องเพิ่ม Business Unit (BU) ในโปรเจกต์ `knowledge-base-carmen` และแปลงไฟล์เป็น `.md` ให้ตรงฟอร์แมตที่ระบบอ่านได้
 
-> สำหรับภาพรวมสถาปัตยกรรม ดู `PROJECT_OVERVIEW.md` / `CLAUDE.md`
-> สำหรับลำดับ migration + dimension variants ดู `backend/migrations/README.md`
+> สำหรับภาพรวมสถาปัตยกรรม ดู `PROJECT_OVERVIEW.md` / `../CLAUDE.md`
+> สำหรับลำดับ migration + dimension variants ดู `../backend/migrations/README.md`
 
 ---
 
