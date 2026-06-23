@@ -1,18 +1,22 @@
-# render.yaml — Full Docker deployment on Render
+# render.yaml — Backend deployment on Render (Docker)
 #
-# Services:
-#   carmen-backend   -> Docker (Go Fiber; serves the native RAG chatbot at /api/chat/*)
-# Frontend deploy แยกที่ Vercel (native Next.js build) — ไม่อยู่ใน blueprint นี้
+# Service:
+#   carmen-backend -> Docker (Go Fiber API; serves the native RAG chatbot at
+#                     /api/chat/* and Swagger UI at /swagger/index.html)
+# Frontend deploys separately on Vercel (native Next.js build) — not in this blueprint.
 #
 # First-time setup:
-# 1) Push this file to Git provider and create Blueprint on Render
-# 2) Fill secrets marked with sync: false
+# 1) Push this file to the Git provider and create a Blueprint on Render
+# 2) Fill the secrets marked with `sync: false`
 # 3) Deploy
 #
 # Notes:
-# - this blueprint is free-tier oriented (no Render managed Postgres)
-# - use external Postgres by filling DB_* vars on backend/chatbot
-# - backend startup runs idempotent migrate before starting server
+# - Free-tier oriented (no Render-managed Postgres) — point at an EXTERNAL
+#   Postgres+pgvector by filling the DB_* vars below.
+# - On boot the Docker entrypoint waits for the DB, then applies
+#   migrations/0001_init_schema.sql (idempotent) before starting ./server.
+# - All tenant data lives in the `public` schema, partitioned by bu_id (no
+#   schema-per-BU), so DB_SCHEMA is just `public`.
 
 services:
   # ─── Backend (Go Fiber in Docker) ───────────────────────────────────────────
@@ -29,6 +33,7 @@ services:
       - key: PORT
         value: "8080"
 
+      # Database (external Postgres + pgvector) — fill host/user/password/name
       - key: DB_HOST
         sync: false
       - key: DB_PORT
@@ -42,7 +47,7 @@ services:
       - key: DB_SSLMODE
         value: require
       - key: DB_SCHEMA
-        value: carmen,public
+        value: public
       - key: VECTOR_DIMENSION
         value: "2000"
 
@@ -65,7 +70,7 @@ services:
       - key: OPENROUTER_EMBED_MODEL
         value: qwen/qwen3-embedding-8b
 
-      # Native chatbot LLM config (was the Python carmen-chatbot service)
+      # Native RAG chatbot LLM config (intent → hybrid retrieval → LLM)
       - key: LLM_API_KEY
         sync: false
       - key: LLM_API_BASE
@@ -91,4 +96,3 @@ services:
 
       - key: CORS_ORIGINS
         value: "https://knowledge-base-carmen.vercel.app"
-
