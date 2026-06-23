@@ -44,7 +44,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, setIsInputF
 
     // Reset scroll state when expand/collapse so scroll button disappears
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- reset derived scroll UI on expand/collapse, then sync DOM scroll
+         
         setUserHasScrolledUp(false);
         const el = bodyRef.current;
         if (el) el.scrollTop = el.scrollHeight;
@@ -125,11 +125,11 @@ export function ChatContent({ state, theme, isResizing, onDragStart, setIsInputF
             // Mark programmatic scroll time BEFORE the rAF to prevent
             // the scroll handler from detecting the content shift as "user scrolled up"
             lastProgrammaticScrollTime.current = Date.now();
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- auto-scroll to bottom on new message unless user scrolled away
+             
             setUserHasScrolledUp(false);
             scrollToBottom(true, messages.length < 5);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- run only when message count changes; adding scrollToBottom/userHasScrolledUp would re-scroll on every render/scroll
+         
     }, [messages.length]);
 
     useEffect(() => {
@@ -182,7 +182,7 @@ export function ChatContent({ state, theme, isResizing, onDragStart, setIsInputF
             window.removeEventListener("carmen-typing-frame", handleTypingFrame);
             window.removeEventListener("carmen-scroll-smooth", handleSmoothScroll);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- re-bind listeners only on userHasScrolledUp; scrollToBottom is recreated each render and would re-bind every render
+         
     }, [userHasScrolledUp]);
 
     function handleInput(e: ChangeEvent<HTMLTextAreaElement>) {

@@ -45,7 +45,7 @@ export function HeroSection({ variant = "default" }: Props) {
         const { items } = await getBusinessUnits();
         const found = items.find(b => b.slug === slug);
         if (found) setBuName(found.name);
-      } catch {}
+      } catch { /* ignore: best-effort BU name fetch */ }
     }
     load();
 

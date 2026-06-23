@@ -50,7 +50,7 @@ export function MobileSidebar({ faqItems, changelogItems }: MobileSidebarProps) 
     !hideKbManualMenu || hasFaqNav || hasChangelogNav;
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+     
     setActiveDrawer(null);
   }, [pathname]);
 

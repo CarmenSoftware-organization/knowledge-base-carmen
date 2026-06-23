@@ -222,7 +222,7 @@ const CategoryItemRow = memo(function CategoryItemRow({
     }
     const autoExpanded = [...new Set(folderChain)];
     if (autoExpanded.length) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+       
       setExpandedFolders((prev) => Array.from(new Set([...prev, ...autoExpanded])));
     }
   }, [categoryItem.articles, pathname]);
@@ -367,7 +367,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+     
     setIsLoading(true);
 
     getSidebarTree(bu)
@@ -392,7 +392,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
   useEffect(() => {
     const match = pathname.match(/\/categories\/([^/]+)/);
     if (match) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+       
       setExpandedCategories((prev) =>
         prev.includes(match[1]) ? prev : [...prev, match[1]]
       );

@@ -107,7 +107,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
 
   useEffect(() => {
     if (defaultValue) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+       
       setSearchQuery(defaultValue);
     }
   }, [defaultValue]);
@@ -115,7 +115,7 @@ export function GlobalSearch({ variant = "hero", placeholder, className, default
   useEffect(() => {
     const q = searchQuery.trim();
     if (q.length < 2) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+       
       setSuggestions([]);
       setShowDropdown(false);
       return;

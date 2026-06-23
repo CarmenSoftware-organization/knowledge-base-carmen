@@ -145,7 +145,7 @@ export function BULandingCards({ items }: Props) {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+     
     setMounted(true);
   }, []);
 

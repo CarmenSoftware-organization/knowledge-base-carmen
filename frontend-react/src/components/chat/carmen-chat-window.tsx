@@ -159,9 +159,9 @@ export default function CarmenChatWindow({ state }: Props) {
       }
     }, 150); // Small wait to allow the LERP to visibly complete its journey
 
-    // eslint-disable-next-line react-hooks/immutability -- DOM side-effect in event handler
+     
     document.body.style.userSelect = "";
-    // eslint-disable-next-line react-hooks/immutability -- DOM side-effect in event handler
+     
     document.body.style.webkitUserSelect = "";
   };
 

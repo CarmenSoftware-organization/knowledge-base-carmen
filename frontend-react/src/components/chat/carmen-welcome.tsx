@@ -19,7 +19,7 @@ export default function CarmenWelcome({ suggestions, onSelect, theme = "#34558b"
 
   useEffect(() => {
     indexRef.current = 0;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset typewriter animation state before (re)starting the interval
+     
     setTypedTitle(""); setShowDesc(false); setShowChips(false);
     const iv = setInterval(() => {
       if (indexRef.current < WELCOME_TITLE.length) {

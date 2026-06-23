@@ -3,15 +3,15 @@
 // Applied before any message is persisted to localStorage.
 // ---------------------------------------------------------------------------
 const _PII_PATTERNS: [RegExp, string][] = [
-  [/[\w.%+\-]+@[\w\-]+\.[\w.\-]+/gi, "[email]"],
-  [/\b0[689]\d[\s\-]?\d{3}[\s\-]?\d{4}\b/g, "[phone]"],
-  [/\b\d{3}[\s\-]\d{3}[\s\-]\d{4}\b/g, "[phone]"],
-  [/\+\d{1,3}[\s\-]?\d{1,4}[\s\-]?\d{3,4}[\s\-]?\d{3,4}\b/g, "[phone]"],
-  [/\b\d{1}[\s\-]\d{4}[\s\-]\d{5}[\s\-]\d{2}[\s\-]\d{1}\b/g, "[national-id]"],
+  [/[\w.%+-]+@[\w-]+\.[\w.-]+/gi, "[email]"],
+  [/\b0[689]\d[\s-]?\d{3}[\s-]?\d{4}\b/g, "[phone]"],
+  [/\b\d{3}[\s-]\d{3}[\s-]\d{4}\b/g, "[phone]"],
+  [/\+\d{1,3}[\s-]?\d{1,4}[\s-]?\d{3,4}[\s-]?\d{3,4}\b/g, "[phone]"],
+  [/\b\d{1}[\s-]\d{4}[\s-]\d{5}[\s-]\d{2}[\s-]\d{1}\b/g, "[national-id]"],
   [/\b\d{13}\b/g, "[national-id]"],
-  [/\b\d{4}[\s\-]\d{4}[\s\-]\d{4}[\s\-]\d{4}\b/g, "[card]"],
+  [/\b\d{4}[\s-]\d{4}[\s-]\d{4}[\s-]\d{4}\b/g, "[card]"],
   [/\b\d{16}\b/g, "[card]"],
-  [/\b\d{4}[\s\-]\d{6}[\s\-]\d{5}\b/g, "[card]"],
+  [/\b\d{4}[\s-]\d{6}[\s-]\d{5}\b/g, "[card]"],
 ];
 
 function maskPii(text: string): string {

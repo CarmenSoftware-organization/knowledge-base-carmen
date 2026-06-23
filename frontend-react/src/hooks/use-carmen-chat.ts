@@ -187,7 +187,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   useEffect(() => {
     const ui = readUiState(config.bu);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
+     
     if (ui.open) setIsOpen(true);
     if (ui.expanded) setIsExpanded(true);
 
@@ -246,7 +246,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
     api.housekeep();
     loadRoomList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   async function loadRoomList() {
