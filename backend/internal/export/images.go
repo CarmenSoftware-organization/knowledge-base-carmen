@@ -18,7 +18,24 @@ type Deps struct {
 var (
 	imgTagRe = regexp.MustCompile(`(?i)<img\b[^>]*>`)
 	imgSrcRe = regexp.MustCompile(`(?i)\bsrc="([^"]*)"`)
+	// safeMIMERe matches a conservative media type token (type/subtype). It
+	// deliberately excludes quotes, angle brackets, and whitespace so a hostile
+	// upstream Content-Type cannot break out of the data: URI's src="..." (HTML
+	// attribute injection) when the document is later rendered.
+	safeMIMERe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9.+-]*/[a-zA-Z0-9][a-zA-Z0-9.+-]*$`)
 )
+
+// sanitizeMIME reduces a Content-Type to its bare, validated media type. Params
+// (e.g. "; charset=…") are dropped; anything not matching a safe token falls
+// back to image/png. The fetched image server controls this header, so it must
+// never be interpolated into HTML unchecked.
+func sanitizeMIME(ct string) string {
+	mt := strings.TrimSpace(strings.SplitN(ct, ";", 2)[0])
+	if safeMIMERe.MatchString(mt) {
+		return mt
+	}
+	return "image/png"
+}
 
 // EmbedSafeImages rewrites every <img> in html: data:/blob: kept; relative "/x"
 // resolved against baseURL; absolute http(s) validated then fetched and inlined
@@ -52,7 +69,7 @@ func EmbedSafeImages(ctx context.Context, html, baseURL string, d Deps) string {
 			// leave as resolved absolute URL (matches the original behavior)
 			return strings.Replace(tag, m[0], fmt.Sprintf(`src="%s"`, fetchURL), 1)
 		}
-		dataURI := fmt.Sprintf("data:%s;base64,%s", ct, base64.StdEncoding.EncodeToString(body))
+		dataURI := fmt.Sprintf("data:%s;base64,%s", sanitizeMIME(ct), base64.StdEncoding.EncodeToString(body))
 		return strings.Replace(tag, m[0], fmt.Sprintf(`src="%s"`, dataURI), 1)
 	})
 }
