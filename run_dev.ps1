@@ -6,7 +6,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- G
 
 # 2. Frontend (Next.js)
 Write-Host "Starting Frontend (Port 3000)..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Next.js Frontend ---' -ForegroundColor Yellow; cd frontend\user; npm run dev" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Next.js Frontend ---' -ForegroundColor Yellow; cd frontend; npm run dev" -WindowStyle Normal
 
 Write-Host ""
 Write-Host "All services are starting in separate windows." -ForegroundColor Green
