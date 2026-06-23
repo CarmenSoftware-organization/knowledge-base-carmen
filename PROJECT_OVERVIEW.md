@@ -38,8 +38,8 @@ editor: markdown
               │  Postgres + pgvector  │       │  OpenRouter           │
               │  (Neon / Render)      │       │  (chat / intent /     │
               │                       │       │   embedding model)    │
-              │  <bu>.documents       │       └───────────────────────┘
-              │  <bu>.document_chunks │
+              │  public.documents     │       └───────────────────────┘
+              │  public.document_chunks  (all keyed by bu_id, UUID)
               │  public.faq_*         │
               │  public.chat_history  │
               │  public.activity_logs │
@@ -95,13 +95,14 @@ editor: markdown
 |--------|-----------|
 | Engine | PostgreSQL + pgvector |
 | Hosting | Neon / Render Postgres / local docker |
-| Schema-per-tenant | แต่ละ BU = schema เช่น `carmen.documents`, `blueledgers.documents` |
+| Multi-tenant | ทุก BU ใช้ตารางร่วมใน `public` แยกด้วยคอลัมน์ `bu_id` (UUID) — `public.documents`, `public.document_chunks` |
 | Migrations | ไฟล์ SQL ใน `backend/migrations/` รันด้วย `psql` |
 
 ### Multi-BU Model
-- แต่ละ Business Unit (BU) = Postgres schema ลงทะเบียนใน `public.business_units`
-- ใช้ slug เดียวกันทั้ง schema name, `business_units.slug`, โฟลเดอร์ `contents/<slug>/`
-- Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$` — ห้ามมี `-`
+- แต่ละ Business Unit (BU) = **แถว** ใน `public.business_units` (`id` = `bu_id` ชนิด UUID); ทุกตารางข้อมูล (`documents`, `document_chunks`, `chat_history`, `activity_logs`, `faq_*`) อยู่ใน `public` แยกด้วยคอลัมน์ `bu_id`
+- ทุก id/FK เป็น UUID (UUIDv7 generate ฝั่ง Go ด้วย `uuid.NewV7()`)
+- ใช้ slug เดียวกันทั้ง `business_units.slug`, routing key, โฟลเดอร์ `contents/<slug>/`
+- Slug ต้องตรง regex `^[a-zA-Z_][a-zA-Z0-9_]*$`
 - เลือก BU ผ่าน query `?bu=<slug>` ในทุก endpoint
 
 ---
@@ -143,7 +144,7 @@ knowledge-base-carmen/
 ### 1. แสดงบทความ KB
 1. Browser เปิด `frontend`
 2. เรียก `/api/wiki/categories?bu=<slug>` → `/api/wiki/content/*` ที่ Go backend
-3. Go backend อ่าน markdown จาก `WIKI_CONTENT_PATH` (เช่น `/repo/contents/<bu>`) + metadata จาก `<bu>.documents`
+3. Go backend อ่าน markdown จาก `WIKI_CONTENT_PATH` (เช่น `/repo/contents/<bu>`) + metadata จาก `public.documents` (กรอง `bu_id`)
 4. ส่ง markdown + assets กลับให้ frontend render
 
 ### 2. ถามแชต
@@ -156,10 +157,10 @@ knowledge-base-carmen/
 1. Author commit markdown ใต้ `contents/<bu>/` แล้ว push เข้า `main`
 2. GitHub Actions workflow `auto-provision-sync-reindex.yml`:
    - Detect BU ที่เปลี่ยนจาก path
-   - `POST /api/business-units/provision` (สร้าง schema + tables ถ้ายังไม่มี)
+   - `POST /api/business-units/provision` (insert แถวใน `public.business_units` — ไม่มีการสร้าง schema)
    - `POST /api/wiki/sync` (pull ลง working copy ของ Go backend)
-   - `POST /api/index/rebuild?bu=<bu>` (re-embed + write `<bu>.document_chunks`)
-3. ถ้าลบโฟลเดอร์ BU จนหมด → `deprovision` (drop schema)
+   - `POST /api/index/rebuild?bu=<bu>` (re-embed + write `public.document_chunks` ตาม `bu_id`)
+3. ถ้าลบโฟลเดอร์ BU จนหมด → `deprovision` (ลบแถว BU — `documents`/`document_chunks` cascade ตาม `bu_id`)
 
 ---
 

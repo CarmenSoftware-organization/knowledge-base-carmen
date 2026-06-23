@@ -4,7 +4,7 @@
 
 หน้าที่หลัก:
 - ให้ API สำหรับ wiki content, faq, activity, business units
-- จัดการ indexing ลง PostgreSQL/pgvector (`<bu>.documents`, `<bu>.document_chunks`)
+- จัดการ indexing ลง PostgreSQL/pgvector (`public.documents`, `public.document_chunks` แยกแต่ละ BU ด้วย `bu_id`)
 - sync เนื้อหาจาก git repo/wiki source
 - native RAG chatbot ที่ `/api/chat/*` (intent → hybrid retrieval pgvector+FTS+RRF → LLM, NDJSON stream) ปรับจูนผ่าน `backend/config/{tuning,intents,path_rules,prompts}.yaml`
 - บันทึก chat history/activity logs
@@ -72,7 +72,7 @@ make build
 - BU admin: `/api/business-units/*`
 - Webhook: `/webhook/github`
 
-> เส้นทางที่เป็น admin/internal ใช้ API key ผ่าน header (`X-Admin-Key`, `X-Internal-API-Key`). `bu` ที่รับจาก body/query ถูก validate ด้วย slug whitelist ก่อนนำไปใช้เป็นชื่อ schema ใน SQL
+> เส้นทางที่เป็น admin/internal ใช้ API key ผ่าน header (`X-Admin-Key`, `X-Internal-API-Key`). `bu` ที่รับจาก body/query ถูก validate ด้วย slug whitelist แล้ว resolve เป็น `bu_id` (UUID) เพื่อใช้เป็น parameter ใน SQL (ไม่ฉีดชื่อ schema เข้า query)
 
 ## Migration / CLI Operations
 
@@ -81,7 +81,7 @@ make build
 ```bash
 go run cmd/server/main.go migrate <path-to-sql>     # ระบุไฟล์เสมอ
 go run cmd/server/main.go reindex <bu>|all
-go run cmd/server/main.go reset index <bu>|all      # truncate <bu>.documents/document_chunks
+go run cmd/server/main.go reset index <bu>|all      # delete a BU's rows in public.documents/document_chunks (all = TRUNCATE both)
 go run cmd/server/main.go reset all                 # truncate public activity/chat tables
 ```
 
