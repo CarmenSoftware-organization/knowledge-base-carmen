@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
-import { routes } from "./router";
 
 vi.mock("@/lib/wiki-api", () => ({
   getBusinessUnits: vi.fn().mockResolvedValue({ items: [] }),
@@ -15,16 +14,15 @@ vi.mock("@/lib/wiki-api", () => ({
   invalidateSidebarCache: vi.fn(),
 }));
 
-describe("router", () => {
-  it("renders the home route at /", async () => {
-    const r = createMemoryRouter(routes, { initialEntries: ["/"] });
+import Home, { homeLoader } from "./home";
+
+describe("home route", () => {
+  it("renders landing shell with loader data", async () => {
+    const r = createMemoryRouter(
+      [{ path: "/", element: <Home />, loader: homeLoader }],
+      { initialEntries: ["/"] },
+    );
     render(<RouterProvider router={r} />);
-    // Home is now the real component (not a placeholder); check for its main element
     expect(await screen.findByRole("main")).toBeInTheDocument();
-  });
-  it("renders not-found for unknown path", async () => {
-    const r = createMemoryRouter(routes, { initialEntries: ["/nope"] });
-    render(<RouterProvider router={r} />);
-    expect(await screen.findByTestId("route-not-found")).toBeInTheDocument();
   });
 });

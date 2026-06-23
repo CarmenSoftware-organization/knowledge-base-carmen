@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 import RootLayout from "@/root-layout";
+import Home, { homeLoader } from "@/routes/home";
 
 const ph = (id: string) => <div data-testid={`route-${id}`} />;
 
@@ -9,7 +10,7 @@ export const routes: RouteObject[] = [
     path: "/",
     element: <RootLayout />,
     children: [
-      { index: true, element: ph("home") },
+      { index: true, element: <Home />, loader: homeLoader },
       { path: "categories", element: ph("categories") },
       { path: "categories/:category", element: ph("category") },
       { path: "categories/:category/*", element: ph("article") },
