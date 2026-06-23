@@ -346,12 +346,28 @@ func Load() error {
 			TimeoutSec:      getEnvAsInt("LLM_TIMEOUT_SECONDS", 60),
 		},
 		Export: ExportConfig{
-			GotenbergURL: getEnv("GOTENBERG_URL", ""),
+			GotenbergURL: normalizeGotenbergURL(getEnv("GOTENBERG_URL", "")),
 			ImageBaseURL: getEnv("EXPORT_IMAGE_BASE_URL", ""),
 		},
 	}
 
 	return nil
+}
+
+// normalizeGotenbergURL ensures the Gotenberg base URL carries an http(s) scheme.
+// Render wires GOTENBERG_URL from the private gotenberg service's `hostport`
+// property, which is a bare "host:port" (no scheme) — the http client needs a
+// scheme or it misparses "host" as the URL scheme. Empty stays empty (→ the
+// export handler serves 503 when Gotenberg is unconfigured).
+func normalizeGotenbergURL(raw string) string {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return ""
+	}
+	if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+		return v
+	}
+	return "http://" + v
 }
 
 func ensureStrictEnv() error {
