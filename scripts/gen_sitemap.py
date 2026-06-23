@@ -116,3 +116,49 @@ def replace_marker_span(content: str, tree: str) -> str:
     head = content[: begin + len(BEGIN_MARKER)]
     tail = content[end:]
     return f"{head}\n```\n{tree}\n```\n{tail}"
+
+
+def render(root=None, sitemap=None) -> str:
+    """Return sitemap content with a freshly built tree spliced into the markers."""
+    root = Path(root) if root else REPO_ROOT
+    sitemap = Path(sitemap) if sitemap else SITEMAP
+    if not sitemap.is_file():
+        raise FileNotFoundError(f"{sitemap} does not exist")
+    return replace_marker_span(sitemap.read_text(encoding="utf-8"), build_tree(root))
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Regenerate the sitemap.md auto-tree span."
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="exit non-zero if sitemap.md is stale (no write)",
+    )
+    args = parser.parse_args(argv)
+    try:
+        updated = render()
+        current = SITEMAP.read_text(encoding="utf-8")
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    if args.check:
+        if current != updated:
+            print(
+                "sitemap.md auto-tree is stale; run scripts/gen_sitemap.py",
+                file=sys.stderr,
+            )
+            return 1
+        print("sitemap.md auto-tree is up to date")
+        return 0
+    if current == updated:
+        print("sitemap.md already up to date")
+        return 0
+    SITEMAP.write_text(updated, encoding="utf-8")
+    print("sitemap.md auto-tree regenerated")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

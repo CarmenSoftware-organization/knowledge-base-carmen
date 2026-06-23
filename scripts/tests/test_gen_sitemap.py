@@ -94,6 +94,29 @@ class GenSitemapTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             gen_sitemap.replace_marker_span("no markers here", "x")
 
+    def test_check_then_write_then_clean(self):
+        root = self._make_fixture()
+        sitemap = root / "sitemap.md"
+        sitemap.write_text(
+            "# S\n"
+            + gen_sitemap.BEGIN_MARKER
+            + "\n```\n```\n"
+            + gen_sitemap.END_MARKER
+            + "\n",
+            encoding="utf-8",
+        )
+        gen_sitemap.REPO_ROOT = root
+        gen_sitemap.SITEMAP = sitemap
+        self.assertEqual(gen_sitemap.main(["--check"]), 1)   # stale
+        self.assertEqual(gen_sitemap.main([]), 0)            # writes
+        self.assertEqual(gen_sitemap.main(["--check"]), 0)   # now current
+        self.assertIn("carmen/", sitemap.read_text(encoding="utf-8"))
+
+    def test_missing_sitemap_returns_error_code(self):
+        gen_sitemap.REPO_ROOT = self.tmp
+        gen_sitemap.SITEMAP = self.tmp / "nope.md"
+        self.assertEqual(gen_sitemap.main([]), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
