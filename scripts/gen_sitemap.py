@@ -19,7 +19,7 @@ END_MARKER = "<!-- END AUTO-TREE -->"
 # Directories never shown in the tree.
 IGNORE_DIRS = {
     ".git", ".claude", ".vscode", ".remember", ".superpowers",
-    "node_modules", "__pycache__", ".next", "dist", "_images",
+    "node_modules", "__pycache__", ".next", ".swc", ".vercel", "dist", "_images",
 }
 
 # Max directory depth below the repo root (root children = depth 1).
