@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
@@ -56,7 +57,7 @@ func NewChatHandler() *ChatHandler {
 func (h *ChatHandler) Stream(c *fiber.Ctx) error {
 	req, err := parseStreamRequest(c)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeBadRequest, err.Error())
 	}
 	c.Set("Content-Type", "application/x-ndjson")
 	c.Set("Cache-Control", "no-cache")
@@ -115,13 +116,13 @@ func (h *ChatHandler) Image(c *fiber.Ctx) error {
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	resp, status, err := h.askFlow(c)
 	if err != nil {
-		return c.Status(status).JSON(fiber.Map{
-			"error":   err.Error(),
-			"answer":  "",
-			"sources": []models.ChatSource{},
-		})
+		code := response.CodeInternal
+		if status == fiber.StatusBadRequest {
+			code = response.CodeBadRequest
+		}
+		return response.Fail(c, status, code, err.Error())
 	}
-	return c.JSON(resp)
+	return response.OK(c, resp)
 }
 
 // Feedback handles POST /api/chat/feedback/:message_id — records a thumbs-up/down
@@ -129,7 +130,7 @@ func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 func (h *ChatHandler) Feedback(c *fiber.Ctx) error {
 	messageID, err := uuid.Parse(c.Params("message_id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid message_id"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidMessageID, "invalid message_id")
 	}
 	var body struct {
 		Score    int    `json:"score"`
@@ -137,27 +138,27 @@ func (h *ChatHandler) Feedback(c *fiber.Ctx) error {
 		Username string `json:"username"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid body"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBody, "invalid body")
 	}
 	if body.Score != 1 && body.Score != -1 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "score must be 1 or -1"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidScore, "score must be 1 or -1")
 	}
 	buID, err := h.historyService.GetBUIDFromSlug(strings.TrimSpace(body.BU))
 	if err != nil || buID == uuid.Nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unknown bu"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeBUNotFound, "unknown bu")
 	}
 	userID := services.HashUserID(body.Username, config.AppConfig.Server.PrivacySecret)
 	if err := h.historyService.UpdateFeedback(buID, messageID, userID, body.Score); err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "feedback target not found"})
+		return response.Fail(c, fiber.StatusNotFound, response.CodeFeedbackTargetNotFound, "feedback target not found")
 	}
-	return c.JSON(fiber.Map{"status": "ok"})
+	return response.OK(c, models.StatusResult{Status: "ok"})
 }
 
 // ClearRoom handles DELETE /api/chat/clear/:room_id. Chat history is owned by the
 // frontend (localStorage passed in each /stream call); there is no server-side room
 // state to clear, so this acknowledges the clear with a simple ok response.
 func (h *ChatHandler) ClearRoom(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"status": "ok", "room_id": c.Params("room_id")})
+	return response.OK(c, models.ClearResult{Status: "ok", RoomID: c.Params("room_id")})
 }
 
 // IntentTest is an admin endpoint that exposes the intent classification pipeline
@@ -169,18 +170,18 @@ func (h *ChatHandler) IntentTest(c *fiber.Ctx) error {
 		HaveHistory bool   `json:"have_history"`
 	}
 	if err := c.BodyParser(&req); err != nil || strings.TrimSpace(req.Message) == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "message is required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "message is required")
 	}
 	if req.Lang == "" {
 		req.Lang = "th"
 	}
 	r := h.intentRouter.Classify(req.Message, req.Lang, req.HaveHistory)
-	return c.JSON(fiber.Map{
-		"type":              r.Type,
-		"source":            r.Source,
-		"canned_response":   r.CannedResponse,
-		"embed_tokens":      r.EmbedTokens,
-		"llm_input_tokens":  r.LLMInputTokens,
-		"llm_output_tokens": r.LLMOutputTokens,
+	return response.OK(c, models.IntentTestResult{
+		Type:            r.Type,
+		Source:          r.Source,
+		CannedResponse:  r.CannedResponse,
+		EmbedTokens:     r.EmbedTokens,
+		LLMInputTokens:  r.LLMInputTokens,
+		LLMOutputTokens: r.LLMOutputTokens,
 	})
 }

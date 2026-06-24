@@ -3,6 +3,7 @@ package api
 import (
 	"strings"
 
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
@@ -21,13 +22,12 @@ func NewBusinessUnitHandler() *BusinessUnitHandler {
 func (h *BusinessUnitHandler) List(c *fiber.Ctx) error {
 	var bus []models.BusinessUnit
 	if err := database.DB.Table("public.business_units").Find(&bus).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "failed to fetch business units: " + err.Error(),
-		})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, "failed to fetch business units: "+err.Error())
 	}
-	return c.JSON(fiber.Map{
-		"items": bus,
-	})
+	if bus == nil {
+		bus = []models.BusinessUnit{}
+	}
+	return response.OK(c, bus)
 }
 
 type provisionBURequest struct {
@@ -44,12 +44,12 @@ type deprovisionBURequest struct {
 func (h *BusinessUnitHandler) Provision(c *fiber.Ctx) error {
 	var req provisionBURequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON body"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBody, "invalid JSON body")
 	}
 
 	slug := strings.TrimSpace(strings.ToLower(req.Slug))
 	if !security.ValidateSchema(slug) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid slug"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidSlug, "invalid slug")
 	}
 
 	name := strings.TrimSpace(req.Name)
@@ -60,7 +60,7 @@ func (h *BusinessUnitHandler) Provision(c *fiber.Ctx) error {
 
 	tx := database.DB.Begin()
 	if tx.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": tx.Error.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, tx.Error.Error())
 	}
 
 	if err := tx.Exec(`
@@ -72,54 +72,44 @@ func (h *BusinessUnitHandler) Provision(c *fiber.Ctx) error {
 		    updated_at = NOW()
 	`, name, slug, description).Error; err != nil {
 		tx.Rollback()
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "upsert business unit: " + err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, "upsert business unit: "+err.Error())
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 
-	return c.JSON(fiber.Map{
-		"ok":          true,
-		"message":     "business unit provisioned",
-		"slug":        slug,
-		"name":        name,
-		"description": description,
-	})
+	return response.OK(c, models.ProvisionResult{Slug: slug, Name: name, Description: description})
 }
 
 // Deprovision deletes a BU row; documents/chunks cascade-delete via FK.
 func (h *BusinessUnitHandler) Deprovision(c *fiber.Ctx) error {
 	var req deprovisionBURequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON body"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBody, "invalid JSON body")
 	}
 
 	slug := strings.TrimSpace(strings.ToLower(req.Slug))
 	if !security.ValidateSchema(slug) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid slug"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidSlug, "invalid slug")
 	}
 	if slug == constants.DefaultBU {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot deprovision default bu"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeCannotDeprovisionDefault, "cannot deprovision default bu")
 	}
 
 	tx := database.DB.Begin()
 	if tx.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": tx.Error.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, tx.Error.Error())
 	}
 
 	if err := tx.Exec(`DELETE FROM public.business_units WHERE slug = ?`, slug).Error; err != nil {
 		tx.Rollback()
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "delete business unit: " + err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, "delete business unit: "+err.Error())
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 
-	return c.JSON(fiber.Map{
-		"ok":      true,
-		"message": "business unit deprovisioned",
-		"slug":    slug,
-	})
+	return response.OK(c, models.DeprovisionResult{Slug: slug})
 }

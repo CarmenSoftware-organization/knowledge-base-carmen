@@ -40,8 +40,8 @@ type Envelope<T> = {
 
 /**
  * Fetch JSON and unwrap the standard response envelope { success, data, meta }.
- * Throws ApiError on { success:false }. Tolerant during rollout: if the body is
- * not enveloped (legacy flat shape), returns it unchanged as `data`.
+ * Throws ApiError on { success:false }. Tolerant during rollout: a non-enveloped
+ * (legacy flat) body is returned unchanged as `data`.
  */
 export async function apiJson<T>(
   input: RequestInfo | URL,

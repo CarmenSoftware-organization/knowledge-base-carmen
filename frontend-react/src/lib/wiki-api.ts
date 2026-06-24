@@ -1,6 +1,6 @@
 import Fuse from "fuse.js";
 import { API_BASE, DEFAULT_BU } from "./config";
-import { fetchWithTimeout } from "./fetch-utils";
+import { apiJson } from "./fetch-utils";
 
 /* =========================
    Types
@@ -30,12 +30,10 @@ export type BusinessUnit = {
  ========================= */
 
 export async function getBusinessUnits(): Promise<{ items: BusinessUnit[] }> {
-  const res = await fetchWithTimeout(`${API_BASE}/api/business-units`, {
+  const { data } = await apiJson<BusinessUnit[]>(`${API_BASE}/api/business-units`, {
     cache: "no-store",
   });
-  if (!res.ok) throw new Error("Failed to fetch business units");
-  const data = (await res.json()) as { items?: BusinessUnit[] };
-  const items = (data.items ?? []).filter((bu) => {
+  const items = (data ?? []).filter((bu) => {
     const desc = (bu.description ?? "").trim().toLowerCase();
     // Hide technical auto-provision entries from landing cards.
     return desc !== "auto provision from contents";
@@ -83,16 +81,11 @@ export async function getCategories(
   items: { slug: string; title: string }[];
 }> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(`${API_BASE}/api/wiki/categories?bu=${selectedBU}`, {
-    cache: "no-store",
-    ...fetchOptions,
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch categories");
-  }
-
-  return res.json();
+  const { data } = await apiJson<{ slug: string; title: string }[]>(
+    `${API_BASE}/api/wiki/categories?bu=${selectedBU}`,
+    { cache: "no-store", ...fetchOptions },
+  );
+  return { items: data ?? [] };
 }
 
 /* =========================
@@ -123,14 +116,13 @@ export async function getSidebarTree(bu?: string): Promise<SidebarCategory[]> {
   const cached = sidebarCache[selectedBU];
   if (cached && Date.now() - cached.ts < SIDEBAR_TTL) return cached.data;
 
-  const res = await fetch(`${API_BASE}/api/wiki/sidebar?bu=${selectedBU}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error("Failed to fetch sidebar tree");
-  const json = await res.json();
-  const data: SidebarCategory[] = json.categories ?? [];
-  sidebarCache[selectedBU] = { data, ts: Date.now() };
-  return data;
+  const { data } = await apiJson<SidebarCategory[]>(
+    `${API_BASE}/api/wiki/sidebar?bu=${selectedBU}`,
+    { cache: "no-store" },
+  );
+  const tree = data ?? [];
+  sidebarCache[selectedBU] = { data: tree, ts: Date.now() };
+  return tree;
 }
 
 export function invalidateSidebarCache(bu?: string) {
@@ -153,16 +145,15 @@ export async function getCategory(
   items: (WikiListItem & { slug: string })[];
 }> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(
-    `${API_BASE}/api/wiki/category/${slug}?bu=${selectedBU}`,
-    { cache: "no-store", ...fetchOptions },
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch category: ${slug}`);
-  }
-
-  return res.json();
+  const { data } = await apiJson<{
+    category: string;
+    title?: string;
+    items: (WikiListItem & { slug: string })[];
+  }>(`${API_BASE}/api/wiki/category/${slug}?bu=${selectedBU}`, {
+    cache: "no-store",
+    ...fetchOptions,
+  });
+  return data;
 }
 
 /* =========================
@@ -182,16 +173,11 @@ export async function getAllArticles(bu?: string): Promise<WikiListItem[]> {
   const selectedBU = bu || getSelectedBUClient();
   if (cachedList[selectedBU]) return cachedList[selectedBU];
 
-  const res = await fetch(`${API_BASE}/api/wiki/list?bu=${selectedBU}`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch wiki list");
-  }
-
-  const data = (await res.json()) as { items?: WikiListItem[] };
-  cachedList[selectedBU] = data.items ?? [];
+  const { data } = await apiJson<WikiListItem[]>(
+    `${API_BASE}/api/wiki/list?bu=${selectedBU}`,
+    { cache: "no-store" },
+  );
+  cachedList[selectedBU] = data ?? [];
   return cachedList[selectedBU];
 }
 
@@ -399,16 +385,22 @@ export async function getContent(
   const params = new URLSearchParams({ bu: selectedBU });
   if (locale) params.set("locale", locale);
   const encodedPath = encodeWikiPathForFetch(path);
-  const res = await fetch(
-    `${API_BASE}/api/wiki/content/${encodedPath}?${params.toString()}`,
-    { cache: "no-store", ...fetchOptions },
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch content: ${path}`);
-  }
-
-  return res.json();
+  const { data } = await apiJson<{
+    path: string;
+    title: string;
+    description?: string;
+    published?: boolean;
+    date?: string;
+    content: string;
+    tags?: string[];
+    editor?: string;
+    dateCreated?: string;
+    publishedAt?: string;
+  }>(`${API_BASE}/api/wiki/content/${encodedPath}?${params.toString()}`, {
+    cache: "no-store",
+    ...fetchOptions,
+  });
+  return data;
 }
 
 /* =========================
@@ -442,30 +434,33 @@ export async function askChat(
   const res = await fetch(`${API_BASE}/api/chat/ask?bu=${selectedBU}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      question: question.trim(),
-      preferredPath,
-    }),
+    body: JSON.stringify({ question: question.trim(), preferredPath }),
   });
 
   const raw = await res.text();
-  let data: ChatAskResponse;
+  let body: {
+    success?: boolean;
+    data?: ChatAskResponse;
+    error?: { code?: string; message?: string };
+  };
   try {
-    data = JSON.parse(raw) as ChatAskResponse;
+    body = JSON.parse(raw);
   } catch {
     throw new Error(
-      `Chat API returned non-JSON (HTTP ${
-        res.status
-      }). Check NEXT_PUBLIC_API_BASE (${API_BASE}) and that the Go backend is running. Body starts with: ${raw.slice(
-        0,
-        120,
-      )}`,
+      `Chat API returned non-JSON (HTTP ${res.status}). Check NEXT_PUBLIC_API_BASE (${API_BASE}) and that the Go backend is running. Body starts with: ${raw.slice(0, 120)}`,
     );
   }
-  if (!res.ok) {
-    throw new Error(data.error || "Failed to get answer");
+  if (body && body.success === false) {
+    throw new Error(body.error?.message || "Failed to get answer");
   }
-  return data;
+  if (body && typeof body.success === "boolean") {
+    return body.data as ChatAskResponse;
+  }
+  // legacy fallback
+  if (!res.ok) {
+    throw new Error((body as unknown as ChatAskResponse)?.error || "Failed to get answer");
+  }
+  return body as unknown as ChatAskResponse;
 }
 
 export type SearchResultItem = WikiListItem & {
@@ -493,16 +488,11 @@ export async function searchWiki(
 
   const selectedBU = bu || getSelectedBUClient();
   try {
-    const res = await fetch(
+    const { data } = await apiJson<SearchResultItem[]>(
       `${API_BASE}/api/wiki/search?q=${encodeURIComponent(q)}&bu=${selectedBU}`,
-      {
-        cache: "no-store",
-      },
+      { cache: "no-store" },
     );
-
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.items ?? [];
+    return data ?? [];
   } catch {
     return [];
   }
@@ -543,28 +533,32 @@ export async function getActivityLogs(
     offset: String(offset),
     source,
   });
-  const res = await fetch(`${API_BASE}/api/activity/list?${params}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error("Failed to fetch activity logs");
-  return res.json();
+  const { data, meta } = await apiJson<ActivityLog[]>(
+    `${API_BASE}/api/activity/list?${params}`,
+    { cache: "no-store" },
+  );
+  return {
+    items: data ?? [],
+    total: meta?.total ?? 0,
+    limit: meta?.limit ?? limit,
+    offset: meta?.offset ?? offset,
+  };
 }
 
 // POST /api/wiki/sync
 export async function syncWiki(): Promise<{ ok: boolean; message: string }> {
-  const res = await fetch(`${API_BASE}/api/wiki/sync`, {
+  const { data } = await apiJson<{ message: string }>(`${API_BASE}/api/wiki/sync`, {
     method: "POST",
   });
-  if (!res.ok) throw new Error("Failed to sync wiki");
-  return res.json();
+  return { ok: true, message: data?.message ?? "" };
 }
 
 // POST /api/index/rebuild
 export async function rebuildIndex(bu?: string): Promise<{ message: string }> {
   const selectedBU = bu || getSelectedBUClient();
-  const res = await fetch(`${API_BASE}/api/index/rebuild?bu=${selectedBU}`, {
-    method: "POST",
-  });
-  if (!res.ok) throw new Error("Failed to rebuild index");
-  return res.json();
+  const { data } = await apiJson<{ message: string }>(
+    `${API_BASE}/api/index/rebuild?bu=${selectedBU}`,
+    { method: "POST" },
+  );
+  return { message: data?.message ?? "" };
 }

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 	"github.com/gofiber/fiber/v2"
@@ -53,12 +54,12 @@ func (h *WikiHandler) List(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	entries, err := h.wikiService.ListMarkdown(bu)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 	if entries == nil {
 		entries = []services.WikiEntry{}
 	}
-	return c.JSON(fiber.Map{"items": entries})
+	return response.OK(c, entries)
 }
 
 // ListCategories returns top-level category slugs. GET /api/wiki/categories
@@ -66,12 +67,12 @@ func (h *WikiHandler) ListCategories(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	items, err := h.wikiService.ListCategories(bu)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 	if items == nil {
 		items = []services.CategoryEntry{}
 	}
-	return c.JSON(fiber.Map{"items": items})
+	return response.OK(c, items)
 }
 
 // Sidebar returns the full sidebar tree (all categories + articles) in one call. GET /api/wiki/sidebar
@@ -79,29 +80,29 @@ func (h *WikiHandler) Sidebar(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	categories, err := h.wikiService.ListSidebarTree(bu)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 	if categories == nil {
 		categories = []services.SidebarCategory{}
 	}
-	return c.JSON(fiber.Map{"categories": categories})
+	return response.OK(c, categories)
 }
 
 // GetCategory returns articles within a category. GET /api/wiki/category/:slug
 func (h *WikiHandler) GetCategory(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	if slug == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "slug is required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "slug is required")
 	}
 	bu := middleware.GetBU(c)
 	category, items, err := h.wikiService.ListByCategory(bu, slug)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 	if items == nil {
 		items = []services.CategoryItem{}
 	}
-	return c.JSON(fiber.Map{"category": category, "items": items})
+	return response.OK(c, services.WikiCategoryPayload{Category: category, Items: items})
 }
 
 // GetContent returns the rendered content of a markdown file. GET /api/wiki/content/*
@@ -109,7 +110,7 @@ func (h *WikiHandler) GetCategory(c *fiber.Ctx) error {
 func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	pathParam := c.Params("*")
 	if pathParam == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "path is required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "path is required")
 	}
 	// Browsers send UTF-8 path segments percent-encoded; match on-disk filenames (e.g. Thai names).
 	if dec, err := url.PathUnescape(pathParam); err == nil {
@@ -121,9 +122,9 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	content, err := h.wikiService.GetContent(bu, pathParam)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
+			return response.Fail(c, fiber.StatusNotFound, response.CodeNotFound, "not found")
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 
 	// Translate if locale is not Thai (source) and translation is enabled
@@ -148,7 +149,7 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 	userID := c.Get("X-User-ID", "anonymous")
 	h.logService.Log(bu, userID, "เปิดอ่านบทความ", "wiki", map[string]interface{}{"status": "GET", "path": pathParam, "title": content.Title}, c.Get("User-Agent"))
 
-	return c.JSON(content)
+	return response.OK(c, content)
 }
 
 // Search performs hybrid search: semantic (pgvector) + keyword (NLP-expanded).
@@ -157,7 +158,7 @@ func (h *WikiHandler) GetContent(c *fiber.Ctx) error {
 func (h *WikiHandler) Search(c *fiber.Ctx) error {
 	query := c.Query("q")
 	if query == "" {
-		return c.JSON(fiber.Map{"items": []interface{}{}})
+		return response.OK(c, []services.SearchResult{})
 	}
 	bu := middleware.GetBU(c)
 
@@ -167,12 +168,12 @@ func (h *WikiHandler) Search(c *fiber.Ctx) error {
 		// Fallback: ใช้ keyword (NLP) แทน — ไม่ต้องเรียก Ollama
 		keywordResults, kwErr := h.wikiService.SearchByKeyword(bu, query)
 		if kwErr != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 		}
 		// Log search (fallback mode)
 		userID := c.Get("X-User-ID", "anonymous")
 		h.logService.Log(bu, userID, "ค้นหาข้อมูลวิกิ", "wiki", map[string]interface{}{"status": "GET", "query": query, "results": len(keywordResults), "fallback": "keyword"}, c.Get("User-Agent"))
-		return c.JSON(fiber.Map{"items": keywordResults})
+		return response.OK(c, keywordResults)
 	}
 
 	// 2. Keyword search with NLP expansion (ILIKE)
@@ -197,18 +198,21 @@ func (h *WikiHandler) Search(c *fiber.Ctx) error {
 		seen[path] = true
 		merged = append(merged, r)
 	}
+	if merged == nil {
+		merged = []services.SearchResult{}
+	}
 
 	// Log search
 	userID := c.Get("X-User-ID", "anonymous")
 	h.logService.Log(bu, userID, "ค้นหาข้อมูลวิกิ", "wiki", map[string]interface{}{"status": "GET", "query": query, "results": len(merged)}, c.Get("User-Agent"))
 
-	return c.JSON(fiber.Map{"items": merged})
+	return response.OK(c, merged)
 }
 
 // Sync triggers a git pull to update local wiki content. POST /api/wiki/sync
 func (h *WikiHandler) Sync(c *fiber.Ctx) error {
 	if err := h.syncService.Sync(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 
 	includeAudit := true
@@ -218,18 +222,14 @@ func (h *WikiHandler) Sync(c *fiber.Ctx) error {
 		}
 	}
 	if !includeAudit {
-		return c.JSON(fiber.Map{"ok": true, "message": "synced"})
+		return response.OK(c, services.SyncResult{Message: "synced"})
 	}
 
 	report, err := h.syncService.BuildAuditReport()
 	if err != nil {
-		return c.JSON(fiber.Map{
-			"ok":          true,
-			"message":     "synced (audit failed)",
-			"audit_error": err.Error(),
-		})
+		return response.OK(c, services.SyncResult{Message: "synced (audit failed)", AuditError: err.Error()})
 	}
-	return c.JSON(fiber.Map{"ok": true, "message": "synced", "audit": report})
+	return response.OK(c, services.SyncResult{Message: "synced", Audit: report})
 }
 
 // SyncAudit returns audit details comparing source markdown and indexed documents by BU.
@@ -237,7 +237,7 @@ func (h *WikiHandler) Sync(c *fiber.Ctx) error {
 func (h *WikiHandler) SyncAudit(c *fiber.Ctx) error {
 	report, err := h.syncService.BuildAuditReport()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(fiber.Map{"ok": true, "audit": report})
+	return response.OK(c, services.SyncAuditResult{Audit: report})
 }

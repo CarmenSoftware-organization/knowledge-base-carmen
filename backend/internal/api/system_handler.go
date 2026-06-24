@@ -2,6 +2,7 @@
 package api
 
 import (
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/gofiber/fiber/v2"
 )
@@ -15,8 +16,5 @@ func NewSystemHandler() *SystemHandler {
 
 // Status GET /api/system/status
 func (h *SystemHandler) Status(c *fiber.Ctx) error {
-	return c.JSON(models.SystemStatusResponse{
-		Status:  "ok",
-		Message: "",
-	})
+	return response.OK(c, models.SystemStatusResponse{Status: "ok", Message: ""})
 }

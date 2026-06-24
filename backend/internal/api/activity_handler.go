@@ -3,6 +3,8 @@ package api
 import (
 	"strconv"
 
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 	"github.com/gofiber/fiber/v2"
 )
@@ -34,14 +36,15 @@ func (h *ActivityHandler) List(c *fiber.Ctx) error {
 
 	logs, total, err := h.service.GetLogsWithFilter(buSlug, source, limit, offset)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-
-	return c.JSON(fiber.Map{
-		"items":  logs,
-		"total":  total,
-		"limit":  limit,
-		"offset": offset,
+	if logs == nil {
+		logs = []models.ActivityLog{}
+	}
+	return response.List(c, logs, &response.Meta{
+		Total:  response.IntPtr(int(total)),
+		Limit:  response.IntPtr(limit),
+		Offset: response.IntPtr(offset),
 	})
 }
 
@@ -61,11 +64,8 @@ func (h *ActivityHandler) Summary(c *fiber.Ctx) error {
 	}
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 
-	return c.JSON(fiber.Map{
-		"period": period,
-		"items":  results,
-	})
+	return response.OK(c, models.ActivitySummary{Period: period, Items: results})
 }

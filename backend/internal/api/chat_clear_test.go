@@ -37,10 +37,17 @@ func TestClearRoom_ReturnsOK(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
-	if body["status"] != "ok" {
-		t.Errorf(`expected status "ok", got %v`, body["status"])
+	if body["success"] != true {
+		t.Errorf("expected success true, got %v", body["success"])
 	}
-	if body["room_id"] != "r1" {
-		t.Errorf(`expected room_id "r1", got %v`, body["room_id"])
+	data, ok := body["data"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected data object, got %v", body["data"])
+	}
+	if data["status"] != "ok" {
+		t.Errorf(`expected status "ok", got %v`, data["status"])
+	}
+	if data["room_id"] != "r1" {
+		t.Errorf(`expected room_id "r1", got %v`, data["room_id"])
 	}
 }

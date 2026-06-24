@@ -99,6 +99,6 @@ Push markdown ใต้ `contents/<bu>/` เข้า `main` → workflow `.gith
 - regenerate:
 
 ```bash
-cd cmd/server
-go run github.com/swaggo/swag/cmd/swag@v1.16.4 init -g main.go -o ../../docs -d .,../../internal/apidoc,../../internal/models
+# run from the backend/ directory
+go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g main.go -o docs -d ./cmd/server,./internal/apidoc,./internal/models,./internal/services,./internal/api/response
 ```
