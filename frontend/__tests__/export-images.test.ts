@@ -1,4 +1,4 @@
-import { rewriteAndFilterImages, embedSafeImages } from "@/lib/export-images";
+import { rewriteAndFilterImages } from "@/lib/export-images";
 
 const BASE = "https://kb.example.com";
 
@@ -50,52 +50,3 @@ describe("rewriteAndFilterImages (DOCX)", () => {
   });
 });
 
-describe("embedSafeImages (PDF)", () => {
-  const okFetch = async (_url: string) => ({
-    ok: true,
-    headers: { get: (_k: string) => "image/png" },
-    status: 200,
-    arrayBuffer: async () => new Uint8Array([80, 78, 71, 68, 65, 84, 65]).buffer, // "PNGDATA"
-  });
-
-  it("inlines a safe image as a base64 data URI", async () => {
-    const html = `<img src="https://cdn.example.com/x.png">`;
-    const out = await embedSafeImages(html, BASE, {
-      isSafe: safeFor(["https://cdn.example.com/x.png"]),
-      fetchFn: okFetch as never,
-    });
-    expect(out).toMatch(/src="data:image\/png;base64,[A-Za-z0-9+/=]+"/);
-    expect(out).not.toContain("https://cdn.example.com/x.png");
-  });
-
-  it("strips an unsafe image and never fetches it", async () => {
-    let fetched = 0;
-    const spyFetch = async (url: string) => {
-      fetched++;
-      return okFetch(url);
-    };
-    const html = `<img src="http://127.0.0.1:8080/admin">`;
-    const out = await embedSafeImages(html, BASE, {
-      isSafe: safeFor([]),
-      fetchFn: spyFetch as never,
-    });
-    expect(out).not.toContain("127.0.0.1");
-    expect(out).not.toMatch(/<img/i);
-    expect(fetched).toBe(0);
-  });
-
-  it("does not fetch or alter data: image URIs", async () => {
-    let fetched = 0;
-    const spyFetch = async (url: string) => {
-      fetched++;
-      return okFetch(url);
-    };
-    const html = `<img src="data:image/png;base64,AAAA">`;
-    const out = await embedSafeImages(html, BASE, {
-      isSafe: safeFor([]),
-      fetchFn: spyFetch as never,
-    });
-    expect(out).toContain("data:image/png;base64,AAAA");
-    expect(fetched).toBe(0);
-  });
-});

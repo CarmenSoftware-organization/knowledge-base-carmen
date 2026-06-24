@@ -34,7 +34,6 @@ func SetupRoutes(app *fiber.App) {
 	RegisterDocuments(app)
 	RegisterPublicChat(app)
 	RegisterActivity(app)
-	RegisterExport(app)
 	RegisterBusinessUnits(app)
 }
 

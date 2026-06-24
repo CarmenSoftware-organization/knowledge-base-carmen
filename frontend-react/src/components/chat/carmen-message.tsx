@@ -1,6 +1,5 @@
 import { DisplayMessage } from "@/hooks/use-carmen-chat";
-import { API_BASE } from "@/lib/config";
-import { useState, useMemo, memo, useRef, useEffect } from "react";
+import { useState, useMemo, memo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import DOMPurify from "dompurify";
 
@@ -24,30 +23,6 @@ const IconRetry = (
 const IconCopy = (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
     <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-  </svg>
-);
-
-const IconExport = (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
-
-
-const IconPdf = (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <path d="M9 13h2a1 1 0 0 0 0-2H9v6" />
-    <path d="M15 11h1.5a1.5 1.5 0 0 1 0 3H15v-3z" />
-  </svg>
-);
-
-const IconSpinner = (
-  <svg className="animate-spin" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <path d="M12 2a10 10 0 0 1 10 10" />
   </svg>
 );
 
@@ -140,23 +115,8 @@ interface Props {
 const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, onSelect, theme = "#34558b", t }: Props) {
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
-  const [showExportMenu, setShowExportMenu] = useState(false);
-  const [exportLoading, setExportLoading] = useState<"pdf" | null>(null);
-  const exportMenuRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const isBot = msg.role === "bot";
-
-  // Close export menu on outside click
-  useEffect(() => {
-    if (!showExportMenu) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
-        setShowExportMenu(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showExportMenu]);
 
   // Sanitize HTML to prevent XSS from LLM prompt injection
   const processedContent = useMemo(() => {
@@ -211,36 +171,6 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
       // fallback copy not supported in this browser
     }
     document.body.removeChild(ta);
-  }
-
-  async function handleExportPdf() {
-    setShowExportMenu(false);
-    if (!contentRef.current) return;
-    setExportLoading("pdf");
-    try {
-      // Server-side PDF via puppeteer — no main-thread blocking, no freeze.
-      // Send the raw content HTML; the API route wraps it in a clean styled page
-      // and renders it with headless Chromium (supports oklch/lab natively).
-      const res = await fetch(`${API_BASE}/api/export/pdf`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html: processedContent }),
-      });
-      if (!res.ok) throw new Error("Export failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `carmen-export-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      // export failed — user sees no download, no action needed
-    } finally {
-      setExportLoading(null);
-    }
   }
 
   function handleFeedback(score: number) {
@@ -344,41 +274,6 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                 : IconCopy
               }
             </button>
-
-            {/* Export dropdown */}
-            <div className="relative" ref={exportMenuRef}>
-              <button
-                type="button"
-                onClick={() => { if (exportLoading === null) setShowExportMenu((v) => !v); }}
-                disabled={exportLoading !== null}
-                className="p-1 text-slate-400 dark:text-slate-500 transition-all duration-200 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:scale-110 rounded disabled:opacity-70 disabled:cursor-not-allowed"
-                title={t("tools.export")}
-              >
-                {exportLoading !== null ? IconSpinner : IconExport}
-              </button>
-
-              <AnimatePresence>
-                {showExportMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 4 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute bottom-full mb-1 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-50 min-w-[110px] whitespace-nowrap"
-                  >
-                    <button
-                      type="button"
-                      onClick={handleExportPdf}
-                      disabled={exportLoading !== null}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {exportLoading === "pdf" ? IconSpinner : IconPdf}
-                      {t("tools.export_pdf")}
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
 
             {msg.msgId && (
               <>
