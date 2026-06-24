@@ -81,6 +81,7 @@ info:
 paths:
   /api/activity/list:
     get:
+      description: Returns the activity log entries for the business unit.
       parameters:
       - default: carmen
         description: Business unit slug
@@ -100,6 +101,7 @@ paths:
       - activity
   /api/activity/summary:
     get:
+      description: Returns aggregated activity statistics for the business unit.
       parameters:
       - default: carmen
         description: Business unit slug
@@ -119,6 +121,8 @@ paths:
       - activity
   /api/business-units:
     get:
+      description: Lists the business units (tenants) available for the BU selector,
+        excluding internal auto-provision entries.
       parameters:
       - default: carmen
         description: Business unit slug
@@ -140,6 +144,9 @@ paths:
     post:
       consumes:
       - application/json
+      description: 'Non-streaming RAG chat: retrieves relevant chunks and returns
+        a grounded answer with its sources. Returns a "no information found" message
+        when nothing matches.'
       parameters:
       - default: carmen
         description: Business unit slug
@@ -169,18 +176,24 @@ paths:
       - chat
   /api/chat/clear/{room_id}:
     delete:
+      description: Acknowledges a request to clear a chat room. No-op server-side
+        — chat history is owned by the frontend.
       responses: {}
       summary: Clear room history (no-op ack; history is frontend-owned)
       tags:
       - chat
   /api/chat/feedback/{message_id}:
     post:
+      description: Records a thumbs up/down score for a chat message, scoped to the
+        requesting user.
       responses: {}
       summary: Message feedback (thumbs up/down)
       tags:
       - chat
   /api/chat/history/list:
     get:
+      description: Returns recent chat history rows, optionally filtered by business
+        unit. Requires the X-Admin-Key header.
       parameters:
       - description: Filter by BU
         in: query
@@ -214,6 +227,8 @@ paths:
     post:
       consumes:
       - application/json
+      description: Persists a chat turn (question, answer, sources) to history. Internal-only;
+        requires the X-Internal-API-Key header.
       parameters:
       - description: History row
         in: body
@@ -244,6 +259,8 @@ paths:
     post:
       consumes:
       - application/json
+      description: Debug endpoint that returns only the intent-router decision for
+        a question, without generating an answer. Requires the X-Admin-Key header.
       parameters:
       - default: carmen
         description: Business unit slug
@@ -270,12 +287,17 @@ paths:
       - chat
   /api/chat/stream:
     post:
+      description: 'Streaming RAG chat over NDJSON: emits status, sources, answer
+        chunks, suggestions, and a final done event. This is the primary endpoint
+        used by the frontend.'
       responses: {}
       summary: Stream chat (native NDJSON RAG)
       tags:
       - chat
   /api/documents:
     get:
+      description: Lists the documents currently indexed in the database for the business
+        unit.
       parameters:
       - default: carmen
         description: Business unit slug
@@ -295,6 +317,8 @@ paths:
       - documents
   /api/faq/{module}:
     get:
+      description: Returns the detail (sub-modules and entries) for the given FAQ
+        module.
       parameters:
       - description: Module key
         in: path
@@ -314,6 +338,8 @@ paths:
       - faq
   /api/faq/{module}/{sub}/{category}:
     get:
+      description: Lists FAQ entries under the given module / sub-module / category
+        path.
       parameters:
       - description: Module key
         in: path
@@ -343,6 +369,7 @@ paths:
       - faq
   /api/faq/entry/{id}:
     get:
+      description: Returns a single FAQ entry by its id.
       parameters:
       - description: Entry id
         in: path
@@ -362,6 +389,7 @@ paths:
       - faq
   /api/faq/modules:
     get:
+      description: Lists the available FAQ modules.
       produces:
       - application/json
       responses:
@@ -377,6 +405,8 @@ paths:
     post:
       consumes:
       - application/json
+      description: Starts an asynchronous rebuild of the pgvector + full-text search
+        index for the business unit. Requires the X-Admin-Key header.
       parameters:
       - description: Business unit slug
         in: query
@@ -404,6 +434,8 @@ paths:
       - indexing
   /api/system/status:
     get:
+      description: Reports overall service status, including database connectivity
+        and basic runtime info.
       produces:
       - application/json
       responses:
@@ -417,6 +449,8 @@ paths:
       - system
   /api/wiki/categories:
     get:
+      description: Returns the top-level wiki categories (sidebar sections) for the
+        business unit.
       parameters:
       - default: carmen
         description: Business unit slug
@@ -436,6 +470,8 @@ paths:
       - wiki
   /api/wiki/category/{slug}:
     get:
+      description: Returns the articles contained in the given category slug for the
+        business unit.
       parameters:
       - description: Category slug
         in: path
@@ -460,6 +496,8 @@ paths:
       - wiki
   /api/wiki/content/{path}:
     get:
+      description: Returns the raw markdown body for the article at the given path
+        under the wiki root.
       parameters:
       - description: Path under wiki root
         in: path
@@ -483,6 +521,8 @@ paths:
       - wiki
   /api/wiki/list:
     get:
+      description: Returns all indexed wiki/markdown articles for the business unit
+        with their metadata (title, path, tags, dates).
       parameters:
       - default: carmen
         description: Business unit slug
@@ -502,6 +542,8 @@ paths:
       - wiki
   /api/wiki/search:
     get:
+      description: Hybrid full-text + pgvector search over the business unit's wiki
+        content; returns ranked matches.
       parameters:
       - description: Search query
         in: query
@@ -528,6 +570,8 @@ paths:
     post:
       consumes:
       - application/json
+      description: Clones or pulls the content Git repo and refreshes the wiki on
+        disk. Requires the X-Admin-Key header.
       parameters:
       - default: carmen
         description: Business unit slug
@@ -555,7 +599,8 @@ paths:
       - wiki
   /health:
     get:
-      description: Liveness probe
+      description: Lightweight liveness probe; returns {"status":"ok"} without touching
+        the database.
       produces:
       - application/json
       responses:
@@ -570,6 +615,8 @@ paths:
       - system
   /images/{path}:
     get:
+      description: Serves an image referenced by chat answers or wiki content, resolved
+        under the business unit's content.
       parameters:
       - description: Image path
         in: path
@@ -591,6 +638,8 @@ paths:
     post:
       consumes:
       - application/json
+      description: Receives GitHub push events and triggers a content sync + reindex
+        for the affected business units.
       produces:
       - application/json
       responses:
@@ -610,6 +659,8 @@ paths:
       - webhooks
   /wiki-assets/{path}:
     get:
+      description: Serves a static wiki asset (image or file) referenced by markdown,
+        resolved under the business unit's content.
       parameters:
       - description: Asset path
         in: path
