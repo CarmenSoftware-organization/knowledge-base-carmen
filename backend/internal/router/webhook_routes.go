@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/new-carmen/backend/internal/api"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api"
 )
 
 func RegisterWebhook(app *fiber.App) {

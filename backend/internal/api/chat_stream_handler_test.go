@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/new-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 )
 
 // minimalConfig installs just enough AppConfig for NewChatHandler() to

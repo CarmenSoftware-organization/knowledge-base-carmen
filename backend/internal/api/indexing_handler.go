@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/middleware"
-	"github.com/new-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 )
 
 type IndexingHandler struct {

@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/database"
-	"github.com/new-carmen/backend/internal/utils"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
 )
 
 // TestRetrieve_BUIsolation proves a query for BU A never returns BU B's rows,

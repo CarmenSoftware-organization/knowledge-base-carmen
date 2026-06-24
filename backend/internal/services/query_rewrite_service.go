@@ -4,9 +4,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/new-carmen/backend/internal/chatconfig"
-	"github.com/new-carmen/backend/internal/utils"
-	"github.com/new-carmen/backend/pkg/openrouter"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
 )
 
 // QueryRewriteService rewrites an ambiguous follow-up question into a

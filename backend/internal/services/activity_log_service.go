@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/new-carmen/backend/internal/database"
-	"github.com/new-carmen/backend/internal/models"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"gorm.io/gorm"
 )
 

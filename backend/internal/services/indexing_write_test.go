@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 )
 
 // TestIndexing_WritesPublicTables verifies a manual upsert path writes bu_id and

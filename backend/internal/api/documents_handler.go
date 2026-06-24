@@ -3,9 +3,9 @@ package api
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/new-carmen/backend/internal/database"
-	"github.com/new-carmen/backend/internal/middleware"
-	"github.com/new-carmen/backend/internal/security"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
 )
 
 type DocumentsHandler struct{}

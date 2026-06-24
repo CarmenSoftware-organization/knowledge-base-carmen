@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/new-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 )
 
 func CORS() fiber.Handler {

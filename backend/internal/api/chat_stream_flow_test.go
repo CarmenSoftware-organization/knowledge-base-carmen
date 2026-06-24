@@ -8,10 +8,10 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/new-carmen/backend/internal/chatconfig"
-	"github.com/new-carmen/backend/internal/models"
-	"github.com/new-carmen/backend/internal/services"
-	"github.com/new-carmen/backend/pkg/openrouter"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
 )
 
 // ---------------------------------------------------------------------------

@@ -14,13 +14,13 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/database"
-	"github.com/new-carmen/backend/internal/nlp"
-	"github.com/new-carmen/backend/internal/security"
-	"github.com/new-carmen/backend/internal/utils"
-	"github.com/new-carmen/backend/pkg/github"
-	"github.com/new-carmen/backend/pkg/openrouter"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/nlp"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/github"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
 	"golang.org/x/text/unicode/norm"
 )
 

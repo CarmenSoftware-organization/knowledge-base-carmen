@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/new-carmen/backend/internal/chatconfig"
-	"github.com/new-carmen/backend/internal/database"
-	"github.com/new-carmen/backend/internal/utils"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
 )
 
 // RetrievalService holds tuning constants and path-boost rules loaded from

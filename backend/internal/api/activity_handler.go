@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/new-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 )
 
 type ActivityHandler struct {

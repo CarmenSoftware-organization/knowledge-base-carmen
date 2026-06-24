@@ -3,7 +3,7 @@ package services
 import (
 	"strings"
 
-	"github.com/new-carmen/backend/internal/chatconfig"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
 )
 
 // MatchesPathRules reports whether a chunk path should receive a path boost for
