@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "description": "REST API for wiki, FAQ, native RAG chat, indexing, activity, and GitHub webhooks. Most routes accept optional `bu` query or `X-BU-Slug` header (default from server config).",
-        "title": "New Carmen Backend API",
+        "title": "Knowledge base carmen API",
         "contact": {},
         "version": "1.0"
     },
