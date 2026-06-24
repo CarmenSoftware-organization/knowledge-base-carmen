@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
@@ -18,27 +19,27 @@ import (
 func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
 	var req models.RecordHistoryRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBody, "invalid request body")
 	}
 	bu := strings.TrimSpace(req.BU)
 	q := strings.TrimSpace(req.Question)
 	a := strings.TrimSpace(req.Answer)
 	if bu == "" || q == "" || a == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bu, question, answer required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "bu, question, answer required")
 	}
 
 	if !config.AppConfig.Chat.HistoryEnabled {
-		return c.JSON(fiber.Map{"ok": true, "skipped": "history disabled"})
+		return response.OK(c, models.RecordHistoryResult{Skipped: "history disabled"})
 	}
 
 	buID, err := h.historyService.GetBUIDFromSlug(bu)
 	if err != nil || buID == uuid.Nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu: " + bu})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBU, "invalid bu: "+bu)
 	}
 
 	emb, err := h.embedLLM.Embedding(q)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "embedding failed: " + err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeEmbeddingFailed, "embedding failed: "+err.Error())
 	}
 
 	rawUserID := req.UserID
@@ -55,9 +56,9 @@ func (h *ChatHandler) RecordHistory(c *fiber.Ctx) error {
 	id, err := h.historyService.SaveWithID(buID, userID, q, a, sources, emb)
 	if err != nil {
 		log.Printf("[chat] record-history save failed: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(fiber.Map{"ok": true, "id": id})
+	return response.OK(c, models.RecordHistoryResult{ID: id.String()})
 }
 
 // ListHistory returns a paginated list of chat history entries for the request BU
@@ -66,7 +67,7 @@ func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	buID, err := h.historyService.GetBUIDFromSlug(bu)
 	if err != nil || buID == uuid.Nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBU, "invalid bu")
 	}
 	limit, _ := strconv.Atoi(c.Query("limit", "20"))
 	offset, _ := strconv.Atoi(c.Query("offset", "0"))
@@ -75,13 +76,15 @@ func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {
 	}
 	entries, total, err := h.historyService.List(buID, limit, offset)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(fiber.Map{
-		"items":  entries,
-		"total":  total,
-		"limit":  limit,
-		"offset": offset,
+	if entries == nil {
+		entries = []services.ListEntry{}
+	}
+	return response.List(c, entries, &response.Meta{
+		Total:  response.IntPtr(int(total)),
+		Limit:  response.IntPtr(limit),
+		Offset: response.IntPtr(offset),
 	})
 }
 
@@ -90,16 +93,16 @@ func (h *ChatHandler) ListHistory(c *fiber.Ctx) error {
 func (h *ChatHandler) RouteOnly(c *fiber.Ctx) error {
 	var req models.ChatAskRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBody, "invalid request body")
 	}
 	q := strings.TrimSpace(req.Question)
 	if q == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "question is required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "question is required")
 	}
 
 	res, err := h.router.RouteQuestion(q)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(res)
+	return response.OK(c, res)
 }
