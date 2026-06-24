@@ -45,14 +45,6 @@ const IconDocx = (
   </svg>
 );
 
-const IconPdf = (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <path d="M9 13h2a1 1 0 0 0 0-2H9v6" />
-    <path d="M15 11h1.5a1.5 1.5 0 0 1 0 3H15v-3z" />
-  </svg>
-);
 
 const IconSpinner = (
   <svg className="animate-spin" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -150,7 +142,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
   const [copied, setCopied] = useState(false);
   const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const [exportLoading, setExportLoading] = useState<"docx" | "pdf" | null>(null);
+  const [exportLoading, setExportLoading] = useState<"docx" | null>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const isBot = msg.role === "bot";
@@ -250,35 +242,6 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     }
   }
 
-  async function handleExportPdf() {
-    setShowExportMenu(false);
-    if (!contentRef.current) return;
-    setExportLoading("pdf");
-    try {
-      // Server-side PDF via puppeteer — no main-thread blocking, no freeze.
-      // Send the raw content HTML; the API route wraps it in a clean styled page
-      // and renders it with headless Chromium (supports oklch/lab natively).
-      const res = await fetch("/api/export/pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html: processedContent }),
-      });
-      if (!res.ok) throw new Error("Export failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `carmen-export-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      // export failed — user sees no download, no action needed
-    } finally {
-      setExportLoading(null);
-    }
-  }
 
   function handleFeedback(score: number) {
     if (!msg.msgId || !onFeedback || feedbackScore !== null) return;
@@ -411,15 +374,6 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
                     >
                       {exportLoading === "docx" ? IconSpinner : IconDocx}
                       {t("tools.export_doc")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleExportPdf}
-                      disabled={exportLoading !== null}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {exportLoading === "pdf" ? IconSpinner : IconPdf}
-                      {t("tools.export_pdf")}
                     </button>
                   </motion.div>
                 )}
