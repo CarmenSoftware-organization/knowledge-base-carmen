@@ -112,5 +112,10 @@
   "overrides": {
     "@swc/helpers": "0.5.19",
     "postcss": "$postcss"
-  }
+  },
+  "trustedDependencies": [
+    "@parcel/watcher",
+    "@swc/core",
+    "unrs-resolver"
+  ]
 }
