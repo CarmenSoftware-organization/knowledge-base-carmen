@@ -13,6 +13,7 @@ import (
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/router"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
@@ -129,6 +130,7 @@ func main() {
 		AppName:       "New Carmen Backend",
 		BodyLimit:     4 * 1024 * 1024,
 		CaseSensitive: true,
+		ErrorHandler:  response.ErrorHandler,
 	})
 	app.Use(requestid.New())
 	app.Use(recover.New())
