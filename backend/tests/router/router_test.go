@@ -3,11 +3,35 @@ package routertest
 import (
 	"io"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/new-carmen/backend/internal/router"
 )
+
+func TestRootRoute_LandingPageLinksToSwagger(t *testing.T) {
+	app := fiber.New()
+	router.RegisterRoot(app)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Errorf("status = %d, want 200 (landing page, not a redirect)", resp.StatusCode)
+	}
+	if ct := resp.Header.Get("Content-Type"); !strings.Contains(ct, "text/html") {
+		t.Errorf("Content-Type = %q, want text/html", ct)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	if !strings.Contains(string(body), `href="/swagger/index.html"`) {
+		t.Errorf("body missing swagger link href=\"/swagger/index.html\"; got:\n%s", body)
+	}
+}
 
 func TestHealthRoute(t *testing.T) {
 	app := fiber.New()
