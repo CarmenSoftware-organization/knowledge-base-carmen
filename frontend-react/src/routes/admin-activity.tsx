@@ -1,6 +1,7 @@
 import { useLoaderData } from "react-router-dom";
 import type { LoaderFunction } from "react-router-dom";
 import { API_BASE, DEFAULT_BU } from "@/lib/config";
+import { apiJson } from "@/lib/fetch-utils";
 
 type ActivityLog = {
   id: number;
@@ -20,17 +21,16 @@ type ActivityResponse = {
 
 export const adminActivityLoader: LoaderFunction = async () => {
   try {
-    const res = await fetch(
+    const { data, meta } = await apiJson<ActivityLog[]>(
       `${API_BASE}/api/activity/list?bu=${DEFAULT_BU}&limit=50&offset=0&source=all`,
-      {
-        cache: "no-store",
-      },
+      { cache: "no-store" },
     );
-    if (!res.ok) {
-      return { items: [], total: 0, limit: 50, offset: 0 } satisfies ActivityResponse;
-    }
-    const data: ActivityResponse = await res.json();
-    return data;
+    return {
+      items: data ?? [],
+      total: meta?.total ?? 0,
+      limit: meta?.limit ?? 50,
+      offset: meta?.offset ?? 0,
+    } satisfies ActivityResponse;
   } catch {
     return { items: [], total: 0, limit: 50, offset: 0 } satisfies ActivityResponse;
   }
