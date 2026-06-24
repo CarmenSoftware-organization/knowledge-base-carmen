@@ -16,10 +16,11 @@ SITEMAP = REPO_ROOT / "sitemap.md"
 BEGIN_MARKER = "<!-- BEGIN AUTO-TREE -->"
 END_MARKER = "<!-- END AUTO-TREE -->"
 
-# Directories never shown in the tree.
+# Directories never shown in the tree (VCS/editor metadata + build artifacts).
 IGNORE_DIRS = {
     ".git", ".claude", ".vscode", ".remember", ".superpowers",
     "node_modules", "__pycache__", ".next", ".swc", ".vercel", "dist", "_images",
+    "bin",  # Go build output (backend/bin/, gitignored) — not part of the repo
 }
 
 # Max directory depth below the repo root (root children = depth 1).
