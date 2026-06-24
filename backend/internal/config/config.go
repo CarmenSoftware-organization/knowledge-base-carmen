@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"github.com/new-carmen/backend/internal/constants"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
 )
 
 type Config struct {

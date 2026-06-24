@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/new-carmen/backend/internal/router"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/router"
 )
 
 func TestRootRoute_LandingPageLinksToSwagger(t *testing.T) {

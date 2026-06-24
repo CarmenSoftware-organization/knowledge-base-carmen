@@ -7,9 +7,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/new-carmen/backend/internal/api"
-	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/middleware"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 )
 
 // parseRatePerMinute parses a "N/minute" string (slowapi format) into N.

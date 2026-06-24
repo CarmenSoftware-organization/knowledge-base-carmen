@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/database"
-	"github.com/new-carmen/backend/internal/services"
-	"github.com/new-carmen/backend/pkg/openrouter"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
 )
 
 type goldenEntry struct {

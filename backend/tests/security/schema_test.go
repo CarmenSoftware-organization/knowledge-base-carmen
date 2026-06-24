@@ -3,7 +3,7 @@ package securitytest
 import (
 	"testing"
 
-	"github.com/new-carmen/backend/internal/security"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
 )
 
 func TestValidateSchema(t *testing.T) {

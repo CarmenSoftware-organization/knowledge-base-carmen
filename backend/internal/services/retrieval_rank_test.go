@@ -3,7 +3,7 @@ package services
 import (
 	"testing"
 
-	"github.com/new-carmen/backend/internal/chatconfig"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
 )
 
 func cfg() chatconfig.RetrievalTuning {

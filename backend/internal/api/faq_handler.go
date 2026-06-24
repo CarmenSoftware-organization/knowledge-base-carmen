@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/new-carmen/backend/internal/constants"
-	"github.com/new-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 )
 
 type FAQHandler struct {

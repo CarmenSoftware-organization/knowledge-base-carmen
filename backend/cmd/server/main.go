@@ -13,14 +13,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
-	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/database"
-	"github.com/new-carmen/backend/internal/models"
-	"github.com/new-carmen/backend/internal/router"
-	"github.com/new-carmen/backend/internal/security"
-	"github.com/new-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/router"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 
-	_ "github.com/new-carmen/backend/docs"
+	_ "github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/docs"
 )
 
 func main() {

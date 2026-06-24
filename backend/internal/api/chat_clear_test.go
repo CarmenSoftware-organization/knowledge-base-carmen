@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/new-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 )
 
 // TestClearRoom_ReturnsOK verifies DELETE /api/chat/clear/:room_id returns 200

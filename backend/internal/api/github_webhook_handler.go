@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/new-carmen/backend/internal/config"
-	"github.com/new-carmen/backend/internal/database"
-	"github.com/new-carmen/backend/internal/models"
-	"github.com/new-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 )
 
 // GitHubWebhookHandler handles incoming GitHub push webhook events.

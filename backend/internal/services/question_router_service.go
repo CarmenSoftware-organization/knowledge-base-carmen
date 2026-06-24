@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/new-carmen/backend/internal/models"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 )
 
 type QuestionRouterService struct {

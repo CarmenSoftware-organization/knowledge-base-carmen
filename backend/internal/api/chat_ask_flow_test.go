@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/new-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 )
 
 func TestBuildContextFromChunks(t *testing.T) {

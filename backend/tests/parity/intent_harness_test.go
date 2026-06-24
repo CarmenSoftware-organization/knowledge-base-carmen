@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/new-carmen/backend/internal/services"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 )
 
 type intentEntry struct {

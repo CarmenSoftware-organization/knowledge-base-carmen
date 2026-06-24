@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/new-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 )
 
 // TranslationService translates wiki content using Google Cloud Translation API v2.

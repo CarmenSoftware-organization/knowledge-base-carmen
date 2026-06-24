@@ -2,8 +2,8 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/new-carmen/backend/internal/api"
-	"github.com/new-carmen/backend/internal/middleware"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 )
 
 func RegisterIndexing(app *fiber.App) {

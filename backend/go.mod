@@ -1,4 +1,4 @@
-module github.com/new-carmen/backend
+module github.com/CarmenSoftware-organization/knowledge-base-carmen/backend
 
 go 1.25.0
 

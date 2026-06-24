@@ -3,7 +3,7 @@ package nlptest
 import (
 	"testing"
 
-	"github.com/new-carmen/backend/internal/nlp"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/nlp"
 )
 
 func TestPreprocess(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/new-carmen/backend/internal/chatconfig"
-	"github.com/new-carmen/backend/internal/utils"
-	"github.com/new-carmen/backend/pkg/openrouter"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
 )
 
 // Locale holds all user-facing strings for a given language.

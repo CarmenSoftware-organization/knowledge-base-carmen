@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/new-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 )
 
 // TestFAQService_StructScan exercises the uuid.UUID GORM struct-scan paths in
