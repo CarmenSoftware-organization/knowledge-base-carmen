@@ -1,5 +1,5 @@
 /**
- * SSRF guard for server-side image/URL fetching (PDF/DOCX export).
+ * SSRF guard for server-side image/URL fetching (DOCX export).
  *
  * Blocks requests whose target resolves to a loopback, unspecified, private
  * (RFC1918), link-local (incl. 169.254 cloud-metadata), or IPv6 ULA/link-local
@@ -170,63 +170,4 @@ export function makeGuardedLookup(rawLookup: RawLookup = defaultRawLookup) {
       cb(null, list[0].address, list[0].family);
     });
   };
-}
-
-export interface SafeFetchResponse {
-  ok: boolean;
-  status: number;
-  headers: { get: (name: string) => string | null };
-  arrayBuffer: () => Promise<ArrayBuffer>;
-}
-
-/**
- * GET a URL with SSRF protection: http(s) only, the connection is pinned to a
- * DNS-validated address (no rebinding), the body is size-capped, and redirects
- * are NOT followed (a 3xx returns ok=false). Rejects on invalid/blocked targets.
- */
-export async function safeFetch(
-  rawUrl: string,
-  opts?: { timeoutMs?: number; maxBytes?: number }
-): Promise<SafeFetchResponse> {
-  const timeoutMs = opts?.timeoutMs ?? 8000;
-  const maxBytes = opts?.maxBytes ?? 20 * 1024 * 1024;
-
-  const url = new URL(rawUrl); // throws on malformed — caller handles
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error(`unsupported protocol: ${url.protocol}`);
-  }
-  const mod = url.protocol === "https:" ? await import("node:https") : await import("node:http");
-
-  return new Promise<SafeFetchResponse>((resolve, reject) => {
-    const req = mod.request(
-      url,
-      { method: "GET", lookup: makeGuardedLookup() as never, timeout: timeoutMs },
-      (res) => {
-        const status = res.statusCode ?? 0;
-        const chunks: Buffer[] = [];
-        let total = 0;
-        res.on("data", (c: Buffer) => {
-          total += c.length;
-          if (total > maxBytes) {
-            req.destroy(new Error("response exceeds max size"));
-            return;
-          }
-          chunks.push(c);
-        });
-        res.on("end", () => {
-          const body = Buffer.concat(chunks);
-          resolve({
-            ok: status >= 200 && status < 300,
-            status,
-            headers: { get: (n) => (res.headers[n.toLowerCase()] as string) ?? null },
-            arrayBuffer: async () =>
-              body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
-          });
-        });
-      }
-    );
-    req.on("timeout", () => req.destroy(new Error("request timed out")));
-    req.on("error", reject);
-    req.end();
-  });
 }
