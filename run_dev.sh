@@ -52,12 +52,12 @@ pids+=($!)
 
 # 3. Frontend (Next.js)
 printf "${yellow}--- Next.js Frontend (Port 3000) ---${nc}\n"
-( cd "$ROOT/frontend" && npm run dev ) &
+( cd "$ROOT/frontend" && bun run dev ) &
 pids+=($!)
 
 # 4. Frontend (React SPA — Vite). Points VITE_API_BASE at the local backend.
 printf "${yellow}--- React SPA Frontend (Vite, Port 5173) ---${nc}\n"
-( cd "$ROOT/frontend-react" && VITE_API_BASE="http://localhost:8080" npm run dev ) &
+( cd "$ROOT/frontend-react" && VITE_API_BASE="http://localhost:8080" bun run dev ) &
 pids+=($!)
 
 printf "\n${green}All services are starting (Ctrl-C to stop them all).${nc}\n"
