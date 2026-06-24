@@ -52,10 +52,13 @@ services:
         value: "2000"
 
       # Wiki / Git
+      # GIT_REPO_PATH is where clone-on-boot writes content (WikiSyncService).
+      # In a Docker web service the container WORKDIR is /app, so use a
+      # guaranteed-writable path here — NOT the native-build /opt/render/project/src.
       - key: GIT_REPO_PATH
-        value: /opt/render/project/src
+        value: /app/repo
       - key: WIKI_CONTENT_PATH
-        value: /opt/render/project/src/carmen_cloud
+        value: /app/repo/carmen_cloud
       - key: GITHUB_REPO_OWNER
         value: CarmenSoftware-organization
       - key: GITHUB_REPO_NAME
