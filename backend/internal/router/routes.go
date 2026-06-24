@@ -1,12 +1,14 @@
 package router
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
+	"github.com/gofiber/fiber/v2"
 )
 
+// SetupTestApp builds a minimal Fiber app (CORS + BU context middleware, health
+// and wiki routes only) for use in tests.
 func SetupTestApp() *fiber.App {
 	_ = config.Load()
 	app := fiber.New()
@@ -17,6 +19,9 @@ func SetupTestApp() *fiber.App {
 	return app
 }
 
+// SetupRoutes installs the global middleware and registers every route group
+// (root, docs, health, system, wiki, FAQ, webhook, indexing, documents, chat,
+// activity, business units) on the app.
 func SetupRoutes(app *fiber.App) {
 	app.Use(middleware.Logger())
 	app.Use(middleware.CORS())
@@ -37,6 +42,8 @@ func SetupRoutes(app *fiber.App) {
 	RegisterBusinessUnits(app)
 }
 
+// RegisterFAQ wires the /api/faq routes (modules, entry by id, module detail,
+// and listing by module/sub/category).
 func RegisterFAQ(app *fiber.App) {
 	h := api.NewFAQHandler()
 	g := app.Group("/api/faq")
@@ -46,6 +53,8 @@ func RegisterFAQ(app *fiber.App) {
 	g.Get("/:module/:sub/:category", h.ListByCategory)
 }
 
+// RegisterBusinessUnits wires the GET /api/business-units list route plus the
+// admin-only provision and deprovision routes.
 func RegisterBusinessUnits(app *fiber.App) {
 	h := api.NewBusinessUnitHandler()
 	app.Get("/api/business-units", h.List)
@@ -53,6 +62,7 @@ func RegisterBusinessUnits(app *fiber.App) {
 	app.Post("/api/business-units/deprovision", middleware.RequireAdminKey, h.Deprovision)
 }
 
+// RegisterActivity wires the /api/activity routes (list and summary).
 func RegisterActivity(app *fiber.App) {
 	h := api.NewActivityHandler()
 	g := app.Group("/api/activity")

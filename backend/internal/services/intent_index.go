@@ -20,6 +20,7 @@ type IntentMatch struct {
 	Source string
 }
 
+// dot returns the dot product of a and b over their overlapping length.
 func dot(a, b []float32) float64 {
 	n := len(a)
 	if len(b) < n {
@@ -32,6 +33,8 @@ func dot(a, b []float32) float64 {
 	return s
 }
 
+// categoryThreshold returns the per-category match threshold for intent,
+// falling back to the default threshold when none is configured.
 func (idx *IntentIndex) categoryThreshold(intent string) float64 {
 	if t, ok := idx.tuning.CategoryThresholds[intent]; ok {
 		return t
@@ -100,6 +103,7 @@ func (idx *IntentIndex) Match(queryEmb []float32, haveHistory bool) (IntentMatch
 	return IntentMatch{}, false
 }
 
+// Canned returns the canned response for intent in lang, or "" if none exists.
 func (idx *IntentIndex) Canned(intent, lang string) string {
 	if m, ok := idx.canned[intent]; ok {
 		return m[lang]

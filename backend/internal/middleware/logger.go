@@ -3,11 +3,12 @@ package middleware
 import (
 	"strings"
 
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 )
 
+// Logger returns request-logging middleware: JSON format in production, colored human-readable format otherwise.
 func Logger() fiber.Handler {
 	isProd := config.AppConfig != nil && strings.EqualFold(config.AppConfig.Server.Environment, "production")
 	if isProd {

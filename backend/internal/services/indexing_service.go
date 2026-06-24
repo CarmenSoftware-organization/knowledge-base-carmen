@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
+	"github.com/google/uuid"
 )
 
 // indexing_service.go constants have been moved to AppConfig.Git (WIKI_CHUNK_SIZE/WIKI_CHUNK_OVERLAP)
@@ -32,6 +32,7 @@ type IndexingService struct {
 
 const defaultEmbeddingTimeout = 60 * time.Second
 
+// NewIndexingService constructs an IndexingService with wiki, embedding, and activity-log clients.
 func NewIndexingService() *IndexingService {
 	return &IndexingService{
 		wiki:       NewWikiService(),
@@ -40,6 +41,7 @@ func NewIndexingService() *IndexingService {
 	}
 }
 
+// IndexAll re-indexes every markdown file for a BU, honoring ctx cancellation and logging progress.
 func (s *IndexingService) IndexAll(ctx context.Context, bu string) error {
 	if !security.ValidateSchema(bu) {
 		return fmt.Errorf("invalid schema/bu: %q", bu)
@@ -83,6 +85,7 @@ func (s *IndexingService) IndexPath(ctx context.Context, bu, path string) error 
 	return s.indexSingle(bu, path)
 }
 
+// indexSingle upserts one document and replaces its chunks with freshly embedded, normalized vectors.
 func (s *IndexingService) indexSingle(bu, path string) error {
 	buID, err := database.BUIDForSlug(bu)
 	if err != nil {
@@ -147,6 +150,7 @@ VALUES (?, ?, ?, ?, ?, ?::vector, now())`
 	return nil
 }
 
+// embeddingWithTimeout runs call in a goroutine and returns an error if it exceeds timeout.
 func embeddingWithTimeout(call func() ([]float32, error), timeout time.Duration) ([]float32, error) {
 	type result struct {
 		emb []float32
@@ -165,6 +169,7 @@ func embeddingWithTimeout(call func() ([]float32, error), timeout time.Duration)
 	}
 }
 
+// embeddingTimeout returns the embedding timeout from EMBEDDING_TIMEOUT_SECONDS, or the default.
 func embeddingTimeout() time.Duration {
 	raw := strings.TrimSpace(os.Getenv("EMBEDDING_TIMEOUT_SECONDS"))
 	if raw == "" {
@@ -177,6 +182,7 @@ func embeddingTimeout() time.Duration {
 	return time.Duration(n) * time.Second
 }
 
+// getVectorDim reads the document_chunks.embedding column's vector dimension from the DB, falling back to the configured dim.
 func (s *IndexingService) getVectorDim() (int, error) {
 	var typeStr string
 	const sql = `
@@ -204,6 +210,7 @@ LIMIT 1
 	return utils.CurrentEmbeddingDim(), nil
 }
 
+// chunkContent splits text into overlapping rune chunks, snapping chunk ends to newlines where possible.
 func chunkContent(text string, chunkSize, overlap int) []string {
 	text = strings.TrimSpace(text)
 	if text == "" {

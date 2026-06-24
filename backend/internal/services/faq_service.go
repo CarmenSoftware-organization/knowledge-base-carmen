@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/google/uuid"
 )
 
 type FAQModule struct {
@@ -57,6 +57,7 @@ type FAQEntryDetail struct {
 
 type FAQService struct{}
 
+// NewFAQService returns a new FAQService.
 func NewFAQService() *FAQService {
 	return &FAQService{}
 }
@@ -66,6 +67,7 @@ func (s *FAQService) resolveBU(buSlug string) (uuid.UUID, error) {
 	return database.BUIDForSlug(buSlug)
 }
 
+// ListModules returns all FAQ modules for the given BU slug, ordered by sort_order.
 func (s *FAQService) ListModules(buSlug string) ([]FAQModule, error) {
 	buID, err := s.resolveBU(buSlug)
 	if err != nil {

@@ -3,11 +3,12 @@ package middleware
 import (
 	"strings"
 
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 )
 
+// CORS builds the CORS middleware from configured origins, allowing credentials only when origins are restricted.
 func CORS() fiber.Handler {
 	origins := config.AppConfig.Server.CORSOrigins
 	allowAll := strings.TrimSpace(origins) == "" || origins == "*"

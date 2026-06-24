@@ -2,12 +2,13 @@
 package api
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
+	"github.com/gofiber/fiber/v2"
 )
 
 type SystemHandler struct{}
 
+// NewSystemHandler constructs a SystemHandler.
 func NewSystemHandler() *SystemHandler {
 	return &SystemHandler{}
 }

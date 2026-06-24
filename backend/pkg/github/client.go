@@ -33,6 +33,7 @@ type TreeItem struct {
 	SHA  string `json:"sha"`
 }
 
+// NewClient builds a GitHub API client from the GitHub section of AppConfig.
 func NewClient() *Client {
 	cfg := config.AppConfig.GitHub
 	return &Client{
@@ -45,6 +46,7 @@ func NewClient() *Client {
 	}
 }
 
+// GetFileContent fetches a file from the repo via the GitHub contents API and returns its base64-decoded content.
 func (c *Client) GetFileContent(path string) (*FileContent, error) {
 	base := c.APIBaseURL
 	if base == "" {
@@ -104,6 +106,7 @@ func (c *Client) GetFileContent(path string) (*FileContent, error) {
 	}, nil
 }
 
+// ListMarkdownFiles recursively walks the repo tree and returns the paths of all .md blobs.
 func (c *Client) ListMarkdownFiles() ([]string, error) {
 	base := c.APIBaseURL
 	if base == "" {

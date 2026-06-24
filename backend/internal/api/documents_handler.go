@@ -1,15 +1,16 @@
 package api
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type DocumentsHandler struct{}
 
+// NewDocumentsHandler constructs a DocumentsHandler.
 func NewDocumentsHandler() *DocumentsHandler {
 	return &DocumentsHandler{}
 }
@@ -24,6 +25,8 @@ type documentRow struct {
 	UpdatedAt  *string   `json:"updated_at,omitempty"`
 }
 
+// List handles GET /api/documents — returns the request BU's documents with their
+// chunk counts, ordered by path.
 func (h *DocumentsHandler) List(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	if !security.ValidateSchema(bu) {

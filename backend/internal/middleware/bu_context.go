@@ -3,11 +3,12 @@ package middleware
 import (
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
+	"github.com/gofiber/fiber/v2"
 )
 
+// BUContext resolves the BU slug from query/header (falling back to the default), validates it, and stores it in Locals.
 func BUContext() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		bu := strings.TrimSpace(c.Query("bu"))
@@ -26,6 +27,7 @@ func BUContext() fiber.Handler {
 	}
 }
 
+// GetBU returns the BU slug stored in Locals, or the default BU when unset.
 func GetBU(c *fiber.Ctx) string {
 	bu, ok := c.Locals("bu").(string)
 	if !ok || bu == "" {

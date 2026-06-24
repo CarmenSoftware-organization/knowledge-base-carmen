@@ -1,16 +1,17 @@
 package api
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type FAQHandler struct {
 	faqService *services.FAQService
 }
 
+// NewFAQHandler constructs a FAQHandler backed by a new FAQService.
 func NewFAQHandler() *FAQHandler {
 	return &FAQHandler{
 		faqService: services.NewFAQService(),

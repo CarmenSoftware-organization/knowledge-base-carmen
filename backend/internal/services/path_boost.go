@@ -40,6 +40,7 @@ func MatchedRuleCount(question string, rules []chatconfig.PathRule) int {
 	return n
 }
 
+// anyKeywordInQuestion reports whether any non-empty keyword appears in the lowercased question.
 func anyKeywordInQuestion(keywords []string, lqQuestion string) bool {
 	for _, kw := range keywords {
 		kw = strings.TrimSpace(strings.ToLower(kw))
@@ -77,6 +78,7 @@ func LikeMatch(subject, pattern string) bool {
 	return likeMatch(strings.ToLower(subject), strings.ToLower(pattern))
 }
 
+// containsInOrder reports whether all non-empty fragments appear in subject in the given order.
 func containsInOrder(subject string, frags []string) bool {
 	idx := 0
 	for _, f := range frags {

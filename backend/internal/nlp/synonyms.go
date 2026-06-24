@@ -4,16 +4,16 @@ import (
 	"strings"
 )
 
-// synonymMap maps Thai/English 
+// synonymMap maps Thai/English
 var synonymMap = map[string][]string{
-	"ลูกหนี้":         {"AR", "Account Receivable", "ลูกหนี้การค้า"},
-	"เจ้าหนี้":         {"AP", "Account Payable", "เจ้าหนี้การค้า"},
-	"ใบเสร็จ":         {"Receipt", "AR Receipt", "ใบเสร็จรับเงิน"},
-	"ใบกำกับ":         {"Invoice", "Tax Invoice", "ใบแจ้งหนี้"},
-	"ใบแจ้งหนี้":      {"Invoice", "Tax Invoice", "AP Invoice"},
+	"ลูกหนี้":        {"AR", "Account Receivable", "ลูกหนี้การค้า"},
+	"เจ้าหนี้":       {"AP", "Account Payable", "เจ้าหนี้การค้า"},
+	"ใบเสร็จ":        {"Receipt", "AR Receipt", "ใบเสร็จรับเงิน"},
+	"ใบกำกับ":        {"Invoice", "Tax Invoice", "ใบแจ้งหนี้"},
+	"ใบแจ้งหนี้":     {"Invoice", "Tax Invoice", "AP Invoice"},
 	"ภงด":            {"ภ.ง.ด.", "ภงด53", "ภาษี"},
 	"บัญชีแยกประเภท": {"GL", "General Ledger"},
-	"สินทรัพย์":       {"Asset", "AS"},
+	"สินทรัพย์":      {"Asset", "AS"},
 	"ap":             {"AP", "Account Payable", "เจ้าหนี้"},
 	"ar":             {"AR", "Account Receivable", "ลูกหนี้"},
 	"gl":             {"GL", "General Ledger", "บัญชีแยกประเภท"},
@@ -27,7 +27,7 @@ var synonymMap = map[string][]string{
 	"comment":        {"Comment", "คอมเมนต์", "ความคิดเห็น"},
 }
 
-
+// ExpandQuery preprocesses a query and returns its unique terms plus any mapped synonyms.
 func ExpandQuery(query string) []string {
 	preprocessed := Preprocess(query)
 	if preprocessed == "" {

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Thai stop words ที่ไม่ช่วยในการค้นหา 
+// Thai stop words ที่ไม่ช่วยในการค้นหา
 var stopWords = map[string]bool{
 	"วิธี": true, "การ": true, "ทำ": true, "ใช้": true, "ได้": true,
 	"คือ": true, "และ": true, "หรือ": true, "ใน": true, "ของ": true,
@@ -13,18 +13,18 @@ var stopWords = map[string]bool{
 	"how": true, "to": true, "the": true, "a": true, "an": true,
 }
 
-
+// Preprocess lowercases and trims a query, strips trailing dots, and drops short words and stop words.
 func Preprocess(query string) string {
 	s := strings.TrimSpace(strings.ToLower(query))
 	if s == "" {
 		return ""
 	}
-	
+
 	re := regexp.MustCompile(`(\p{L})\.`)
 	s = re.ReplaceAllString(s, "$1")
-	
+
 	s = strings.TrimSuffix(s, ".")
-	
+
 	words := strings.Fields(s)
 	var kept []string
 	for _, w := range words {

@@ -3,12 +3,14 @@ package router
 import (
 	"net/url"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
+	"github.com/gofiber/fiber/v2"
 )
 
+// RegisterWiki wires the /api/wiki/* routes (list, categories, sidebar, content,
+// search, admin sync/audit) and the /wiki-assets/* static asset handler.
 func RegisterWiki(app *fiber.App) {
 	h := api.NewWikiHandler()
 	app.Get("/api/wiki/list", h.List)

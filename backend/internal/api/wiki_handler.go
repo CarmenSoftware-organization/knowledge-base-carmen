@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+	"github.com/gofiber/fiber/v2"
 )
 
 var (
@@ -20,6 +20,7 @@ var (
 	translationOnce  sync.Once
 )
 
+// initTranslation lazily initializes the translation service and cache once.
 func initTranslation() {
 	translationOnce.Do(func() {
 		translationSvc = services.NewTranslationService()
@@ -33,6 +34,7 @@ type WikiHandler struct {
 	logService  *services.ActivityLogService
 }
 
+// NewWikiHandler constructs a WikiHandler with its wiki, sync, and activity-log services.
 func NewWikiHandler() *WikiHandler {
 	return &WikiHandler{
 		wikiService: services.NewWikiService(),

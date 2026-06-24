@@ -15,6 +15,8 @@ var (
 	embeddingDim     int
 )
 
+// getEmbeddingDim returns the embedding dimension, reading VECTOR_DIMENSION once
+// (falling back to defaultEmbeddingDim when unset or invalid).
 func getEmbeddingDim() int {
 	embeddingDimOnce.Do(func() {
 		embeddingDim = defaultEmbeddingDim
@@ -78,6 +80,8 @@ func NormalizeEmbedding(vec []float32) []float32 {
 	return out
 }
 
+// Float32SliceToPgVector formats a float32 slice as a PostgreSQL VECTOR literal
+// (e.g. "[1,2,3]"); an empty slice yields "[]".
 func Float32SliceToPgVector(vec []float32) string {
 	if len(vec) == 0 {
 		return "[]"

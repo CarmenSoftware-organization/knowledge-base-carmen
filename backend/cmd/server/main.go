@@ -10,19 +10,20 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/router"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 
 	_ "github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/docs"
 )
 
+// main is the backend entrypoint: it loads config, connects the DB, dispatches CLI subcommands (migrate/reset/reindex), and otherwise starts the Fiber HTTP server.
 func main() {
 	if err := config.Load(); err != nil {
 		log.Fatal("Failed to load config:", err)

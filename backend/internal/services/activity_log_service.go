@@ -3,14 +3,15 @@ package services
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type ActivityLogService struct{}
 
+// NewActivityLogService returns a new ActivityLogService.
 func NewActivityLogService() *ActivityLogService {
 	return &ActivityLogService{}
 }
@@ -52,6 +53,7 @@ var adminActions = []string{
 	"ลบไฟล์วิกิ",
 }
 
+// GetLogs returns logs for a BU (unfiltered by source), discarding the total count.
 func (s *ActivityLogService) GetLogs(buSlug string, limit int, offset int) ([]models.ActivityLog, error) {
 	logs, _, err := s.GetLogsWithFilter(buSlug, "all", limit, offset)
 	return logs, err

@@ -6,15 +6,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
+// askFlow runs the non-streaming /api/chat/ask pipeline: budget gate, embed,
+// cache/router lookup, retrieval, zero-results guard, LLM answer, and history save.
 func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error) {
 	req, err := parseAskRequest(c)
 	if err != nil {
@@ -87,6 +89,7 @@ func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error)
 	}, fiber.StatusOK, nil
 }
 
+// parseAskRequest parses the ask request body and requires a non-empty question.
 func parseAskRequest(c *fiber.Ctx) (models.ChatAskRequest, error) {
 	var req models.ChatAskRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -98,6 +101,8 @@ func parseAskRequest(c *fiber.Ctx) (models.ChatAskRequest, error) {
 	return req, nil
 }
 
+// createEmbedding embeds the question, truncates to the configured dimension, and
+// returns both the float32 vector and its pgvector string form.
 func (h *ChatHandler) createEmbedding(question string) ([]float32, string, error) {
 	emb, err := h.embedLLM.Embedding(question)
 	if err != nil {
@@ -107,6 +112,8 @@ func (h *ChatHandler) createEmbedding(question string) ([]float32, string, error
 	return emb, utils.Float32SliceToPgVector(emb), nil
 }
 
+// tryCachedAnswer returns a prior answer when history is enabled and a stored Q&A
+// is similar enough to the embedding; the bool reports whether a cache hit occurred.
 func (h *ChatHandler) tryCachedAnswer(bu string, emb []float32, threshold float64, userID, userAgent string, enabled bool) (models.ChatAskResponse, bool) {
 	if !enabled {
 		return models.ChatAskResponse{}, false
@@ -129,10 +136,15 @@ func (h *ChatHandler) tryCachedAnswer(bu string, emb []float32, threshold float6
 	}, true
 }
 
+// isRouterEnabled reports whether the legacy question-router path is enabled
+// (currently always false).
 func isRouterEnabled() bool {
 	return false
 }
 
+// tryRouterAnswer attempts to answer from router-selected wiki pages: it honors a
+// preferred path, returns disambiguation options for multiple candidates, or
+// generates an answer from routed context. The bool reports whether it handled the request.
 func (h *ChatHandler) tryRouterAnswer(req models.ChatAskRequest, bu, question, userID string, emb []float32, historyEnabled bool) (models.ChatAskResponse, bool, error) {
 	res, err := h.router.RouteQuestion(question)
 	if err != nil || len(res.Candidates) == 0 {
@@ -187,6 +199,8 @@ func (h *ChatHandler) tryRouterAnswer(req models.ChatAskRequest, bu, question, u
 	return models.ChatAskResponse{Answer: answer, Sources: sources}, true, nil
 }
 
+// buildRoutedContext concatenates the content of up to limit candidate wiki pages
+// into a single context string and returns the matching sources.
 func (h *ChatHandler) buildRoutedContext(bu string, candidates []models.RouteCandidate, limit int) (string, []models.ChatSource) {
 	var b strings.Builder
 	sources := make([]models.ChatSource, 0, limit)
@@ -229,6 +243,8 @@ func askNoInfoResponse(question string) models.ChatAskResponse {
 	}
 }
 
+// buildContextFromChunks assembles retrieved chunks into an LLM context string
+// (rune-safe per-chunk truncation, bounded by maxContextChars) and the source list.
 func buildContextFromChunks(chunks []services.RetrievedChunk, maxContextChars, maxChunkContent int) (string, []models.ChatSource) {
 	var b strings.Builder
 	sources := make([]models.ChatSource, 0, len(chunks))
@@ -262,6 +278,8 @@ func buildContextFromChunks(chunks []services.RetrievedChunk, maxContextChars, m
 	return b.String(), sources
 }
 
+// saveHistoryIfEnabled persists the Q&A to chat history when enabled, resolving the
+// BU slug to its id; failures are logged and swallowed.
 func (h *ChatHandler) saveHistoryIfEnabled(enabled bool, bu, userID, question, answer string, sources []models.ChatSource, emb []float32) {
 	if !enabled {
 		return
