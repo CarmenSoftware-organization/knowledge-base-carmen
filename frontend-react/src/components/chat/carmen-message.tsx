@@ -2,6 +2,7 @@ import { DisplayMessage } from "@/hooks/use-carmen-chat";
 import { useState, useMemo, memo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import DOMPurify from "dompurify";
+import { isAllowedIframeSrc } from "@/lib/iframe-allowlist";
 
 // ── Icon constants ──────────────────────────────────────────────────────────
 
@@ -39,12 +40,8 @@ const IconThumbDown = (
 );
 
 // ── DOMPurify config ────────────────────────────────────────────────────────
-
-const ALLOWED_IFRAME_ORIGINS = [
-  "https://www.youtube.com",
-  "https://www.youtube-nocookie.com",
-  "https://player.vimeo.com",
-];
+// Embedded-iframe origin allowlist lives in @/lib/iframe-allowlist
+// (isAllowedIframeSrc) — unit-tested against lookalike-host bypasses.
 
 // ── Animation variants ──────────────────────────────────────────────────────
 
@@ -126,8 +123,7 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     DOMPurify.addHook("afterSanitizeAttributes", (node) => {
       if (node.tagName === "IFRAME") {
         const src = node.getAttribute("src") ?? "";
-        const trusted = ALLOWED_IFRAME_ORIGINS.some((origin) => src.startsWith(origin));
-        if (!trusted) node.parentNode?.removeChild(node);
+        if (!isAllowedIframeSrc(src)) node.parentNode?.removeChild(node);
       }
     });
     const result = DOMPurify.sanitize(cleaned, {
