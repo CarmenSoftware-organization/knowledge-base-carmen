@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll } from "bun:test";
 import { renderHook } from "@testing-library/react";
 import i18n from "./index";
 import { useTranslations } from "./use-translations";
