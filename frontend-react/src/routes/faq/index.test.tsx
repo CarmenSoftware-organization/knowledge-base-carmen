@@ -1,33 +1,44 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, mock, jest } from "bun:test";
 import { render, screen } from "@testing-library/react";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 
-vi.mock("@/lib/wiki-api", () => ({
-  getCategory: vi.fn().mockResolvedValue({
+mock.module("@/lib/wiki-api", () => ({
+  getCategory: jest.fn().mockResolvedValue({
     category: "faq",
     title: "FAQ",
     items: [],
   }),
-  getContent: vi.fn().mockResolvedValue(null),
-  getSelectedBUClient: vi.fn().mockReturnValue("carmen"),
-  getSidebarTree: vi.fn().mockResolvedValue([]),
-  getBusinessUnits: vi.fn().mockResolvedValue({ items: [] }),
-  getAllArticles: vi.fn().mockResolvedValue([]),
-  searchWiki: vi.fn().mockResolvedValue([]),
-  setSelectedBU: vi.fn(),
-  clearWikiClientCaches: vi.fn(),
-  invalidateSidebarCache: vi.fn(),
+  getContent: jest.fn().mockResolvedValue(null),
+  getSelectedBUClient: jest.fn().mockReturnValue("carmen"),
+  getSidebarTree: jest.fn().mockResolvedValue([]),
+  getBusinessUnits: jest.fn().mockResolvedValue({ items: [] }),
+  getAllArticles: jest.fn().mockResolvedValue([]),
+  searchWiki: jest.fn().mockResolvedValue([]),
+  setSelectedBU: jest.fn(),
+  clearWikiClientCaches: jest.fn(),
+  invalidateSidebarCache: jest.fn(),
+  getCategories: jest.fn().mockResolvedValue({ items: [] }),
+  wikiPathToRoute: jest.fn().mockReturnValue("/"),
+  wikiDirFromContentPath: jest.fn().mockReturnValue(""),
+  resolveWikiMarkdownHref: jest.fn().mockReturnValue("/"),
+  encodeWikiPathForFetch: jest.fn().mockImplementation((p: string) => p),
+  normalizeWikiRelPath: jest.fn().mockImplementation((p: string) => p),
+  findBestArticleForQuery: jest.fn().mockResolvedValue({ route: "/" }),
+  askChat: jest.fn(),
+  getActivityLogs: jest.fn().mockResolvedValue({ items: [], total: 0, limit: 20, offset: 0 }),
+  syncWiki: jest.fn().mockResolvedValue({ ok: true, message: "ok" }),
+  rebuildIndex: jest.fn().mockResolvedValue({ message: "ok" }),
 }));
 
-vi.mock("@/lib/faq-cache", () => ({
-  getCachedFaqNavItems: vi.fn().mockResolvedValue([]),
+mock.module("@/lib/faq-cache", () => ({
+  getCachedFaqNavItems: jest.fn().mockResolvedValue([]),
 }));
 
-vi.mock("gray-matter", () => ({
-  default: vi.fn().mockReturnValue({ data: {}, content: "" }),
+mock.module("gray-matter", () => ({
+  default: jest.fn().mockReturnValue({ data: {}, content: "" }),
 }));
 
-import Faq, { faqLoader } from "./index";
+const { default: Faq, faqLoader } = await import("./index");
 
 describe("faq index route", () => {
   it("renders the faq landing", async () => {
