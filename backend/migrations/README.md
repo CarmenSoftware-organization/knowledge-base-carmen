@@ -64,11 +64,6 @@ DB ใหม่รันตามลำดับ (idempotent, รันซ้ำ
 
 ---
 
-## Fly.io (backend)
-
-- รายการ env ที่ควรตั้ง: `backend/.env.fly.example` (คัดลอกเป็น `.env.fly.local` แล้ว `fly secrets import`)
-- รัน migration ครั้งแรกด้วย **PSQL / Beekeeper / Neon SQL Editor** ชี้ไป DB เดียวกับที่ใส่ใน `DB_*` — ลำดับไฟล์ตามตารางด้านบน
-
 ## Render (Production)
 
 - **ไม่แนะนำ** ใช้ `preDeployCommand: ./server migrate` แบบรันทุกครั้งที่ deploy — บางไฟล์ (เช่น `0002`) มี PL/pgSQL ที่ binary แยกด้วย `;` ไม่ปลอดภัย
