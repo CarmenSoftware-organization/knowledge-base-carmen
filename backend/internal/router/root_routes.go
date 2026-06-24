@@ -36,7 +36,7 @@ const rootLandingHTML = `<!doctype html>
   <main class="card">
     <h1>Carmen Backend API</h1>
     <p>Go Fiber service &middot; native RAG chatbot at <code>/api/chat/*</code></p>
-    <a class="btn" href="/scalar">Go to API Docs</a>
+    <a class="btn" href="/swagger">Go to API Docs</a>
   </main>
 </body>
 </html>`
