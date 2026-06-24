@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 import RootLayout from "@/root-layout";
+import RootLoading from "@/routes/root-loading";
 import Home, { homeLoader } from "@/routes/home";
 import Categories, { categoriesLoader } from "@/routes/categories/index";
 import CategoriesLoading from "@/routes/categories/loading";
@@ -18,6 +19,7 @@ export const routes: RouteObject[] = [
   {
     path: "/",
     element: <RootLayout />,
+    HydrateFallback: RootLoading,
     children: [
       { index: true, element: <Home />, loader: homeLoader },
       {
