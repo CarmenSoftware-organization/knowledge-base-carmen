@@ -19,17 +19,17 @@ Frontend สำหรับระบบ KB Carmen
 
 ```bash
 cd frontend
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 คำสั่งหลัก:
 
 ```bash
-npm run build
-npm run start
-npm run lint
-npm test
+bun run build
+bun run start
+bun run lint
+bun run test
 ```
 
 ## Environment Variables
