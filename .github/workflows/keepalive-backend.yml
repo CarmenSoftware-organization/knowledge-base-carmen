@@ -4,15 +4,15 @@ name: keepalive-backend
 # A cold start makes the frontend homepage hang/blank while the backend wakes
 # (Docker entrypoint: DB wait + migrate + clone on a 0.1 CPU instance).
 #
-# CAVEAT: GitHub scheduled crons are best-effort and can be delayed several
-# minutes under load, so this is not a hard guarantee against spin-down. If the
-# backend still sleeps, lower the interval to "*/5 * * * *" or use a dedicated
-# uptime monitor (e.g. UptimeRobot / cron-job.org). The proper fix is upgrading
-# the Render service to a paid always-on plan.
+# Runs every 5 min — the shortest GitHub cron interval and well under Render's
+# ~15 min idle timeout. CAVEAT: GitHub scheduled crons are best-effort and can
+# be delayed several minutes under load, so this is not a hard guarantee. A
+# dedicated uptime monitor (UptimeRobot / cron-job.org) pinging /health every
+# 5 min is more reliable; the only 100% fix is a paid Render always-on plan.
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 permissions:
