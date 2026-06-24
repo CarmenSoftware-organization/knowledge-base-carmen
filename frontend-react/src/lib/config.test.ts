@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 
 describe("config", () => {
   it("strips trailing slashes from API_BASE", async () => {
