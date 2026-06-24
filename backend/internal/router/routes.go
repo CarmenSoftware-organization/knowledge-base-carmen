@@ -5,7 +5,6 @@ import (
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
-	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
 
 func SetupTestApp() *fiber.App {
@@ -24,7 +23,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Use(middleware.BUContext())
 
 	RegisterRoot(app)
-	app.Get("/swagger/*", fiberSwagger.WrapHandler)
+	RegisterDocs(app)
 
 	RegisterHealth(app)
 	RegisterPublicSystem(app)
