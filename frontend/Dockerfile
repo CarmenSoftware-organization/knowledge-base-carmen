@@ -1,12 +1,11 @@
 # Install dependencies
-FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+FROM oven/bun:1-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 # Build (standalone bundle for Docker)
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 ARG DOCKER_BUILD=1
 ARG NEXT_PUBLIC_API_BASE=https://knowledge-base-carmen-backend.onrender.com
@@ -15,9 +14,9 @@ ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN bun run build
 
-# Run
+# Run — Next standalone server runs on Node, not Bun (deliberate)
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production

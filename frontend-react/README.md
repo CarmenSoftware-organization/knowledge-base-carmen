@@ -5,14 +5,14 @@ Vite + React Router v7 SPA clone of the Next.js `frontend/`. Talks only to the G
 ## Run
 ```bash
 cd frontend-react
-npm install
-VITE_API_BASE=http://localhost:8080 npm run dev
+bun install
+VITE_API_BASE=http://localhost:8080 bun run dev
 ```
 
 ## Commands
-- `npm run build` — production build to `dist/`
-- `npm run preview` — preview the built app
-- `npm run lint` / `npm test`
+- `bun run build` — production build to `dist/`
+- `bun run preview` — preview the built app
+- `bun run lint` / `bun run test`
 
 ## Env
 - `VITE_API_BASE` — Go backend base URL (required at build time in production)
