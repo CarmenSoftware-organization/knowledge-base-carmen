@@ -16,7 +16,7 @@
 # Health: GET http://<host>:8080/health (Go backend serves /api/chat/* natively)
 #
 # Stack: backend only (Go, native RAG chatbot at /api/chat/*)
-# Frontend ไม่อยู่ใน compose แล้ว — รัน local ด้วย `cd frontend && npm run dev`, deploy → Vercel
+# Frontend ไม่อยู่ใน compose แล้ว — รัน local ด้วย `cd frontend-next && npm run dev`, deploy → Vercel
 
 services:
   backend:

@@ -10,7 +10,7 @@
 | Path | What it is | Look deeper |
 | --- | --- | --- |
 | `backend/` | Go Fiber API + native RAG chatbot | `backend/README.md`, `CLAUDE.md` |
-| `frontend/` | Next.js App Router UI | `frontend/README.md` |
+| `frontend-next/` | Next.js App Router UI | `frontend-next/README.md` |
 | `contents/` | Markdown source-of-truth per Business Unit | `manual/HANDOVER-ADD-NEW-BU.md` |
 | `scripts/` | Provision / sync / import ops scripts | — |
 | `docs/` | Design specs & implementation plans | `docs/superpowers/` |
@@ -29,7 +29,7 @@ Key entry points:
 - `config/{tuning,intents,path_rules,prompts}.yaml` — chatbot tuning (no rebuild/restart).
 - `migrations/` — SQL schema; apply with `psql` (see `backend/migrations/README.md`).
 
-## `frontend/` — Next.js App Router
+## `frontend-next/` — Next.js App Router
 
 Talks only to the Go backend. API base resolved in `lib/config.ts`; selected BU in cookie `selected_bu`.
 
@@ -116,7 +116,7 @@ docs/
   superpowers/
     plans/
     specs/
-frontend/
+frontend-next/
   __tests__/
   app/
     activity/

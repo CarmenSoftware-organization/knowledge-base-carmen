@@ -18,7 +18,7 @@ Frontend สำหรับระบบ KB Carmen
 ## Run Local
 
 ```bash
-cd frontend
+cd frontend-next
 bun install
 bun run dev
 ```

@@ -28,7 +28,7 @@
      - FAQ tree (`public.faq_*`)
 
 4. **Frontend Layer**
-   - Next.js (`frontend`) แสดงบทความ KB, FAQ, Activity และ Chat Widget
+   - Next.js (`frontend-next`) แสดงบทความ KB, FAQ, Activity และ Chat Widget
    - เรียก API ที่ Go Backend เป็นหลัก
 
 ---
@@ -36,7 +36,7 @@
 ## 2) โครงสร้างโฟลเดอร์ที่สำคัญ
 
 - `backend/` — Go Fiber API + migrations + reindex/sync logic + native RAG chatbot
-- `frontend/` — Next.js App Router UI
+- `frontend-next/` — Next.js App Router UI
 - `scripts/` — ชุดสคริปต์ import/sync/reindex/seed FAQ
 - `contents/` — ไฟล์ markdown เนื้อหาความรู้
 
@@ -46,7 +46,7 @@
 
 ### 3.1 Flow แสดงบทความ KB
 
-1. ผู้ใช้เปิดหน้าเว็บ (`frontend`)
+1. ผู้ใช้เปิดหน้าเว็บ (`frontend-next`)
 2. Frontend เรียก Go API เช่น:
    - `/api/wiki/categories`
    - `/api/wiki/category/:slug`

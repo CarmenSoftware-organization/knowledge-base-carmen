@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start Carmen development services:
 #   - Go backend (8080)            — native RAG chat at /api/chat/*
-#   - Next.js   frontend/ (3000)   — legacy App Router UI
+#   - Next.js   frontend-next/ (3000)   — legacy App Router UI
 #   - React SPA frontend-react/ (5173) — Vite SPA (the migration target)
 # Runs everything in the background of one terminal; Ctrl-C stops them all.
 set -uo pipefail
@@ -27,7 +27,7 @@ pids+=($!)
 
 # 2. Frontend (Next.js)
 printf "${yellow}--- Next.js Frontend (Port 3000) ---${nc}\n"
-( cd "$ROOT/frontend" && bun run dev ) &
+( cd "$ROOT/frontend-next" && bun run dev ) &
 pids+=($!)
 
 # 3. Frontend (React SPA — Vite). Points VITE_API_BASE at the local backend.

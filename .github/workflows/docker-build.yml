@@ -7,13 +7,13 @@ name: Docker build (frontends)
 on:
   pull_request:
     paths:
-      - "frontend/**"
+      - "frontend-next/**"
       - "frontend-react/**"
       - ".github/workflows/docker-build.yml"
   push:
     branches: [main]
     paths:
-      - "frontend/**"
+      - "frontend-next/**"
       - "frontend-react/**"
       - ".github/workflows/docker-build.yml"
   workflow_dispatch: {}
@@ -29,11 +29,11 @@ jobs:
       - name: docker build frontend-react
         run: docker build --build-arg VITE_API_BASE=https://example.com -t carmen-frontend-react:ci frontend-react
 
-  frontend:
-    name: build frontend image (Next standalone, Bun build / Node runtime)
+  frontend-next:
+    name: build frontend-next image (Next standalone, Bun build / Node runtime)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       # NEXT_PUBLIC_API_BASE / DOCKER_BUILD have defaults in the Dockerfile.
-      - name: docker build frontend
-        run: docker build -t carmen-frontend:ci frontend
+      - name: docker build frontend-next
+        run: docker build -t carmen-frontend-next:ci frontend-next
