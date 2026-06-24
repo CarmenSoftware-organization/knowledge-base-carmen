@@ -22,6 +22,4 @@ VITE_API_BASE=http://localhost:8080 bun run dev
 - `VITE_USE_REMOTE_API` — `true` to use a remote API base in dev
 
 ## Notes
-- Export PDF/DOCX calls `${VITE_API_BASE}/api/export/{pdf,docx}` — **requires the Go backend
-  export endpoints** (separate task); inert until those exist.
 - SPA routing needs a host-level rewrite of all paths to `index.html` (see `vercel.json` / `nginx.conf`).
