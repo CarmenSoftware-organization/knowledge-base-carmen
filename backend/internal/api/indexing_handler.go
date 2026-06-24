@@ -7,8 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 	"github.com/gofiber/fiber/v2"
 )
@@ -44,7 +46,7 @@ func (h *IndexingHandler) Rebuild(c *fiber.Ctx) error {
 			delete(h.startedAtByBU, bu)
 		} else {
 			h.mu.Unlock()
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "reindex is already running for this bu"})
+			return response.Fail(c, fiber.StatusConflict, response.CodeReindexRunning, "reindex is already running for this bu")
 		}
 	}
 	h.runningByBU[bu] = true
@@ -66,7 +68,7 @@ func (h *IndexingHandler) Rebuild(c *fiber.Ctx) error {
 			log.Printf("[index/rebuild] completed (%s)", bu)
 		}
 	}()
-	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"message": "reindex started (running in background)"})
+	return response.OKStatus(c, fiber.StatusAccepted, models.MessageResult{Message: "reindex started (running in background)"})
 }
 
 // ForceUnlock clears the in-memory reindex lock for the BU and reports whether it was running.
@@ -77,12 +79,7 @@ func (h *IndexingHandler) ForceUnlock(c *fiber.Ctx) error {
 	delete(h.runningByBU, bu)
 	delete(h.startedAtByBU, bu)
 	h.mu.Unlock()
-	return c.JSON(fiber.Map{
-		"ok":          true,
-		"bu":          bu,
-		"was_running": wasRunning,
-		"message":     "reindex lock cleared",
-	})
+	return response.OK(c, models.ReindexUnlock{BU: bu, WasRunning: wasRunning, Message: "reindex lock cleared"})
 }
 
 // Status reports whether a reindex is running for the BU, plus its start time and elapsed seconds.
@@ -98,11 +95,11 @@ func (h *IndexingHandler) Status(c *fiber.Ctx) error {
 		startedAt = started.UTC().Format(time.RFC3339)
 		runningForSec = int64(time.Since(started).Seconds())
 	}
-	return c.JSON(fiber.Map{
-		"bu":              bu,
-		"running":         running,
-		"started_at":      startedAt,
-		"running_for_sec": runningForSec,
+	return response.OK(c, models.ReindexStatus{
+		BU:            bu,
+		Running:       running,
+		StartedAt:     startedAt,
+		RunningForSec: runningForSec,
 	})
 }
 
@@ -111,7 +108,7 @@ func (h *IndexingHandler) RebuildOne(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	path := strings.TrimSpace(c.Query("path"))
 	if path == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "path is required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "path is required")
 	}
 
 	timeout := time.Duration(config.AppConfig.Chat.IndexingTimeoutMin) * time.Minute
@@ -122,12 +119,7 @@ func (h *IndexingHandler) RebuildOne(c *fiber.Ctx) error {
 	defer cancel()
 
 	if err := h.indexingService.IndexPath(ctx, bu, path); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(fiber.Map{
-		"ok":      true,
-		"bu":      bu,
-		"path":    path,
-		"message": "reindex single file completed",
-	})
+	return response.OK(c, models.ReindexOneResult{BU: bu, Path: path, Message: "reindex single file completed"})
 }
