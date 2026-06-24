@@ -1,8 +1,10 @@
 package api
 
 import (
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -15,31 +17,21 @@ func NewDocumentsHandler() *DocumentsHandler {
 	return &DocumentsHandler{}
 }
 
-type documentRow struct {
-	ID         uuid.UUID `json:"id"`
-	Path       string    `json:"path"`
-	Title      string    `json:"title"`
-	Source     string    `json:"source"`
-	ChunkCount *int64    `json:"chunk_count,omitempty"`
-	CreatedAt  *string   `json:"created_at,omitempty"`
-	UpdatedAt  *string   `json:"updated_at,omitempty"`
-}
-
 // List handles GET /api/documents — returns the request BU's documents with their
 // chunk counts, ordered by path.
 func (h *DocumentsHandler) List(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	if !security.ValidateSchema(bu) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid bu parameter"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBU, "invalid bu parameter")
 	}
 	buID, err := database.BUIDForSlug(bu)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBU, err.Error())
 	}
 	if buID == uuid.Nil {
-		return c.JSON(fiber.Map{"items": []documentRow{}})
+		return response.OK(c, []models.DocumentSummary{})
 	}
-	var rows []documentRow
+	var rows []models.DocumentSummary
 	sql := `
 		SELECT d.id, d.path, d.title, d.source, d.created_at, d.updated_at,
 			(SELECT COUNT(*) FROM public.document_chunks c WHERE c.doc_id = d.id) AS chunk_count
@@ -47,16 +39,11 @@ func (h *DocumentsHandler) List(c *fiber.Ctx) error {
 		WHERE d.bu_id = ?
 		ORDER BY d.path ASC, d.id ASC
 	`
-	err = database.DB.Raw(sql, buID).Scan(&rows).Error
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	if err := database.DB.Raw(sql, buID).Scan(&rows).Error; err != nil {
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 	if rows == nil {
-		rows = []documentRow{}
+		rows = []models.DocumentSummary{}
 	}
-	return c.JSON(fiber.Map{
-		"items": rows,
-	})
+	return response.OK(c, rows)
 }
