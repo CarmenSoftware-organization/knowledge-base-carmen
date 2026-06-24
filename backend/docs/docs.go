@@ -17,6 +17,7 @@ const docTemplate = `{
     "paths": {
         "/api/activity/list": {
             "get": {
+                "description": "Returns the activity log entries for the business unit.",
                 "produces": [
                     "application/json"
                 ],
@@ -46,6 +47,7 @@ const docTemplate = `{
         },
         "/api/activity/summary": {
             "get": {
+                "description": "Returns aggregated activity statistics for the business unit.",
                 "produces": [
                     "application/json"
                 ],
@@ -75,6 +77,7 @@ const docTemplate = `{
         },
         "/api/business-units": {
             "get": {
+                "description": "Lists the business units (tenants) available for the BU selector, excluding internal auto-provision entries.",
                 "produces": [
                     "application/json"
                 ],
@@ -104,6 +107,7 @@ const docTemplate = `{
         },
         "/api/chat/ask": {
             "post": {
+                "description": "Non-streaming RAG chat: retrieves relevant chunks and returns a grounded answer with its sources. Returns a \"no information found\" message when nothing matches.",
                 "consumes": [
                     "application/json"
                 ],
@@ -151,6 +155,7 @@ const docTemplate = `{
         },
         "/api/chat/clear/{room_id}": {
             "delete": {
+                "description": "Acknowledges a request to clear a chat room. No-op server-side — chat history is owned by the frontend.",
                 "tags": [
                     "chat"
                 ],
@@ -160,6 +165,7 @@ const docTemplate = `{
         },
         "/api/chat/feedback/{message_id}": {
             "post": {
+                "description": "Records a thumbs up/down score for a chat message, scoped to the requesting user.",
                 "tags": [
                     "chat"
                 ],
@@ -174,6 +180,7 @@ const docTemplate = `{
                         "AdminKey": []
                     }
                 ],
+                "description": "Returns recent chat history rows, optionally filtered by business unit. Requires the X-Admin-Key header.",
                 "produces": [
                     "application/json"
                 ],
@@ -223,6 +230,7 @@ const docTemplate = `{
                         "InternalKey": []
                     }
                 ],
+                "description": "Persists a chat turn (question, answer, sources) to history. Internal-only; requires the X-Internal-API-Key header.",
                 "consumes": [
                     "application/json"
                 ],
@@ -271,6 +279,7 @@ const docTemplate = `{
                         "AdminKey": []
                     }
                 ],
+                "description": "Debug endpoint that returns only the intent-router decision for a question, without generating an answer. Requires the X-Admin-Key header.",
                 "consumes": [
                     "application/json"
                 ],
@@ -311,6 +320,7 @@ const docTemplate = `{
         },
         "/api/chat/stream": {
             "post": {
+                "description": "Streaming RAG chat over NDJSON: emits status, sources, answer chunks, suggestions, and a final done event. This is the primary endpoint used by the frontend.",
                 "tags": [
                     "chat"
                 ],
@@ -320,6 +330,7 @@ const docTemplate = `{
         },
         "/api/documents": {
             "get": {
+                "description": "Lists the documents currently indexed in the database for the business unit.",
                 "produces": [
                     "application/json"
                 ],
@@ -349,6 +360,7 @@ const docTemplate = `{
         },
         "/api/faq/entry/{id}": {
             "get": {
+                "description": "Returns a single FAQ entry by its id.",
                 "produces": [
                     "application/json"
                 ],
@@ -378,6 +390,7 @@ const docTemplate = `{
         },
         "/api/faq/modules": {
             "get": {
+                "description": "Lists the available FAQ modules.",
                 "produces": [
                     "application/json"
                 ],
@@ -398,6 +411,7 @@ const docTemplate = `{
         },
         "/api/faq/{module}": {
             "get": {
+                "description": "Returns the detail (sub-modules and entries) for the given FAQ module.",
                 "produces": [
                     "application/json"
                 ],
@@ -427,6 +441,7 @@ const docTemplate = `{
         },
         "/api/faq/{module}/{sub}/{category}": {
             "get": {
+                "description": "Lists FAQ entries under the given module / sub-module / category path.",
                 "produces": [
                     "application/json"
                 ],
@@ -475,6 +490,7 @@ const docTemplate = `{
                         "AdminKey": []
                     }
                 ],
+                "description": "Starts an asynchronous rebuild of the pgvector + full-text search index for the business unit. Requires the X-Admin-Key header.",
                 "consumes": [
                     "application/json"
                 ],
@@ -516,6 +532,7 @@ const docTemplate = `{
         },
         "/api/system/status": {
             "get": {
+                "description": "Reports overall service status, including database connectivity and basic runtime info.",
                 "produces": [
                     "application/json"
                 ],
@@ -536,6 +553,7 @@ const docTemplate = `{
         },
         "/api/wiki/categories": {
             "get": {
+                "description": "Returns the top-level wiki categories (sidebar sections) for the business unit.",
                 "produces": [
                     "application/json"
                 ],
@@ -565,6 +583,7 @@ const docTemplate = `{
         },
         "/api/wiki/category/{slug}": {
             "get": {
+                "description": "Returns the articles contained in the given category slug for the business unit.",
                 "produces": [
                     "application/json"
                 ],
@@ -601,6 +620,7 @@ const docTemplate = `{
         },
         "/api/wiki/content/{path}": {
             "get": {
+                "description": "Returns the raw markdown body for the article at the given path under the wiki root.",
                 "produces": [
                     "text/plain"
                 ],
@@ -636,6 +656,7 @@ const docTemplate = `{
         },
         "/api/wiki/list": {
             "get": {
+                "description": "Returns all indexed wiki/markdown articles for the business unit with their metadata (title, path, tags, dates).",
                 "produces": [
                     "application/json"
                 ],
@@ -665,6 +686,7 @@ const docTemplate = `{
         },
         "/api/wiki/search": {
             "get": {
+                "description": "Hybrid full-text + pgvector search over the business unit's wiki content; returns ranked matches.",
                 "produces": [
                     "application/json"
                 ],
@@ -706,6 +728,7 @@ const docTemplate = `{
                         "AdminKey": []
                     }
                 ],
+                "description": "Clones or pulls the content Git repo and refreshes the wiki on disk. Requires the X-Admin-Key header.",
                 "consumes": [
                     "application/json"
                 ],
@@ -747,7 +770,7 @@ const docTemplate = `{
         },
         "/health": {
             "get": {
-                "description": "Liveness probe",
+                "description": "Lightweight liveness probe; returns {\"status\":\"ok\"} without touching the database.",
                 "produces": [
                     "application/json"
                 ],
@@ -770,6 +793,7 @@ const docTemplate = `{
         },
         "/images/{path}": {
             "get": {
+                "description": "Serves an image referenced by chat answers or wiki content, resolved under the business unit's content.",
                 "produces": [
                     "application/octet-stream"
                 ],
@@ -798,6 +822,7 @@ const docTemplate = `{
         },
         "/webhook/github": {
             "post": {
+                "description": "Receives GitHub push events and triggers a content sync + reindex for the affected business units.",
                 "consumes": [
                     "application/json"
                 ],
@@ -830,6 +855,7 @@ const docTemplate = `{
         },
         "/wiki-assets/{path}": {
             "get": {
+                "description": "Serves a static wiki asset (image or file) referenced by markdown, resolved under the business unit's content.",
                 "produces": [
                     "application/octet-stream"
                 ],
