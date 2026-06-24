@@ -1,4 +1,5 @@
 import { API_BASE, DEFAULT_BU } from "@/lib/config";
+import { apiJson, ApiError } from "@/lib/fetch-utils";
 
 type ActivityLog = {
   id: number;
@@ -17,17 +18,23 @@ type ActivityResponse = {
 };
 
 async function fetchAdminActivity(): Promise<ActivityResponse> {
-  const res = await fetch(
-    `${API_BASE}/api/activity/list?bu=${DEFAULT_BU}&limit=50&offset=0&source=all`,
-    {
-      cache: "no-store",
-    },
-  );
-  if (!res.ok) {
+  try {
+    const { data, meta } = await apiJson<ActivityLog[]>(
+      `${API_BASE}/api/activity/list?bu=${DEFAULT_BU}&limit=50&offset=0&source=all`,
+      { cache: "no-store" },
+    );
+    return {
+      items: data ?? [],
+      total: meta?.total ?? 0,
+      limit: meta?.limit ?? 50,
+      offset: meta?.offset ?? 0,
+    };
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return { items: [], total: 0, limit: 50, offset: 0 };
+    }
     return { items: [], total: 0, limit: 50, offset: 0 };
   }
-  const data: ActivityResponse = await res.json();
-  return data;
 }
 
 export default async function AdminActivityPage() {
