@@ -1,2 +1,5 @@
+# Tests run with `bun test --isolate` (see package.json scripts): mock.module is
+# process-global, so without per-file isolation mocks leak across files (6 failures).
+# `isolate = true` here is NOT honored by Bun 1.3.14, so the flag lives in the script.
 [test]
 preload = ["./src/test/setup.ts"]
