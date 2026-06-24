@@ -8,7 +8,7 @@ RUN bun install --frozen-lockfile
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 ARG DOCKER_BUILD=1
-ARG NEXT_PUBLIC_API_BASE=https://knowledge-base-carmen-backend.onrender.com
+ARG NEXT_PUBLIC_API_BASE=https://carmen-backend-4o9h.onrender.com
 ENV DOCKER_BUILD=$DOCKER_BUILD
 ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
 ENV NEXT_TELEMETRY_DISABLED=1
