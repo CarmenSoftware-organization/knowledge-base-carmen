@@ -984,7 +984,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "New Carmen Backend API",
+	Title:            "Knowledge base carmen API",
 	Description:      "REST API for wiki, FAQ, native RAG chat, indexing, activity, and GitHub webhooks. Most routes accept optional `bu` query or `X-BU-Slug` header (default from server config).",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

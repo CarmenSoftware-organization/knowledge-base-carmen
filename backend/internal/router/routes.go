@@ -23,6 +23,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Use(middleware.CORS())
 	app.Use(middleware.BUContext())
 
+	RegisterRoot(app)
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	RegisterHealth(app)

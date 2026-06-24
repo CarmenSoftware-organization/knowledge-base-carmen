@@ -1,4 +1,4 @@
-// @title       New Carmen Backend API
+// @title       Knowledge base carmen API
 // @version     1.0
 // @description REST API for wiki, FAQ, native RAG chat, indexing, activity, and GitHub webhooks. Most routes accept optional `bu` query or `X-BU-Slug` header (default from server config).
 // @BasePath    /
