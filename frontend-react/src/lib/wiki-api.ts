@@ -1,5 +1,6 @@
 import Fuse from "fuse.js";
 import { API_BASE, DEFAULT_BU } from "./config";
+import { fetchWithTimeout } from "./fetch-utils";
 
 /* =========================
    Types
@@ -29,7 +30,7 @@ export type BusinessUnit = {
  ========================= */
 
 export async function getBusinessUnits(): Promise<{ items: BusinessUnit[] }> {
-  const res = await fetch(`${API_BASE}/api/business-units`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/business-units`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch business units");
