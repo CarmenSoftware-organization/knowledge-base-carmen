@@ -60,6 +60,15 @@ func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error)
 		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("retrieval failed: %w", err)
 	}
 
+	// Zero-results guard — mirror the streaming flow (chat_stream_flow.go): when
+	// retrieval finds no chunks, answer with the "no info" message instead of
+	// calling the LLM with empty context (which hallucinates).
+	if len(chunks) == 0 {
+		resp := askNoInfoResponse(question)
+		h.saveHistoryIfEnabled(chatCfg.HistoryEnabled, bu, rawUserID, question, resp.Answer, resp.Sources, emb)
+		return resp, fiber.StatusOK, nil
+	}
+
 	context, sources := buildContextFromChunks(chunks, chatCfg.MaxContextChars, chatCfg.MaxChunkContent)
 	answer, err := h.llm.GenerateAnswer(context, question)
 	if err != nil {
@@ -202,6 +211,22 @@ func (h *ChatHandler) buildRoutedContext(bu string, candidates []models.RouteCan
 		})
 	}
 	return strings.TrimSpace(b.String()), sources
+}
+
+// askNoInfoResponse mirrors the streaming flow's zero-results guard
+// (noInfoApology): when retrieval finds no chunks, return a language-appropriate
+// "no information found" message with empty sources so the LLM never answers
+// from an empty context (which hallucinates). Thai is the default; English
+// questions get the English message.
+func askNoInfoResponse(question string) models.ChatAskResponse {
+	lang := ""
+	if !utils.IsThai(question) {
+		lang = "en"
+	}
+	return models.ChatAskResponse{
+		Answer:  noInfoApology(lang),
+		Sources: []models.ChatSource{},
+	}
 }
 
 func buildContextFromChunks(chunks []services.RetrievedChunk, maxContextChars, maxChunkContent int) (string, []models.ChatSource) {
