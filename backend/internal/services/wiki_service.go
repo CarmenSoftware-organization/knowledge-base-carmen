@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/nlp"
@@ -21,6 +20,7 @@ import (
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/github"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
+	"github.com/google/uuid"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -91,6 +91,7 @@ type WikiService struct {
 	embedLLM     *openrouter.Client
 }
 
+// NewWikiService constructs a WikiService with GitHub and embedding clients.
 func NewWikiService() *WikiService {
 	return &WikiService{
 		githubClient: github.NewClient(),
@@ -163,6 +164,7 @@ func parseFrontmatter(data []byte) (meta map[string]string, body []byte) {
 	return meta, body
 }
 
+// parseWeight reads the sidebar "weight" from frontmatter meta or the raw body, defaulting to 999.
 func parseWeight(meta map[string]string, data []byte) int {
 	if wStr := meta["weight"]; wStr != "" {
 		if w, err := strconv.Atoi(wStr); err == nil {
@@ -182,6 +184,7 @@ func parseWeight(meta map[string]string, data []byte) int {
 	return 999
 }
 
+// stripWeightLines removes any "weight:" lines from the body content.
 func stripWeightLines(body []byte) string {
 	var lines []string
 	sc := bufio.NewScanner(bytes.NewReader(body))
@@ -194,12 +197,14 @@ func stripWeightLines(body []byte) string {
 	return strings.Join(lines, "\n")
 }
 
+// slugToTitle derives a human title from a filename by dropping the extension and replacing dashes/underscores with spaces.
 func slugToTitle(name string) string {
 	title := strings.TrimSuffix(name, filepath.Ext(name))
 	title = strings.ReplaceAll(title, "-", " ")
 	return strings.ReplaceAll(title, "_", " ")
 }
 
+// metaToTags splits the comma-separated frontmatter "tags" value into a trimmed slice.
 func metaToTags(meta map[string]string) []string {
 	s := meta["tags"]
 	if s == "" {
@@ -214,11 +219,13 @@ func metaToTags(meta map[string]string) []string {
 	return out
 }
 
+// metaBool reports whether the frontmatter value at key is "true" or "1".
 func metaBool(meta map[string]string, key string) bool {
 	v := strings.ToLower(strings.TrimSpace(meta[key]))
 	return v == "true" || v == "1"
 }
 
+// applyMeta populates a WikiContent's fields from parsed frontmatter meta and body.
 func applyMeta(out *WikiContent, meta map[string]string, body []byte) {
 	if t := meta["title"]; t != "" {
 		out.Title = t
@@ -237,10 +244,12 @@ func applyMeta(out *WikiContent, meta map[string]string, body []byte) {
 	out.Content = stripWeightLines(body)
 }
 
+// ListMarkdown returns all markdown entries for a BU read from local content.
 func (s *WikiService) ListMarkdown(bu string) ([]WikiEntry, error) {
 	return s.listFromLocal(bu)
 }
 
+// ListCategories returns the top-level categories for a BU, ordered by weight then title.
 func (s *WikiService) ListCategories(bu string) ([]CategoryEntry, error) {
 	entries, err := s.ListMarkdown(bu)
 	if err != nil {
@@ -284,6 +293,7 @@ func (s *WikiService) ListCategories(bu string) ([]CategoryEntry, error) {
 	return out, nil
 }
 
+// ListByCategory returns the articles under a category slug for a BU, sorted by weight then path.
 func (s *WikiService) ListByCategory(bu, slug string) (string, []CategoryItem, error) {
 	entries, err := s.ListMarkdown(bu)
 	if err != nil {
@@ -427,6 +437,7 @@ func (s *WikiService) GetContent(bu, relPath string) (*WikiContent, error) {
 	return s.getContentFromGitHub(gitPath)
 }
 
+// removeDots strips a period that immediately follows a Unicode letter.
 func removeDots(s string) string {
 	re := regexp.MustCompile(`(\p{L})\.`)
 	return re.ReplaceAllString(s, "$1")
@@ -576,6 +587,7 @@ func (s *WikiService) SearchByKeyword(bu, query string) ([]SearchResult, error) 
 	return results, nil
 }
 
+// smartTrim truncates s to max runes, snapping back to the last word boundary and appending an ellipsis.
 func smartTrim(s string, max int) string {
 	runes := []rune(s)
 	if len(runes) <= max {
@@ -592,6 +604,7 @@ func smartTrim(s string, max int) string {
 
 const maxFrontmatterRead = 16384
 
+// listFromLocal walks a BU's content directory, parsing frontmatter into sorted WikiEntry values.
 func (s *WikiService) listFromLocal(bu string) ([]WikiEntry, error) {
 	root := s.getRepoPath(bu)
 	if !filepath.IsAbs(root) {
@@ -724,12 +737,14 @@ func resolveExistingFileUnderWikiRoot(root, rel string, mdOnly bool) (abs string
 	return "", "", os.ErrNotExist
 }
 
+// GetLocalAssetPath resolves the absolute filesystem path of a BU asset under the wiki root.
 func (s *WikiService) GetLocalAssetPath(bu, relPath string) (string, error) {
 	root := filepath.Clean(s.getRepoPath(bu))
 	abs, _, err := resolveExistingFileUnderWikiRoot(root, relPath, false)
 	return abs, err
 }
 
+// getContentFromLocal reads and parses a markdown file for a BU from the local wiki root.
 func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, error) {
 	root := filepath.Clean(s.getRepoPath(bu))
 	abs, matchedRelSlash, err := resolveExistingFileUnderWikiRoot(root, relPath, true)
@@ -752,6 +767,7 @@ func (s *WikiService) getContentFromLocal(bu, relPath string) (*WikiContent, err
 	return out, nil
 }
 
+// getContentFromGitHub fetches and parses a markdown file from GitHub as a fallback source.
 func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error) {
 	fc, err := s.githubClient.GetFileContent(relPath)
 	if err != nil {

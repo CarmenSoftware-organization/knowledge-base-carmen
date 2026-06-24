@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+	"github.com/gofiber/fiber/v2"
 )
 
 // GitHubWebhookHandler handles incoming GitHub push webhook events.
@@ -42,6 +42,7 @@ type gitHubPushPayload struct {
 	} `json:"commits"`
 }
 
+// NewGitHubWebhookHandler constructs a GitHubWebhookHandler with sync, indexing, and activity-log services.
 func NewGitHubWebhookHandler() *GitHubWebhookHandler {
 	return &GitHubWebhookHandler{
 		syncService:     services.NewWikiSyncService(),
@@ -50,6 +51,8 @@ func NewGitHubWebhookHandler() *GitHubWebhookHandler {
 	}
 }
 
+// HandlePush verifies the webhook signature, syncs wiki content, logs commit changes,
+// and triggers background reindexing of all BUs. POST GitHub push events.
 func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 	if c.Get("X-GitHub-Event") != "push" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unsupported event"})

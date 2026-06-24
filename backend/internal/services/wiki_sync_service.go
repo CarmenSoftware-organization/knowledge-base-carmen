@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
+	"github.com/google/uuid"
 )
 
 type WikiSyncService struct {
@@ -24,6 +24,7 @@ type WikiSyncService struct {
 	logService *ActivityLogService
 }
 
+// NewWikiSyncService builds a sync service, resolving repo path, URL, and branch from config.
 func NewWikiSyncService() *WikiSyncService {
 	cfg := config.AppConfig
 	repoPath := filepath.Clean(cfg.Git.RepoPath)
@@ -77,6 +78,7 @@ func (s *WikiSyncService) Sync() error {
 	return nil
 }
 
+// clone performs a shallow git clone of the configured repo and logs the activity.
 func (s *WikiSyncService) clone() error {
 	if s.repoURL == "" {
 		return fmt.Errorf("GIT_REPO_URL or GitHub Owner/Repo not configured")
@@ -92,6 +94,7 @@ func (s *WikiSyncService) clone() error {
 	return nil
 }
 
+// pull runs git pull on the existing repo and logs the activity.
 func (s *WikiSyncService) pull() error {
 	cmd := exec.Command("git", "pull", "origin", s.branch)
 	cmd.Dir = s.repoPath
@@ -187,6 +190,7 @@ func (s *WikiSyncService) BuildAuditReport() (*SyncAuditReport, error) {
 	return report, nil
 }
 
+// discoverBUs returns sorted BU slugs from valid subdirectories under contents/.
 func (s *WikiSyncService) discoverBUs() ([]string, error) {
 	candidates := make(map[string]struct{})
 	repo := filepath.Clean(s.repoPath)
@@ -218,6 +222,7 @@ func (s *WikiSyncService) discoverBUs() ([]string, error) {
 	return out, nil
 }
 
+// listMarkdownRelativePaths walks root and returns sorted slash-separated paths of all .md files.
 func listMarkdownRelativePaths(root string) ([]string, error) {
 	root = filepath.Clean(root)
 	st, err := os.Stat(root)
@@ -250,6 +255,7 @@ func listMarkdownRelativePaths(root string) ([]string, error) {
 	return out, nil
 }
 
+// listIndexedDocumentPaths returns the wiki document paths indexed for a BU and whether the BU resolves.
 func listIndexedDocumentPaths(bu string) ([]string, bool, error) {
 	buID, err := database.BUIDForSlug(bu)
 	if err != nil {
@@ -266,6 +272,7 @@ func listIndexedDocumentPaths(bu string) ([]string, bool, error) {
 	return out, true, nil
 }
 
+// diffStringSets returns source paths missing from indexed and indexed paths not in source.
 func diffStringSets(source []string, indexed []string) (missing []string, extra []string) {
 	sourceSet := make(map[string]struct{}, len(source))
 	indexedSet := make(map[string]struct{}, len(indexed))

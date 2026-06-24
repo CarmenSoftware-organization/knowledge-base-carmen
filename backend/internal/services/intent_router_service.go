@@ -19,7 +19,7 @@ type IntentResult struct {
 	CannedResponse  string
 	LLMInputTokens  int
 	LLMOutputTokens int
-	EmbedTokens     int    // prompt-token count from the intent embedding call
+	EmbedTokens     int // prompt-token count from the intent embedding call
 	Source          string
 }
 
@@ -42,6 +42,8 @@ var intentKeywords = []string{
 
 var intentSplit = regexp.MustCompile(`[\s.,!?-]+`)
 
+// defaultIntentTuning returns the built-in intent tuning thresholds used when
+// tuning.yaml cannot be loaded.
 func defaultIntentTuning() chatconfig.IntentTuning {
 	return chatconfig.IntentTuning{
 		DefaultThreshold: 0.90, SoftZoneMin: 0.75, SoftZoneVotes: 2,

@@ -3,19 +3,21 @@ package api
 import (
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
+	"github.com/gofiber/fiber/v2"
 )
 
 type BusinessUnitHandler struct{}
 
+// NewBusinessUnitHandler constructs a BusinessUnitHandler.
 func NewBusinessUnitHandler() *BusinessUnitHandler {
 	return &BusinessUnitHandler{}
 }
 
+// List returns all business unit rows from public.business_units.
 func (h *BusinessUnitHandler) List(c *fiber.Ctx) error {
 	var bus []models.BusinessUnit
 	if err := database.DB.Table("public.business_units").Find(&bus).Error; err != nil {

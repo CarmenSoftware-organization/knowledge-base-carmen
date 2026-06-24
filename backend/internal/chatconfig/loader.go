@@ -62,6 +62,7 @@ type Prompts struct {
 // DefaultDir is the config directory relative to the backend working directory.
 func DefaultDir() string { return "config" }
 
+// readYAML reads dir/name and unmarshals its YAML contents into out.
 func readYAML(dir, name string, out any) error {
 	path := filepath.Join(dir, name)
 	data, err := os.ReadFile(path)
@@ -74,6 +75,7 @@ func readYAML(dir, name string, out any) error {
 	return nil
 }
 
+// LoadTuning loads tuning.yaml from dir into a Tuning struct.
 func LoadTuning(dir string) (*Tuning, error) {
 	var t Tuning
 	if err := readYAML(dir, "tuning.yaml", &t); err != nil {
@@ -82,6 +84,7 @@ func LoadTuning(dir string) (*Tuning, error) {
 	return &t, nil
 }
 
+// LoadIntents loads intents.yaml from dir into a map of intent name to Intent.
 func LoadIntents(dir string) (map[string]Intent, error) {
 	out := map[string]Intent{}
 	if err := readYAML(dir, "intents.yaml", &out); err != nil {
@@ -90,6 +93,7 @@ func LoadIntents(dir string) (map[string]Intent, error) {
 	return out, nil
 }
 
+// LoadPathRules loads path_rules.yaml from dir into a slice of PathRule.
 func LoadPathRules(dir string) ([]PathRule, error) {
 	var rules []PathRule
 	if err := readYAML(dir, "path_rules.yaml", &rules); err != nil {
@@ -98,6 +102,7 @@ func LoadPathRules(dir string) ([]PathRule, error) {
 	return rules, nil
 }
 
+// LoadPrompts loads prompts.yaml from dir into a Prompts struct.
 func LoadPrompts(dir string) (*Prompts, error) {
 	var p Prompts
 	if err := readYAML(dir, "prompts.yaml", &p); err != nil {

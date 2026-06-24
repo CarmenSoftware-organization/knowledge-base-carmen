@@ -29,6 +29,7 @@ func NewWikiTranslationCache() *WikiTranslationCache {
 	}
 }
 
+// cacheKey builds the composite cache key "bu|||path|||targetLang".
 func cacheKey(bu, path, targetLang string) string {
 	return bu + cacheKeySep + path + cacheKeySep + targetLang
 }

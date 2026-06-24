@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -121,11 +121,19 @@ const (
 	defaultTranslateURL  = "https://translation.googleapis.com/language/translate/v2"
 )
 
+// DefaultRepoPath returns the default wiki-content repo path.
 func DefaultRepoPath() string { return defaultRepoPath }
 
-func DefaultGitSyncBranch() string         { return defaultGitSyncBranch }
-func DefaultGitHubRepoBaseURL() string     { return defaultGitHubRepoURL }
-func DefaultGitHubAPIBaseURL() string      { return defaultGitHubAPIURL }
+// DefaultGitSyncBranch returns the default branch used for git sync.
+func DefaultGitSyncBranch() string { return defaultGitSyncBranch }
+
+// DefaultGitHubRepoBaseURL returns the default GitHub repo base URL.
+func DefaultGitHubRepoBaseURL() string { return defaultGitHubRepoURL }
+
+// DefaultGitHubAPIBaseURL returns the default GitHub API base URL.
+func DefaultGitHubAPIBaseURL() string { return defaultGitHubAPIURL }
+
+// DefaultTranslationAPIBaseURL returns the default Google Translate API base URL.
 func DefaultTranslationAPIBaseURL() string { return defaultTranslateURL }
 
 // findDirContaining walks from startDir upward for a file named name (e.g. go.mod).
@@ -144,7 +152,8 @@ func findDirContaining(startDir, name string) string {
 	return ""
 }
 
-
+// DiscoverCarmenWikiRoot walks up from the cwd and the executable dir looking
+// for a carmen_cloud (or contents/carmen_cloud) directory, returning its abs path.
 func DiscoverCarmenWikiRoot() string {
 	try := func(start string) string {
 		dir := start
@@ -183,7 +192,8 @@ func DiscoverCarmenWikiRoot() string {
 	return ""
 }
 
-
+// discoverBackendDotEnvPaths returns deduplicated, existing .env file paths to
+// load, searched relative to the cwd, go.mod dir, and the executable dir.
 func discoverBackendDotEnvPaths() []string {
 	seen := make(map[string]struct{})
 	var out []string
@@ -229,6 +239,8 @@ func discoverBackendDotEnvPaths() []string {
 	return out
 }
 
+// loadDotEnv overloads env vars from the discovered .env files, then from the
+// BACKEND_DOTENV path last so it wins over the others.
 func loadDotEnv() {
 	// Overload so file wins over pre-set OS/IDE env (e.g. DB_* on Windows).
 	for _, p := range discoverBackendDotEnvPaths() {
@@ -243,6 +255,8 @@ func loadDotEnv() {
 	}
 }
 
+// Load reads .env files and environment variables into the global AppConfig,
+// applying production-aware defaults and enforcing STRICT_ENV_ONLY when set.
 func Load() error {
 	loadDotEnv()
 	strictEnvOnly := getEnvAsBool("STRICT_ENV_ONLY", false)
@@ -295,14 +309,14 @@ func Load() error {
 			WebhookBranch: getEnv("GITHUB_WEBHOOK_BRANCH", getEnv("GITHUB_BRANCH", "main")),
 		},
 		Git: GitConfig{
-			RepoPath:          getEnv("GIT_REPO_PATH", defaultRepoPath),
-			RepoURL:           getEnv("GIT_REPO_URL", ""),
+			RepoPath: getEnv("GIT_REPO_PATH", defaultRepoPath),
+			RepoURL:  getEnv("GIT_REPO_URL", ""),
 			// Deprecated: keep for backward compatibility, but runtime path now uses GIT_REPO_PATH/<bu>.
-			ContentPath:       getEnv("WIKI_CONTENT_PATH", ""),
-			ChunkSize:         getEnvAsInt("WIKI_CHUNK_SIZE", 500),
-			ChunkOverlap:      getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
-			SyncBranch:        getEnv("GIT_SYNC_BRANCH", getEnv("GITHUB_BRANCH", defaultGitSyncBranch)),
-			DefaultBU:         getEnv("WIKI_DEFAULT_BU", defaultBU),
+			ContentPath:  getEnv("WIKI_CONTENT_PATH", ""),
+			ChunkSize:    getEnvAsInt("WIKI_CHUNK_SIZE", 500),
+			ChunkOverlap: getEnvAsInt("WIKI_CHUNK_OVERLAP", 100),
+			SyncBranch:   getEnv("GIT_SYNC_BRANCH", getEnv("GITHUB_BRANCH", defaultGitSyncBranch)),
+			DefaultBU:    getEnv("WIKI_DEFAULT_BU", defaultBU),
 			// Deprecated: legacy carmen-only path overrides.
 			CarmenContentDirs: getEnvAsStringSlice("WIKI_CARMEN_PATHS", defaultCarmenPaths),
 			CarmenGitPath:     getEnv("WIKI_CARMEN_GIT_PATH", defaultCarmenGitPath),
@@ -344,6 +358,8 @@ func Load() error {
 	return nil
 }
 
+// ensureStrictEnv returns an error listing any required env keys that are unset
+// when STRICT_ENV_ONLY is enabled.
 func ensureStrictEnv() error {
 	required := []string{
 		"ENVIRONMENT",
@@ -412,6 +428,8 @@ func ensureStrictEnv() error {
 	return nil
 }
 
+// Validate checks that required secrets and settings are present, enforcing
+// stricter requirements when the environment is production.
 func Validate() error {
 	if AppConfig == nil {
 		return fmt.Errorf("config not loaded")
@@ -440,6 +458,8 @@ func Validate() error {
 	return nil
 }
 
+// GetWikiContentPath returns the normalized wiki content path, preferring the
+// configured ContentPath, then RepoPath.
 func GetWikiContentPath() string {
 	c := AppConfig.Git
 	var basePath string
@@ -454,6 +474,8 @@ func GetWikiContentPath() string {
 	return NormalizePath(basePath)
 }
 
+// NormalizePath cleans the given path, returning the default repo path when
+// empty and prefixing relative paths with "./".
 func NormalizePath(path string) string {
 	if path == "" {
 		return defaultRepoPath
@@ -468,6 +490,7 @@ func NormalizePath(path string) string {
 	return clean
 }
 
+// listenPort returns the server listen port, preferring PORT then SERVER_PORT.
 func listenPort() string {
 	if p := strings.TrimSpace(os.Getenv("PORT")); p != "" {
 		return p
@@ -475,6 +498,7 @@ func listenPort() string {
 	return getEnv("SERVER_PORT", "8080")
 }
 
+// getEnv returns the env var for key, or defaultValue if unset or empty.
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
@@ -482,6 +506,7 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
+// getEnvFirst returns the first non-empty env var among keys, or defaultValue.
 func getEnvFirst(keys []string, defaultValue string) string {
 	for _, k := range keys {
 		if v := os.Getenv(k); v != "" {
@@ -491,6 +516,7 @@ func getEnvFirst(keys []string, defaultValue string) string {
 	return defaultValue
 }
 
+// getEnvAsInt returns the env var for key parsed as an int, or defaultValue.
 func getEnvAsInt(key string, defaultValue int) int {
 	if value, err := strconv.Atoi(getEnv(key, "")); err == nil {
 		return value
@@ -498,6 +524,7 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
+// getEnvAsBool returns the env var for key parsed as a bool, or defaultValue.
 func getEnvAsBool(key string, defaultValue bool) bool {
 	if value, err := strconv.ParseBool(getEnv(key, "")); err == nil {
 		return value
@@ -505,6 +532,7 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 	return defaultValue
 }
 
+// getEnvAsFloat returns the env var for key parsed as a float64, or defaultValue.
 func getEnvAsFloat(key string, defaultValue float64) float64 {
 	if value, err := strconv.ParseFloat(getEnv(key, ""), 64); err == nil {
 		return value
@@ -512,6 +540,8 @@ func getEnvAsFloat(key string, defaultValue float64) float64 {
 	return defaultValue
 }
 
+// getEnvAsStringSlice splits the env var for key (or defaultCSV) on commas,
+// trimming whitespace and dropping empty entries.
 func getEnvAsStringSlice(key, defaultCSV string) []string {
 	val := getEnv(key, defaultCSV)
 	if val == "" {

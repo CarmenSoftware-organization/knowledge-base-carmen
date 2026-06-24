@@ -3,6 +3,7 @@ package apidoc
 // This package holds Swagger / OpenAPI route comments only (exported no-op functions).
 // Regenerate docs: go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/server/main.go -o docs -d ./cmd/server,./internal/apidoc,./internal/models
 
+// OpHealth documents the GET /health liveness probe.
 // @Summary Health check
 // @Description Liveness probe
 // @Tags system
@@ -11,6 +12,7 @@ package apidoc
 // @Router /health [get]
 func OpHealth() {}
 
+// OpSystemStatus documents the GET /api/system/status endpoint.
 // @Summary System status
 // @Tags system
 // @Produce json
@@ -18,6 +20,7 @@ func OpHealth() {}
 // @Router /api/system/status [get]
 func OpSystemStatus() {}
 
+// OpBusinessUnits documents the GET /api/business-units list endpoint.
 // @Summary List business units
 // @Tags wiki
 // @Produce json
@@ -26,6 +29,7 @@ func OpSystemStatus() {}
 // @Router /api/business-units [get]
 func OpBusinessUnits() {}
 
+// OpWikiList documents the GET /api/wiki/list articles endpoint.
 // @Summary List wiki articles
 // @Tags wiki
 // @Produce json
@@ -34,6 +38,7 @@ func OpBusinessUnits() {}
 // @Router /api/wiki/list [get]
 func OpWikiList() {}
 
+// OpWikiCategories documents the GET /api/wiki/categories endpoint.
 // @Summary List wiki categories
 // @Tags wiki
 // @Produce json
@@ -42,6 +47,7 @@ func OpWikiList() {}
 // @Router /api/wiki/categories [get]
 func OpWikiCategories() {}
 
+// OpWikiCategory documents the GET /api/wiki/category/{slug} detail endpoint.
 // @Summary Wiki category detail
 // @Tags wiki
 // @Produce json
@@ -51,6 +57,7 @@ func OpWikiCategories() {}
 // @Router /api/wiki/category/{slug} [get]
 func OpWikiCategory() {}
 
+// OpWikiContent documents the GET /api/wiki/content/{path} markdown endpoint.
 // @Summary Wiki markdown content
 // @Tags wiki
 // @Produce plain
@@ -60,6 +67,7 @@ func OpWikiCategory() {}
 // @Router /api/wiki/content/{path} [get]
 func OpWikiContent() {}
 
+// OpWikiSearch documents the GET /api/wiki/search full-text/vector search endpoint.
 // @Summary Full-text / vector wiki search
 // @Tags wiki
 // @Produce json
@@ -69,6 +77,7 @@ func OpWikiContent() {}
 // @Router /api/wiki/search [get]
 func OpWikiSearch() {}
 
+// OpWikiSync documents the admin POST /api/wiki/sync Git-sync endpoint.
 // @Summary Sync wiki from Git (admin)
 // @Tags wiki
 // @Security AdminKey
@@ -80,6 +89,7 @@ func OpWikiSearch() {}
 // @Router /api/wiki/sync [post]
 func OpWikiSync() {}
 
+// OpWikiAssets documents the GET /wiki-assets/{path} static asset endpoint.
 // @Summary Static wiki asset
 // @Tags wiki
 // @Produce octet-stream
@@ -89,6 +99,7 @@ func OpWikiSync() {}
 // @Router /wiki-assets/{path} [get]
 func OpWikiAssets() {}
 
+// OpWebhookGitHub documents the POST /webhook/github push webhook endpoint.
 // @Summary GitHub push webhook
 // @Tags webhooks
 // @Accept json
@@ -98,6 +109,7 @@ func OpWikiAssets() {}
 // @Router /webhook/github [post]
 func OpWebhookGitHub() {}
 
+// OpIndexRebuild documents the admin POST /api/index/rebuild endpoint.
 // @Summary Rebuild search index (admin)
 // @Tags indexing
 // @Security AdminKey
@@ -109,6 +121,7 @@ func OpWebhookGitHub() {}
 // @Router /api/index/rebuild [post]
 func OpIndexRebuild() {}
 
+// OpDocumentsList documents the GET /api/documents indexed-documents endpoint.
 // @Summary List indexed documents
 // @Tags documents
 // @Produce json
@@ -117,6 +130,7 @@ func OpIndexRebuild() {}
 // @Router /api/documents [get]
 func OpDocumentsList() {}
 
+// OpChatAsk documents the POST /api/chat/ask knowledge-base chat endpoint.
 // @Summary Ask the knowledge-base chat (Go path)
 // @Tags chat
 // @Accept json
@@ -128,6 +142,7 @@ func OpDocumentsList() {}
 // @Router /api/chat/ask [post]
 func OpChatAsk() {}
 
+// OpChatRecordHistory documents the internal POST /api/chat/record-history endpoint.
 // @Summary Record chat turn (internal)
 // @Tags chat
 // @Security InternalKey
@@ -139,6 +154,7 @@ func OpChatAsk() {}
 // @Router /api/chat/record-history [post]
 func OpChatRecordHistory() {}
 
+// OpChatHistoryList documents the admin GET /api/chat/history/list endpoint.
 // @Summary List chat history (admin)
 // @Tags chat
 // @Security AdminKey
@@ -150,6 +166,7 @@ func OpChatRecordHistory() {}
 // @Router /api/chat/history/list [get]
 func OpChatHistoryList() {}
 
+// OpChatRouteTest documents the admin POST /api/chat/route-test debug endpoint.
 // @Summary Route-only debug (admin)
 // @Tags chat
 // @Security AdminKey
@@ -161,21 +178,25 @@ func OpChatHistoryList() {}
 // @Router /api/chat/route-test [post]
 func OpChatRouteTest() {}
 
+// OpChatClear documents the DELETE /api/chat/clear/{room_id} no-op ack endpoint.
 // @Summary Clear room history (no-op ack; history is frontend-owned)
 // @Tags chat
 // @Router /api/chat/clear/{room_id} [delete]
 func OpChatClear() {}
 
+// OpChatStream documents the POST /api/chat/stream native NDJSON RAG endpoint.
 // @Summary Stream chat (native NDJSON RAG)
 // @Tags chat
 // @Router /api/chat/stream [post]
 func OpChatStream() {}
 
+// OpChatFeedback documents the POST /api/chat/feedback/{message_id} thumbs endpoint.
 // @Summary Message feedback (thumbs up/down)
 // @Tags chat
 // @Router /api/chat/feedback/{message_id} [post]
 func OpChatFeedback() {}
 
+// OpChatImage documents the GET /images/{path} chat/wiki image endpoint.
 // @Summary Chat / wiki image
 // @Tags chat
 // @Produce octet-stream
@@ -184,6 +205,7 @@ func OpChatFeedback() {}
 // @Router /images/{path} [get]
 func OpChatImage() {}
 
+// OpFAQModules documents the GET /api/faq/modules list endpoint.
 // @Summary FAQ module list
 // @Tags faq
 // @Produce json
@@ -191,6 +213,7 @@ func OpChatImage() {}
 // @Router /api/faq/modules [get]
 func OpFAQModules() {}
 
+// OpFAQEntry documents the GET /api/faq/entry/{id} single-entry endpoint.
 // @Summary FAQ entry by id
 // @Tags faq
 // @Produce json
@@ -199,6 +222,7 @@ func OpFAQModules() {}
 // @Router /api/faq/entry/{id} [get]
 func OpFAQEntry() {}
 
+// OpFAQModule documents the GET /api/faq/{module} detail endpoint.
 // @Summary FAQ module detail
 // @Tags faq
 // @Produce json
@@ -207,6 +231,7 @@ func OpFAQEntry() {}
 // @Router /api/faq/{module} [get]
 func OpFAQModule() {}
 
+// OpFAQCategory documents the GET /api/faq/{module}/{sub}/{category} listing endpoint.
 // @Summary FAQ by category
 // @Tags faq
 // @Produce json
@@ -217,6 +242,7 @@ func OpFAQModule() {}
 // @Router /api/faq/{module}/{sub}/{category} [get]
 func OpFAQCategory() {}
 
+// OpActivityList documents the GET /api/activity/list log endpoint.
 // @Summary Activity log list
 // @Tags activity
 // @Produce json
@@ -225,6 +251,7 @@ func OpFAQCategory() {}
 // @Router /api/activity/list [get]
 func OpActivityList() {}
 
+// OpActivitySummary documents the GET /api/activity/summary endpoint.
 // @Summary Activity summary
 // @Tags activity
 // @Produce json

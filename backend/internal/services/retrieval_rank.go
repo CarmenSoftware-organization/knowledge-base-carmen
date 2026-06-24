@@ -25,6 +25,7 @@ type RetrievedChunk struct {
 	Dist    float64
 }
 
+// contentKey returns the hex SHA-256 of content, used to dedupe chunks across rank lists.
 func contentKey(content string) string {
 	sum := sha256.Sum256([]byte(content))
 	return hex.EncodeToString(sum[:])

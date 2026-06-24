@@ -57,6 +57,8 @@ type chatCompletionsResponse struct {
 	} `json:"choices"`
 }
 
+// NewClient builds a Client from config.AppConfig.LLM, defaulting the HTTP
+// timeout to 60s when TimeoutSec is unset.
 func NewClient() *Client {
 	cfg := config.AppConfig.LLM
 	timeout := time.Duration(cfg.TimeoutSec) * time.Second
@@ -74,6 +76,8 @@ func NewClient() *Client {
 	}
 }
 
+// GenerateAnswer asks the ChatModel a Thai-prompted question grounded in the
+// given context and returns the trimmed answer (non-streaming).
 func (c *Client) GenerateAnswer(context string, question string) (string, error) {
 	prompt := fmt.Sprintf(
 		`คุณเป็นผู้ช่วยตอบคำถามจากคู่มือ Carmen Cloud
@@ -289,6 +293,7 @@ func (c *Client) EmbeddingWithTokens(text string) ([]float32, int, error) {
 	return res.Data[0].Embedding, res.Usage.PromptTokens, nil
 }
 
+// Embedding returns the embedding vector for text, discarding the token count.
 func (c *Client) Embedding(text string) ([]float32, error) {
 	v, _, err := c.EmbeddingWithTokens(text)
 	return v, err

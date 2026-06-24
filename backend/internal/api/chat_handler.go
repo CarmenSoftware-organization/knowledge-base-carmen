@@ -5,14 +5,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type ChatHandler struct {
@@ -29,6 +29,8 @@ type ChatHandler struct {
 	streamPrompts  chatconfig.Prompts
 }
 
+// NewChatHandler constructs a ChatHandler with all RAG services wired up and
+// preloads the streaming prompt templates (degrading to empty on load failure).
 func NewChatHandler() *ChatHandler {
 	h := &ChatHandler{
 		llm:            openrouter.NewClient(),
@@ -85,6 +87,8 @@ func (h *ChatHandler) Stream(c *fiber.Ctx) error {
 	return nil
 }
 
+// Image serves a wiki asset file for the given BU from local content, returning
+// 404 when the path is missing or not a regular file.
 func (h *ChatHandler) Image(c *fiber.Ctx) error {
 	bu := strings.TrimSpace(c.Query("bu"))
 	if bu == "" {
@@ -106,6 +110,8 @@ func (h *ChatHandler) Image(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNotFound)
 }
 
+// Ask handles POST /api/chat/ask — runs askFlow and returns the JSON answer, or an
+// error response with empty answer/sources on failure.
 func (h *ChatHandler) Ask(c *fiber.Ctx) error {
 	resp, status, err := h.askFlow(c)
 	if err != nil {

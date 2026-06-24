@@ -3,14 +3,15 @@ package api
 import (
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+	"github.com/gofiber/fiber/v2"
 )
 
 type ActivityHandler struct {
 	service *services.ActivityLogService
 }
 
+// NewActivityHandler constructs an ActivityHandler backed by a new ActivityLogService.
 func NewActivityHandler() *ActivityHandler {
 	return &ActivityHandler{
 		service: services.NewActivityLogService(),

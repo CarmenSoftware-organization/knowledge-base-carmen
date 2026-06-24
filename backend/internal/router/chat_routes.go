@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 )
 
 // parseRatePerMinute parses a "N/minute" string (slowapi format) into N.
@@ -22,6 +22,9 @@ func parseRatePerMinute(s string) int {
 	return 20
 }
 
+// RegisterPublicChat wires the /api/chat/* endpoints (ask, stream, history,
+// feedback, route/intent debug) plus /images/*, applying a per-IP rate limiter
+// and admin/internal key middleware where required.
 func RegisterPublicChat(app *fiber.App) {
 	chatHandler := api.NewChatHandler()
 

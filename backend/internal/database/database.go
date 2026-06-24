@@ -14,6 +14,7 @@ import (
 
 var DB *gorm.DB
 
+// Connect opens the global GORM DB handle from AppConfig and applies search_path.
 func Connect() error {
 	cfg := config.AppConfig.Database
 
@@ -51,6 +52,7 @@ func Connect() error {
 	return nil
 }
 
+// normalizeSearchPath validates and trims each schema in a CSV into a search_path string.
 func normalizeSearchPath(schemaCSV string) (string, error) {
 	parts := strings.Split(schemaCSV, ",")
 	out := make([]string, 0, len(parts))
@@ -70,6 +72,7 @@ func normalizeSearchPath(schemaCSV string) (string, error) {
 	return strings.Join(out, ","), nil
 }
 
+// Close closes the underlying sql.DB connection pool.
 func Close() error {
 	sqlDB, err := DB.DB()
 	if err != nil {
@@ -78,6 +81,7 @@ func Close() error {
 	return sqlDB.Close()
 }
 
+// Migrate runs GORM AutoMigrate for the given models.
 func Migrate(models ...interface{}) error {
 	if err := DB.AutoMigrate(models...); err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
@@ -85,6 +89,7 @@ func Migrate(models ...interface{}) error {
 	return nil
 }
 
+// RunSQLFile reads a .sql file, strips comments/blank lines, and executes each statement.
 func RunSQLFile(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -114,6 +119,7 @@ func RunSQLFile(path string) error {
 	return nil
 }
 
+// ClearPublicTables truncates every non-system table in the public schema.
 func ClearPublicTables() error {
 	sql := `DO $$
 DECLARE

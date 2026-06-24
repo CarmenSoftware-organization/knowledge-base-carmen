@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
+	"github.com/google/uuid"
 )
 
 // HashUserID returns a short HMAC-SHA256 token for userID so raw identifiers
@@ -33,6 +33,7 @@ func HashUserID(userID, secret string) string {
 
 type ChatHistoryService struct{}
 
+// NewChatHistoryService returns a new ChatHistoryService.
 func NewChatHistoryService() *ChatHistoryService {
 	return &ChatHistoryService{}
 }

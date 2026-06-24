@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+	"github.com/gofiber/fiber/v2"
 )
 
 type IndexingHandler struct {
@@ -20,6 +20,7 @@ type IndexingHandler struct {
 	startedAtByBU   map[string]time.Time
 }
 
+// NewIndexingHandler constructs an IndexingHandler with an in-memory per-BU running lock.
 func NewIndexingHandler() *IndexingHandler {
 	return &IndexingHandler{
 		indexingService: services.NewIndexingService(),
@@ -28,6 +29,7 @@ func NewIndexingHandler() *IndexingHandler {
 	}
 }
 
+// Rebuild starts a full background reindex for the BU, rejecting concurrent runs (auto-heals stale locks).
 func (h *IndexingHandler) Rebuild(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	timeout := time.Duration(config.AppConfig.Chat.IndexingTimeoutMin) * time.Minute
@@ -67,6 +69,7 @@ func (h *IndexingHandler) Rebuild(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"message": "reindex started (running in background)"})
 }
 
+// ForceUnlock clears the in-memory reindex lock for the BU and reports whether it was running.
 func (h *IndexingHandler) ForceUnlock(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	h.mu.Lock()
@@ -82,6 +85,7 @@ func (h *IndexingHandler) ForceUnlock(c *fiber.Ctx) error {
 	})
 }
 
+// Status reports whether a reindex is running for the BU, plus its start time and elapsed seconds.
 func (h *IndexingHandler) Status(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	h.mu.Lock()
@@ -102,6 +106,7 @@ func (h *IndexingHandler) Status(c *fiber.Ctx) error {
 	})
 }
 
+// RebuildOne synchronously reindexes a single file given by the ?path query param.
 func (h *IndexingHandler) RebuildOne(c *fiber.Ctx) error {
 	bu := middleware.GetBU(c)
 	path := strings.TrimSpace(c.Query("path"))

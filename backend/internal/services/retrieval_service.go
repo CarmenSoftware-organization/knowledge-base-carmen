@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/chatconfig"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
+	"github.com/google/uuid"
 )
 
 // RetrievalService holds tuning constants and path-boost rules loaded from
@@ -19,6 +19,7 @@ type RetrievalService struct {
 	rules  []chatconfig.PathRule
 }
 
+// defaultRetrievalTuning returns the hard-coded retrieval tuning used when YAML config fails to load.
 func defaultRetrievalTuning() chatconfig.RetrievalTuning {
 	return chatconfig.RetrievalTuning{TopK: 4, MaxDistance: 0.45, FetchK: 20, RRFK: 60, PathBoostRRF: 0.02}
 }
