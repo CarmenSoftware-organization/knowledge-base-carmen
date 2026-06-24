@@ -1,6 +1,6 @@
 import { useLoaderData } from "react-router-dom";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import matter from "gray-matter";
+import { parseFrontmatter } from "@/lib/frontmatter";
 import { KBHeader } from "@/components/kb/header";
 import { KBFooter } from "@/components/kb/footer";
 import { KBSidebar } from "@/components/kb/sidebar";
@@ -124,7 +124,7 @@ export async function articleLoader({
     }
   }
 
-  const { data: frontmatter, content } = matter(raw.content);
+  const { data: frontmatter, content } = parseFrontmatter(raw.content);
 
   const title =
     typeof frontmatter.title === "string" ? frontmatter.title : raw.title;

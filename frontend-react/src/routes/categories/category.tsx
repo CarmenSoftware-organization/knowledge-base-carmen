@@ -17,7 +17,8 @@ import { buildChangelogNavList } from "@/lib/changelog-utils";
 import { DEFAULT_BU } from "@/lib/config";
 import { useTranslations } from "@/i18n/use-translations";
 import { cn } from "@/lib/utils";
-import matter from "gray-matter";
+import { parseFrontmatter } from "@/lib/frontmatter";
+import type { ParsedFrontmatter } from "@/lib/frontmatter";
 
 type CategoryLoaderData = {
   category: string;
@@ -25,7 +26,7 @@ type CategoryLoaderData = {
   isChangelog: boolean;
   categoryLoadFailed: boolean;
   noManualContent: boolean;
-  indexContent: ReturnType<typeof matter> | null;
+  indexContent: ParsedFrontmatter | null;
   categoryName: string;
   gridItems: Array<{ slug: string; path: string; title: string; [key: string]: unknown }>;
   changelogSorted: ReturnType<typeof buildChangelogNavList>;
@@ -66,14 +67,14 @@ export async function categoryLoader({ params, request }: LoaderFunctionArgs): P
   const noManualContent = !isChangelog && (!data?.items?.length || categoryLoadFailed);
 
   // Changelog list page: skip index.md (legacy long content).
-  let indexContent: ReturnType<typeof matter> | null = null;
+  let indexContent: ParsedFrontmatter | null = null;
   if (!isChangelog) {
     try {
       const rawIndex = await getContent(`${category}/index.md`, contentBu, locale, {
         cache: "no-store",
       });
       if (rawIndex) {
-        indexContent = matter(rawIndex.content);
+        indexContent = parseFrontmatter(rawIndex.content);
       }
     } catch {
       // No index.md is OK if category has other articles
@@ -158,10 +159,12 @@ export default function Category() {
             ) : indexContent && (
               <div className="mt-4">
                 <ArticleHeaderInfo
-                  title={indexContent.data.title || categoryName}
+                  title={(indexContent.data.title as string) || categoryName}
                   formattedDate={
                     indexContent.data.date
-                      ? new Date(indexContent.data.date).toLocaleDateString(
+                      ? new Date(
+                          indexContent.data.date as string,
+                        ).toLocaleDateString(
                           "th-TH",
                           { year: "numeric", month: "long", day: "numeric" }
                         )

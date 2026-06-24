@@ -34,8 +34,8 @@ mock.module("@/lib/faq-cache", () => ({
   getCachedFaqNavItems: jest.fn().mockResolvedValue([]),
 }));
 
-mock.module("gray-matter", () => ({
-  default: jest.fn().mockReturnValue({ data: {}, content: "" }),
+mock.module("@/lib/frontmatter", () => ({
+  parseFrontmatter: jest.fn().mockReturnValue({ data: {}, content: "" }),
 }));
 
 const { default: Faq, faqLoader } = await import("./index");

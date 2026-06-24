@@ -1,6 +1,6 @@
 import { useLoaderData } from "react-router-dom";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import matter from "gray-matter";
+import { parseFrontmatter } from "@/lib/frontmatter";
 import { KBHeader } from "@/components/kb/header";
 import { KBFooter } from "@/components/kb/footer";
 import { MobileSidebar } from "@/components/kb/mobile-sidebar";
@@ -79,7 +79,7 @@ export async function faqPathLoader({
         cache: "no-store",
       });
       if (rawIndex) {
-        const parsed = matter(rawIndex.content);
+        const parsed = parseFrontmatter(rawIndex.content);
         indexContent = {
           data: parsed.data as Record<string, unknown>,
           content: parsed.content,
