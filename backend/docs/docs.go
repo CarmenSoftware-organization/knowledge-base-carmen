@@ -1615,7 +1615,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagActivityLog"
+                        "$ref": "#/definitions/models.ActivityLog"
                     }
                 },
                 "meta": {
@@ -1630,7 +1630,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagActivitySummary"
+                    "$ref": "#/definitions/models.ActivitySummary"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1646,7 +1646,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagBusinessUnit"
+                        "$ref": "#/definitions/models.BusinessUnit"
                     }
                 },
                 "meta": {
@@ -1663,7 +1663,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagCategoryEntry"
+                        "$ref": "#/definitions/services.CategoryEntry"
                     }
                 },
                 "meta": {
@@ -1678,7 +1678,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagChatAskResponse"
+                    "$ref": "#/definitions/models.ChatAskResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1692,7 +1692,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagClearResult"
+                    "$ref": "#/definitions/models.ClearResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1706,7 +1706,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagDeprovisionResult"
+                    "$ref": "#/definitions/models.DeprovisionResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1722,7 +1722,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagDocumentSummary"
+                        "$ref": "#/definitions/models.DocumentSummary"
                     }
                 },
                 "meta": {
@@ -1759,7 +1759,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagFAQCategoryResponse"
+                    "$ref": "#/definitions/services.FAQCategoryResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1773,7 +1773,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagFAQEntryDetail"
+                    "$ref": "#/definitions/services.FAQEntryDetail"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1789,7 +1789,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagFAQModule"
+                        "$ref": "#/definitions/services.FAQModule"
                     }
                 },
                 "meta": {
@@ -1804,7 +1804,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagIntentTestResult"
+                    "$ref": "#/definitions/models.IntentTestResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1820,7 +1820,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagListEntry"
+                        "$ref": "#/definitions/services.ListEntry"
                     }
                 },
                 "meta": {
@@ -1835,7 +1835,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagMessageResult"
+                    "$ref": "#/definitions/models.MessageResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1849,7 +1849,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagProvisionResult"
+                    "$ref": "#/definitions/models.ProvisionResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1863,7 +1863,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagRecordHistoryResult"
+                    "$ref": "#/definitions/models.RecordHistoryResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1877,7 +1877,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagReindexOneResult"
+                    "$ref": "#/definitions/models.ReindexOneResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1891,7 +1891,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagReindexStatus"
+                    "$ref": "#/definitions/models.ReindexStatus"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1905,7 +1905,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagReindexUnlock"
+                    "$ref": "#/definitions/models.ReindexUnlock"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1919,7 +1919,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagRouteResult"
+                    "$ref": "#/definitions/models.RouteResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1935,7 +1935,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagSearchResult"
+                        "$ref": "#/definitions/services.SearchResult"
                     }
                 },
                 "meta": {
@@ -1952,7 +1952,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagSidebarCategory"
+                        "$ref": "#/definitions/services.SidebarCategory"
                     }
                 },
                 "meta": {
@@ -1967,7 +1967,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagStatusResult"
+                    "$ref": "#/definitions/models.StatusResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1981,7 +1981,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagSyncAuditResult"
+                    "$ref": "#/definitions/services.SyncAuditResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -1995,7 +1995,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagSyncResult"
+                    "$ref": "#/definitions/services.SyncResult"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -2009,7 +2009,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagSystemStatusInner"
+                    "$ref": "#/definitions/models.SystemStatusResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -2023,7 +2023,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagWikiCategoryPayload"
+                    "$ref": "#/definitions/services.WikiCategoryPayload"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -2037,7 +2037,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/apidoc.swagWikiContent"
+                    "$ref": "#/definitions/services.WikiContent"
                 },
                 "meta": {
                     "$ref": "#/definitions/apidoc.swagMeta"
@@ -2053,7 +2053,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/apidoc.swagWikiEntry"
+                        "$ref": "#/definitions/services.WikiEntry"
                     }
                 },
                 "meta": {
@@ -2061,215 +2061,6 @@ const docTemplate = `{
                 },
                 "success": {
                     "type": "boolean"
-                }
-            }
-        },
-        "apidoc.swagActivityLog": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagActivitySummary": {
-            "type": "object",
-            "properties": {
-                "today": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "apidoc.swagBusinessUnit": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "slug": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagCategoryEntry": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "slug": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagChatAskResponse": {
-            "type": "object",
-            "properties": {
-                "answer": {
-                    "type": "string"
-                },
-                "sources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/apidoc.swagChatSource"
-                    }
-                }
-            }
-        },
-        "apidoc.swagChatSource": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagClearResult": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "room_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagDeprovisionResult": {
-            "type": "object",
-            "properties": {
-                "bu": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagDocumentSummary": {
-            "type": "object",
-            "properties": {
-                "bu_id": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "path": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagFAQCategoryResponse": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "entries": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/apidoc.swagFAQEntry"
-                    }
-                }
-            }
-        },
-        "apidoc.swagFAQEntry": {
-            "type": "object",
-            "properties": {
-                "answer": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "question": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagFAQEntryDetail": {
-            "type": "object",
-            "properties": {
-                "answer": {
-                    "type": "string"
-                },
-                "category": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "module": {
-                    "type": "string"
-                },
-                "question": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagFAQModule": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagIntentTestResult": {
-            "type": "object",
-            "properties": {
-                "intent": {
-                    "type": "string"
-                },
-                "score": {
-                    "type": "number"
-                }
-            }
-        },
-        "apidoc.swagListEntry": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "question": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagMessageResult": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
                 }
             }
         },
@@ -2287,203 +2078,72 @@ const docTemplate = `{
                 }
             }
         },
-        "apidoc.swagProvisionResult": {
+        "models.ActivityLog": {
             "type": "object",
             "properties": {
-                "bu": {
+                "action": {
                     "type": "string"
                 },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagRecordHistoryResult": {
-            "type": "object",
-            "properties": {
-                "log_id": {
+                "bu_id": {
                     "type": "string"
                 },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagReindexOneResult": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "path": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagReindexStatus": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "progress": {
-                    "type": "integer"
-                },
-                "running": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "apidoc.swagReindexUnlock": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagRouteResult": {
-            "type": "object",
-            "properties": {
-                "confidence": {
-                    "type": "number"
-                },
-                "route": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagSearchResult": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string"
-                },
-                "score": {
-                    "type": "number"
-                },
-                "snippet": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagSidebarCategory": {
-            "type": "object",
-            "properties": {
-                "articles": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/apidoc.swagWikiEntry"
-                    }
-                },
-                "slug": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagStatusResult": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagSyncAuditResult": {
-            "type": "object",
-            "properties": {
-                "last_sync": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagSyncResult": {
-            "type": "object",
-            "properties": {
-                "added": {
-                    "type": "integer"
-                },
-                "deleted": {
-                    "type": "integer"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "updated": {
-                    "type": "integer"
-                }
-            }
-        },
-        "apidoc.swagSystemStatusInner": {
-            "type": "object",
-            "properties": {
-                "database": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "apidoc.swagWikiCategoryPayload": {
-            "type": "object",
-            "properties": {
-                "articles": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/apidoc.swagWikiEntry"
-                    }
+                "business_unit": {
+                    "description": "Association",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.BusinessUnit"
+                        }
+                    ]
                 },
                 "category": {
-                    "$ref": "#/definitions/apidoc.swagCategoryEntry"
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "details": {},
+                "id": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "user_agent": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
-        "apidoc.swagWikiContent": {
+        "models.ActivitySummary": {
             "type": "object",
             "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "path": {
-                    "type": "string"
-                },
-                "title": {
+                "items": {},
+                "period": {
                     "type": "string"
                 }
             }
         },
-        "apidoc.swagWikiEntry": {
+        "models.BusinessUnit": {
             "type": "object",
             "properties": {
-                "date": {
+                "created_at": {
                     "type": "string"
                 },
                 "description": {
                     "type": "string"
                 },
-                "path": {
+                "id": {
                     "type": "string"
                 },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "name": {
+                    "type": "string"
                 },
-                "title": {
+                "slug": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -2499,6 +2159,29 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ChatAskResponse": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "needDisambiguation": {
+                    "type": "boolean"
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.DisambiguationOption"
+                    }
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ChatSource"
+                    }
+                }
+            }
+        },
         "models.ChatSource": {
             "type": "object",
             "properties": {
@@ -2506,6 +2189,113 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ClearResult": {
+            "type": "object",
+            "properties": {
+                "room_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DeprovisionResult": {
+            "type": "object",
+            "properties": {
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DisambiguationOption": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DocumentSummary": {
+            "type": "object",
+            "properties": {
+                "chunk_count": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.IntentTestResult": {
+            "type": "object",
+            "properties": {
+                "canned_response": {
+                    "type": "string"
+                },
+                "embed_tokens": {
+                    "type": "integer"
+                },
+                "llm_input_tokens": {
+                    "type": "integer"
+                },
+                "llm_output_tokens": {
+                    "type": "integer"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MessageResult": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ProvisionResult": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
                     "type": "string"
                 }
             }
@@ -2530,6 +2320,579 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "models.RecordHistoryResult": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "skipped": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ReindexOneResult": {
+            "type": "object",
+            "properties": {
+                "bu": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ReindexStatus": {
+            "type": "object",
+            "properties": {
+                "bu": {
+                    "type": "string"
+                },
+                "running": {
+                    "type": "boolean"
+                },
+                "running_for_sec": {
+                    "type": "integer"
+                },
+                "started_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ReindexUnlock": {
+            "type": "object",
+            "properties": {
+                "bu": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "was_running": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.RouteCandidate": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.RouteResult": {
+            "type": "object",
+            "properties": {
+                "candidates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RouteCandidate"
+                    }
+                }
+            }
+        },
+        "models.StatusResult": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SystemStatusResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.BUSyncAudit": {
+            "type": "object",
+            "properties": {
+                "bu": {
+                    "type": "string"
+                },
+                "extra_in_index": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "index_table_exists": {
+                    "type": "boolean"
+                },
+                "indexed_documents": {
+                    "type": "integer"
+                },
+                "missing_in_index": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "source_markdown_files": {
+                    "type": "integer"
+                },
+                "source_root": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.CategoryEntry": {
+            "type": "object",
+            "properties": {
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.CategoryItem": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "dateCreated": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "editor": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "published": {
+                    "type": "boolean"
+                },
+                "publishedAt": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.FAQCategory": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.FAQCategoryResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/services.FAQCategory"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.FAQEntry"
+                    }
+                },
+                "module": {
+                    "$ref": "#/definitions/services.FAQModule"
+                },
+                "submodule": {
+                    "$ref": "#/definitions/services.FAQSubmodule"
+                }
+            }
+        },
+        "services.FAQEntry": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "problem_cause": {
+                    "type": "string"
+                },
+                "sample_case": {
+                    "type": "string"
+                },
+                "solution": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.FAQEntryDetail": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/services.FAQCategory"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "module": {
+                    "$ref": "#/definitions/services.FAQModule"
+                },
+                "problem_cause": {
+                    "type": "string"
+                },
+                "sample_case": {
+                    "type": "string"
+                },
+                "solution": {
+                    "type": "string"
+                },
+                "submodule": {
+                    "$ref": "#/definitions/services.FAQSubmodule"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.FAQModule": {
+            "type": "object",
+            "properties": {
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.FAQSubmodule": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.FAQCategory"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.ListEntry": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "question": {
+                    "type": "string"
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ChatSource"
+                    }
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.SearchResult": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "dateCreated": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "editor": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "published": {
+                    "type": "boolean"
+                },
+                "publishedAt": {
+                    "type": "string"
+                },
+                "snippet": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.SidebarCategory": {
+            "type": "object",
+            "properties": {
+                "articles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.CategoryItem"
+                    }
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.SyncAuditReport": {
+            "type": "object",
+            "properties": {
+                "branch": {
+                    "type": "string"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.BUSyncAudit"
+                    }
+                },
+                "repo_path": {
+                    "type": "string"
+                },
+                "summary": {
+                    "$ref": "#/definitions/services.SyncAuditSummary"
+                }
+            }
+        },
+        "services.SyncAuditResult": {
+            "type": "object",
+            "properties": {
+                "audit": {
+                    "$ref": "#/definitions/services.SyncAuditReport"
+                }
+            }
+        },
+        "services.SyncAuditSummary": {
+            "type": "object",
+            "properties": {
+                "total_bus": {
+                    "type": "integer"
+                },
+                "total_extra_in_index": {
+                    "type": "integer"
+                },
+                "total_indexed_documents": {
+                    "type": "integer"
+                },
+                "total_missing_in_index": {
+                    "type": "integer"
+                },
+                "total_source_markdown_files": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.SyncResult": {
+            "type": "object",
+            "properties": {
+                "audit": {
+                    "$ref": "#/definitions/services.SyncAuditReport"
+                },
+                "audit_error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.WikiCategoryPayload": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.CategoryItem"
+                    }
+                }
+            }
+        },
+        "services.WikiContent": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "dateCreated": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "editor": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "published": {
+                    "type": "boolean"
+                },
+                "publishedAt": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.WikiEntry": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "dateCreated": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "editor": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "published": {
+                    "type": "boolean"
+                },
+                "publishedAt": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "integer"
                 }
             }
         }

@@ -12,7 +12,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagActivityLog'
+          $ref: '#/definitions/models.ActivityLog'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
@@ -22,7 +22,7 @@ definitions:
   apidoc.SwagActivitySummaryEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagActivitySummary'
+        $ref: '#/definitions/models.ActivitySummary'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -32,7 +32,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagBusinessUnit'
+          $ref: '#/definitions/models.BusinessUnit'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
@@ -43,7 +43,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagCategoryEntry'
+          $ref: '#/definitions/services.CategoryEntry'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
@@ -53,7 +53,7 @@ definitions:
   apidoc.SwagChatAskResponseEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagChatAskResponse'
+        $ref: '#/definitions/models.ChatAskResponse'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -62,7 +62,7 @@ definitions:
   apidoc.SwagClearResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagClearResult'
+        $ref: '#/definitions/models.ClearResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -71,7 +71,7 @@ definitions:
   apidoc.SwagDeprovisionResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagDeprovisionResult'
+        $ref: '#/definitions/models.DeprovisionResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -81,7 +81,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagDocumentSummary'
+          $ref: '#/definitions/models.DocumentSummary'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
@@ -105,7 +105,7 @@ definitions:
   apidoc.SwagFAQCategoryResponseEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagFAQCategoryResponse'
+        $ref: '#/definitions/services.FAQCategoryResponse'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -114,7 +114,7 @@ definitions:
   apidoc.SwagFAQEntryDetailEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagFAQEntryDetail'
+        $ref: '#/definitions/services.FAQEntryDetail'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -124,7 +124,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagFAQModule'
+          $ref: '#/definitions/services.FAQModule'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
@@ -134,7 +134,7 @@ definitions:
   apidoc.SwagIntentTestResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagIntentTestResult'
+        $ref: '#/definitions/models.IntentTestResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -144,7 +144,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagListEntry'
+          $ref: '#/definitions/services.ListEntry'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
@@ -154,7 +154,7 @@ definitions:
   apidoc.SwagMessageResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagMessageResult'
+        $ref: '#/definitions/models.MessageResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -163,7 +163,7 @@ definitions:
   apidoc.SwagProvisionResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagProvisionResult'
+        $ref: '#/definitions/models.ProvisionResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -172,7 +172,7 @@ definitions:
   apidoc.SwagRecordHistoryResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagRecordHistoryResult'
+        $ref: '#/definitions/models.RecordHistoryResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -181,7 +181,7 @@ definitions:
   apidoc.SwagReindexOneResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagReindexOneResult'
+        $ref: '#/definitions/models.ReindexOneResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -190,7 +190,7 @@ definitions:
   apidoc.SwagReindexStatusEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagReindexStatus'
+        $ref: '#/definitions/models.ReindexStatus'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -199,7 +199,7 @@ definitions:
   apidoc.SwagReindexUnlockEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagReindexUnlock'
+        $ref: '#/definitions/models.ReindexUnlock'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -208,7 +208,7 @@ definitions:
   apidoc.SwagRouteResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagRouteResult'
+        $ref: '#/definitions/models.RouteResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -218,7 +218,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagSearchResult'
+          $ref: '#/definitions/services.SearchResult'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
@@ -229,7 +229,7 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagSidebarCategory'
+          $ref: '#/definitions/services.SidebarCategory'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
@@ -239,7 +239,7 @@ definitions:
   apidoc.SwagStatusResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagStatusResult'
+        $ref: '#/definitions/models.StatusResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -248,7 +248,7 @@ definitions:
   apidoc.SwagSyncAuditResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagSyncAuditResult'
+        $ref: '#/definitions/services.SyncAuditResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -257,7 +257,7 @@ definitions:
   apidoc.SwagSyncResultEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagSyncResult'
+        $ref: '#/definitions/services.SyncResult'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -266,7 +266,7 @@ definitions:
   apidoc.SwagSystemStatusEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagSystemStatusInner'
+        $ref: '#/definitions/models.SystemStatusResponse'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -275,7 +275,7 @@ definitions:
   apidoc.SwagWikiCategoryPayloadEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagWikiCategoryPayload'
+        $ref: '#/definitions/services.WikiCategoryPayload'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -284,7 +284,7 @@ definitions:
   apidoc.SwagWikiContentEnvelope:
     properties:
       data:
-        $ref: '#/definitions/apidoc.swagWikiContent'
+        $ref: '#/definitions/services.WikiContent'
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
@@ -294,146 +294,12 @@ definitions:
     properties:
       data:
         items:
-          $ref: '#/definitions/apidoc.swagWikiEntry'
+          $ref: '#/definitions/services.WikiEntry'
         type: array
       meta:
         $ref: '#/definitions/apidoc.swagMeta'
       success:
         type: boolean
-    type: object
-  apidoc.swagActivityLog:
-    properties:
-      action:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
-    type: object
-  apidoc.swagActivitySummary:
-    properties:
-      today:
-        type: integer
-      total:
-        type: integer
-    type: object
-  apidoc.swagBusinessUnit:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-      slug:
-        type: string
-    type: object
-  apidoc.swagCategoryEntry:
-    properties:
-      count:
-        type: integer
-      slug:
-        type: string
-      title:
-        type: string
-    type: object
-  apidoc.swagChatAskResponse:
-    properties:
-      answer:
-        type: string
-      sources:
-        items:
-          $ref: '#/definitions/apidoc.swagChatSource'
-        type: array
-    type: object
-  apidoc.swagChatSource:
-    properties:
-      path:
-        type: string
-      title:
-        type: string
-    type: object
-  apidoc.swagClearResult:
-    properties:
-      message:
-        type: string
-      room_id:
-        type: string
-    type: object
-  apidoc.swagDeprovisionResult:
-    properties:
-      bu:
-        type: string
-      message:
-        type: string
-    type: object
-  apidoc.swagDocumentSummary:
-    properties:
-      bu_id:
-        type: string
-      id:
-        type: string
-      path:
-        type: string
-      title:
-        type: string
-    type: object
-  apidoc.swagFAQCategoryResponse:
-    properties:
-      category:
-        type: string
-      entries:
-        items:
-          $ref: '#/definitions/apidoc.swagFAQEntry'
-        type: array
-    type: object
-  apidoc.swagFAQEntry:
-    properties:
-      answer:
-        type: string
-      id:
-        type: string
-      question:
-        type: string
-    type: object
-  apidoc.swagFAQEntryDetail:
-    properties:
-      answer:
-        type: string
-      category:
-        type: string
-      id:
-        type: string
-      module:
-        type: string
-      question:
-        type: string
-    type: object
-  apidoc.swagFAQModule:
-    properties:
-      key:
-        type: string
-      title:
-        type: string
-    type: object
-  apidoc.swagIntentTestResult:
-    properties:
-      intent:
-        type: string
-      score:
-        type: number
-    type: object
-  apidoc.swagListEntry:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: string
-      question:
-        type: string
-    type: object
-  apidoc.swagMessageResult:
-    properties:
-      message:
-        type: string
     type: object
   apidoc.swagMeta:
     properties:
@@ -444,133 +310,49 @@ definitions:
       total:
         type: integer
     type: object
-  apidoc.swagProvisionResult:
+  models.ActivityLog:
     properties:
-      bu:
+      action:
         type: string
-      message:
+      bu_id:
         type: string
-    type: object
-  apidoc.swagRecordHistoryResult:
-    properties:
-      log_id:
-        type: string
-      message:
-        type: string
-    type: object
-  apidoc.swagReindexOneResult:
-    properties:
-      message:
-        type: string
-      path:
-        type: string
-    type: object
-  apidoc.swagReindexStatus:
-    properties:
-      message:
-        type: string
-      progress:
-        type: integer
-      running:
-        type: boolean
-    type: object
-  apidoc.swagReindexUnlock:
-    properties:
-      message:
-        type: string
-    type: object
-  apidoc.swagRouteResult:
-    properties:
-      confidence:
-        type: number
-      route:
-        type: string
-    type: object
-  apidoc.swagSearchResult:
-    properties:
-      path:
-        type: string
-      score:
-        type: number
-      snippet:
-        type: string
-      title:
-        type: string
-    type: object
-  apidoc.swagSidebarCategory:
-    properties:
-      articles:
-        items:
-          $ref: '#/definitions/apidoc.swagWikiEntry'
-        type: array
-      slug:
-        type: string
-      title:
-        type: string
-    type: object
-  apidoc.swagStatusResult:
-    properties:
-      status:
-        type: string
-    type: object
-  apidoc.swagSyncAuditResult:
-    properties:
-      last_sync:
-        type: string
-      status:
-        type: string
-    type: object
-  apidoc.swagSyncResult:
-    properties:
-      added:
-        type: integer
-      deleted:
-        type: integer
-      message:
-        type: string
-      updated:
-        type: integer
-    type: object
-  apidoc.swagSystemStatusInner:
-    properties:
-      database:
-        type: string
-      status:
-        type: string
-      version:
-        type: string
-    type: object
-  apidoc.swagWikiCategoryPayload:
-    properties:
-      articles:
-        items:
-          $ref: '#/definitions/apidoc.swagWikiEntry'
-        type: array
+      business_unit:
+        allOf:
+        - $ref: '#/definitions/models.BusinessUnit'
+        description: Association
       category:
-        $ref: '#/definitions/apidoc.swagCategoryEntry'
+        type: string
+      created_at:
+        type: string
+      details: {}
+      id:
+        type: string
+      timestamp:
+        type: string
+      user_agent:
+        type: string
+      user_id:
+        type: string
     type: object
-  apidoc.swagWikiContent:
+  models.ActivitySummary:
     properties:
-      content:
-        type: string
-      path:
-        type: string
-      title:
+      items: {}
+      period:
         type: string
     type: object
-  apidoc.swagWikiEntry:
+  models.BusinessUnit:
     properties:
-      date:
+      created_at:
         type: string
       description:
         type: string
-      path:
+      id:
         type: string
-      tags:
-        items:
-          type: string
-        type: array
-      title:
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
         type: string
     type: object
   models.ChatAskRequest:
@@ -580,11 +362,95 @@ definitions:
       question:
         type: string
     type: object
+  models.ChatAskResponse:
+    properties:
+      answer:
+        type: string
+      needDisambiguation:
+        type: boolean
+      options:
+        items:
+          $ref: '#/definitions/models.DisambiguationOption'
+        type: array
+      sources:
+        items:
+          $ref: '#/definitions/models.ChatSource'
+        type: array
+    type: object
   models.ChatSource:
     properties:
       articleId:
         type: string
       title:
+        type: string
+    type: object
+  models.ClearResult:
+    properties:
+      room_id:
+        type: string
+      status:
+        type: string
+    type: object
+  models.DeprovisionResult:
+    properties:
+      slug:
+        type: string
+    type: object
+  models.DisambiguationOption:
+    properties:
+      path:
+        type: string
+      reason:
+        type: string
+      score:
+        type: number
+      title:
+        type: string
+    type: object
+  models.DocumentSummary:
+    properties:
+      chunk_count:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      path:
+        type: string
+      source:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.IntentTestResult:
+    properties:
+      canned_response:
+        type: string
+      embed_tokens:
+        type: integer
+      llm_input_tokens:
+        type: integer
+      llm_output_tokens:
+        type: integer
+      source:
+        type: string
+      type:
+        type: string
+    type: object
+  models.MessageResult:
+    properties:
+      message:
+        type: string
+    type: object
+  models.ProvisionResult:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      slug:
         type: string
     type: object
   models.RecordHistoryRequest:
@@ -601,6 +467,379 @@ definitions:
         type: array
       user_id:
         type: string
+    type: object
+  models.RecordHistoryResult:
+    properties:
+      id:
+        type: string
+      skipped:
+        type: string
+    type: object
+  models.ReindexOneResult:
+    properties:
+      bu:
+        type: string
+      message:
+        type: string
+      path:
+        type: string
+    type: object
+  models.ReindexStatus:
+    properties:
+      bu:
+        type: string
+      running:
+        type: boolean
+      running_for_sec:
+        type: integer
+      started_at:
+        type: string
+    type: object
+  models.ReindexUnlock:
+    properties:
+      bu:
+        type: string
+      message:
+        type: string
+      was_running:
+        type: boolean
+    type: object
+  models.RouteCandidate:
+    properties:
+      path:
+        type: string
+      reason:
+        type: string
+      score:
+        type: number
+    type: object
+  models.RouteResult:
+    properties:
+      candidates:
+        items:
+          $ref: '#/definitions/models.RouteCandidate'
+        type: array
+    type: object
+  models.StatusResult:
+    properties:
+      status:
+        type: string
+    type: object
+  models.SystemStatusResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  services.BUSyncAudit:
+    properties:
+      bu:
+        type: string
+      extra_in_index:
+        items:
+          type: string
+        type: array
+      index_table_exists:
+        type: boolean
+      indexed_documents:
+        type: integer
+      missing_in_index:
+        items:
+          type: string
+        type: array
+      source_markdown_files:
+        type: integer
+      source_root:
+        type: string
+    type: object
+  services.CategoryEntry:
+    properties:
+      slug:
+        type: string
+      title:
+        type: string
+      weight:
+        type: integer
+    type: object
+  services.CategoryItem:
+    properties:
+      date:
+        type: string
+      dateCreated:
+        type: string
+      description:
+        type: string
+      editor:
+        type: string
+      path:
+        type: string
+      published:
+        type: boolean
+      publishedAt:
+        type: string
+      slug:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      weight:
+        type: integer
+    type: object
+  services.FAQCategory:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  services.FAQCategoryResponse:
+    properties:
+      category:
+        $ref: '#/definitions/services.FAQCategory'
+      items:
+        items:
+          $ref: '#/definitions/services.FAQEntry'
+        type: array
+      module:
+        $ref: '#/definitions/services.FAQModule'
+      submodule:
+        $ref: '#/definitions/services.FAQSubmodule'
+    type: object
+  services.FAQEntry:
+    properties:
+      id:
+        type: string
+      problem_cause:
+        type: string
+      sample_case:
+        type: string
+      solution:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  services.FAQEntryDetail:
+    properties:
+      category:
+        $ref: '#/definitions/services.FAQCategory'
+      id:
+        type: string
+      module:
+        $ref: '#/definitions/services.FAQModule'
+      problem_cause:
+        type: string
+      sample_case:
+        type: string
+      solution:
+        type: string
+      submodule:
+        $ref: '#/definitions/services.FAQSubmodule'
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  services.FAQModule:
+    properties:
+      icon:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  services.FAQSubmodule:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/services.FAQCategory'
+        type: array
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  services.ListEntry:
+    properties:
+      answer:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      question:
+        type: string
+      sources:
+        items:
+          $ref: '#/definitions/models.ChatSource'
+        type: array
+      user_id:
+        type: string
+    type: object
+  services.SearchResult:
+    properties:
+      date:
+        type: string
+      dateCreated:
+        type: string
+      description:
+        type: string
+      editor:
+        type: string
+      path:
+        type: string
+      published:
+        type: boolean
+      publishedAt:
+        type: string
+      snippet:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      weight:
+        type: integer
+    type: object
+  services.SidebarCategory:
+    properties:
+      articles:
+        items:
+          $ref: '#/definitions/services.CategoryItem'
+        type: array
+      slug:
+        type: string
+      title:
+        type: string
+      weight:
+        type: integer
+    type: object
+  services.SyncAuditReport:
+    properties:
+      branch:
+        type: string
+      generated_at:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/services.BUSyncAudit'
+        type: array
+      repo_path:
+        type: string
+      summary:
+        $ref: '#/definitions/services.SyncAuditSummary'
+    type: object
+  services.SyncAuditResult:
+    properties:
+      audit:
+        $ref: '#/definitions/services.SyncAuditReport'
+    type: object
+  services.SyncAuditSummary:
+    properties:
+      total_bus:
+        type: integer
+      total_extra_in_index:
+        type: integer
+      total_indexed_documents:
+        type: integer
+      total_missing_in_index:
+        type: integer
+      total_source_markdown_files:
+        type: integer
+    type: object
+  services.SyncResult:
+    properties:
+      audit:
+        $ref: '#/definitions/services.SyncAuditReport'
+      audit_error:
+        type: string
+      message:
+        type: string
+    type: object
+  services.WikiCategoryPayload:
+    properties:
+      category:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/services.CategoryItem'
+        type: array
+    type: object
+  services.WikiContent:
+    properties:
+      content:
+        type: string
+      date:
+        type: string
+      dateCreated:
+        type: string
+      description:
+        type: string
+      editor:
+        type: string
+      path:
+        type: string
+      published:
+        type: boolean
+      publishedAt:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  services.WikiEntry:
+    properties:
+      date:
+        type: string
+      dateCreated:
+        type: string
+      description:
+        type: string
+      editor:
+        type: string
+      path:
+        type: string
+      published:
+        type: boolean
+      publishedAt:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      weight:
+        type: integer
     type: object
 info:
   contact: {}

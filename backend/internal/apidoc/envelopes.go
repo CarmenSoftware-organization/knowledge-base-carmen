@@ -6,6 +6,14 @@ package apidoc
 //
 // These types are ONLY used as @Success/@Failure type references in swagger_routes.go
 // annotations — they are never instantiated at runtime.
+//
+// Each envelope's Data field references the REAL payload type from models or services
+// so that the generated OpenAPI definitions always stay in sync with the actual structs.
+
+import (
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
+)
 
 // --- Shared inner shapes (mirrored from response package) ---
 
@@ -33,167 +41,96 @@ type SwagErrorResponse struct {
 
 // SwagSystemStatusEnvelope wraps models.SystemStatusResponse.
 type SwagSystemStatusEnvelope struct {
-	Success bool                  `json:"success"`
-	Data    swagSystemStatusInner `json:"data"`
-	Meta    *swagMeta             `json:"meta,omitempty"`
-}
-
-type swagSystemStatusInner struct {
-	Status   string `json:"status"`
-	Database string `json:"database"`
-	Version  string `json:"version"`
+	Success bool                        `json:"success"`
+	Data    models.SystemStatusResponse `json:"data"`
+	Meta    *swagMeta                   `json:"meta,omitempty"`
 }
 
 // --- Business Units ---
 
 // SwagBusinessUnitsEnvelope wraps []models.BusinessUnit.
 type SwagBusinessUnitsEnvelope struct {
-	Success bool              `json:"success"`
-	Data    []swagBusinessUnit `json:"data"`
-	Meta    *swagMeta         `json:"meta,omitempty"`
-}
-
-type swagBusinessUnit struct {
-	ID   string `json:"id"`
-	Slug string `json:"slug"`
-	Name string `json:"name"`
+	Success bool                  `json:"success"`
+	Data    []models.BusinessUnit `json:"data"`
+	Meta    *swagMeta             `json:"meta,omitempty"`
 }
 
 // SwagProvisionResultEnvelope wraps models.ProvisionResult.
 type SwagProvisionResultEnvelope struct {
-	Success bool                `json:"success"`
-	Data    swagProvisionResult `json:"data"`
-	Meta    *swagMeta           `json:"meta,omitempty"`
-}
-
-type swagProvisionResult struct {
-	BU      string `json:"bu"`
-	Message string `json:"message"`
+	Success bool                   `json:"success"`
+	Data    models.ProvisionResult `json:"data"`
+	Meta    *swagMeta              `json:"meta,omitempty"`
 }
 
 // SwagDeprovisionResultEnvelope wraps models.DeprovisionResult.
 type SwagDeprovisionResultEnvelope struct {
-	Success bool                  `json:"success"`
-	Data    swagDeprovisionResult `json:"data"`
-	Meta    *swagMeta             `json:"meta,omitempty"`
-}
-
-type swagDeprovisionResult struct {
-	BU      string `json:"bu"`
-	Message string `json:"message"`
+	Success bool                     `json:"success"`
+	Data    models.DeprovisionResult `json:"data"`
+	Meta    *swagMeta                `json:"meta,omitempty"`
 }
 
 // --- Wiki ---
 
 // SwagWikiEntryListEnvelope wraps []services.WikiEntry.
 type SwagWikiEntryListEnvelope struct {
-	Success bool           `json:"success"`
-	Data    []swagWikiEntry `json:"data"`
-	Meta    *swagMeta      `json:"meta,omitempty"`
-}
-
-type swagWikiEntry struct {
-	Title       string   `json:"title"`
-	Path        string   `json:"path"`
-	Description string   `json:"description"`
-	Tags        []string `json:"tags"`
-	Date        string   `json:"date"`
+	Success bool               `json:"success"`
+	Data    []services.WikiEntry `json:"data"`
+	Meta    *swagMeta          `json:"meta,omitempty"`
 }
 
 // SwagCategoryEntryListEnvelope wraps []services.CategoryEntry.
 type SwagCategoryEntryListEnvelope struct {
-	Success bool                `json:"success"`
-	Data    []swagCategoryEntry `json:"data"`
-	Meta    *swagMeta           `json:"meta,omitempty"`
-}
-
-type swagCategoryEntry struct {
-	Slug  string `json:"slug"`
-	Title string `json:"title"`
-	Count int    `json:"count"`
+	Success bool                   `json:"success"`
+	Data    []services.CategoryEntry `json:"data"`
+	Meta    *swagMeta              `json:"meta,omitempty"`
 }
 
 // SwagSidebarCategoryListEnvelope wraps []services.SidebarCategory.
 type SwagSidebarCategoryListEnvelope struct {
-	Success bool                  `json:"success"`
-	Data    []swagSidebarCategory `json:"data"`
-	Meta    *swagMeta             `json:"meta,omitempty"`
-}
-
-type swagSidebarCategory struct {
-	Title    string         `json:"title"`
-	Slug     string         `json:"slug"`
-	Articles []swagWikiEntry `json:"articles"`
+	Success bool                     `json:"success"`
+	Data    []services.SidebarCategory `json:"data"`
+	Meta    *swagMeta                `json:"meta,omitempty"`
 }
 
 // SwagWikiCategoryPayloadEnvelope wraps services.WikiCategoryPayload.
 type SwagWikiCategoryPayloadEnvelope struct {
-	Success bool                    `json:"success"`
-	Data    swagWikiCategoryPayload `json:"data"`
-	Meta    *swagMeta               `json:"meta,omitempty"`
-}
-
-type swagWikiCategoryPayload struct {
-	Category swagCategoryEntry `json:"category"`
-	Articles []swagWikiEntry   `json:"articles"`
+	Success bool                       `json:"success"`
+	Data    services.WikiCategoryPayload `json:"data"`
+	Meta    *swagMeta                  `json:"meta,omitempty"`
 }
 
 // SwagWikiContentEnvelope wraps services.WikiContent.
 type SwagWikiContentEnvelope struct {
-	Success bool            `json:"success"`
-	Data    swagWikiContent `json:"data"`
-	Meta    *swagMeta       `json:"meta,omitempty"`
-}
-
-type swagWikiContent struct {
-	Path    string `json:"path"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	Success bool                 `json:"success"`
+	Data    services.WikiContent `json:"data"`
+	Meta    *swagMeta            `json:"meta,omitempty"`
 }
 
 // SwagSearchResultListEnvelope wraps []services.SearchResult.
 type SwagSearchResultListEnvelope struct {
-	Success bool               `json:"success"`
-	Data    []swagSearchResult `json:"data"`
-	Meta    *swagMeta          `json:"meta,omitempty"`
-}
-
-type swagSearchResult struct {
-	Path    string  `json:"path"`
-	Title   string  `json:"title"`
-	Snippet string  `json:"snippet"`
-	Score   float64 `json:"score"`
+	Success bool                   `json:"success"`
+	Data    []services.SearchResult `json:"data"`
+	Meta    *swagMeta              `json:"meta,omitempty"`
 }
 
 // SwagSyncResultEnvelope wraps services.SyncResult.
 type SwagSyncResultEnvelope struct {
-	Success bool           `json:"success"`
-	Data    swagSyncResult `json:"data"`
-	Meta    *swagMeta      `json:"meta,omitempty"`
-}
-
-type swagSyncResult struct {
-	Added   int    `json:"added"`
-	Updated int    `json:"updated"`
-	Deleted int    `json:"deleted"`
-	Message string `json:"message"`
+	Success bool               `json:"success"`
+	Data    services.SyncResult `json:"data"`
+	Meta    *swagMeta          `json:"meta,omitempty"`
 }
 
 // SwagSyncAuditResultEnvelope wraps services.SyncAuditResult.
 type SwagSyncAuditResultEnvelope struct {
-	Success bool                `json:"success"`
-	Data    swagSyncAuditResult `json:"data"`
-	Meta    *swagMeta           `json:"meta,omitempty"`
-}
-
-type swagSyncAuditResult struct {
-	LastSync string `json:"last_sync"`
-	Status   string `json:"status"`
+	Success bool                    `json:"success"`
+	Data    services.SyncAuditResult `json:"data"`
+	Meta    *swagMeta               `json:"meta,omitempty"`
 }
 
 // --- FAQ ---
 
-// FAQModuleEnvelope is a concrete alias for swag (cannot use generic with map key types).
+// FAQModuleEnvelope documents GET /api/faq/{module} which returns a dynamic map.
+// The endpoint returns map[string]interface{} so a typed envelope cannot be used here.
 type FAQModuleEnvelope struct {
 	Success bool                   `json:"success"`
 	Data    map[string]interface{} `json:"data"`
@@ -201,228 +138,127 @@ type FAQModuleEnvelope struct {
 
 // SwagFAQModuleListEnvelope wraps []services.FAQModule.
 type SwagFAQModuleListEnvelope struct {
-	Success bool           `json:"success"`
-	Data    []swagFAQModule `json:"data"`
-	Meta    *swagMeta      `json:"meta,omitempty"`
-}
-
-type swagFAQModule struct {
-	Key   string `json:"key"`
-	Title string `json:"title"`
+	Success bool               `json:"success"`
+	Data    []services.FAQModule `json:"data"`
+	Meta    *swagMeta          `json:"meta,omitempty"`
 }
 
 // SwagFAQCategoryResponseEnvelope wraps services.FAQCategoryResponse.
 type SwagFAQCategoryResponseEnvelope struct {
-	Success bool                    `json:"success"`
-	Data    swagFAQCategoryResponse `json:"data"`
-	Meta    *swagMeta               `json:"meta,omitempty"`
-}
-
-type swagFAQCategoryResponse struct {
-	Category string        `json:"category"`
-	Entries  []swagFAQEntry `json:"entries"`
-}
-
-type swagFAQEntry struct {
-	ID       string `json:"id"`
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
+	Success bool                        `json:"success"`
+	Data    services.FAQCategoryResponse `json:"data"`
+	Meta    *swagMeta                   `json:"meta,omitempty"`
 }
 
 // SwagFAQEntryDetailEnvelope wraps services.FAQEntryDetail.
 type SwagFAQEntryDetailEnvelope struct {
-	Success bool               `json:"success"`
-	Data    swagFAQEntryDetail `json:"data"`
-	Meta    *swagMeta          `json:"meta,omitempty"`
-}
-
-type swagFAQEntryDetail struct {
-	ID       string `json:"id"`
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
-	Module   string `json:"module"`
-	Category string `json:"category"`
+	Success bool                    `json:"success"`
+	Data    services.FAQEntryDetail `json:"data"`
+	Meta    *swagMeta               `json:"meta,omitempty"`
 }
 
 // --- Documents ---
 
 // SwagDocumentSummaryListEnvelope wraps []models.DocumentSummary.
 type SwagDocumentSummaryListEnvelope struct {
-	Success bool                  `json:"success"`
-	Data    []swagDocumentSummary `json:"data"`
-	Meta    *swagMeta             `json:"meta,omitempty"`
-}
-
-type swagDocumentSummary struct {
-	ID    string `json:"id"`
-	Path  string `json:"path"`
-	Title string `json:"title"`
-	BUID  string `json:"bu_id"`
+	Success bool                    `json:"success"`
+	Data    []models.DocumentSummary `json:"data"`
+	Meta    *swagMeta               `json:"meta,omitempty"`
 }
 
 // --- Activity ---
 
 // SwagActivityLogListEnvelope wraps []models.ActivityLog.
 type SwagActivityLogListEnvelope struct {
-	Success bool               `json:"success"`
-	Data    []swagActivityLog  `json:"data"`
-	Meta    *swagMeta          `json:"meta,omitempty"`
-}
-
-type swagActivityLog struct {
-	ID        string `json:"id"`
-	Action    string `json:"action"`
-	CreatedAt string `json:"created_at"`
+	Success bool                `json:"success"`
+	Data    []models.ActivityLog `json:"data"`
+	Meta    *swagMeta           `json:"meta,omitempty"`
 }
 
 // SwagActivitySummaryEnvelope wraps models.ActivitySummary.
 type SwagActivitySummaryEnvelope struct {
-	Success bool                `json:"success"`
-	Data    swagActivitySummary `json:"data"`
-	Meta    *swagMeta           `json:"meta,omitempty"`
-}
-
-type swagActivitySummary struct {
-	Total int `json:"total"`
-	Today int `json:"today"`
+	Success bool                   `json:"success"`
+	Data    models.ActivitySummary `json:"data"`
+	Meta    *swagMeta              `json:"meta,omitempty"`
 }
 
 // --- Indexing ---
 
 // SwagMessageResultEnvelope wraps models.MessageResult.
 type SwagMessageResultEnvelope struct {
-	Success bool              `json:"success"`
-	Data    swagMessageResult `json:"data"`
-	Meta    *swagMeta         `json:"meta,omitempty"`
-}
-
-type swagMessageResult struct {
-	Message string `json:"message"`
+	Success bool                 `json:"success"`
+	Data    models.MessageResult `json:"data"`
+	Meta    *swagMeta            `json:"meta,omitempty"`
 }
 
 // SwagReindexOneResultEnvelope wraps models.ReindexOneResult.
 type SwagReindexOneResultEnvelope struct {
-	Success bool                `json:"success"`
-	Data    swagReindexOneResult `json:"data"`
-	Meta    *swagMeta           `json:"meta,omitempty"`
-}
-
-type swagReindexOneResult struct {
-	Path    string `json:"path"`
-	Message string `json:"message"`
+	Success bool                    `json:"success"`
+	Data    models.ReindexOneResult `json:"data"`
+	Meta    *swagMeta               `json:"meta,omitempty"`
 }
 
 // SwagReindexStatusEnvelope wraps models.ReindexStatus.
 type SwagReindexStatusEnvelope struct {
-	Success bool              `json:"success"`
-	Data    swagReindexStatus `json:"data"`
-	Meta    *swagMeta         `json:"meta,omitempty"`
-}
-
-type swagReindexStatus struct {
-	Running  bool   `json:"running"`
-	Progress int    `json:"progress"`
-	Message  string `json:"message"`
+	Success bool                 `json:"success"`
+	Data    models.ReindexStatus `json:"data"`
+	Meta    *swagMeta            `json:"meta,omitempty"`
 }
 
 // SwagReindexUnlockEnvelope wraps models.ReindexUnlock.
 type SwagReindexUnlockEnvelope struct {
-	Success bool              `json:"success"`
-	Data    swagReindexUnlock `json:"data"`
-	Meta    *swagMeta         `json:"meta,omitempty"`
-}
-
-type swagReindexUnlock struct {
-	Message string `json:"message"`
+	Success bool                 `json:"success"`
+	Data    models.ReindexUnlock `json:"data"`
+	Meta    *swagMeta            `json:"meta,omitempty"`
 }
 
 // --- Chat ---
 
 // SwagChatAskResponseEnvelope wraps models.ChatAskResponse.
 type SwagChatAskResponseEnvelope struct {
-	Success bool                `json:"success"`
-	Data    swagChatAskResponse `json:"data"`
-	Meta    *swagMeta           `json:"meta,omitempty"`
-}
-
-type swagChatAskResponse struct {
-	Answer  string          `json:"answer"`
-	Sources []swagChatSource `json:"sources"`
-}
-
-type swagChatSource struct {
-	Path  string `json:"path"`
-	Title string `json:"title"`
+	Success bool                   `json:"success"`
+	Data    models.ChatAskResponse `json:"data"`
+	Meta    *swagMeta              `json:"meta,omitempty"`
 }
 
 // SwagStatusResultEnvelope wraps models.StatusResult.
 type SwagStatusResultEnvelope struct {
-	Success bool             `json:"success"`
-	Data    swagStatusResult `json:"data"`
-	Meta    *swagMeta        `json:"meta,omitempty"`
-}
-
-type swagStatusResult struct {
-	Status string `json:"status"`
+	Success bool                `json:"success"`
+	Data    models.StatusResult `json:"data"`
+	Meta    *swagMeta           `json:"meta,omitempty"`
 }
 
 // SwagClearResultEnvelope wraps models.ClearResult.
 type SwagClearResultEnvelope struct {
-	Success bool            `json:"success"`
-	Data    swagClearResult `json:"data"`
-	Meta    *swagMeta       `json:"meta,omitempty"`
-}
-
-type swagClearResult struct {
-	RoomID  string `json:"room_id"`
-	Message string `json:"message"`
+	Success bool               `json:"success"`
+	Data    models.ClearResult `json:"data"`
+	Meta    *swagMeta          `json:"meta,omitempty"`
 }
 
 // SwagRecordHistoryResultEnvelope wraps models.RecordHistoryResult.
 type SwagRecordHistoryResultEnvelope struct {
-	Success bool                    `json:"success"`
-	Data    swagRecordHistoryResult `json:"data"`
-	Meta    *swagMeta               `json:"meta,omitempty"`
-}
-
-type swagRecordHistoryResult struct {
-	LogID   string `json:"log_id"`
-	Message string `json:"message"`
+	Success bool                        `json:"success"`
+	Data    models.RecordHistoryResult  `json:"data"`
+	Meta    *swagMeta                   `json:"meta,omitempty"`
 }
 
 // SwagListEntryListEnvelope wraps []services.ListEntry.
 type SwagListEntryListEnvelope struct {
-	Success bool           `json:"success"`
-	Data    []swagListEntry `json:"data"`
-	Meta    *swagMeta      `json:"meta,omitempty"`
-}
-
-type swagListEntry struct {
-	ID        string `json:"id"`
-	Question  string `json:"question"`
-	CreatedAt string `json:"created_at"`
+	Success bool               `json:"success"`
+	Data    []services.ListEntry `json:"data"`
+	Meta    *swagMeta          `json:"meta,omitempty"`
 }
 
 // SwagIntentTestResultEnvelope wraps models.IntentTestResult.
 type SwagIntentTestResultEnvelope struct {
-	Success bool                 `json:"success"`
-	Data    swagIntentTestResult `json:"data"`
-	Meta    *swagMeta            `json:"meta,omitempty"`
-}
-
-type swagIntentTestResult struct {
-	Intent string `json:"intent"`
-	Score  float64 `json:"score"`
+	Success bool                    `json:"success"`
+	Data    models.IntentTestResult `json:"data"`
+	Meta    *swagMeta               `json:"meta,omitempty"`
 }
 
 // SwagRouteResultEnvelope wraps models.RouteResult.
 type SwagRouteResultEnvelope struct {
-	Success bool            `json:"success"`
-	Data    swagRouteResult `json:"data"`
-	Meta    *swagMeta       `json:"meta,omitempty"`
-}
-
-type swagRouteResult struct {
-	Route      string `json:"route"`
-	Confidence float64 `json:"confidence"`
+	Success bool               `json:"success"`
+	Data    models.RouteResult `json:"data"`
+	Meta    *swagMeta          `json:"meta,omitempty"`
 }
