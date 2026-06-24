@@ -66,11 +66,14 @@ const IconThumbDown = (
 
 // ── DOMPurify config ────────────────────────────────────────────────────────
 
-const ALLOWED_IFRAME_ORIGINS = [
-  "https://www.youtube.com",
-  "https://www.youtube-nocookie.com",
-  "https://player.vimeo.com",
-];
+// Exact-hostname allowlist for embedded iframes. Match the parsed URL's
+// hostname, NOT a prefix of the raw src — a substring check lets lookalikes
+// like "www.youtube.com.evil.com" pass (it startsWith "https://www.youtube.com").
+const ALLOWED_IFRAME_HOSTS = new Set([
+  "www.youtube.com",
+  "www.youtube-nocookie.com",
+  "player.vimeo.com",
+]);
 
 // ── Animation variants ──────────────────────────────────────────────────────
 
@@ -167,7 +170,15 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     DOMPurify.addHook("afterSanitizeAttributes", (node) => {
       if (node.tagName === "IFRAME") {
         const src = node.getAttribute("src") ?? "";
-        const trusted = ALLOWED_IFRAME_ORIGINS.some((origin) => src.startsWith(origin));
+        let trusted = false;
+        try {
+          const u = new URL(src);
+          trusted =
+            u.protocol === "https:" &&
+            ALLOWED_IFRAME_HOSTS.has(u.hostname.toLowerCase());
+        } catch {
+          trusted = false;
+        }
         if (!trusted) node.parentNode?.removeChild(node);
       }
     });
