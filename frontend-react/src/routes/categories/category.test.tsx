@@ -29,8 +29,10 @@ mock.module("@/lib/wiki-api", () => ({
   rebuildIndex: jest.fn().mockResolvedValue({ message: "ok" }),
 }));
 
-mock.module("gray-matter", () => ({
-  default: jest.fn().mockReturnValue({ data: { title: "AP" }, content: "" }),
+mock.module("@/lib/frontmatter", () => ({
+  parseFrontmatter: jest
+    .fn()
+    .mockReturnValue({ data: { title: "AP" }, content: "" }),
 }));
 
 const { default: Category, categoryLoader } = await import("./category");
