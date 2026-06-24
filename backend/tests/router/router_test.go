@@ -30,25 +30,25 @@ func TestDocsRoutes_ScalarReplacesSwagger(t *testing.T) {
 		t.Errorf("/openapi.json missing spec title (got %d bytes)", len(body))
 	}
 
-	// /scalar serves the Scalar reference HTML pointing at /openapi.json.
-	resp2, _ := app.Test(httptest.NewRequest("GET", "/scalar", nil), -1)
+	// /swagger serves the Scalar reference HTML pointing at /openapi.json.
+	resp2, _ := app.Test(httptest.NewRequest("GET", "/swagger", nil), -1)
 	defer resp2.Body.Close()
 	if resp2.StatusCode != 200 {
-		t.Errorf("/scalar status = %d, want 200", resp2.StatusCode)
+		t.Errorf("/swagger status = %d, want 200", resp2.StatusCode)
 	}
 	body2, _ := io.ReadAll(resp2.Body)
 	if !strings.Contains(string(body2), "@scalar/api-reference") || !strings.Contains(string(body2), `data-url="/openapi.json"`) {
-		t.Errorf("/scalar missing Scalar script or data-url; got:\n%s", body2)
+		t.Errorf("/swagger missing Scalar script or data-url; got:\n%s", body2)
 	}
 
-	// /swagger redirects to /scalar (back-compat for old links).
-	resp3, _ := app.Test(httptest.NewRequest("GET", "/swagger", nil), -1)
+	// /scalar redirects to /swagger (back-compat for the short-lived /scalar path).
+	resp3, _ := app.Test(httptest.NewRequest("GET", "/scalar", nil), -1)
 	defer resp3.Body.Close()
 	if resp3.StatusCode != 302 {
-		t.Errorf("/swagger status = %d, want 302", resp3.StatusCode)
+		t.Errorf("/scalar status = %d, want 302", resp3.StatusCode)
 	}
-	if loc := resp3.Header.Get("Location"); loc != "/scalar" {
-		t.Errorf("/swagger Location = %q, want /scalar", loc)
+	if loc := resp3.Header.Get("Location"); loc != "/swagger" {
+		t.Errorf("/scalar Location = %q, want /swagger", loc)
 	}
 }
 
@@ -70,8 +70,8 @@ func TestRootRoute_LandingPageLinksToDocs(t *testing.T) {
 		t.Errorf("Content-Type = %q, want text/html", ct)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	if !strings.Contains(string(body), `href="/scalar"`) {
-		t.Errorf("body missing API docs link href=\"/scalar\"; got:\n%s", body)
+	if !strings.Contains(string(body), `href="/swagger"`) {
+		t.Errorf("body missing API docs link href=\"/swagger\"; got:\n%s", body)
 	}
 }
 

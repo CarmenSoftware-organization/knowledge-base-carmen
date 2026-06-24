@@ -25,24 +25,24 @@ const scalarHTML = `<!doctype html>
 </body>
 </html>`
 
-// RegisterDocs serves the API reference UI (Scalar) at /scalar and the raw
+// RegisterDocs serves the API reference UI (Scalar) at /swagger and the raw
 // OpenAPI spec at /openapi.json. The spec is rendered from the swaggo-embedded
 // docs.SwaggerInfo (compiled into the binary), so it works in the Docker runtime
-// image, which does not ship the docs/ directory. Old /swagger* paths redirect
-// to /scalar for back-compat.
+// image, which does not ship the docs/ directory. Old Swagger-UI subpaths
+// (/swagger/index.html etc.) and the short-lived /scalar path redirect to /swagger.
 func RegisterDocs(app *fiber.App) {
 	app.Get("/openapi.json", func(c *fiber.Ctx) error {
 		c.Type("json", "utf-8")
 		return c.SendString(docs.SwaggerInfo.ReadDoc())
 	})
-	app.Get("/scalar", func(c *fiber.Ctx) error {
+	app.Get("/swagger", func(c *fiber.Ctx) error {
 		c.Type("html", "utf-8")
 		return c.SendString(scalarHTML)
 	})
-	app.Get("/swagger", func(c *fiber.Ctx) error {
-		return c.Redirect("/scalar", fiber.StatusFound)
-	})
 	app.Get("/swagger/*", func(c *fiber.Ctx) error {
-		return c.Redirect("/scalar", fiber.StatusFound)
+		return c.Redirect("/swagger", fiber.StatusFound)
+	})
+	app.Get("/scalar", func(c *fiber.Ctx) error {
+		return c.Redirect("/swagger", fiber.StatusFound)
 	})
 }
