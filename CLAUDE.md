@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Monorepo, two runtime services sharing one Postgres+pgvector:
 
-- `backend/` — Go Fiber API. Owns wiki/FAQ/activity/indexing **and the native RAG chatbot at `/api/chat/*`** (intent → hybrid retrieval pgvector+FTS+RRF → LLM, streams NDJSON). The chatbot is tuned via YAML in `backend/config/{tuning,intents,path_rules,prompts}.yaml` (no code change/restart for tuning). The former Python `carmen-chatbot/` service was migrated into the Go backend and removed. It also serves **PDF export at `/api/export/pdf`** (chat-answer HTML → PDF via a **Gotenberg** sidecar; see Non-obvious conventions).
+- `backend/` — Go Fiber API. Owns wiki/FAQ/activity/indexing **and the native RAG chatbot at `/api/chat/*`** (intent → hybrid retrieval pgvector+FTS+RRF → LLM, streams NDJSON). The chatbot is tuned via YAML in `backend/config/{tuning,intents,path_rules,prompts}.yaml` (no code change/restart for tuning). The former Python `carmen-chatbot/` service was migrated into the Go backend and removed.
 - `frontend/` — Next.js App Router. Talks only to the Go backend.
 - `contents/<bu>/...` — markdown source-of-truth (the Go indexer reads this into `public.documents` / `public.document_chunks` filtered by `bu_id`).
 
@@ -59,7 +59,6 @@ Health: `:8080/health` (Go backend, serves `/api/chat/*` natively). Swagger: `:8
 - **Markdown frontmatter is parsed** — every file in `contents/` needs the YAML block (`title/description/published/date/tags/editor: markdown/dateCreated`). Optional second YAML block with `weight` orders the sidebar. See `manual/HANDOVER-ADD-NEW-BU.md` §5.
 - **Chatbot behavior is tuned via YAML**, not code: `backend/config/{tuning,intents,path_rules,prompts}.yaml`. Native chat endpoints are flag-free (always native); the RAG flow lives in `backend/internal/api/chat_stream_flow.go` + `internal/services/{retrieval,intent_router_service,query_rewrite,prompt}_service.go`.
 - **Frontend API base** is resolved in `frontend/lib/config.ts` (`NEXT_PUBLIC_API_BASE` / `NEXT_PUBLIC_USE_REMOTE_API`). Selected BU lives in cookie `selected_bu`.
-- **PDF export (`POST /api/export/pdf`)** is native Go in `backend/internal/export/` + `internal/api/export_handler.go`: it SSRF-guards + inlines `<img>` as base64 (IP-pinned dialer in `ssrf.go`), wraps the body in a styled template, then renders via a **Gotenberg** (Chromium) sidecar. Public but **rate-limited** (10/min/IP) + 2 MB body cap; **PDF-only** (DOCX dropped — Gotenberg has no HTML→DOCX route). Set `GOTENBERG_URL` (empty → handler returns `503`). Gotenberg runs as a **separate service**: `gotenberg` in `backend/docker-compose.yml` for local dev; a private `pserv` in `render.yaml` with `GOTENBERG_URL` auto-wired via `fromService` (config.go prepends `http://` to the scheme-less internal `host:port`).
 
 ## Where to look next
 

@@ -19,15 +19,13 @@
 
 ## `backend/` — Go Fiber API
 
-Owns wiki / FAQ / activity / indexing, the native RAG chatbot at `/api/chat/*`
-(intent → hybrid retrieval pgvector + FTS + RRF → LLM, streams NDJSON), and
-PDF export at `/api/export/pdf` (chat-answer HTML → PDF via a Gotenberg sidecar).
+Owns wiki / FAQ / activity / indexing and the native RAG chatbot at `/api/chat/*`
+(intent → hybrid retrieval pgvector + FTS + RRF → LLM, streams NDJSON).
 
 Key entry points:
 - `cmd/server/main.go` — HTTP server + CLI ops (`reindex`, `reset`).
 - `internal/api/chat_stream_flow.go` — RAG request flow.
 - `internal/services/{retrieval,intent_router_service,query_rewrite,prompt}_service.go` — RAG stages.
-- `internal/api/export_handler.go` + `internal/export/` — PDF export `/api/export/pdf` (HTML → Gotenberg sidecar; SSRF-guard + base64 `<img>`, rate-limited 10/min/IP, PDF-only; needs `GOTENBERG_URL`).
 - `config/{tuning,intents,path_rules,prompts}.yaml` — chatbot tuning (no rebuild/restart).
 - `migrations/` — SQL schema; apply with `psql` (see `backend/migrations/README.md`).
 
@@ -77,7 +75,6 @@ backend/
     config/
     constants/
     database/
-    export/
     middleware/
     models/
     nlp/
