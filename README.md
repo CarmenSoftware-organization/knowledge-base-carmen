@@ -3,7 +3,7 @@
 ระบบ Knowledge Base + AI Chat ของ Carmen/Blueledgers ในรูปแบบ monorepo
 
 ประกอบด้วย:
-- `frontend` — Next.js UI (KB, FAQ, Activity, Floating Chat)
+- `frontend-next` — Next.js UI (KB, FAQ, Activity, Floating Chat)
 - `backend` — Go Fiber API (wiki, index, faq, activity, native RAG chatbot)
 - `scripts` — import Wiki.js, sync/reindex, FAQ seed, BU ops
 - `contents` — markdown source ของเอกสารความรู้ จัดเป็น `contents/<bu-slug>/...`
@@ -63,17 +63,17 @@ curl http://localhost:8080/health        # Go backend
 cd backend && go mod download && cp .env.example .env && make run
 
 # Frontend (Next.js) — รันแยก (deploy บน Vercel)
-cd frontend && npm install && npm run dev
+cd frontend-next && npm install && npm run dev
 ```
 
-คำสั่งหลักรายบริการอยู่ใน README ของแต่ละโฟลเดอร์ (`backend/`, `frontend/`)
+คำสั่งหลักรายบริการอยู่ใน README ของแต่ละโฟลเดอร์ (`backend/`, `frontend-next/`)
 
 ## Deploy
 
 | บริการ | Platform | วิธี |
 |--------|----------|------|
 | **Backend** (Go) | Render | `render.yaml` Blueprint — `carmen-backend` + `carmen-db` |
-| **Frontend** (Next.js) | Vercel | เชื่อมต่อ repo + ตั้ง Root Directory = `frontend` |
+| **Frontend** (Next.js) | Vercel | เชื่อมต่อ repo + ตั้ง Root Directory = `frontend-next` |
 
 Backend: หลัง push เปิด Render Blueprint แล้วตั้งค่า secret env ที่ `sync: false`  
 Frontend: ตั้ง `NEXT_PUBLIC_API_BASE` = URL ของ Go backend บน Vercel
@@ -105,5 +105,5 @@ CONTENTS_ROOT="$PWD/contents/<bu>" ./scripts/wikijs-import-contents.sh
 - `manual/HANDOVER-ADD-NEW-BU.md` — runbook เพิ่ม/ลบ BU + ฟอร์แมต markdown
 - `manual/USER_MANUAL_TH.md` — คู่มือผู้ใช้ภาษาไทย
 - `backend/README.md`, `backend/migrations/README.md` — backend API + ลำดับ migration
-- `frontend/README.md` — frontend routes + env
+- `frontend-next/README.md` — frontend routes + env
 - RAG pipeline internals: ดู `docs/superpowers/plans/2026-06-22-chatbot-go-*`

@@ -72,6 +72,6 @@ DB ใหม่รันตามลำดับ (idempotent, รันซ้ำ
 
 ## Vercel (Frontend)
 
-- Root Directory: `frontend`
+- Root Directory: `frontend-next`
 - ตั้ง `NEXT_PUBLIC_API_BASE` = URL ของ Go backend บน Render (`https://carmen-backend-4o9h.onrender.com` — ให้ตรงกับที่ browser เรียก)
-- โปรเจกต์มี `frontend/vercel.json` ตั้ง region **Singapore (`sin1`)**
+- โปรเจกต์มี `frontend-next/vercel.json` ตั้ง region **Singapore (`sin1`)**
