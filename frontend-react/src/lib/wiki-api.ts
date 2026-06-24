@@ -1,6 +1,6 @@
 import Fuse from "fuse.js";
 import { API_BASE, DEFAULT_BU } from "./config";
-import { apiJson, fetchWithTimeout } from "./fetch-utils";
+import { apiJson } from "./fetch-utils";
 
 /* =========================
    Types

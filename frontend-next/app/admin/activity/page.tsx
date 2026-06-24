@@ -1,5 +1,5 @@
 import { API_BASE, DEFAULT_BU } from "@/lib/config";
-import { apiJson, ApiError } from "@/lib/fetch-utils";
+import { apiJson } from "@/lib/fetch-utils";
 
 type ActivityLog = {
   id: number;
@@ -29,10 +29,7 @@ async function fetchAdminActivity(): Promise<ActivityResponse> {
       limit: meta?.limit ?? 50,
       offset: meta?.offset ?? 0,
     };
-  } catch (err) {
-    if (err instanceof ApiError) {
-      return { items: [], total: 0, limit: 50, offset: 0 };
-    }
+  } catch {
     return { items: [], total: 0, limit: 50, offset: 0 };
   }
 }

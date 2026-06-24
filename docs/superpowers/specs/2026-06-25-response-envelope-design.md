@@ -243,9 +243,10 @@ Call-site updates (both frontends):
   components (`bu-switcher.tsx`, `activity-log-table.tsx`) updated to the helper.
 - `use-chat-stream.ts` (NDJSON) **unchanged** — stream is out of scope.
 
-The tolerant unwrap (`body.success` boolean check, legacy fallback) lets old and
-new shapes coexist, shrinking the deploy window risk (§10). The legacy branch is
-removed in a follow-up once all services run the new backend.
+The tolerant unwrap (`body.success` boolean check, legacy fallback) coexists with
+both shapes for **object-returning endpoints** (content/ask) only — it does NOT
+safely cover list endpoints (§10). The legacy branch is removed in a follow-up
+once all services run the new backend.
 
 ## 9. Testing
 
@@ -275,17 +276,17 @@ Single coordinated change set. Implementation order:
 4. Swagger annotations + regen.
 5. Frontend `apiJson` helper + call sites (React, then Next).
 6. Frontend tests + builds.
-7. Deploy in this order: both frontends (Vercel, manual `vercel --prod`) **first**,
-   then backend (Render).
+7. Deploy in this order: **backend (Render) first**, then both frontends (Vercel,
+   manual `vercel --prod`).
 
 **Window risk:** the two Vercel frontends deploy independently and have no Git
-connection, so backend and frontends cannot flip atomically. The **tolerant
-unwrap** (§8) makes the new frontend accept *both* shapes, so deploying the
-frontends first is safe — they keep working against the still-legacy backend via
-the fallback branch — and then deploying the backend flips them onto the envelope
-branch with no break. Browser tabs already loaded on the *old* frontend bundle
-will break on envelope responses until refreshed — acceptable per the "update
-everything together" decision. Deploy during low traffic.
+connection, so backend and frontends cannot flip atomically. The tolerant unwrap
+(§8) only bridges **object-returning endpoints** (wiki/content, chat/ask) — for
+list endpoints (`{items}`, `{categories}`) the legacy fallback returns the whole
+wrapper object as `data`, so a frontend-first deploy would break list pages
+against the old backend (`data.filter is not a function`). Deploy backend first;
+already-loaded old-frontend tabs will break on new envelope responses until
+refresh — accepted. Deploy during low traffic.
 
 ## 11. Decisions Log
 

@@ -2044,8 +2044,9 @@ unwrap via apiJson (return shapes unchanged → components untouched).
 
 Out of scope (unchanged): chat/stream, chat images, webhook, /health.
 
-Deploy order (per spec §10): both Vercel frontends first (tolerant unwrap accepts
-old+new), then backend on Render.
+Deploy order (per spec §10): backend on Render first, then both Vercel frontends.
+The tolerant unwrap only bridges object-returning endpoints; list endpoints would
+break against the old backend if frontends deployed first.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
