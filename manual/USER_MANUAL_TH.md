@@ -111,7 +111,7 @@ docker compose --env-file .env.docker up --build
 ./scripts/migrate-docker.sh
 ```
 
-> ⚠️ **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$` เช่น `0001_init_schema.sql`, `0003_convert_ids_to_uuid.sql`) — Go binary ตัด `;` ผิด ใช้ `migrate-docker.sh` (ผ่าน psql) หรือ `psql` ตรงๆ ตามลำดับใน `backend/migrations/README.md`
+> ⚠️ **อย่าใช้** `./server migrate` กับไฟล์ที่มี PL/pgSQL (`DO $$...$$` เช่น `0001_init_schema.sql`) — Go binary ตัด `;` ผิด ใช้ `migrate-docker.sh` (ผ่าน psql) หรือ `psql` ตรงๆ ดู `backend/migrations/README.md`
 
 health check:
 
