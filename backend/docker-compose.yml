@@ -39,9 +39,9 @@ services:
       DB_SSLMODE: ${DB_SSLMODE:-disable}
       DB_SCHEMA: ${DB_SCHEMA:-carmen,public}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      GIT_REPO_PATH: /repo
-      # ค่าเริ่มต้น = carmen_cloud ที่ root ของ repo; ถ้าใช้เฉพาะ contents/ ให้ตั้งเป็น /repo/contents/carmen_cloud
-      WIKI_CONTENT_PATH: ${WIKI_CONTENT_PATH:-/repo/carmen_cloud}
+      # Repo root is mounted at /repo (see volumes below). The backend resolves
+      # wiki content per-BU to /repo/contents/<bu> automatically from GIT_REPO_PATH.
+      GIT_REPO_PATH: ${GIT_REPO_PATH:-/repo}
       GITHUB_REPO_OWNER: ${GITHUB_REPO_OWNER:-Sunshine050}
       GITHUB_REPO_NAME: ${GITHUB_REPO_NAME:-new-carmen}
       GITHUB_BRANCH: ${GITHUB_BRANCH:-main}
