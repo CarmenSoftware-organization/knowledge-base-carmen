@@ -27,6 +27,8 @@ make test
 make build
 ```
 
+> `make dev` ใช้ hot reload ผ่าน [air](https://github.com/air-verse/air) — ต้องติดตั้งก่อน: `go install github.com/air-verse/air@latest` แล้วให้แน่ใจว่า `$(go env GOPATH)/bin` (ปกติ `~/go/bin`) อยู่ใน `PATH` ไม่งั้น `make dev` จะขึ้น `air: No such file or directory`
+
 ## Environment สำคัญ
 
 **Core**
@@ -54,6 +56,9 @@ make build
 - `CHAT_CONTEXT_LIMIT`, `CHAT_MAX_CONTEXT_CHARS` (8000), `CHAT_MAX_CHUNK_CONTENT` (2000)
 - `CHAT_HISTORY_ENABLED` (true), `CHAT_HISTORY_SIMILARITY_THRESHOLD` (0.15) — semantic cache
 
+**PDF Export (Gotenberg sidecar)**
+- `GOTENBERG_URL` — endpoint ของ Gotenberg (Chromium) ที่ใช้ render HTML→PDF; **ว่าง → `POST /api/export/pdf` คืน `503`** (local dev: service `gotenberg` ใน `docker-compose.yml`; prod: private `pserv` ใน `render.yaml` wire ผ่าน `fromService`, config.go เติม `http://` ให้ host:port ที่ไม่มี scheme)
+
 > พฤติกรรม RAG ปรับจูนผ่าน YAML ไม่ต้องแก้โค้ด: `config/{tuning,intents,path_rules,prompts}.yaml` (เกณฑ์ intent, top_k/max_distance/rrf_k, path boost, prompts, locale).
 
 ## API กลุ่มหลัก
@@ -70,6 +75,7 @@ make build
 - FAQ: `/api/faq/*`
 - Activity: `/api/activity/*`
 - BU admin: `/api/business-units/*`
+- **Export (PDF):** `POST /api/export/pdf` — รับ chat-answer HTML แล้ว render เป็น PDF ผ่าน Gotenberg sidecar; public แต่ rate-limit 10/min/IP + body cap 2 MB, **PDF-only** (ไม่มี DOCX); SSRF-guard + inline `<img>` เป็น base64; ต้องตั้ง `GOTENBERG_URL` (ว่าง → `503`)
 - Webhook: `/webhook/github`
 
 > เส้นทางที่เป็น admin/internal ใช้ API key ผ่าน header (`X-Admin-Key`, `X-Internal-API-Key`). `bu` ที่รับจาก body/query ถูก validate ด้วย slug whitelist แล้ว resolve เป็น `bu_id` (UUID) เพื่อใช้เป็น parameter ใน SQL (ไม่ฉีดชื่อ schema เข้า query)
