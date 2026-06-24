@@ -40,6 +40,7 @@ func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error)
 
 	emb, _, err := h.createEmbedding(question)
 	if err != nil {
+		log.Printf("[chat] create embedding failed: %v", err)
 		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("failed to create embedding")
 	}
 
@@ -74,6 +75,7 @@ func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error)
 	context, sources := buildContextFromChunks(chunks, chatCfg.MaxContextChars, chatCfg.MaxChunkContent)
 	answer, err := h.llm.GenerateAnswer(context, question)
 	if err != nil {
+		log.Printf("[chat] generate answer failed: %v", err)
 		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("failed to generate answer")
 	}
 
@@ -158,6 +160,7 @@ func (h *ChatHandler) tryRouterAnswer(req models.ChatAskRequest, bu, question, u
 			sources := []models.ChatSource{{ArticleID: content.Path, Title: content.Title}}
 			answer, genErr := h.llm.GenerateAnswer(content.Content, question)
 			if genErr != nil {
+				log.Printf("[chat] generate answer failed (preferred path): %v", genErr)
 				return models.ChatAskResponse{}, true, fmt.Errorf("failed to generate answer")
 			}
 			h.saveHistoryIfEnabled(historyEnabled, bu, userID, question, answer, sources, emb)
@@ -193,6 +196,7 @@ func (h *ChatHandler) tryRouterAnswer(req models.ChatAskRequest, bu, question, u
 
 	answer, genErr := h.llm.GenerateAnswer(context, question)
 	if genErr != nil {
+		log.Printf("[chat] generate answer failed (routed): %v", genErr)
 		return models.ChatAskResponse{}, true, fmt.Errorf("failed to generate answer")
 	}
 	h.saveHistoryIfEnabled(historyEnabled, bu, userID, question, answer, sources, emb)
