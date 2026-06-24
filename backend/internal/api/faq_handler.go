@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/constants"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 	"github.com/gofiber/fiber/v2"
@@ -23,23 +24,23 @@ func (h *FAQHandler) ListModules(c *fiber.Ctx) error {
 	bu := c.Query("bu", constants.DefaultBU)
 	mods, err := h.faqService.ListModules(bu)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(fiber.Map{"items": mods})
+	return response.OK(c, mods)
 }
 
 // GetModuleDetail returns a module with its submodules + categories. GET /api/faq/:module
 func (h *FAQHandler) GetModuleDetail(c *fiber.Ctx) error {
 	moduleSlug := c.Params("module")
 	if moduleSlug == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "module is required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "module is required")
 	}
 	bu := c.Query("bu", constants.DefaultBU)
 	data, err := h.faqService.GetModuleWithChildren(bu, moduleSlug)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(data)
+	return response.OK(c, data)
 }
 
 // ListByCategory returns FAQ entries inside a category. GET /api/faq/:module/:sub/:category
@@ -48,31 +49,31 @@ func (h *FAQHandler) ListByCategory(c *fiber.Ctx) error {
 	subSlug := c.Params("sub")
 	catSlug := c.Params("category")
 	if moduleSlug == "" || subSlug == "" || catSlug == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "module, sub, category are required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "module, sub, category are required")
 	}
 	bu := c.Query("bu", constants.DefaultBU)
 	q := c.Query("q", "")
 
 	resp, err := h.faqService.ListByCategory(bu, moduleSlug, subSlug, catSlug, q)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(resp)
+	return response.OK(c, resp)
 }
 
 // GetEntry returns a single FAQ entry. GET /api/faq/entry/:id
 func (h *FAQHandler) GetEntry(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if id == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id is required"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeMissingParam, "id is required")
 	}
 	if _, err := uuid.Parse(id); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid id"})
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidID, "invalid id")
 	}
 	bu := c.Query("bu", constants.DefaultBU)
 	entry, err := h.faqService.GetEntryByID(bu, id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
-	return c.JSON(entry)
+	return response.OK(c, entry)
 }
