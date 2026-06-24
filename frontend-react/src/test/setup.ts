@@ -10,7 +10,8 @@ GlobalRegistrator.register({ url: "http://localhost/" });
 // jest-dom matchers (toBeInTheDocument, etc.) on bun:test's expect.
 expect.extend(matchers as unknown as Parameters<typeof expect.extend>[0]);
 
-// Vite injects these; bun test does not. Mirror dev defaults so config.ts behaves.
+// Vite injects these; bun test does not. Only PROD is currently read by config.ts
+// (PROD=false forces the dev branch + avoids its prod throw); MODE/DEV are dev-parity padding.
 const env = (import.meta as unknown as { env: Record<string, unknown> }).env;
 env.MODE = "test";
 env.DEV = true;
