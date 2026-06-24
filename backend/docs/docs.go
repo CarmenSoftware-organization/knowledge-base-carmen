@@ -38,8 +38,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagActivityLogListEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -68,8 +79,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagActivitySummaryEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -98,8 +120,117 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagBusinessUnitsEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/business-units/deprovision": {
+            "delete": {
+                "security": [
+                    {
+                        "AdminKey": []
+                    }
+                ],
+                "description": "Removes a business unit and all its data. Requires the X-Admin-Key header.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wiki"
+                ],
+                "summary": "Deprovision a business unit (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagDeprovisionResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/business-units/provision": {
+            "post": {
+                "security": [
+                    {
+                        "AdminKey": []
+                    }
+                ],
+                "description": "Creates and provisions a new business unit. Requires the X-Admin-Key header.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wiki"
+                ],
+                "summary": "Provision a business unit (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagProvisionResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -140,14 +271,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ChatAskResponse"
+                            "$ref": "#/definitions/apidoc.SwagChatAskResponseEnvelope"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -156,21 +292,99 @@ const docTemplate = `{
         "/api/chat/clear/{room_id}": {
             "delete": {
                 "description": "Acknowledges a request to clear a chat room. No-op server-side — chat history is owned by the frontend.",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "chat"
                 ],
                 "summary": "Clear room history (no-op ack; history is frontend-owned)",
-                "responses": {}
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Room ID",
+                        "name": "room_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagClearResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/api/chat/feedback/{message_id}": {
             "post": {
                 "description": "Records a thumbs up/down score for a chat message, scoped to the requesting user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "chat"
                 ],
                 "summary": "Message feedback (thumbs up/down)",
-                "responses": {}
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Message UUID",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "carmen",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagStatusResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/api/chat/history/list": {
@@ -207,8 +421,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagListEntryListEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     },
                     "401": {
@@ -218,6 +437,70 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chat/intent-test": {
+            "post": {
+                "security": [
+                    {
+                        "AdminKey": []
+                    }
+                ],
+                "description": "Debug endpoint that runs the intent classifier for a question and returns the matched intent. Requires the X-Admin-Key header.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Intent-test debug (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "carmen",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Question",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatAskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagIntentTestResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -256,8 +539,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagRecordHistoryResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     },
                     "401": {
@@ -267,6 +555,12 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -312,7 +606,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.RouteResult"
+                            "$ref": "#/definitions/apidoc.SwagRouteResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -351,8 +657,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagDocumentSummaryListEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -381,8 +698,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagFAQEntryDetailEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -402,8 +730,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagFAQModuleListEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -432,8 +771,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.FAQModuleEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -476,8 +826,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagFAQCategoryResponseEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -514,8 +875,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagMessageResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     },
                     "401": {
@@ -525,6 +891,180 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/index/rebuild/one": {
+            "post": {
+                "security": [
+                    {
+                        "AdminKey": []
+                    }
+                ],
+                "description": "Re-embeds and re-indexes a single document by its path. Requires the X-Admin-Key header.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "indexing"
+                ],
+                "summary": "Rebuild index for a single document (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagReindexOneResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/index/rebuild/status": {
+            "get": {
+                "security": [
+                    {
+                        "AdminKey": []
+                    }
+                ],
+                "description": "Returns the current status of the asynchronous index rebuild job. Requires the X-Admin-Key header.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "indexing"
+                ],
+                "summary": "Rebuild index status (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagReindexStatusEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/index/rebuild/unlock": {
+            "post": {
+                "security": [
+                    {
+                        "AdminKey": []
+                    }
+                ],
+                "description": "Clears a stuck rebuild lock for the business unit. Requires the X-Admin-Key header.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "indexing"
+                ],
+                "summary": "Unlock index rebuild lock (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagReindexUnlockEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -544,8 +1084,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagSystemStatusEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -574,8 +1125,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagCategoryEntryListEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -611,8 +1173,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagWikiCategoryPayloadEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -620,9 +1193,9 @@ const docTemplate = `{
         },
         "/api/wiki/content/{path}": {
             "get": {
-                "description": "Returns the raw markdown body for the article at the given path under the wiki root.",
+                "description": "Returns the markdown content for the article at the given path under the wiki root.",
                 "produces": [
-                    "text/plain"
+                    "application/json"
                 ],
                 "tags": [
                     "wiki"
@@ -646,9 +1219,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Markdown body",
+                        "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/apidoc.SwagWikiContentEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -677,8 +1268,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagWikiEntryListEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -714,8 +1316,60 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagSearchResultListEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/wiki/sidebar": {
+            "get": {
+                "description": "Returns the structured sidebar (categories and their articles) for the business unit.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wiki"
+                ],
+                "summary": "Wiki sidebar structure",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "carmen",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagSidebarCategoryListEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -752,8 +1406,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/apidoc.SwagSyncResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     },
                     "401": {
@@ -763,6 +1422,53 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/wiki/sync/audit": {
+            "get": {
+                "description": "Returns the audit log of the last wiki sync operation for the business unit.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "wiki"
+                ],
+                "summary": "Wiki sync audit",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "carmen",
+                        "description": "Business unit slug",
+                        "name": "bu",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagSyncAuditResultEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apidoc.SwagErrorResponse"
                         }
                     }
                 }
@@ -891,6 +1597,897 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "apidoc.FAQModuleEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagActivityLogListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagActivityLog"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagActivitySummaryEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagActivitySummary"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagBusinessUnitsEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagBusinessUnit"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagCategoryEntryListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagCategoryEntry"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagChatAskResponseEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagChatAskResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagClearResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagClearResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagDeprovisionResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagDeprovisionResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagDocumentSummaryListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagDocumentSummary"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagErrorBody": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.SwagErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/apidoc.SwagErrorBody"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagFAQCategoryResponseEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagFAQCategoryResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagFAQEntryDetailEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagFAQEntryDetail"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagFAQModuleListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagFAQModule"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagIntentTestResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagIntentTestResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagListEntryListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagListEntry"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagMessageResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagMessageResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagProvisionResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagProvisionResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagRecordHistoryResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagRecordHistoryResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagReindexOneResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagReindexOneResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagReindexStatusEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagReindexStatus"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagReindexUnlockEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagReindexUnlock"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagRouteResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagRouteResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagSearchResultListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagSearchResult"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagSidebarCategoryListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagSidebarCategory"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagStatusResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagStatusResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagSyncAuditResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagSyncAuditResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagSyncResultEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagSyncResult"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagSystemStatusEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagSystemStatusInner"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagWikiCategoryPayloadEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagWikiCategoryPayload"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagWikiContentEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/apidoc.swagWikiContent"
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.SwagWikiEntryListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagWikiEntry"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/apidoc.swagMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.swagActivityLog": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagActivitySummary": {
+            "type": "object",
+            "properties": {
+                "today": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "apidoc.swagBusinessUnit": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagCategoryEntry": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagChatAskResponse": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagChatSource"
+                    }
+                }
+            }
+        },
+        "apidoc.swagChatSource": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagClearResult": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "room_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagDeprovisionResult": {
+            "type": "object",
+            "properties": {
+                "bu": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagDocumentSummary": {
+            "type": "object",
+            "properties": {
+                "bu_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagFAQCategoryResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagFAQEntry"
+                    }
+                }
+            }
+        },
+        "apidoc.swagFAQEntry": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagFAQEntryDetail": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "module": {
+                    "type": "string"
+                },
+                "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagFAQModule": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagIntentTestResult": {
+            "type": "object",
+            "properties": {
+                "intent": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                }
+            }
+        },
+        "apidoc.swagListEntry": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagMessageResult": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagMeta": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "apidoc.swagProvisionResult": {
+            "type": "object",
+            "properties": {
+                "bu": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagRecordHistoryResult": {
+            "type": "object",
+            "properties": {
+                "log_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagReindexOneResult": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagReindexStatus": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "progress": {
+                    "type": "integer"
+                },
+                "running": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "apidoc.swagReindexUnlock": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagRouteResult": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "number"
+                },
+                "route": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagSearchResult": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "snippet": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagSidebarCategory": {
+            "type": "object",
+            "properties": {
+                "articles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagWikiEntry"
+                    }
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagStatusResult": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagSyncAuditResult": {
+            "type": "object",
+            "properties": {
+                "last_sync": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagSyncResult": {
+            "type": "object",
+            "properties": {
+                "added": {
+                    "type": "integer"
+                },
+                "deleted": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "updated": {
+                    "type": "integer"
+                }
+            }
+        },
+        "apidoc.swagSystemStatusInner": {
+            "type": "object",
+            "properties": {
+                "database": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagWikiCategoryPayload": {
+            "type": "object",
+            "properties": {
+                "articles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apidoc.swagWikiEntry"
+                    }
+                },
+                "category": {
+                    "$ref": "#/definitions/apidoc.swagCategoryEntry"
+                }
+            }
+        },
+        "apidoc.swagWikiContent": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "apidoc.swagWikiEntry": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "models.ChatAskRequest": {
             "type": "object",
             "properties": {
@@ -902,51 +2499,11 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ChatAskResponse": {
-            "type": "object",
-            "properties": {
-                "answer": {
-                    "type": "string"
-                },
-                "needDisambiguation": {
-                    "type": "boolean"
-                },
-                "options": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.DisambiguationOption"
-                    }
-                },
-                "sources": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.ChatSource"
-                    }
-                }
-            }
-        },
         "models.ChatSource": {
             "type": "object",
             "properties": {
                 "articleId": {
                     "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.DisambiguationOption": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string"
-                },
-                "reason": {
-                    "type": "string"
-                },
-                "score": {
-                    "type": "number"
                 },
                 "title": {
                     "type": "string"
@@ -973,31 +2530,6 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
-                }
-            }
-        },
-        "models.RouteCandidate": {
-            "type": "object",
-            "properties": {
-                "path": {
-                    "type": "string"
-                },
-                "reason": {
-                    "type": "string"
-                },
-                "score": {
-                    "type": "number"
-                }
-            }
-        },
-        "models.RouteResult": {
-            "type": "object",
-            "properties": {
-                "candidates": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.RouteCandidate"
-                    }
                 }
             }
         }

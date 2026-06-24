@@ -1,5 +1,578 @@
 basePath: /
 definitions:
+  apidoc.FAQModuleEnvelope:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagActivityLogListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagActivityLog'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagActivitySummaryEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagActivitySummary'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagBusinessUnitsEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagBusinessUnit'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagCategoryEntryListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagCategoryEntry'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagChatAskResponseEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagChatAskResponse'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagClearResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagClearResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagDeprovisionResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagDeprovisionResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagDocumentSummaryListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagDocumentSummary'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagErrorBody:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  apidoc.SwagErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/apidoc.SwagErrorBody'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagFAQCategoryResponseEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagFAQCategoryResponse'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagFAQEntryDetailEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagFAQEntryDetail'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagFAQModuleListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagFAQModule'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagIntentTestResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagIntentTestResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagListEntryListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagListEntry'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagMessageResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagMessageResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagProvisionResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagProvisionResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagRecordHistoryResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagRecordHistoryResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagReindexOneResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagReindexOneResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagReindexStatusEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagReindexStatus'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagReindexUnlockEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagReindexUnlock'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagRouteResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagRouteResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagSearchResultListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagSearchResult'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagSidebarCategoryListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagSidebarCategory'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagStatusResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagStatusResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagSyncAuditResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagSyncAuditResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagSyncResultEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagSyncResult'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagSystemStatusEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagSystemStatusInner'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagWikiCategoryPayloadEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagWikiCategoryPayload'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagWikiContentEnvelope:
+    properties:
+      data:
+        $ref: '#/definitions/apidoc.swagWikiContent'
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.SwagWikiEntryListEnvelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/apidoc.swagWikiEntry'
+        type: array
+      meta:
+        $ref: '#/definitions/apidoc.swagMeta'
+      success:
+        type: boolean
+    type: object
+  apidoc.swagActivityLog:
+    properties:
+      action:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+    type: object
+  apidoc.swagActivitySummary:
+    properties:
+      today:
+        type: integer
+      total:
+        type: integer
+    type: object
+  apidoc.swagBusinessUnit:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  apidoc.swagCategoryEntry:
+    properties:
+      count:
+        type: integer
+      slug:
+        type: string
+      title:
+        type: string
+    type: object
+  apidoc.swagChatAskResponse:
+    properties:
+      answer:
+        type: string
+      sources:
+        items:
+          $ref: '#/definitions/apidoc.swagChatSource'
+        type: array
+    type: object
+  apidoc.swagChatSource:
+    properties:
+      path:
+        type: string
+      title:
+        type: string
+    type: object
+  apidoc.swagClearResult:
+    properties:
+      message:
+        type: string
+      room_id:
+        type: string
+    type: object
+  apidoc.swagDeprovisionResult:
+    properties:
+      bu:
+        type: string
+      message:
+        type: string
+    type: object
+  apidoc.swagDocumentSummary:
+    properties:
+      bu_id:
+        type: string
+      id:
+        type: string
+      path:
+        type: string
+      title:
+        type: string
+    type: object
+  apidoc.swagFAQCategoryResponse:
+    properties:
+      category:
+        type: string
+      entries:
+        items:
+          $ref: '#/definitions/apidoc.swagFAQEntry'
+        type: array
+    type: object
+  apidoc.swagFAQEntry:
+    properties:
+      answer:
+        type: string
+      id:
+        type: string
+      question:
+        type: string
+    type: object
+  apidoc.swagFAQEntryDetail:
+    properties:
+      answer:
+        type: string
+      category:
+        type: string
+      id:
+        type: string
+      module:
+        type: string
+      question:
+        type: string
+    type: object
+  apidoc.swagFAQModule:
+    properties:
+      key:
+        type: string
+      title:
+        type: string
+    type: object
+  apidoc.swagIntentTestResult:
+    properties:
+      intent:
+        type: string
+      score:
+        type: number
+    type: object
+  apidoc.swagListEntry:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      question:
+        type: string
+    type: object
+  apidoc.swagMessageResult:
+    properties:
+      message:
+        type: string
+    type: object
+  apidoc.swagMeta:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  apidoc.swagProvisionResult:
+    properties:
+      bu:
+        type: string
+      message:
+        type: string
+    type: object
+  apidoc.swagRecordHistoryResult:
+    properties:
+      log_id:
+        type: string
+      message:
+        type: string
+    type: object
+  apidoc.swagReindexOneResult:
+    properties:
+      message:
+        type: string
+      path:
+        type: string
+    type: object
+  apidoc.swagReindexStatus:
+    properties:
+      message:
+        type: string
+      progress:
+        type: integer
+      running:
+        type: boolean
+    type: object
+  apidoc.swagReindexUnlock:
+    properties:
+      message:
+        type: string
+    type: object
+  apidoc.swagRouteResult:
+    properties:
+      confidence:
+        type: number
+      route:
+        type: string
+    type: object
+  apidoc.swagSearchResult:
+    properties:
+      path:
+        type: string
+      score:
+        type: number
+      snippet:
+        type: string
+      title:
+        type: string
+    type: object
+  apidoc.swagSidebarCategory:
+    properties:
+      articles:
+        items:
+          $ref: '#/definitions/apidoc.swagWikiEntry'
+        type: array
+      slug:
+        type: string
+      title:
+        type: string
+    type: object
+  apidoc.swagStatusResult:
+    properties:
+      status:
+        type: string
+    type: object
+  apidoc.swagSyncAuditResult:
+    properties:
+      last_sync:
+        type: string
+      status:
+        type: string
+    type: object
+  apidoc.swagSyncResult:
+    properties:
+      added:
+        type: integer
+      deleted:
+        type: integer
+      message:
+        type: string
+      updated:
+        type: integer
+    type: object
+  apidoc.swagSystemStatusInner:
+    properties:
+      database:
+        type: string
+      status:
+        type: string
+      version:
+        type: string
+    type: object
+  apidoc.swagWikiCategoryPayload:
+    properties:
+      articles:
+        items:
+          $ref: '#/definitions/apidoc.swagWikiEntry'
+        type: array
+      category:
+        $ref: '#/definitions/apidoc.swagCategoryEntry'
+    type: object
+  apidoc.swagWikiContent:
+    properties:
+      content:
+        type: string
+      path:
+        type: string
+      title:
+        type: string
+    type: object
+  apidoc.swagWikiEntry:
+    properties:
+      date:
+        type: string
+      description:
+        type: string
+      path:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
   models.ChatAskRequest:
     properties:
       preferredPath:
@@ -7,36 +580,10 @@ definitions:
       question:
         type: string
     type: object
-  models.ChatAskResponse:
-    properties:
-      answer:
-        type: string
-      needDisambiguation:
-        type: boolean
-      options:
-        items:
-          $ref: '#/definitions/models.DisambiguationOption'
-        type: array
-      sources:
-        items:
-          $ref: '#/definitions/models.ChatSource'
-        type: array
-    type: object
   models.ChatSource:
     properties:
       articleId:
         type: string
-      title:
-        type: string
-    type: object
-  models.DisambiguationOption:
-    properties:
-      path:
-        type: string
-      reason:
-        type: string
-      score:
-        type: number
       title:
         type: string
     type: object
@@ -54,22 +601,6 @@ definitions:
         type: array
       user_id:
         type: string
-    type: object
-  models.RouteCandidate:
-    properties:
-      path:
-        type: string
-      reason:
-        type: string
-      score:
-        type: number
-    type: object
-  models.RouteResult:
-    properties:
-      candidates:
-        items:
-          $ref: '#/definitions/models.RouteCandidate'
-        type: array
     type: object
 info:
   contact: {}
@@ -94,8 +625,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagActivityLogListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: Activity log list
       tags:
       - activity
@@ -114,8 +652,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagActivitySummaryEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: Activity summary
       tags:
       - activity
@@ -135,9 +680,80 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagBusinessUnitsEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: List business units
+      tags:
+      - wiki
+  /api/business-units/deprovision:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a business unit and all its data. Requires the X-Admin-Key
+        header.
+      parameters:
+      - description: Business unit slug
+        in: query
+        name: bu
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagDeprovisionResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+      security:
+      - AdminKey: []
+      summary: Deprovision a business unit (admin)
+      tags:
+      - wiki
+  /api/business-units/provision:
+    post:
+      consumes:
+      - application/json
+      description: Creates and provisions a new business unit. Requires the X-Admin-Key
+        header.
+      parameters:
+      - description: Business unit slug
+        in: query
+        name: bu
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagProvisionResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+      security:
+      - AdminKey: []
+      summary: Provision a business unit (admin)
       tags:
       - wiki
   /api/chat/ask:
@@ -165,12 +781,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ChatAskResponse'
+            $ref: '#/definitions/apidoc.SwagChatAskResponseEnvelope'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: Ask the knowledge-base chat (Go path)
       tags:
       - chat
@@ -178,15 +797,66 @@ paths:
     delete:
       description: Acknowledges a request to clear a chat room. No-op server-side
         — chat history is owned by the frontend.
-      responses: {}
+      parameters:
+      - description: Room ID
+        in: path
+        name: room_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagClearResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: Clear room history (no-op ack; history is frontend-owned)
       tags:
       - chat
   /api/chat/feedback/{message_id}:
     post:
+      consumes:
+      - application/json
       description: Records a thumbs up/down score for a chat message, scoped to the
         requesting user.
-      responses: {}
+      parameters:
+      - description: Message UUID
+        in: path
+        name: message_id
+        required: true
+        type: string
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagStatusResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: Message feedback (thumbs up/down)
       tags:
       - chat
@@ -210,17 +880,62 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagListEntryListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
         "401":
           description: Unauthorized
           schema:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       security:
       - AdminKey: []
       summary: List chat history (admin)
+      tags:
+      - chat
+  /api/chat/intent-test:
+    post:
+      consumes:
+      - application/json
+      description: Debug endpoint that runs the intent classifier for a question and
+        returns the matched intent. Requires the X-Admin-Key header.
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      - description: Question
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChatAskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagIntentTestResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+      security:
+      - AdminKey: []
+      summary: Intent-test debug (admin)
       tags:
       - chat
   /api/chat/record-history:
@@ -242,14 +957,21 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagRecordHistoryResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
         "401":
           description: Unauthorized
           schema:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       security:
       - InternalKey: []
       summary: Record chat turn (internal)
@@ -279,7 +1001,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.RouteResult'
+            $ref: '#/definitions/apidoc.SwagRouteResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       security:
       - AdminKey: []
       summary: Route-only debug (admin)
@@ -310,8 +1040,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagDocumentSummaryListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: List indexed documents
       tags:
       - documents
@@ -331,8 +1068,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.FAQModuleEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: FAQ module detail
       tags:
       - faq
@@ -362,8 +1106,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagFAQCategoryResponseEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: FAQ by category
       tags:
       - faq
@@ -382,8 +1133,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagFAQEntryDetailEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: FAQ entry by id
       tags:
       - faq
@@ -396,8 +1154,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagFAQModuleListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: FAQ module list
       tags:
       - faq
@@ -419,17 +1184,134 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagMessageResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
         "401":
           description: Unauthorized
           schema:
             additionalProperties:
               type: string
             type: object
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       security:
       - AdminKey: []
       summary: Rebuild search index (admin)
+      tags:
+      - indexing
+  /api/index/rebuild/one:
+    post:
+      consumes:
+      - application/json
+      description: Re-embeds and re-indexes a single document by its path. Requires
+        the X-Admin-Key header.
+      parameters:
+      - description: Business unit slug
+        in: query
+        name: bu
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagReindexOneResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+      security:
+      - AdminKey: []
+      summary: Rebuild index for a single document (admin)
+      tags:
+      - indexing
+  /api/index/rebuild/status:
+    get:
+      description: Returns the current status of the asynchronous index rebuild job.
+        Requires the X-Admin-Key header.
+      parameters:
+      - description: Business unit slug
+        in: query
+        name: bu
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagReindexStatusEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+      security:
+      - AdminKey: []
+      summary: Rebuild index status (admin)
+      tags:
+      - indexing
+  /api/index/rebuild/unlock:
+    post:
+      consumes:
+      - application/json
+      description: Clears a stuck rebuild lock for the business unit. Requires the
+        X-Admin-Key header.
+      parameters:
+      - description: Business unit slug
+        in: query
+        name: bu
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagReindexUnlockEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+      security:
+      - AdminKey: []
+      summary: Unlock index rebuild lock (admin)
       tags:
       - indexing
   /api/system/status:
@@ -442,8 +1324,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagSystemStatusEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: System status
       tags:
       - system
@@ -463,8 +1352,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagCategoryEntryListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: List wiki categories
       tags:
       - wiki
@@ -489,14 +1385,21 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagWikiCategoryPayloadEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: Wiki category detail
       tags:
       - wiki
   /api/wiki/content/{path}:
     get:
-      description: Returns the raw markdown body for the article at the given path
+      description: Returns the markdown content for the article at the given path
         under the wiki root.
       parameters:
       - description: Path under wiki root
@@ -510,12 +1413,24 @@ paths:
         name: bu
         type: string
       produces:
-      - text/plain
+      - application/json
       responses:
         "200":
-          description: Markdown body
+          description: OK
           schema:
-            type: string
+            $ref: '#/definitions/apidoc.SwagWikiContentEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: Wiki markdown content
       tags:
       - wiki
@@ -535,8 +1450,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagWikiEntryListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: List wiki articles
       tags:
       - wiki
@@ -561,9 +1483,44 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagSearchResultListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       summary: Full-text / vector wiki search
+      tags:
+      - wiki
+  /api/wiki/sidebar:
+    get:
+      description: Returns the structured sidebar (categories and their articles)
+        for the business unit.
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagSidebarCategoryListEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+      summary: Wiki sidebar structure
       tags:
       - wiki
   /api/wiki/sync:
@@ -584,17 +1541,52 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/apidoc.SwagSyncResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
         "401":
           description: Unauthorized
           schema:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
       security:
       - AdminKey: []
       summary: Sync wiki from Git (admin)
+      tags:
+      - wiki
+  /api/wiki/sync/audit:
+    get:
+      description: Returns the audit log of the last wiki sync operation for the business
+        unit.
+      parameters:
+      - default: carmen
+        description: Business unit slug
+        in: query
+        name: bu
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apidoc.SwagSyncAuditResultEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apidoc.SwagErrorResponse'
+      summary: Wiki sync audit
       tags:
       - wiki
   /health:
