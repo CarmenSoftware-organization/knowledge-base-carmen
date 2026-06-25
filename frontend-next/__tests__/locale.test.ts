@@ -15,4 +15,9 @@ describe("locale cookie", () => {
     setLocaleCookie("en");
     expect(getLocaleFromClient()).toBe("en");
   });
+
+  it("round-trips a non-ASCII locale through encode/decode", () => {
+    setLocaleCookie("ไทย");
+    expect(getLocaleFromClient()).toBe("ไทย");
+  });
 });

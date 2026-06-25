@@ -62,6 +62,15 @@ describe("sortChangelogItems", () => {
     ]);
     expect(sorted.map((e) => e.slug)).toEqual(["jun2026", "jan2026"]);
   });
+
+  it("breaks equal-timestamp ties by slug descending", () => {
+    // Same date, non-month slugs → identical timestamps → tiebreak on slug.
+    const sorted = sortChangelogItems([
+      entry("alpha", "changelog/alpha.md", { date: "2026-03-01" }),
+      entry("bravo", "changelog/bravo.md", { date: "2026-03-01" }),
+    ]);
+    expect(sorted.map((e) => e.slug)).toEqual(["bravo", "alpha"]);
+  });
 });
 
 describe("buildChangelogNavList", () => {
