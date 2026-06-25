@@ -3,7 +3,7 @@
 # Usage:
 #   cd backend
 #   cp docker-compose.env.example .env.docker
-#   # edit .env.docker — set DB_* (external Postgres) + secrets (JWT, OPENROUTER_API_KEY, GITHUB_TOKEN, …)
+#   # edit .env.docker — set DB_* (external Postgres) + secrets (JWT, LLM_API_KEY, GITHUB_TOKEN, …)
 #   docker compose --env-file .env.docker up --build
 #
 # DB: this compose no longer runs a Postgres container. Point the backend at an
@@ -46,14 +46,13 @@ services:
       GITHUB_REPO_NAME: ${GITHUB_REPO_NAME:-new-carmen}
       GITHUB_BRANCH: ${GITHUB_BRANCH:-main}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_EMBED_MODEL: ${OPENROUTER_EMBED_MODEL:-qwen/qwen3-embedding-8b}
       GOOGLE_TRANSLATE_API_KEY: ${GOOGLE_TRANSLATE_API_KEY:-}
       TRANSLATION_ENABLED: ${TRANSLATION_ENABLED:-false}
       # Native chatbot LLM config (was the Python carmen-chatbot service)
-      LLM_API_KEY: ${OPENROUTER_API_KEY:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_API_BASE: ${LLM_API_BASE:-https://openrouter.ai/api/v1}
       LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-stepfun/step-3.5-flash:free}
+      LLM_EMBED_MODEL: ${LLM_EMBED_MODEL:-qwen/qwen3-embedding-8b}
       LLM_INTENT_MODEL: ${LLM_INTENT_MODEL:-google/gemini-2.5-flash-lite}
       VECTOR_DIMENSION: ${VECTOR_DIMENSION:-2000}
       PRIVACY_HMAC_SECRET: ${PRIVACY_HMAC_SECRET:-carmen-docker-dev-privacy-secret-min-32-chars-required}

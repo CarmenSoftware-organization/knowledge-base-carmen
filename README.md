@@ -42,7 +42,7 @@
 ```bash
 cd backend
 cp docker-compose.env.example .env.docker
-# แก้ค่าใน .env.docker: DB_* (Postgres ภายนอก) + secrets เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET
+# แก้ค่าใน .env.docker: DB_* (Postgres ภายนอก) + secrets เช่น LLM_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET
 docker compose --env-file .env.docker up --build
 cd .. && ./scripts/migrate-docker.sh    # migration ครั้งแรกกับ DB ภายนอก (จาก root)
 ```

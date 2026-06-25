@@ -101,7 +101,7 @@
 ```bash
 cd backend
 cp docker-compose.env.example .env.docker
-# แก้ค่าใน .env.docker: DB_* (Postgres ภายนอก) + secrets เช่น OPENROUTER_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET, GITHUB_TOKEN
+# แก้ค่าใน .env.docker: DB_* (Postgres ภายนอก) + secrets เช่น LLM_API_KEY, JWT_SECRET, PRIVACY_HMAC_SECRET, GITHUB_TOKEN
 docker compose --env-file .env.docker up --build
 ```
 
@@ -171,7 +171,7 @@ npm test
 - `PRIVACY_HMAC_SECRET` (hash user id)
 - `GIT_REPO_PATH`, `WIKI_CONTENT_PATH`
 - `GITHUB_TOKEN`, `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`, `GITHUB_BRANCH`
-- `OPENROUTER_API_KEY`, `OPENROUTER_EMBED_MODEL`
+- `LLM_API_KEY`, `LLM_EMBED_MODEL`
 - `LLM_API_KEY`, `LLM_API_BASE`, `LLM_CHAT_MODEL`, `LLM_INTENT_MODEL`, `LLM_EMBED_MODEL` (native RAG chatbot)
 - `LLM_FALLBACK_MODEL` (optional — retry เมื่อ chat model หลักล่ม), `MAX_PROMPT_TOKENS`
 - `VECTOR_DIMENSION` (ต้องตรงกับ schema DB)
@@ -428,7 +428,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/seed_<bu>_faq.sql
 
 ## 14) เช็กลิสต์ก่อนขึ้น Production
 
-- [ ] ตั้งค่า secrets ครบ (`OPENROUTER_API_KEY`, `JWT_SECRET`, `PRIVACY_HMAC_SECRET`, `GITHUB_TOKEN`)
+- [ ] ตั้งค่า secrets ครบ (`LLM_API_KEY`, `JWT_SECRET`, `PRIVACY_HMAC_SECRET`, `GITHUB_TOKEN`)
 - [ ] `VECTOR_DIMENSION` ตรงกับมิติของ column ใน DB (canonical = **2000** ใน `0001_init_schema.sql`)
 - [ ] รัน migrations ครบ (ผ่าน psql ตามลำดับใน `backend/migrations/README.md`)
 - [ ] ทดสอบ `health` ของ Go backend (`curl http://.../health`)
