@@ -21,6 +21,10 @@ wiki-import/
 **/.env.local
 **/.env.*.local
 
+# Backups of env files (hold secrets — never commit)
+.env*.bak
+**/.env*.bak
+
 # Wiki.js dry-run / local API token (use scripts/wikijs-dry-run-compare.sh)
 backend/.wikijs.token
 backend/wikijs.token
