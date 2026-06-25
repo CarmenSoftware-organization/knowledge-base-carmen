@@ -28,7 +28,7 @@ describe("fetchWithTimeout", () => {
         }),
     ) as unknown as typeof fetch;
 
-    await expect(fetchWithTimeout("http://x/", {}, 5)).rejects.toThrow();
+    await expect(fetchWithTimeout("http://x/", {}, 5)).rejects.toThrow("Aborted");
   });
 
   it("clears the timeout timer after a successful response", async () => {
@@ -37,8 +37,9 @@ describe("fetchWithTimeout", () => {
       async () => new Response("{}", { status: 200 }),
     ) as unknown as typeof fetch;
 
+    const before = clearSpy.mock.calls.length;
     await fetchWithTimeout("http://x/", {}, 1000);
-    expect(clearSpy).toHaveBeenCalled();
+    expect(clearSpy.mock.calls.length).toBeGreaterThan(before);
     clearSpy.mockRestore();
   });
 });
