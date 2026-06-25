@@ -224,6 +224,10 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 		finishReason, _, llmErr = deps.streamLLM(ctx, deps.fallbackModel, messages, onChunk)
 	}
 	if llmErr != nil {
+		// Log the real upstream error before swallowing it behind the generic
+		// user-facing apology — otherwise outages like an expired key or
+		// exhausted OpenRouter credits (HTTP 402) are invisible in server logs.
+		log.Printf("[chat] generate answer failed (model=%q fallback=%q): %v", deps.model, deps.fallbackModel, llmErr)
 		emit(streamEvent("chunk", "_(ขออภัยครับ เกิดข้อผิดพลาดในการสร้างคำตอบ กรุณาลองใหม่อีกครั้ง)_"))
 		emit(streamEvent("done", ""))
 		return

@@ -1,9 +1,11 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -450,7 +452,18 @@ func TestStreamFlow_LLMError(t *testing.T) {
 		return ""
 	}
 
+	// Capture log output: the swallowed upstream LLM error must be logged so the
+	// failure is diagnosable from server logs (not just the generic user apology).
+	var logBuf bytes.Buffer
+	origOut := log.Writer()
+	log.SetOutput(&logBuf)
+	defer log.SetOutput(origOut)
+
 	types, lines := collectEvents(req, deps)
+
+	if logged := logBuf.String(); !strings.Contains(logged, "LLM timeout") {
+		t.Errorf("llm-error: expected upstream error to be logged, got %q", logged)
+	}
 
 	// Expected: status(searching), sources, status(composing), chunk(apology), done(0)
 	wantTypes := []string{"status", "sources", "status", "chunk", "done"}
