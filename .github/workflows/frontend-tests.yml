@@ -1,0 +1,56 @@
+name: Frontend tests (Bun)
+
+# Runs each frontend's `bun test` suite on PRs and on push to main. These are
+# fast, dependency-light unit/characterization tests — they guard routing, API
+# response handling and chatbot output formatting against silent regressions.
+# Path-filtered so unrelated (backend/docs) changes don't trigger them.
+
+on:
+  pull_request:
+    paths:
+      - "frontend-next/**"
+      - "frontend-react/**"
+      - ".github/workflows/frontend-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "frontend-next/**"
+      - "frontend-react/**"
+      - ".github/workflows/frontend-tests.yml"
+  workflow_dispatch: {}
+
+jobs:
+  frontend-next:
+    name: frontend-next (bun test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-next
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Run tests
+        run: bun run test
+
+  frontend-react:
+    name: frontend-react (bun test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-react
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      # frontend-react's `test` script already passes --isolate (required at bun
+      # 1.3.14 — mock.module is process-global, so a shared registry leaks mocks
+      # across files; per-file isolation is the fix).
+      - name: Run tests
+        run: bun run test
