@@ -21,7 +21,7 @@ FAQ กับ DB มี 2 แบบ (อย่าสับสน)
         curl -sS -X POST "http://localhost:8080/api/index/rebuild?bu=carmen"
 
     - ข้อมูล vector อยู่ที่ schema carmen ตาราง documents, document_chunks
-      (ต้องตั้ง LLM_API_KEY หรือ OPENROUTER_API_KEY ให้ใช้ OpenRouter)
+      (ต้องตั้ง LLM_API_KEY ให้ใช้ OpenRouter)
 
 (2) หน้าเว็บ /faq แบบโครงสร้าง module > หมวด > คำถาม (ตาราง public.faq_*)
 

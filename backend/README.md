@@ -40,12 +40,12 @@ make build
 - `GITHUB_TOKEN`, `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`, `GITHUB_BRANCH`
 
 **LLM / Embeddings (ใช้ทั้ง indexing + native chat — OpenAI-compatible เช่น OpenRouter)**
-- `OPENROUTER_API_KEY` / `LLM_API_KEY` — API key (chat อ่าน `LLM_API_KEY` ก่อน, fallback `OPENROUTER_API_KEY`)
+- `LLM_API_KEY` — API key (OpenRouter / OpenAI-compatible)
 - `LLM_API_BASE` (default `https://openrouter.ai/api/v1`)
 - `LLM_CHAT_MODEL` (default `stepfun/step-3.5-flash:free`) — โมเดลตอบคำถาม
 - `LLM_INTENT_MODEL` (default `google/gemini-2.5-flash-lite`) — โมเดล intent classification + query rewrite/translate
 - `LLM_FALLBACK_MODEL` (optional) — retry 1 ครั้งเมื่อ chat model หลักล่มก่อน stream
-- `OPENROUTER_EMBED_MODEL` / `LLM_EMBED_MODEL` (default `qwen/qwen3-embedding-8b`)
+- `LLM_EMBED_MODEL` (default `qwen/qwen3-embedding-8b`)
 - `VECTOR_DIMENSION` (default 2000 ใน prod) — ต้องตรงกับมิติคอลัมน์ `vector(N)` ใน DB (ดู `migrations/README.md`)
 - `MAX_PROMPT_TOKENS` (default 6000)
 

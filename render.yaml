@@ -57,8 +57,6 @@ services:
       # guaranteed-writable path here — NOT the native-build /opt/render/project/src.
       - key: GIT_REPO_PATH
         value: /app/repo
-      - key: WIKI_CONTENT_PATH
-        value: /app/repo/carmen_cloud
       - key: GITHUB_REPO_OWNER
         value: CarmenSoftware-organization
       - key: GITHUB_REPO_NAME
@@ -68,11 +66,6 @@ services:
       - key: GITHUB_TOKEN
         sync: false
 
-      - key: OPENROUTER_API_KEY
-        sync: false
-      - key: OPENROUTER_EMBED_MODEL
-        value: qwen/qwen3-embedding-8b
-
       # Native RAG chatbot LLM config (intent → hybrid retrieval → LLM)
       - key: LLM_API_KEY
         sync: false
@@ -80,6 +73,8 @@ services:
         value: https://openrouter.ai/api/v1
       - key: LLM_CHAT_MODEL
         value: stepfun/step-3.5-flash:free
+      - key: LLM_EMBED_MODEL
+        value: qwen/qwen3-embedding-8b
       - key: LLM_INTENT_MODEL
         value: google/gemini-2.5-flash-lite
 

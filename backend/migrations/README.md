@@ -51,7 +51,7 @@ DB ใหม่รันไฟล์เดียว (idempotent, รันซ้
 ## หลัง migration
 
 - รัน **reindex** ตาม BU ถ้าโปรเจกต์ใช้ (ดู `README` / `cmd/server` ของ backend)
-- ตั้ง `OPENROUTER_EMBED_MODEL` / `VECTOR_DIMENSION` ให้ตรงกับมิติในฐานข้อมูล
+- ตั้ง `LLM_EMBED_MODEL` / `VECTOR_DIMENSION` ให้ตรงกับมิติในฐานข้อมูล
 
 ---
 
