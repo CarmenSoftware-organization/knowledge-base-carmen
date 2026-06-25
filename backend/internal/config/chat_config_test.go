@@ -20,7 +20,6 @@ func isolatedLoad(t *testing.T, extra ...string) error {
 		"RATE_LIMIT_PER_MINUTE=",
 		"MAX_PROMPT_TOKENS=",
 		"LLM_INTENT_MODEL=",
-		"OPENROUTER_INTENT_MODEL=",
 		"LLM_FALLBACK_MODEL=",
 		"CHAT_NATIVE_STREAM=",
 		"CHAT_NATIVE_ROOMS=",

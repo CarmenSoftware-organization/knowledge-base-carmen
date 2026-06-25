@@ -344,11 +344,11 @@ func Load() error {
 			TimeoutSec: getEnvAsInt("TRANSLATION_TIMEOUT_SECONDS", 30),
 		},
 		LLM: LLMConfig{
-			APIKey:          getEnvFirst([]string{"LLM_API_KEY", "OPENROUTER_API_KEY"}, ""),
+			APIKey:          getEnv("LLM_API_KEY", ""),
 			APIBase:         getEnv("LLM_API_BASE", "https://openrouter.ai/api/v1"),
-			ChatModel:       getEnvFirst([]string{"LLM_CHAT_MODEL", "OPENROUTER_CHAT_MODEL"}, "openai/gpt-4o-mini"),
-			EmbedModel:      getEnvFirst([]string{"LLM_EMBED_MODEL", "OPENROUTER_EMBED_MODEL"}, "qwen/qwen3-embedding-8b"),
-			IntentModel:     getEnvFirst([]string{"LLM_INTENT_MODEL", "OPENROUTER_INTENT_MODEL"}, "google/gemini-2.5-flash-lite"),
+			ChatModel:       getEnv("LLM_CHAT_MODEL", "openai/gpt-4o-mini"),
+			EmbedModel:      getEnv("LLM_EMBED_MODEL", "qwen/qwen3-embedding-8b"),
+			IntentModel:     getEnv("LLM_INTENT_MODEL", "google/gemini-2.5-flash-lite"),
 			FallbackModel:   getEnv("LLM_FALLBACK_MODEL", ""),
 			MaxPromptTokens: getEnvAsInt("MAX_PROMPT_TOKENS", 6000),
 			TimeoutSec:      getEnvAsInt("LLM_TIMEOUT_SECONDS", 60),
@@ -408,12 +408,9 @@ func ensureStrictEnv() error {
 		"TRANSLATION_API_BASE_URL",
 		"TRANSLATION_TIMEOUT_SECONDS",
 		"LLM_API_KEY",
-		"OPENROUTER_API_KEY",
 		"LLM_API_BASE",
 		"LLM_CHAT_MODEL",
-		"OPENROUTER_CHAT_MODEL",
 		"LLM_EMBED_MODEL",
-		"OPENROUTER_EMBED_MODEL",
 		"LLM_TIMEOUT_SECONDS",
 	}
 	missing := make([]string, 0)
@@ -502,16 +499,6 @@ func listenPort() string {
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
-	}
-	return defaultValue
-}
-
-// getEnvFirst returns the first non-empty env var among keys, or defaultValue.
-func getEnvFirst(keys []string, defaultValue string) string {
-	for _, k := range keys {
-		if v := os.Getenv(k); v != "" {
-			return v
-		}
 	}
 	return defaultValue
 }
