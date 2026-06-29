@@ -32,14 +32,14 @@ export function KBFooter() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
-     
+
     setMounted(true);
   }, []);
 
   const logoSrc =
     mounted && resolvedTheme === "dark"
-      ? "/carmen-logo-light.png"
-      : "/carmen02-logo.png";
+      ? "/Carmen Logo - Primary 2 + tagline.png"
+      : "/Carmen Logo - Primary 1 + tagline.png";
 
 
   return (
@@ -67,7 +67,7 @@ export function KBFooter() {
                   whileHover={{ scale: 1.02 }}
                   className="relative h-10 w-40 sm:h-11 sm:w-44 transition-transform duration-300"
                 >
-                 <img
+                  <img
                     src={logoSrc}
                     alt="Carmen Logo"
                     className="object-contain object-center lg:object-left absolute inset-0 w-full h-full"
@@ -114,7 +114,7 @@ export function KBFooter() {
               >
                 {/* QR */}
                 <div className="relative bg-background p-2 rounded-xl shadow-sm border border-border group-hover:border-primary transition-all shrink-0">
-                  <img src="/line-carmen.png" alt="Line QR" width={80} height={80} className="rounded-lg" />
+                  <img src="/line-carmen-fullcolor.png" alt="Line QR" width={80} height={80} className="rounded-lg" />
                 </div>
 
                 {/* Text */}
