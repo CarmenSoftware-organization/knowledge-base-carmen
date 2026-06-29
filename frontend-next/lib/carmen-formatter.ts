@@ -37,35 +37,41 @@ function processYoutube(text: string): string {
   return text;
 }
 
-function processImages(text: string, apiBase: string): string {
+function processImages(text: string, apiBase: string, bu?: string, imageMap?: Record<string, string>): string {
+  const buQuery = bu ? `?bu=${encodeURIComponent(bu)}` : "";
   const resolveUrl = (src: string) => {
-    const u = src.trim().replace(/\\/g, "/");
+    let u = src.trim().replace(/\\/g, "/");
     if (isYoutubeUrl(u) || u.startsWith("data:")) return u;
+
     if (/^(http|https):/.test(u)) {
-      if (
-        u.includes("127.0.0.1") ||
-        u.includes("localhost") ||
-        (apiBase && u.startsWith(apiBase))
-      ) {
-        if (u.includes("/images/")) return u;
-        // Fix: preserve the path after the domain/port instead of just the pop()
-        const urlObj = new URL(u);
-        const pathPart = urlObj.pathname.startsWith("/") ? urlObj.pathname.slice(1) : urlObj.pathname;
-        return `${apiBase}/images/${pathPart}`;
-      }
-      const after = u.split("/images/");
-      if (after.length > 1) return `${apiBase}/images/${after[1]}`;
-
+      const isApiHost =
+        u.includes("127.0.0.1") || u.includes("localhost") || (apiBase && u.startsWith(apiBase));
+      if (!isApiHost) return u; // external image — leave untouched
+      if (u.includes("/images/")) return u.includes("?") ? u : u + buQuery;
+      // Absolute URL at the API host but missing the /images/ prefix — normalize.
       const pathOnly = u.replace(/^https?:\/\/[^/]+/, "").replace(/^\/+/, "");
-      return `${apiBase}/images/${pathOnly}`;
-    }
-    // Check if it already starts with images/ (with or without leading slash)
-    const cleanU = u.replace(/^\/+/, "");
-    if (cleanU.startsWith("images/")) {
-      return `${apiBase}/${cleanU}`;
+      return `${apiBase}/images/${pathOnly}${buQuery}`;
     }
 
-    return `${apiBase}/images/${cleanU}`;
+    // Deterministic resolution: a bare filename (no folder) maps to its full
+    // BU-relative path via the backend image map (provenance from retrieved chunks).
+    // Baked-history paths already carry the folder and skip this.
+    const cleanU = u.replace(/^\/+/, "");
+
+    // UI icons live in the frontend's public/ folder, not in backend contents/.
+    if (cleanU.startsWith("public/")) {
+      return `/${cleanU.slice("public/".length)}`;
+    }
+
+    if (imageMap && !cleanU.includes("/") && imageMap[cleanU]) {
+      u = imageMap[cleanU]; // e.g. "/images/ap/image-44.png"
+    }
+
+    const finalPath = u.replace(/^\/+/, "");
+    if (finalPath.startsWith("images/")) {
+      return `${apiBase}/${finalPath}${buQuery}`;
+    }
+    return `${apiBase}/images/${finalPath}${buQuery}`;
   };
 
   text = text.replace(/(!)?\[(.*?)\]\((.*?)\)/g, (_m, hasExclamation, alt, src) => {
@@ -195,7 +201,16 @@ function processInlineMarkdown(text: string): string {
   return text;
 }
 
-export function formatCarmenMessage(text: string, apiBase: string): string {
+/** Rewrite bare image filenames to their full path from the map, so saved text is self-contained. */
+export function bakeImagePaths(text: string, imageMap?: Record<string, string>): string {
+  if (!text || !imageMap) return text;
+  return text.replace(/[^\s()\[\]"'\\]+\.(?:png|jpe?g|gif|webp|svg|bmp)/gi, (match) => {
+    const base = match.replace(/^.*\//, "");
+    return imageMap[base] ?? match;
+  });
+}
+
+export function formatCarmenMessage(text: string, apiBase: string, bu?: string, imageMap?: Record<string, string>): string {
   if (!text) return "";
   let t = String(text);
 
@@ -218,7 +233,7 @@ export function formatCarmenMessage(text: string, apiBase: string): string {
   });
 
   t = processYoutube(t);           // 4. Inject Video tags
-  t = processImages(t, apiBase);    // 5. Inject Image tags (handles URL resolution)
+  t = processImages(t, apiBase, bu, imageMap); // 5. Inject Image tags (handles URL resolution)
   t = processLinks(t);             // 6. Inject Link tags
   t = t.replace(/(<br>){3,}/g, "<br><br>");
   t = processInlineMarkdown(t);    // 7. Final bold/italic/code
