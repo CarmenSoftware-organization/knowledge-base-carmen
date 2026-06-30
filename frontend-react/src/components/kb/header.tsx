@@ -177,8 +177,8 @@ export function KBHeader() {
 
   const logoSrc =
     mounted && resolvedTheme === "dark"
-      ? "/Carmen Logo - Primary 2 + tagline.png"
-      : "/Carmen Logo - Primary 1 + tagline.png";
+      ? "/carmen-logo-primary2-tagline.png"
+      : "/carmen-logo-primary1-tagline.png";
 
   const headerAnimate =
     reduceMotion || !scrollHidden ? "show" : "scrollHidden";
