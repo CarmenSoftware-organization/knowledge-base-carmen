@@ -177,8 +177,8 @@ export function KBHeader() {
 
   const logoSrc =
     mounted && resolvedTheme === "dark"
-      ? "/carmen-logo-light.png"
-      : "/carmen02-logo.png";
+      ? "/Carmen Logo - Primary 2 + tagline.png"
+      : "/Carmen Logo - Primary 1 + tagline.png";
 
   const headerAnimate =
     reduceMotion || !scrollHidden ? "show" : "scrollHidden";
@@ -343,52 +343,52 @@ export function KBHeader() {
                 aria-modal="true"
                 aria-label="Main menu"
               >
-              {!isHome && (
-                <div className="px-3 pt-3 pb-2 sm:hidden">
-                  <GlobalSearch variant="header" className="w-full min-w-0" />
-                </div>
-              )}
-
-              <div className="px-1.5 sm:px-2 pt-1 pb-2 flex flex-col gap-0.5">
-                <MobileNavLink href="/" onClick={closeMobile}>{t("home")}</MobileNavLink>
                 {!isHome && (
-                  <div className="grid grid-cols-2 gap-2 px-0.5">
-                    <MobileNavLink href="/categories" onClick={closeMobile}>
-                      {t("categories")}
-                    </MobileNavLink>
-                    <MobileNavLink
-                      href="/faq"
-                      onClick={closeMobile}
-                      isActive={
-                        pathname === "/faq" ||
-                        pathname.startsWith("/faq/") ||
-                        pathname.startsWith("/categories/faq")
-                      }
-                    >
-                      FAQ
-                    </MobileNavLink>
+                  <div className="px-3 pt-3 pb-2 sm:hidden">
+                    <GlobalSearch variant="header" className="w-full min-w-0" />
                   </div>
                 )}
-                <MobileNavLink
-                  href="/categories/changelog"
-                  onClick={closeMobile}
-                  isActive={pathname.startsWith("/categories/changelog")}
-                >
-                  Changelog
-                </MobileNavLink>
 
-              </div>
+                <div className="px-1.5 sm:px-2 pt-1 pb-2 flex flex-col gap-0.5">
+                  <MobileNavLink href="/" onClick={closeMobile}>{t("home")}</MobileNavLink>
+                  {!isHome && (
+                    <div className="grid grid-cols-2 gap-2 px-0.5">
+                      <MobileNavLink href="/categories" onClick={closeMobile}>
+                        {t("categories")}
+                      </MobileNavLink>
+                      <MobileNavLink
+                        href="/faq"
+                        onClick={closeMobile}
+                        isActive={
+                          pathname === "/faq" ||
+                          pathname.startsWith("/faq/") ||
+                          pathname.startsWith("/categories/faq")
+                        }
+                      >
+                        FAQ
+                      </MobileNavLink>
+                    </div>
+                  )}
+                  <MobileNavLink
+                    href="/categories/changelog"
+                    onClick={closeMobile}
+                    isActive={pathname.startsWith("/categories/changelog")}
+                  >
+                    Changelog
+                  </MobileNavLink>
 
-              <div className="mt-2 pt-3 border-t border-border/60 space-y-3 px-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                <div className="min-[360px]:hidden">
-                  <LanguageSwitcher />
                 </div>
-                {!isHome && <BUSwitcher fluid />}
-                <div className="flex items-center justify-end gap-2">
-                  <ThemeToggle />
+
+                <div className="mt-2 pt-3 border-t border-border/60 space-y-3 px-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  <div className="min-[360px]:hidden">
+                    <LanguageSwitcher />
+                  </div>
+                  {!isHome && <BUSwitcher fluid />}
+                  <div className="flex items-center justify-end gap-2">
+                    <ThemeToggle />
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
             </>
           )}
         </AnimatePresence>
@@ -448,11 +448,10 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex min-h-11 items-center rounded-full px-3 py-2.5 text-sm font-medium transition-colors duration-150 touch-manipulation active:scale-[0.99] ${
-        isActive
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground"
-      }`}
+      className={`flex min-h-11 items-center rounded-full px-3 py-2.5 text-sm font-medium transition-colors duration-150 touch-manipulation active:scale-[0.99] ${isActive
+        ? "bg-primary text-primary-foreground shadow-sm"
+        : "text-muted-foreground hover:bg-accent hover:text-white dark:hover:text-foreground"
+        }`}
     >
       {children}
     </Link>
