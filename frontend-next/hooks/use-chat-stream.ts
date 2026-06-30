@@ -6,7 +6,7 @@
 // receives only what it needs through StreamDeps, keeping concerns separate.
 
 import { RefObject } from "react";
-import { formatCarmenMessage } from "@/lib/carmen-formatter";
+import { formatCarmenMessage, bakeImagePaths } from "@/lib/carmen-formatter";
 import { CarmenApi } from "./use-carmen-api";
 import { CarmenChatConfig, DisplayMessage } from "./use-carmen-chat";
 
@@ -108,6 +108,9 @@ export async function executeStream(
   let accumulated = "";
   let finalMsgId: string | null = null;
   let didSave = false;
+  // Deterministic image resolution map (basename -> full BU-relative path) sent by
+  // the backend before any chunk; used to resolve bare filenames the LLM emits.
+  let imageMap: Record<string, string> | undefined;
 
   try {
     const history = await api.getRoomHistory(processingRoomId);
@@ -170,7 +173,7 @@ export async function executeStream(
         displayedText += typingBuffer.substring(0, charsToTake);
         typingBuffer = typingBuffer.substring(charsToTake);
 
-        const html = formatCarmenMessage(displayedText, api.baseUrl);
+        const html = formatCarmenMessage(displayedText, api.baseUrl, config.bu, imageMap);
         setMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, html } : m));
         config.onTypingFrame?.();
       }
@@ -179,7 +182,7 @@ export async function executeStream(
         requestAnimationFrame(processTyping);
       } else {
         // Streaming complete — commit final HTML + suggestions
-        const finalHtml = formatCarmenMessage(displayedText, api.baseUrl);
+        const finalHtml = formatCarmenMessage(displayedText, api.baseUrl, config.bu, imageMap);
         setMessages((prev) => {
           const botMessages = prev.filter((m) => m.role === "bot");
           const isLastBot = botMessages.length > 0 && botMessages[botMessages.length - 1].id === botMsgId;
@@ -217,6 +220,8 @@ export async function executeStream(
             setTypingStatus(parsed.data);
           } else if (parsed.type === "sources") {
             setMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, sources: parsed.data } : m));
+          } else if (parsed.type === "image_map") {
+            imageMap = parsed.data as Record<string, string>;
           } else if (parsed.type === "suggestions") {
             bufferedSuggestions = parsed.data;
           } else if (parsed.type === "done") {
@@ -266,7 +271,7 @@ export async function executeStream(
   } catch (e: unknown) {
     if (e instanceof Error && e.name === "AbortError") {
       if (isUserStopRef.current) {
-        const finalHtml = formatCarmenMessage(accumulated + `\n\n**${t("chat.status_stopped")}**`, api.baseUrl);
+        const finalHtml = formatCarmenMessage(accumulated + `\n\n**${t("chat.status_stopped")}**`, api.baseUrl, config.bu, imageMap);
         setMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, html: finalHtml } : m));
       } else {
         // Aborted due to room switch — discard silently
@@ -313,10 +318,11 @@ export async function executeStream(
   try {
     if (accumulated && processingRoomId && (!signal.aborted || isUserStopRef.current)) {
       const stopNote = signal.aborted ? `\n\n**${t("chat.status_stopped")}**` : "";
+      const bakedMessage = bakeImagePaths(accumulated, imageMap) + stopNote;
       await api.saveMessage(processingRoomId, {
         id: finalMsgId ?? botMsgId,
         sender: "bot",
-        message: accumulated + stopNote,
+        message: bakedMessage,
         timestamp: new Date().toISOString(),
       }, botMsgId);
       didSave = true;

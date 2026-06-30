@@ -61,6 +61,21 @@ describe("formatCarmenMessage", () => {
     expect(out).toContain("/images/x/y.png");
   });
 
+  it("resolves a bare image filename via the image map with bu query", () => {
+    const out = formatCarmenMessage(
+      "![](image-44.png)",
+      API,
+      "carmen",
+      { "image-44.png": "/images/ap/image-44.png" },
+    );
+    expect(out).toContain(`${API}/images/ap/image-44.png?bu=carmen`);
+  });
+
+  it("uses a baked folder path directly when no map entry exists", () => {
+    const out = formatCarmenMessage("![](/images/ap/image-44.png)", API, "carmen");
+    expect(out).toContain(`${API}/images/ap/image-44.png?bu=carmen`);
+  });
+
   it("converts an external markdown link into a carmen-link anchor", () => {
     const out = formatCarmenMessage("[site](https://example.com)", API);
     expect(out).toContain("carmen-link");
