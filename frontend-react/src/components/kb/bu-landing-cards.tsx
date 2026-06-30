@@ -155,8 +155,8 @@ export function BULandingCards({ items }: Props) {
 
   const logoSrc =
     mounted && resolvedTheme === "dark"
-      ? "/Carmen Logo - Primary 2 + tagline.png"
-      : "/Carmen Logo - Primary 1 + tagline.png";
+      ? "/carmen-logo-primary2-tagline.png"
+      : "/carmen-logo-primary1-tagline.png";
   const isDarkLogo = mounted && resolvedTheme === "dark";
 
   const goToCategoriesForBu = (slug: string) => {
