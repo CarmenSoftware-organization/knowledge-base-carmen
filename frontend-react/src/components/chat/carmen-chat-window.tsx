@@ -232,7 +232,7 @@ export default function CarmenChatWindow({ state }: Props) {
             0 0 0 1px rgba(0, 0, 0, 0.04) !important;
         }
 
-        :global(.dark) .carmen-chat-box {
+        .dark .carmen-chat-box {
           background: linear-gradient(
             135deg,
             rgba(15, 23, 42, 0.97) 0%,
