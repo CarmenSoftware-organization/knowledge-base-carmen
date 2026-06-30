@@ -104,6 +104,9 @@ func (h *ChatHandler) Image(c *fiber.Ctx) error {
 	fullPath, pathErr := h.wiki.GetLocalAssetPath(bu, relPath)
 	if pathErr == nil {
 		if st, err := os.Stat(fullPath); err == nil && !st.IsDir() {
+			// Cache aggressively: the typing animation re-renders the answer many
+			// times, so without this the browser refetches every frame.
+			c.Set("Cache-Control", "public, max-age=86400")
 			return c.SendFile(fullPath)
 		}
 	}

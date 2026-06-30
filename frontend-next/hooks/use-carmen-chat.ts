@@ -291,7 +291,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
       const displayed: DisplayMessage[] = validMessages.map((m, i) => ({
         id: `${roomId}-${i}`,
         role: m.sender,
-        html: formatCarmenMessage(m.message, api.baseUrl),
+        html: formatCarmenMessage(m.message, api.baseUrl, config.bu),
         msgId: m.id,
         sources: m.sources,
         timestamp: m.timestamp,
@@ -425,7 +425,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
         {
           id: userMsgId,
           role: "user",
-          html: formatCarmenMessage(errorText, api.baseUrl),
+          html: formatCarmenMessage(errorText, api.baseUrl, config.bu),
           timestamp: userTimestamp,
         },
         {
@@ -489,7 +489,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
     const userHtml = img
       ? `<img src="${img}" style="max-width:100%;border-radius:8px;margin-bottom:5px;" /><br>${msgText}`
-      : formatCarmenMessage(msgText, api.baseUrl);
+      : formatCarmenMessage(msgText, api.baseUrl, config.bu);
 
     const userMsgId = `user-${Math.random().toString(36).substring(2, 11)}`;
     const userMsg: DisplayMessage = {

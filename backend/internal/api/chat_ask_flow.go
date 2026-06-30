@@ -3,6 +3,8 @@ package api
 import (
 	"fmt"
 	"log"
+	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -78,6 +80,9 @@ func (h *ChatHandler) askFlow(c *fiber.Ctx) (models.ChatAskResponse, int, error)
 		log.Printf("[chat] generate answer failed: %v", err)
 		return models.ChatAskResponse{}, fiber.StatusInternalServerError, fmt.Errorf("failed to generate answer")
 	}
+	// Bake full image paths into the answer so it's self-contained (the JSON /ask
+	// response has no separate image-map channel).
+	answer = bakeImagePaths(answer, buildImageMap(chunks))
 
 	h.logService.Log(bu, userID, "ถาม Chat AI", "wiki", map[string]any{
 		"status":  "POST",
@@ -280,6 +285,59 @@ func buildContextFromChunks(chunks []services.RetrievedChunk, maxContextChars, m
 		sources = append(sources, models.ChatSource{ArticleID: ch.Path, Title: title})
 	}
 	return b.String(), sources
+}
+
+// imageFileRe matches an image reference (path allowed, delimited by markdown
+// syntax/whitespace) ending in an image extension — both "image-44.png" and
+// "_images/slug/img-001.png".
+var imageFileRe = regexp.MustCompile(`[^\s()\[\]"'\\]+\.(?:png|jpe?g|gif|webp|svg|bmp)`)
+
+// buildImageMap maps each image basename found in the retrieved chunks to its full
+// BU-relative path (e.g. "image-44.png" -> "/images/ap/image-44.png"), using the
+// chunk's doc directory as provenance. On a basename collision across chunks, the
+// earlier (higher-ranked) chunk wins. This is the deterministic source of truth the
+// frontend uses to resolve images in the answer — no LLM path-copying, no fs guessing.
+func buildImageMap(chunks []services.RetrievedChunk) map[string]string {
+	m := make(map[string]string)
+	for _, ch := range chunks {
+		dir := path.Dir(ch.Path)
+		if dir == "." || dir == "" {
+			continue
+		}
+		for _, match := range imageFileRe.FindAllString(ch.Content, -1) {
+			if strings.HasPrefix(match, "http") || strings.HasPrefix(match, "data:") || strings.Contains(match, "public/") {
+				continue
+			}
+			// match may itself carry a relative path (e.g. "_images/x/img.png");
+			// resolve it against the doc dir, key by basename.
+			rel := strings.TrimPrefix(strings.TrimPrefix(match, "./"), "/")
+			base := path.Base(rel)
+			if _, exists := m[base]; exists {
+				continue // first (highest-ranked) chunk wins
+			}
+			m[base] = "/images/" + path.Join(dir, rel)
+		}
+	}
+	return m
+}
+
+// bakeImagePaths rewrites bare image basenames in text to their full BU-relative
+// path from the map, so a saved answer is self-contained (renders correctly on
+// history reload without the per-stream image map).
+func bakeImagePaths(text string, imageMap map[string]string) string {
+	if len(imageMap) == 0 {
+		return text
+	}
+	return imageFileRe.ReplaceAllStringFunc(text, func(match string) string {
+		if strings.HasPrefix(match, "http") || strings.HasPrefix(match, "data:") || strings.Contains(match, "public/") {
+			return match
+		}
+		base := path.Base(strings.TrimPrefix(strings.TrimPrefix(match, "./"), "/"))
+		if full, ok := imageMap[base]; ok {
+			return full
+		}
+		return match
+	})
 }
 
 // saveHistoryIfEnabled persists the Q&A to chat history when enabled, resolving the

@@ -154,6 +154,15 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	sources := chunksToSources(chunks)
 	emit(streamEvent("sources", sources))
 
+	// Deterministic image resolution: map every image basename in the retrieved
+	// chunks to its full BU-relative path (provenance = each chunk's doc dir), and
+	// hand it to the frontend so it can resolve bare filenames the LLM emits without
+	// guessing. Same map bakes full paths into the saved answer below.
+	imageMap := buildImageMap(chunks)
+	if len(imageMap) > 0 {
+		emit(streamEvent("image_map", imageMap))
+	}
+
 	// ---------- 11. Composing status ----------
 	emit(streamEvent("status", locale.StatusComposing))
 
@@ -170,49 +179,47 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	messages := services.BuildChatMessages(deps.prompts, req.Lang, contextStr, historyText, req.Text)
 
 	// ---------- 13. Stream with [SUGGESTIONS] withholding ----------
-	// Accumulate the full LLM output and emit chunk deltas only for the portion
-	// before [SUGGESTIONS].  Because the tag can split across deltas, we buffer
-	// from the first '[' onward and re-check on every new delta.
+	// Accumulate the full LLM output, bake image paths server-side (so the
+	// frontend receives full /images/<dir>/<file> paths directly in chunks),
+	// and emit only the portion before [SUGGESTIONS].
 	var (
-		full       strings.Builder // accumulates entire LLM output
-		emittedLen int             // bytes of *clean* text already emitted as chunks
-		tagFound   bool            // true once "[SUGGESTIONS]" has been seen in the stream
+		full           strings.Builder // accumulates entire raw LLM output
+		bakedEmitLen   int             // bytes of *baked* text already emitted
+		tagFound       bool            // true once "[SUGGESTIONS]" has been seen
 	)
 
 	const suggTag = "[SUGGESTIONS]"
 
 	onChunk := func(delta string) {
 		if tagFound {
-			// After the tag is confirmed — just accumulate; do not emit.
 			full.WriteString(delta)
 			return
 		}
 
 		full.WriteString(delta)
-		current := full.String()
+		raw := full.String()
 
-		// Check if the tag is now fully present in the accumulated text.
-		tagIdx := strings.Index(current, suggTag)
+		// Bake full image paths into the accumulated text so every chunk
+		// the frontend receives already has /images/<dir>/<file>.
+		baked := bakeImagePaths(raw, imageMap)
+
+		tagIdx := strings.Index(baked, suggTag)
 		if tagIdx >= 0 {
 			tagFound = true
-			// Emit only the clean portion (before the tag) that hasn't been emitted yet.
-			cleanPart := current[:tagIdx]
-			if len(cleanPart) > emittedLen {
-				emit(streamEvent("chunk", cleanPart[emittedLen:]))
-				emittedLen = len(cleanPart)
+			if tagIdx > bakedEmitLen {
+				emit(streamEvent("chunk", baked[bakedEmitLen:tagIdx]))
+				bakedEmitLen = tagIdx
 			}
 			return
 		}
 
-		// Tag not yet fully arrived.  Emit up to the last '[' (which could be
-		// the start of a partial "[SUGGESTIONS]" tag).
-		safeEnd := strings.LastIndex(current, "[")
+		safeEnd := strings.LastIndex(baked, "[")
 		if safeEnd < 0 {
-			safeEnd = len(current) // no '[' at all — safe to emit everything
+			safeEnd = len(baked)
 		}
-		if safeEnd > emittedLen {
-			emit(streamEvent("chunk", current[emittedLen:safeEnd]))
-			emittedLen = safeEnd
+		if safeEnd > bakedEmitLen {
+			emit(streamEvent("chunk", baked[bakedEmitLen:safeEnd]))
+			bakedEmitLen = safeEnd
 		}
 	}
 
@@ -220,7 +227,7 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	finishReason, _, llmErr := deps.streamLLM(ctx, deps.model, messages, onChunk)
 	// Parity with Python's fallback model: if the primary call failed before
 	// streaming/buffering anything, retry once on the fallback model.
-	if llmErr != nil && deps.fallbackModel != "" && full.Len() == 0 && emittedLen == 0 {
+	if llmErr != nil && deps.fallbackModel != "" && full.Len() == 0 && bakedEmitLen == 0 {
 		finishReason, _, llmErr = deps.streamLLM(ctx, deps.fallbackModel, messages, onChunk)
 	}
 	if llmErr != nil {
@@ -237,9 +244,10 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	fullText := full.String()
 	clean, suggestions := services.ExtractSuggestions(fullText)
 
-	// Emit any clean text that the streaming loop held back.
-	if len(clean) > emittedLen {
-		emit(streamEvent("chunk", clean[emittedLen:]))
+	// Emit any clean text that the streaming loop held back (baked).
+	bakedClean := bakeImagePaths(clean, imageMap)
+	if len(bakedClean) > bakedEmitLen {
+		emit(streamEvent("chunk", bakedClean[bakedEmitLen:]))
 	}
 
 	if len(suggestions) > 0 {
@@ -249,8 +257,8 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	// Fix 3 & 4: empty and truncation notices are mutually exclusive (if/else if).
 	// When clean is empty, emit EmptyResponseNotice and use it as the saved answer.
 	// A truncated response is necessarily non-empty, so empty takes precedence.
-	savedAnswer := clean
-	if strings.TrimSpace(clean) == "" {
+	savedAnswer := bakedClean
+	if strings.TrimSpace(bakedClean) == "" {
 		notice := services.EmptyResponseNotice(req.Lang)
 		emit(streamEvent("chunk", notice))
 		savedAnswer = notice
@@ -259,6 +267,9 @@ func streamFlow(ctx context.Context, req StreamChatRequest, deps streamDeps, emi
 	}
 
 	// ---------- 15. saveLog; done ----------
+	// Bake full image paths into the persisted answer so reloaded history renders
+	// correctly without the per-stream image map.
+	savedAnswer = bakeImagePaths(savedAnswer, imageMap)
 	logID := deps.saveLog(req.BU, req.Username, req.Text, savedAnswer, sources, emb)
 	emit(streamEvent("done", logID))
 }
