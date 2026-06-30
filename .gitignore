@@ -67,3 +67,5 @@ Thumbs.db
 
 # root ไม่มี Node project — กัน lockfile กำพร้าหลุดกลับมา
 /package-lock.json
+.vercel
+.env*.local
