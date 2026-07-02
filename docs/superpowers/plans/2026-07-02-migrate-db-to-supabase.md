@@ -366,7 +366,7 @@ for t in "${TABLES[@]}"; do
   echo "== dump $t =="
   echo "   cols: $cols"
   psql_src -c "\copy (SELECT $cols FROM public.$t) TO STDOUT WITH (FORMAT csv)" > "$OUT/$t.csv"
-  rows=$(wc -l < "$OUT/$t.csv" | tr -d ' ')
+  rows=$(psql_src -tAc "select count(*) from public.$t;")
   echo "   dumped rows: $rows"
 
   echo "== load $t =="
