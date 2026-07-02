@@ -73,3 +73,6 @@ Thumbs.db
 /package-lock.json
 .vercel
 .env*.local
+
+# DB migration credentials — never commit
+scripts/supabase-migration/.env.migrate
