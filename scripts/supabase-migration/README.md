@@ -18,11 +18,15 @@ Supabase as the new production DB. Source is **read-only** the whole time.
    `activity_logs` rows so the snapshot is consistent. Downtime ≈ copy time.
 3. `bash apply-schema.sh` — extensions, `0001`, RLS, truncate seed.
 4. `bash copy-data.sh` — dump+load all tables (FK order, UUID-preserving).
-5. `bash verify.sh` — must print `ALL PARITY CHECKS PASSED` (exit 0). If not,
+5. `bash reindex-vectors.sh` — rebuild both ivfflat vector indexes so their
+   centroids are computed from the loaded data. **Mandatory** — the indexes are
+   created on empty tables by `apply-schema.sh`, and skipping this silently
+   degrades RAG retrieval recall.
+6. `bash verify.sh` — must print `ALL PARITY CHECKS PASSED` (exit 0). If not,
    do NOT cut over — investigate; the source is untouched.
-6. **Repoint config to Supabase** (see below), redeploy Render, un-suspend.
-7. Smoke test (see below).
-8. Close out: rotate the Supabase password; keep dev DB for 2–3 days.
+7. **Repoint config to Supabase** (see below), redeploy Render, un-suspend.
+8. Smoke test (see below).
+9. Close out: rotate the Supabase password; keep dev DB for 2–3 days.
 
 ## Repoint config (NOT committed — gitignored files + dashboard)
 Set these `DB_*` to the Supabase **Session Pooler** everywhere the backend reads them:
@@ -51,6 +55,9 @@ The dev DB was never written to. Set Render `carmen-backend` `DB_*` back to the
 - **Rotate the Supabase DB password** (it was shared in plaintext) — Supabase
   Dashboard → Project Settings → Database → Reset database password — then
   update Render env + local `.env*` with the new password and redeploy.
+- Confirm deny-all RLS still holds: connecting as the Supabase `anon` role,
+  `select count(*) from public.documents;` must return 0 rows (RLS blocks it).
+  RLS is enabled by `apply-schema.sh` and nothing in the flow disables it.
 - Keep the dev DB running until Supabase is validated (2–3 days), then
   decommission.
 

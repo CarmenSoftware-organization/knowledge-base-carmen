@@ -623,3 +623,13 @@ rollback, then decommission.
 **Placeholder scan:** No TBD/TODO. `CHANGME` in `.env.migrate.example` is an intentional template value the operator fills in the gitignored copy, not a plan placeholder. The large-dataset path ships concrete DDL, not "handle if large."
 
 **Type/name consistency:** `psql_src`/`psql_dst`/`TABLES` defined in `lib.sh` (Task 1) and used identically in Tasks 2–4. `MIGRATE_OUT` used consistently in Tasks 3–4. Table list identical everywhere (FK-parent-first). Column lists generated the same way for dump and load (same `$cols`).
+
+---
+
+## Post-final-review amendments (2026-07-02)
+
+The whole-branch review surfaced items fixed after the tasks were built (the scripts under `scripts/supabase-migration/` are authoritative):
+
+- **ivfflat recall (Important):** `apply-schema.sh` creates the two ivfflat indexes on empty tables, so their centroids would be degenerate after bulk load. Added `reindex-vectors.sh` (REINDEXes `idx_document_chunks_embedding` + `idx_chat_history_embedding` on the target) as a **mandatory** step between `copy-data.sh` and `verify.sh` in the runbook.
+- **Secret hygiene (Minor):** `.env.migrate.example` genericized — `SRC_*` and `DST_HOST` are now placeholders, not real host/user/project-ref values.
+- **RLS close-out (Minor):** the runbook `Close-out` now includes an `anon`-role RLS smoke-check (`select count(*) from public.documents` must return 0).
