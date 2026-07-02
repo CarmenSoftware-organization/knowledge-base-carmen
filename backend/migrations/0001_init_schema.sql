@@ -10,6 +10,12 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- The ivfflat vector index builds below need more memory than some instances'
+-- default maintenance_work_mem (Supabase small tiers / stock Postgres = 32-64MB).
+-- Raise it for THIS session so a fresh-DB apply doesn't fail building the vector
+-- indexes (session-local; resets on disconnect).
+SET maintenance_work_mem = '128MB';
+
 -- ── Business units (tenant registry) ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.business_units (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
