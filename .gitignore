@@ -65,6 +65,10 @@ origin_main_files.txt
 Thumbs.db
 .claude/
 
+# Obsidian vault config (don't commit editor workspace)
+.obsidian/
+**/.obsidian/
+
 # root ไม่มี Node project — กัน lockfile กำพร้าหลุดกลับมา
 /package-lock.json
 .vercel
