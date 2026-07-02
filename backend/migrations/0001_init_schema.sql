@@ -69,7 +69,26 @@ CREATE TABLE IF NOT EXISTS public.chat_history (
     question_embedding VECTOR(2000),
     created_at         TIMESTAMPTZ DEFAULT NOW(),
     expires_at         TIMESTAMPTZ,
-    metrics            JSONB DEFAULT '{}'::jsonb
+    metrics            JSONB DEFAULT '{}'::jsonb,
+    -- Chatbot telemetry (present in production; kept in sync so fresh DBs match)
+    lang                  CHAR(2),
+    intent_type           VARCHAR(30),
+    model_name            VARCHAR(100),
+    chat_input_tokens     INTEGER DEFAULT 0,
+    chat_output_tokens    INTEGER DEFAULT 0,
+    embed_tokens          INTEGER DEFAULT 0,
+    rewrite_input_tokens  INTEGER DEFAULT 0,
+    rewrite_output_tokens INTEGER DEFAULT 0,
+    total_tokens          INTEGER DEFAULT 0,
+    cost_usd              NUMERIC(18,8) DEFAULT 0,
+    intent_input_tokens   INTEGER DEFAULT 0 NOT NULL,
+    intent_output_tokens  INTEGER DEFAULT 0 NOT NULL,
+    avg_similarity_score  NUMERIC(6,4),
+    answer_length         INTEGER DEFAULT 0 NOT NULL,
+    device_type           VARCHAR(20),
+    referrer_page         TEXT,
+    embed_model           VARCHAR(200),
+    intent_model          VARCHAR(200)
 );
 
 CREATE INDEX IF NOT EXISTS idx_chat_history_bu_id      ON public.chat_history(bu_id);

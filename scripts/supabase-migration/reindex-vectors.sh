@@ -9,6 +9,13 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/lib.sh"
 
 echo "== REINDEX ivfflat vector indexes (recompute centroids from loaded data) =="
-psql_dst -c "REINDEX INDEX public.idx_document_chunks_embedding;"
-psql_dst -c "REINDEX INDEX public.idx_chat_history_embedding;"
+# ivfflat builds need more memory than Supabase's small default
+# maintenance_work_mem (32MB on smaller instances). Raise it for THIS session
+# (maintenance_work_mem is USERSET → session-local, resets when we disconnect).
+# All three statements run in one psql session so the SET applies to both REINDEXes.
+psql_dst <<'SQL'
+SET maintenance_work_mem = '256MB';
+REINDEX INDEX public.idx_document_chunks_embedding;
+REINDEX INDEX public.idx_chat_history_embedding;
+SQL
 echo "Vector indexes rebuilt."
