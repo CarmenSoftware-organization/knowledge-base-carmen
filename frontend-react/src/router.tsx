@@ -13,6 +13,7 @@ import FaqPath, { faqPathLoader } from "@/routes/faq/path";
 import Activity from "@/routes/activity";
 import AdminActivity, { adminActivityLoader } from "@/routes/admin-activity";
 import Chat from "@/routes/chat";
+import HistoryCount from "@/routes/history-count";
 import NotFound from "@/routes/not-found";
 
 export const routes: RouteObject[] = [
@@ -41,6 +42,7 @@ export const routes: RouteObject[] = [
       { path: "activity", element: <Activity /> },
       { path: "admin/activity", element: <AdminActivity />, loader: adminActivityLoader },
       { path: "chat", element: <Chat /> },
+      { path: "history/count", element: <HistoryCount /> },
       { path: "*", element: <NotFound /> },
     ],
   },
