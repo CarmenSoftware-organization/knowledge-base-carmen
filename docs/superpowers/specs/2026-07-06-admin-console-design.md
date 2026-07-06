@@ -28,56 +28,67 @@ no cron/scheduling UI, no editing of tuning YAML from the browser.
 |---|---|---|
 | Auth | Operator types the admin key into a lock screen; stored in `sessionStorage` and sent as `X-Admin-Key` on every request | `frontend-react` is a static SPA on Vercel — a secret cannot be safely baked into the bundle. Session-scoped key = no backend/CORS change, key gone when the tab closes. Acceptable for a single trusted internal operator. |
 | Layout | Left **sidebar sub-nav**, right = active panel + shared output log | Chosen from mockups; scales to 6 sections and to operations that emit output. |
-| Reset | **One** new endpoint `POST /api/admin/reset` with a `scope` discriminator | The three CLI reset variants target different tables but are all "destructive truncate"; one endpoint = one handler, one test, one confirm-guard, and matches the CLI's single `reset` verb. |
+| Reset | **Two** separate new endpoints — `POST /api/index/reset` (RAG index) and `POST /api/system/reset` (operational tables) | The two operations truncate different tables with different consequences: index reset ⇒ you **must reindex** afterwards; system reset ⇒ **wipes logs + chat history**. Keeping them separate makes each endpoint's blast radius explicit, and lets `/index/reset` live next to the other `/api/index/*` routes. |
 | Activity | Fold existing `admin/activity` into the console as a read-only section | Consolidates all admin surfaces in one place. |
 
-## 3. Backend change — new `POST /api/admin/reset`
+## 3. Backend change — two separate reset endpoints
 
-The **only** Go change. Wraps three existing DB functions
-(`database.TruncateBUTables`, `database.TruncateAllBUIndexTables`,
-`database.ClearPublicTables`) that today are reachable only via the CLI
-(`cmd/server/main.go` `reset …`).
+The **only** Go changes. Each wraps existing DB functions that today are
+reachable only via the CLI (`cmd/server/main.go` `reset …`). They are kept
+**separate** because they truncate different tables with different consequences.
+Both are guarded by `middleware.RequireAdminKey` and require a matching
+`confirm` in the body (rejected with **400** on mismatch, mirroring the existing
+response-envelope `Fail` pattern).
 
-### 3.1 Contract
+### 3.1 `POST /api/index/reset` — RAG index data
+
+Lives next to the other `/api/index/*` routes; truncates
+`documents` / `document_chunks`. **After running it you must reindex.**
 
 ```
-POST /api/admin/reset            (middleware.RequireAdminKey)
+POST /api/index/reset?bu=<slug>|all       (middleware.RequireAdminKey)
 Content-Type: application/json
-
-{ "scope": "index" | "public",
-  "bu":    "<slug>" | "all",     // required when scope=index; ignored for public
-  "confirm": "<must match>" }
+{ "confirm": "<must match>" }
 ```
 
-Dispatch + required `confirm` value (rejected with **400** on mismatch,
-mirroring the existing response-envelope `Fail` pattern):
+| bu | action | `confirm` must equal |
+|---|---|---|
+| `<slug>` | `database.TruncateBUTables(slug)` | the `<slug>` |
+| `all` | `database.TruncateAllBUIndexTables()` | `ALL` |
 
-| scope | bu | action | `confirm` must equal |
-|---|---|---|---|
-| `index` | `<slug>` | `TruncateBUTables(slug)` | the `<slug>` |
-| `index` | `all` | `TruncateAllBUIndexTables()` | `ALL` |
-| `public` | — | `ClearPublicTables()` | `RESET-PUBLIC` |
+- `slug` validated with `security.ValidateSchema` (same as CLI); invalid slug or
+  missing `bu` → 400 `CodeInvalidSlug`.
+- Success → `response.OK` with `{ bu, message }` (e.g. `"index reset for carmen;
+  run reindex to rebuild"`).
 
-- `slug` is validated with `security.ValidateSchema` (same as CLI); invalid slug
-  → 400 `CodeInvalidSlug`.
-- Unknown `scope` → 400 `CodeInvalidBody`.
-- Success → `response.OK` with `{ scope, bu, message }` (e.g. `"index reset for
-  carmen; run reindex to rebuild"`).
-- The `confirm` gate is defence-in-depth against a mis-fired request; the
-  frontend also gates with a typed-confirmation field (§4.5).
+### 3.2 `POST /api/system/reset` — operational tables
 
-### 3.2 Wiring & files
+Truncates the public operational tables (`activity_logs`, `chat_history`, …)
+via `database.ClearPublicTables()`. **Wipes logs and chat history.**
 
-- New handler method on a small `AdminHandler` in
-  `backend/internal/api/admin_handler.go` (or add to an existing handler if a
-  natural home exists — decided at implementation time; default: new file).
-- New `backend/internal/router/admin_routes.go` with
-  `RegisterAdmin(app)` → `app.Post("/api/admin/reset", middleware.RequireAdminKey, h.Reset)`,
-  called from `SetupRoutes` in `routes.go`.
-- Test `backend/internal/api/admin_handler_test.go` following the
-  `bu_handler_test.go` pattern: assert 401 without key, 400 on bad
-  `confirm`/`scope`, and (DB-gated, `RUN_DB_TESTS=1`) that a seeded row is gone
-  after a valid `scope=index` reset.
+```
+POST /api/system/reset                    (middleware.RequireAdminKey)
+Content-Type: application/json
+{ "confirm": "RESET-PUBLIC" }
+```
+
+- `confirm` must equal `RESET-PUBLIC`, else 400 `CodeInvalidBody`.
+- Success → `response.OK` with `{ message }`.
+
+The `confirm` gate is defence-in-depth against a mis-fired request; the frontend
+also gates with a typed-confirmation field (§4.5).
+
+### 3.3 Wiring & files
+
+- **Index reset:** add a `Reset` method to the existing `IndexingHandler`
+  (`backend/internal/api/indexing_handler.go`); register in
+  `indexing_routes.go`:
+  `app.Post("/api/index/reset", middleware.RequireAdminKey, indexingHandler.Reset)`.
+- **System reset:** new `SystemHandler.Reset` in
+  `backend/internal/api/system_handler.go` + `RegisterSystem(app)` in a new
+  `backend/internal/router/system_routes.go` (called from `SetupRoutes`), or
+  attach to an existing system handler if one already fits — decided at
+  implementation time.
 
 ## 4. Frontend design (`frontend-react`)
 
@@ -134,7 +145,7 @@ populated from `GET /api/business-units`.
 | **Wiki Sync** | **Sync now** `POST /api/wiki/sync` · **View Audit** `GET /api/wiki/sync/audit` |
 | **Business Units** | List `GET /api/business-units` · **Provision** form (`slug` / `name` / `description`) `POST /api/business-units/provision` · **Deprovision** (BU select + typed-confirm) `POST /api/business-units/deprovision` — destructive, needs confirm dialog |
 | **Chat Debug** | query input · **Route Test** `POST /api/chat/route-test` · **Intent Test** `POST /api/chat/intent-test` · **History** `GET /api/chat/history/list` |
-| **Reset** | scope radio (Index BU / Index All / Public) · BU dropdown (when Index BU) · **typed confirmation** field · red **Run reset** button → `POST /api/admin/reset` (§3) |
+| **Reset** | scope radio (Index BU / Index All / Public) · BU dropdown (when Index BU) · **typed confirmation** field · red **Run reset** button → `POST /api/index/reset?bu=` for Index BU/All, or `POST /api/system/reset` for Public (§3) |
 | **Activity Log** | read-only table, moved from `admin/activity`: `GET /api/activity/list?bu=carmen&limit=50&offset=0&source=all` |
 
 Destructive actions (Deprovision, Reset) require the operator to type the exact
@@ -168,23 +179,27 @@ Frontend (Jest + RTL, matching existing `*.test.tsx`):
 - `<AdminGate>`: locked with no key; unlock success (mock 200 status) enters
   console; unlock failure (mock 401) shows error and stays locked.
 - Reset panel: **Run reset** stays disabled until the typed confirmation matches;
-  fires `POST /api/admin/reset` with the right body when it does.
+  fires the right endpoint for the selected scope (`POST /api/index/reset?bu=` or
+  `POST /api/system/reset`) with the right body when it does.
 - One representative panel (Indexing) wires a button to the right URL with a
   mocked response landing in OutputLog.
 
-Backend (Go, `admin_handler_test.go`):
+Backend (Go — index reset covered in `indexing_handler_test.go`, system reset in
+`system_handler_test.go`, both following `bu_handler_test.go`):
 
-- 401 without `X-Admin-Key`.
-- 400 on unknown `scope` and on `confirm` mismatch.
-- DB-gated (`RUN_DB_TESTS=1`) happy path deletes seeded index rows for a BU.
+- 401 without `X-Admin-Key` (both endpoints).
+- 400 on `confirm` mismatch (both) and on invalid/missing `bu` slug (index reset).
+- DB-gated (`RUN_DB_TESTS=1`): `/index/reset?bu=<slug>` deletes seeded index rows
+  for that BU; `/system/reset` clears seeded activity/chat rows.
 
 ## 7. Security considerations
 
 - Key is **session-scoped** in the browser, never persisted to `localStorage` or
   the bundle; cleared on tab close, on explicit lock, and on any 401.
 - No new **unauthenticated** surface: every new/used write endpoint keeps
-  `RequireAdminKey`. The new `/api/admin/reset` is guarded identically.
-- The reset endpoint has a **double gate**: server-side `confirm` string + the
+  `RequireAdminKey`. Both new reset endpoints (`/api/index/reset`,
+  `/api/system/reset`) are guarded identically.
+- Both reset endpoints have a **double gate**: server-side `confirm` string + the
   frontend typed-confirmation field, so a stray click or replayed request can't
   truncate tables.
 - `GET /api/index/rebuild/status` is used only as a harmless key-probe; it has no
@@ -203,5 +218,6 @@ Backend (Go, `admin_handler_test.go`):
 
 ## 9. Open questions
 
-None — auth model, scope, layout, the single merged reset endpoint, and folding
-`admin/activity` are all resolved.
+None — auth model, scope, layout, the two separate reset endpoints
+(`/api/index/reset` + `/api/system/reset`), and folding `admin/activity` are all
+resolved.
