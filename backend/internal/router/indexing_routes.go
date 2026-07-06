@@ -14,4 +14,5 @@ func RegisterIndexing(app *fiber.App) {
 	app.Post("/api/index/rebuild/one", middleware.RequireAdminKey, indexingHandler.RebuildOne)
 	app.Get("/api/index/rebuild/status", middleware.RequireAdminKey, indexingHandler.Status)
 	app.Post("/api/index/rebuild/unlock", middleware.RequireAdminKey, indexingHandler.ForceUnlock)
+	app.Post("/api/index/reset", middleware.RequireAdminKey, indexingHandler.Reset)
 }
