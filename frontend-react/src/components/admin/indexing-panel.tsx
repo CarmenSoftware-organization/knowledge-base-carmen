@@ -26,13 +26,13 @@ export function IndexingPanel() {
   const [polling, setPolling] = useState(false);
   const [pollSec, setPollSec] = useState<number | null>(null);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
       mountedRef.current = false;
       if (pollRef.current) clearInterval(pollRef.current);
-    },
-    [],
-  );
+    };
+  }, []);
 
   function stopPolling() {
     if (pollRef.current) {
