@@ -142,6 +142,13 @@ END$$;`
 	return DB.Exec(sql).Error
 }
 
+// ClearChatAndActivityTables truncates only chat history and activity logs for
+// all BUs. Unlike ClearPublicTables it leaves documents/chunks/business_units/
+// faq intact — this backs the HTTP POST /api/system/reset endpoint.
+func ClearChatAndActivityTables() error {
+	return DB.Exec(`TRUNCATE TABLE public.chat_history, public.activity_logs RESTART IDENTITY`).Error
+}
+
 // TruncateBUTables deletes one BU's documents (and chunks, via FK cascade).
 func TruncateBUTables(bu string) error {
 	if bu == "" {
