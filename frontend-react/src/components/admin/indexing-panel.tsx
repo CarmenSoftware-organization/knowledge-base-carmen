@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,17 @@ export function IndexingPanel() {
   const [path, setPath] = useState("");
   const { entries, busy, run } = useAdminAction();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(true);
   const [polling, setPolling] = useState(false);
+  const [pollSec, setPollSec] = useState<number | null>(null);
+
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+      if (pollRef.current) clearInterval(pollRef.current);
+    },
+    [],
+  );
 
   function stopPolling() {
     if (pollRef.current) {
@@ -38,17 +48,22 @@ export function IndexingPanel() {
     );
     stopPolling();
     setPolling(true);
+    setPollSec(null);
     pollRef.current = setInterval(async () => {
       try {
         const { data } = await adminApiJson<{ running: boolean; running_for_sec?: number }>(
           `/api/index/rebuild/status?bu=${encodeURIComponent(bu)}`,
         );
+        if (!mountedRef.current) return;
+        setPollSec(data.running_for_sec ?? null);
         if (!data.running) {
           stopPolling();
           await run(`status ${bu}`, async () => data);
         }
-      } catch {
+      } catch (err) {
+        if (!mountedRef.current) return;
         stopPolling();
+        run(`rebuild status ${bu}`, () => Promise.reject(err)).catch(() => {});
       }
     }, 3000);
   }
@@ -131,7 +146,11 @@ export function IndexingPanel() {
       </div>
 
       {polling && (
-        <p className="mb-3 text-sm text-muted-foreground">กำลัง reindex… (poll สถานะทุก 3 วินาที)</p>
+        <p className="mb-3 text-sm text-muted-foreground">
+          {pollSec != null
+            ? `กำลัง reindex… (${pollSec}s, poll ทุก 3 วินาที)`
+            : "กำลัง reindex… (poll ทุก 3 วินาที)"}
+        </p>
       )}
       <OutputLog entries={entries} />
     </Card>
