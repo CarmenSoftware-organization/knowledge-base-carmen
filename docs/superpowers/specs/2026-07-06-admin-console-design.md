@@ -61,19 +61,32 @@ Content-Type: application/json
 - Success → `response.OK` with `{ bu, message }` (e.g. `"index reset for carmen;
   run reindex to rebuild"`).
 
-### 3.2 `POST /api/system/reset` — operational tables
+### 3.2 `POST /api/system/reset` — chat history + activity logs
 
-Truncates the public operational tables (`activity_logs`, `chat_history`, …)
-via `database.ClearPublicTables()`. **Wipes logs and chat history.**
+Truncates **only** the two operational tables `chat_history` and
+`activity_logs`. **Wipes chat history and activity logs for all BUs** (nothing
+else). It does **not** touch `documents` / `document_chunks` / `business_units` /
+`faq_*`.
+
+> **Safety correction (from codebase review):** the existing
+> `database.ClearPublicTables()` — the CLI's `reset all` — truncates **every**
+> table in the `public` schema (documents, chunks, business_units, faq, chat,
+> logs — a full factory wipe), which does **not** match "reset chat history".
+> So this endpoint uses a **new, narrow** `database.ClearChatAndActivityTables()`
+> instead. `ClearPublicTables()` is deliberately **not** exposed over HTTP in v1
+> (stays CLI-only) to avoid a mislabelled nuke button.
 
 ```
 POST /api/system/reset                    (middleware.RequireAdminKey)
 Content-Type: application/json
-{ "confirm": "RESET-PUBLIC" }
+{ "confirm": "RESET-CHAT-LOGS" }
 ```
 
-- `confirm` must equal `RESET-PUBLIC`, else 400 `CodeInvalidBody`.
-- Success → `response.OK` with `{ message }`.
+- `confirm` must equal `RESET-CHAT-LOGS`, else 400 `CodeInvalidBody`.
+- Success → `response.OK` with `{ message }` e.g. `"chat history + activity logs
+  cleared"`.
+- New DB function `database.ClearChatAndActivityTables()`:
+  `TRUNCATE TABLE public.chat_history, public.activity_logs RESTART IDENTITY`.
 
 The `confirm` gate is defence-in-depth against a mis-fired request; the frontend
 also gates with a typed-confirmation field (§4.5).
@@ -145,7 +158,7 @@ populated from `GET /api/business-units`.
 | **Wiki Sync** | **Sync now** `POST /api/wiki/sync` · **View Audit** `GET /api/wiki/sync/audit` |
 | **Business Units** | List `GET /api/business-units` · **Provision** form (`slug` / `name` / `description`) `POST /api/business-units/provision` · **Deprovision** (BU select + typed-confirm) `POST /api/business-units/deprovision` — destructive, needs confirm dialog |
 | **Chat Debug** | query input · **Route Test** `POST /api/chat/route-test` · **Intent Test** `POST /api/chat/intent-test` · **History** `GET /api/chat/history/list` |
-| **Reset** | scope radio (Index BU / Index All / Public) · BU dropdown (when Index BU) · **typed confirmation** field · red **Run reset** button → `POST /api/index/reset?bu=` for Index BU/All, or `POST /api/system/reset` for Public (§3) |
+| **Reset** | scope radio: **Reset RAG index (this BU)** / **Reset RAG index (ALL BUs)** / **Reset chat history + activity logs** · BU dropdown (index-BU only) · per-scope warning copy + **typed confirmation** field · red **Run reset** button → `POST /api/index/reset?bu=` for the two index scopes, `POST /api/system/reset` for chat+logs (§3). Each scope shows exactly what it wipes and (for index) that a reindex is required next. |
 | **Activity Log** | read-only table, moved from `admin/activity`: `GET /api/activity/list?bu=carmen&limit=50&offset=0&source=all` |
 
 Destructive actions (Deprovision, Reset) require the operator to type the exact
