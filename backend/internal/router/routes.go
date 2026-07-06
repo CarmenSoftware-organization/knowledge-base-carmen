@@ -40,6 +40,7 @@ func SetupRoutes(app *fiber.App) {
 	RegisterPublicChat(app)
 	RegisterActivity(app)
 	RegisterBusinessUnits(app)
+	RegisterSystem(app)
 }
 
 // RegisterFAQ wires the /api/faq routes (modules, entry by id, module detail,
