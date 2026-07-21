@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 import RootLayout from "@/root-layout";
 import RootLoading from "@/routes/root-loading";
@@ -11,8 +11,9 @@ import Article, { articleLoader } from "@/routes/categories/article";
 import Faq, { faqLoader } from "@/routes/faq/index";
 import FaqPath, { faqPathLoader } from "@/routes/faq/path";
 import Activity from "@/routes/activity";
-import AdminActivity, { adminActivityLoader } from "@/routes/admin-activity";
+import Admin from "@/routes/admin";
 import Chat from "@/routes/chat";
+import HistoryCount from "@/routes/history-count";
 import NotFound from "@/routes/not-found";
 
 export const routes: RouteObject[] = [
@@ -39,8 +40,10 @@ export const routes: RouteObject[] = [
       { path: "faq", element: <Faq />, loader: faqLoader },
       { path: "faq/*", element: <FaqPath />, loader: faqPathLoader, errorElement: <NotFound /> },
       { path: "activity", element: <Activity /> },
-      { path: "admin/activity", element: <AdminActivity />, loader: adminActivityLoader },
+      { path: "admin", element: <Admin /> },
+      { path: "admin/activity", element: <Navigate to="/admin?section=activity" replace /> },
       { path: "chat", element: <Chat /> },
+      { path: "history/count", element: <HistoryCount /> },
       { path: "*", element: <NotFound /> },
     ],
   },

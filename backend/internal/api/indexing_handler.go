@@ -9,6 +9,7 @@ import (
 
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/api/response"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/middleware"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
@@ -122,4 +123,38 @@ func (h *IndexingHandler) RebuildOne(c *fiber.Ctx) error {
 		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
 	}
 	return response.OK(c, models.ReindexOneResult{BU: bu, Path: path, Message: "reindex single file completed"})
+}
+
+// resetRequest is the body for index/system reset; confirm must match a scope-specific token.
+type resetRequest struct {
+	Confirm string `json:"confirm"`
+}
+
+// Reset truncates the RAG index for one BU (?bu=<slug>) or every BU (?bu=all).
+// Body {confirm} must equal the bu slug, or "ALL" when bu=all. Guarded by RequireAdminKey.
+func (h *IndexingHandler) Reset(c *fiber.Ctx) error {
+	bu := middleware.GetBU(c) // lower-cased + slug-validated by BUContext; "all" is allowed
+	var req resetRequest
+	if err := c.BodyParser(&req); err != nil {
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBody, "invalid JSON body")
+	}
+	confirm := strings.TrimSpace(req.Confirm)
+
+	if strings.EqualFold(bu, "all") {
+		if confirm != "ALL" {
+			return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBody, `confirm must equal "ALL"`)
+		}
+		if err := database.TruncateAllBUIndexTables(); err != nil {
+			return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
+		}
+		return response.OK(c, models.MessageResult{Message: "index reset for all BUs; run reindex to rebuild"})
+	}
+
+	if confirm != bu {
+		return response.Fail(c, fiber.StatusBadRequest, response.CodeInvalidBody, "confirm must equal the bu slug")
+	}
+	if err := database.TruncateBUTables(bu); err != nil {
+		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, err.Error())
+	}
+	return response.OK(c, models.MessageResult{Message: "index reset for " + bu + "; run reindex to rebuild"})
 }
