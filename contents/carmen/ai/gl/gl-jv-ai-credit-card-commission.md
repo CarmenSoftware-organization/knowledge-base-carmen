@@ -33,17 +33,17 @@ dateCreated: 2026-07-02T07:38:34Z
 2. เลือก function **Journal Voucher**
 3. ระบบจะแสดงปุ่ม **AI** อยู่ด้านขวามือ
 
-![Journal Voucher AI button](01-journal-voucher-ai-button.png)
+![Journal Voucher AI button](./gl-jv-ai-credit-card-commission-assets/01-journal-voucher-ai-button.png)
 
 4. เมื่อระบบทำการตรวจสอบสิทธิ์การใช้งานเสร็จสิ้น (**Authenticating**) จะแสดงหน้าจอหลักสำหรับอัปโหลดในหน้า **AI Credit Card Commission Automation**
 
-![Upload File screen](02-upload-file.png)
+![Upload File screen](./gl-jv-ai-credit-card-commission-assets/02-upload-file.png)
 
 5. ใน Step 1 **Upload File** คลิกปุ่ม **Browse File** หรือทำการลากไฟล์รายงานค่าธรรมเนียมบัตรเครดิต เช่น `Kasikorn.png` มาวางในบริเวณกล่องอัปโหลด
    - สำหรับไฟล์ PDF จากธนาคารที่ติด lock password ระบบจะแสดงหน้าต่างให้กรอก password
    - จากนั้นกด **Unlock** เพื่อดำเนินการต่อ
 
-![Password-protected PDF dialog](03-password-protected-pdf.png)
+![Password-protected PDF dialog](./gl-jv-ai-credit-card-commission-assets/03-password-protected-pdf.png)
 
 6. ระบบจะทำการอ่านข้อมูลจากเอกสารที่ upload
 
@@ -65,14 +65,14 @@ dateCreated: 2026-07-02T07:38:34Z
    - ยอดเงินสุทธิที่จะเข้าบัญชีธนาคาร (**Net Amt**)
 4. เมื่อตรวจสอบความถูกต้องของข้อมูลตัวเลขเรียบร้อยแล้ว ให้คลิกปุ่ม **+ Next (Review Accounting)** ที่มุมขวาล่างเพื่อดำเนินการต่อ
 
-![Review Data screen](04-review-data.jpg)
+![Review Data screen](./gl-jv-ai-credit-card-commission-assets/04-review-data.jpg)
 
 ### ขั้นตอนที่ 3: ตรวจสอบผังบัญชีและการตั้งค่า (Accounting Review & Account Mapping)
 
 1. ระบบจะแสดงแท็บขั้นตอน **Accounting Review** เพื่อให้ตรวจสอบรายการบันทึกสมุดรายวันทั่วไป (**Journal Concept**)
 2. หากข้อมูล account code mapping ครบถ้วน สามารถกดปุ่ม **Confirm and Submit** เพื่อไปทำงานต่อในขั้นตอนที่ 4 ได้เลย
 
-![Accounting Review screen](05-accounting-review.png)
+![Accounting Review screen](./gl-jv-ai-credit-card-commission-assets/05-accounting-review.png)
 
 3. หากระบบแสดงแถบคำเตือนสีส้มว่า **A Missing account mapping for: บัตรเครดิต/เดบิต** และมีแถวผังบัญชีแสดงสถานะสีแดงว่า **MISSING** ให้ผู้ใช้งานทำการจับคู่ผังบัญชีก่อน โดยคลิกปุ่ม **Edit Mapping** หรือปุ่ม **Mapping Settings**
 4. หน้าต่าง **Account Mapping Configuration** จะเปิดขึ้นมา ให้ดำเนินการดังนี้
@@ -90,7 +90,7 @@ dateCreated: 2026-07-02T07:38:34Z
    - Debit - Input Tax
    - Debit - Bank Account
 
-![Account Mapping Configuration](06-account-mapping-configuration.png)
+![Account Mapping Configuration](./gl-jv-ai-credit-card-commission-assets/06-account-mapping-configuration.png)
 
 6. รายการ **Credit - Account Receivable [Click to Map]** จะมีแถบแจ้งเตือนสีแดงว่า **Required for this scan** ให้คลิกที่ปุ่มนั้น
 7. ป๊อปอัปย่อย **Select Payment Types for Account Receivable** จะปรากฏขึ้นมา
@@ -98,7 +98,7 @@ dateCreated: 2026-07-02T07:38:34Z
    - คลิกเลือกหรือพิมพ์ค้นหารหัสบัญชีที่ช่องรหัสบัญชี (**Account Code**) เช่น พิมพ์คำว่า `visa` แล้วเลือกรหัสบัญชีลูกหนี้บัตรเครดิต `1021004 A/R - Visa Card`
    - เมื่อระบุข้อมูลครบถ้วนแล้ว ให้คลิกปุ่ม **OK**
 
-![Select Payment Types for Account Receivable](07-select-payment-types-account-receivable.png)
+![Select Payment Types for Account Receivable](./gl-jv-ai-credit-card-commission-assets/07-select-payment-types-account-receivable.png)
 
 8. หลังจากปุ่มสถานะสีแดงเปลี่ยนเป็นสถานะสีน้ำเงินพร้อมข้อความ **All 1 items mapped. Ready for JV** ให้ตรวจสอบและคลิกปุ่ม **Save & Close** ที่ด้านล่าง
 
@@ -107,13 +107,13 @@ dateCreated: 2026-07-02T07:38:34Z
 1. ระบบจะนำคุณกลับมายังหน้าจอตรวจสอบโครงสร้างสมุดรายวัน (**Journal Concept**) อีกครั้ง ซึ่งข้อมูลรหัสบัญชีที่เคยขึ้นคำว่า **MISSING** จะได้รับการเติมเต็มและลงบัญชีเดบิต/เครดิตครบถ้วนตามมาตรฐานบัญชี
 2. คลิกปุ่ม **Confirm and Submit** ที่มุมขวาล่างเพื่อยืนยันการบันทึกรายการ
 
-![Accounting Review Confirm and Submit](08-accounting-review-confirm-submit.png)
+![Accounting Review Confirm and Submit](./gl-jv-ai-credit-card-commission-assets/08-accounting-review-confirm-submit.png)
 
 3. ป๊อปอัปแจ้งสถานะการบันทึกสำเร็จจะปรากฏขึ้น: **JV Saved Successfully!** ระบุเลขที่เอกสารบันทึกเข้าสู่ระบบ เช่น เลขที่ใบสำคัญ `31125E00032711`
 4. การตรวจสอบเพิ่มเติม (**Optional**): หากต้องการตรวจสอบรายละเอียดเอกสาร JV บนระบบหลัก สามารถคลิกปุ่ม **View JV** ได้ทันที ระบบจะสลับไปหน้าจอ **Journal Voucher** ของระบบ ERP โดยแสดงการลงบัญชีแยกประเภทอย่างละเอียด
 5. เมื่อตรวจสอบเรียบร้อยแล้ว ให้คลิกปุ่มเพื่อดำเนินการขั้นตอนถัดไป คือ **Proceed to Input Tax Reconciliation**
 
-![JV Saved Successfully dialog](09-jv-saved-successfully.png)
+![JV Saved Successfully dialog](./gl-jv-ai-credit-card-commission-assets/09-jv-saved-successfully.png)
 
 ### ขั้นตอนที่ 5: การกระทบยอดภาษีซื้อ (Input Tax Reconciliation)
 
@@ -121,11 +121,11 @@ dateCreated: 2026-07-02T07:38:34Z
 2. ระบบจะจัดเตรียมข้อมูลเอกสารภาษีซื้อ โดยข้อมูล **Source** เป็น `ACTX` และระบุวันที่ ยอด Net, VAT, Total ให้ตรงตามเอกสารอัตโนมัติ ให้ตรวจสอบความเรียบร้อยของรายการในตาราง
 3. คลิกปุ่ม **+ Add Input Tax** ที่อยู่มุมขวาล่างเพื่อส่งรายการภาษีนี้เข้าระบบรายงานภาษีซื้อ
 
-![Input Tax Reconciliation screen](10-input-tax-reconciliation.png)
+![Input Tax Reconciliation screen](./gl-jv-ai-credit-card-commission-assets/10-input-tax-reconciliation.png)
 
 4. ระบบจะขึ้นหน้าต่างคำถามเพื่อยืนยันรายการ ให้คลิกปุ่ม **Confirm**
 
-![Add Input Tax confirmation dialog](11-add-input-tax-confirm.png)
+![Add Input Tax confirmation dialog](./gl-jv-ai-credit-card-commission-assets/11-add-input-tax-confirm.png)
 
 5. เมื่อเสร็จสิ้นกระบวนการ จะขึ้นแถบแจ้งเตือนสีเขียวที่มุมบนขวาว่า **Input Tax Reconciliation added successfully** และระบบจะสลับกลับมาที่หน้าอัปโหลดเอกสารหลักเพื่อรองรับการทำงานในรอบถัดไป
 
