@@ -4,7 +4,6 @@ description: ขั้นตอนการสร้าง A/P Invoice โดย
 published: true
 tags: carmen_cloud,documentation
 editor: markdown
-weight: 12
 ---
 ---
 title: "Invoice by Template"

@@ -1,6 +1,6 @@
 ---
-title: Untitled
-description: Untitled
+title: ขั้นตอนการ Post ข้อมูล Receiving เข้า A/P Invoice
+description: ขั้นตอนการ Post ข้อมูล Receiving เข้า A/P Invoice
 published: true
 date: 2026-03-20T08:39:16.614Z
 tags: carmen_cloud,documentation
