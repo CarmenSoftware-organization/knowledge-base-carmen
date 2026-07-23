@@ -4,13 +4,12 @@ description: ขั้นตอนการสร้าง A/P Invoice โดย
 published: true
 tags: carmen_cloud,documentation
 editor: markdown
+weight: 12
 ---
-
 ---
 title: "Invoice by Template"
 weight: 12
 ---
-
 # ขั้นตอนการสร้าง A/P Invoice โดยใช้ Import Template
 
 ฟังก์ชัน **Import Template** ใช้สำหรับสร้าง A/P Invoice หลายใบจากไฟล์ Excel ในครั้งเดียว โดยผู้ใช้งานสามารถดาวน์โหลดไฟล์ต้นแบบจากระบบ กรอกข้อมูล แล้วนำไฟล์กลับเข้าสู่ระบบเพื่อตรวจสอบและบันทึก Invoice
