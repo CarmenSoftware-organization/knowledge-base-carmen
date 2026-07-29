@@ -87,10 +87,17 @@ function stripIncompleteTags(text: string): string {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
+// translate="no" + notranslate: this div holds the answer streaming in chunk
+// by chunk, which is the app's biggest React-crash surface — a translator
+// swapping text nodes while React appends to them throws NotFoundError on
+// removeChild and blanks the page (facebook/react#11538). Nothing is lost:
+// the LLM already answers in the language of the question, so translating it
+// would be a second-generation copy of text that was already correct.
 const StaticHtmlContent = memo(function StaticHtmlContent({ content }: { content: string }) {
   return (
     <div
-      className="carmen-content break-words leading-relaxed"
+      className="carmen-content break-words leading-relaxed notranslate"
+      translate="no"
       dangerouslySetInnerHTML={{ __html: content }}
     />
   );

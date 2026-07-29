@@ -98,16 +98,13 @@ export default function FloatingChatBot({
         )}
       </AnimatePresence>
 
-      {/* Fixed anchor.
-          translate="no": the chat streams text into the DOM chunk by chunk, and
-          a translator rewriting those nodes mid-stream is the app's biggest
-          React-crash surface. This is a real trade-off, not a free win: the
-          LLM answer itself is unaffected (it already answers in the language
-          of the question), but the whole widget chrome — header, input
-          placeholder, welcome copy, suggestion chips, modals — is now
-          Thai-only and explicitly opted out of browser translation too. */}
+      {/* Fixed anchor. The widget chrome — header, input placeholder, welcome
+          copy, suggestion chips, modals — translates with the rest of the page,
+          so a reader who picks Japanese does not get a Thai island in the
+          corner. The opt-out lives on the streaming answer body instead
+          (StaticHtmlContent in carmen-message.tsx), which is where the
+          React-crash risk actually is. */}
       <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-[2000000]"
-        translate="no"
         style={{
           "--carmen-theme": theme,
           "--carmen-theme-low": `${theme}dd`
