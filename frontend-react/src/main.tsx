@@ -13,6 +13,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { router } from "@/router";
+import { installDomTranslationShim } from "@/lib/dom-translation-shim";
+
+// Must run before React commits anything to the DOM.
+installDomTranslationShim();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

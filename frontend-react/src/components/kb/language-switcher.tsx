@@ -39,9 +39,13 @@ export function LanguageSwitcher({ className, fluid, toolbar }: LanguageSwitcher
   };
 
   return (
+    // translate="no" + notranslate: the options are language endonyms — ไทย,
+    // 日本語, Русский — and the whole point is that a reader recognises their
+    // own language's name. Translating them defeats the control.
     <div
+      translate="no"
       className={cn(
-        "flex items-center",
+        "notranslate flex items-center",
         toolbar
           ? "min-w-0 gap-1.5 border-0 bg-transparent p-0 shadow-none"
           : "gap-2 rounded-xl border border-primary/35 bg-primary/10 px-2 py-1 shadow-sm dark:border-primary/45 dark:bg-primary/15",
@@ -79,7 +83,8 @@ export function LanguageSwitcher({ className, fluid, toolbar }: LanguageSwitcher
         >
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="max-h-[60vh] rounded-xl">
+        {/* Portaled into document.body, so the wrapper's marker does not reach it. */}
+        <SelectContent translate="no" className="notranslate max-h-[60vh] rounded-xl">
           {TRANSLATE_LANGUAGES.map((lang) => (
             <SelectItem key={lang.code} value={lang.code} className="rounded-lg font-medium">
               {lang.label}
