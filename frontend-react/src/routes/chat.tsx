@@ -50,7 +50,7 @@ export default function ChatPage() {
             disabled={loading}
           />
           <Button type="submit" disabled={loading}>
-            {loading ? "กำลังค้นและตอบ..." : "ส่งคำถาม"}
+            <span>{loading ? "กำลังค้นและตอบ..." : "ส่งคำถาม"}</span>
           </Button>
         </form>
 

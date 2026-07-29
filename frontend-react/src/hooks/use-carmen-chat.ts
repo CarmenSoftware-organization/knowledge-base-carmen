@@ -167,7 +167,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const statusTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const suggestions = config.suggestedQuestions ?? locales.th.welcome.default_suggestions;
 
-  // Locale-aware translator that respects config.locale
+  // Resolves against the Thai chat strings; falls back to the i18n hook for missing keys.
   const translator = (path: string) => {
     const parts = path.split(".");
     let current: unknown = locales.th;
