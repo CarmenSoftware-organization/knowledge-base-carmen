@@ -15,11 +15,11 @@
 
 - All paths are relative to `frontend-react/` unless prefixed with `docs/`.
 - Package manager and test runner is **Bun**, never npm/yarn. Build: `bun run build` (= `tsc -b && vite build`). Lint: `bun run lint`. Tests: `bun test --isolate`.
-- **Do not write new automated tests anywhere in this plan except `src/lib/google-translate.test.ts`.** This is the project's standing rule (`~/.claude/CLAUDE.md` §3); the single exception was agreed during brainstorming because the module is pure and the cookie contract is the feature. Static checks (`tsc`, `eslint`) are **not** tests and must still run.
+- **Do not write new automated tests anywhere in this plan except `src/lib/google-translate.test.ts` and `src/lib/dom-translation-shim.test.ts`.** This is the project's standing rule (`~/.claude/CLAUDE.md` §3); both exceptions were agreed explicitly — the cookie contract because it is a pure module and is the feature, the shim because it is the safety net that keeps the whole feature from crashing the page and its behaviour is invisible until it fails. Static checks (`tsc`, `eslint`) are **not** tests and must still run.
 - **Do not touch the Go backend.** `TRANSLATION_ENABLED` stays `false`; every translation in this plan happens client-side.
 - **Do not touch `frontend-next/`.** It is not the deployed frontend.
 - `index.html` must keep `<html lang="th">` — it is what `pageLanguage: "th"` pairs with.
-- **`translate="no"` / `notranslate` may only be added at the three places Task 3 names.** Marking a broader region — a route, a layout, `<body>` — would silently defeat the feature.
+- **`translate="no"` / `notranslate` may only be added at the places Task 3 and Task 6 name** — the chat's streaming body, rendered code, and the two header select controls. Marking a broader region — a route, a layout, `<body>` — would silently defeat the feature.
 - **Do not add an `integrity` attribute to Google's script tag.** Google generates `element.js` per request and publishes no hash; SRI would block it outright. This is recorded as an accepted risk in spec §12.
 - Branch: `feature/google-translate-switcher`, cut from `main` at `47fa1e1`. Every commit must leave `bun run build` passing.
 - Commit messages: conventional commits, ending with the trailer `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`.
@@ -1005,7 +1005,301 @@ EOF
 
 ---
 
-## Task 6: Manual verification
+## Task 6: Survive a DOM-mutating translator
+
+**Files:**
+- Create: `src/lib/dom-translation-shim.ts`
+- Create: `src/lib/dom-translation-shim.test.ts`
+- Modify: `src/main.tsx`
+- Modify: `src/components/kb/language-switcher.tsx`
+- Modify: `src/components/kb/bu-switcher.tsx`
+
+**Interfaces:**
+- Consumes: nothing.
+- Produces: `export function installDomTranslationShim(): void` from `@/lib/dom-translation-shim`. Called once, from `src/main.tsx`, before `createRoot`.
+
+**Why this task exists — read this before writing anything.**
+
+Task 5 shipped the switcher, and the first end-to-end run found the feature breaking itself. With a translation active, clicking the language dropdown replaces the page with the route's error screen. Reproduced on the dev server **and** on a production build (minified bundle, no Vite client):
+
+```
+NotFoundError: Failed to execute 'removeChild' on 'Node':
+  The node to be removed is not a child of this node.
+The above error occurred in the <Text> component.
+React Router caught the following error during render
+```
+
+`<Text>` is Radix `Select`'s internal text component. The mechanism: Google's translator replaces text nodes in place, wrapping them in `<font>` elements. React still holds references to the originals, so when it later removes those children it calls `removeChild` with a node whose parent has changed underneath it, and the DOM throws. React has no recovery — the error reaches the nearest boundary, and React Router renders the route's `errorElement` (facebook/react#11538, open since 2017).
+
+The consequence is that the control which turns translation **on** cannot be used to turn it off, so a reader who picks a language is stranded there until they clear the cookie by hand.
+
+Task 3's `notranslate` boundaries covered the chat and rendered code, on the reasoning that those were the highest-risk surfaces. That was half right: the risk is not confined to particular components, it exists anywhere React removes a text node the translator has already moved — dropdowns, menus, tooltips, search results.
+
+This task applies both halves of the fix:
+
+1. **A DOM shim** — the established workaround for React under a DOM-mutating translator, and the only measure that covers components nobody has thought to protect yet.
+2. **`notranslate` on the two header select controls** — worth doing on its own merits regardless of the crash: language endonyms (`日本語`, `ไทย`) and business-unit names are proper nouns, and translating them produces nonsense.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `src/lib/dom-translation-shim.test.ts`:
+
+```ts
+import { describe, it, expect, beforeAll } from "bun:test";
+import { installDomTranslationShim } from "./dom-translation-shim";
+
+beforeAll(() => {
+  installDomTranslationShim();
+});
+
+describe("installDomTranslationShim", () => {
+  it("leaves a normal removeChild working", () => {
+    const parent = document.createElement("div");
+    const child = document.createElement("span");
+    parent.appendChild(child);
+
+    expect(parent.removeChild(child)).toBe(child);
+    expect(parent.childNodes.length).toBe(0);
+  });
+
+  it("returns the node instead of throwing when the parent no longer matches", () => {
+    const parent = document.createElement("div");
+    const stranger = document.createElement("span");
+    document.createElement("div").appendChild(stranger);
+
+    expect(() => parent.removeChild(stranger)).not.toThrow();
+    expect(parent.removeChild(stranger)).toBe(stranger);
+  });
+
+  it("leaves a normal insertBefore working", () => {
+    const parent = document.createElement("div");
+    const reference = document.createElement("span");
+    const inserted = document.createElement("b");
+    parent.appendChild(reference);
+
+    expect(parent.insertBefore(inserted, reference)).toBe(inserted);
+    expect(parent.firstChild).toBe(inserted);
+  });
+
+  it("returns the new node instead of throwing when the reference has a different parent", () => {
+    const parent = document.createElement("div");
+    const inserted = document.createElement("b");
+    const stranger = document.createElement("span");
+    document.createElement("div").appendChild(stranger);
+
+    expect(() => parent.insertBefore(inserted, stranger)).not.toThrow();
+    expect(parent.insertBefore(inserted, stranger)).toBe(inserted);
+  });
+
+  it("still appends when insertBefore is given a null reference", () => {
+    const parent = document.createElement("div");
+    const appended = document.createElement("b");
+
+    expect(parent.insertBefore(appended, null)).toBe(appended);
+    expect(parent.lastChild).toBe(appended);
+  });
+
+  it("is safe to install more than once", () => {
+    installDomTranslationShim();
+    installDomTranslationShim();
+
+    const parent = document.createElement("div");
+    const child = document.createElement("span");
+    parent.appendChild(child);
+    expect(parent.removeChild(child)).toBe(child);
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+```bash
+bun test --isolate src/lib/dom-translation-shim.test.ts
+```
+
+Expected: FAIL — `Cannot find module './dom-translation-shim'`.
+
+- [ ] **Step 3: Write the shim**
+
+Create `src/lib/dom-translation-shim.ts`:
+
+```ts
+/**
+ * Let React survive a DOM-mutating translator.
+ *
+ * Google's Website Translator replaces text nodes in place, wrapping them in
+ * <font> elements. React still holds references to the originals, so when it
+ * later removes or reorders those children it calls removeChild/insertBefore
+ * with a node whose parent changed underneath it, and the DOM throws
+ * NotFoundError. React has no recovery: the error reaches the nearest
+ * boundary and the page is replaced by an error screen
+ * (facebook/react#11538, open since 2017).
+ *
+ * Returning instead of throwing when the parent no longer matches is the
+ * established workaround. It is not a lie to React: the node it wanted
+ * removed is already detached — the translator moved it — so returning it
+ * reports the outcome React was asking for.
+ *
+ * This patches a DOM prototype and deserves the suspicion that implies. It is
+ * scoped as narrowly as the failure allows: two methods, one guard each, and
+ * no behavioural change whatsoever when the parent matches.
+ */
+
+let installed = false;
+
+export function installDomTranslationShim(): void {
+  if (installed) return;
+  if (typeof Node !== "function" || !Node.prototype) return;
+  installed = true;
+
+  const originalRemoveChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function <T extends Node>(this: Node, child: T): T {
+    if (child.parentNode !== this) return child;
+    return originalRemoveChild.call(this, child) as T;
+  };
+
+  const originalInsertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function <T extends Node>(
+    this: Node,
+    newNode: T,
+    referenceNode: Node | null,
+  ): T {
+    if (referenceNode && referenceNode.parentNode !== this) return newNode;
+    return originalInsertBefore.call(this, newNode, referenceNode) as T;
+  };
+}
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+```bash
+bun test --isolate src/lib/dom-translation-shim.test.ts
+```
+
+Expected: PASS, 6 tests.
+
+- [ ] **Step 5: Install it before React mounts**
+
+In `src/main.tsx`, the shim has to run before `createRoot`, because React captures nothing at import time but starts committing DOM the moment it renders. Add the import below the existing `@/styles/globals.css` import, and call it immediately before `createRoot`. Before:
+
+```tsx
+import "@/styles/globals.css";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router-dom";
+import { router } from "@/router";
+
+createRoot(document.getElementById("root")!).render(
+```
+
+After:
+
+```tsx
+import "@/styles/globals.css";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router-dom";
+import { router } from "@/router";
+import { installDomTranslationShim } from "@/lib/dom-translation-shim";
+
+// Must run before React commits anything to the DOM.
+installDomTranslationShim();
+
+createRoot(document.getElementById("root")!).render(
+```
+
+- [ ] **Step 6: Keep proper nouns out of the translator — language switcher**
+
+In `src/components/kb/language-switcher.tsx`, the outer wrapper `div` gains the marker. Before:
+
+```tsx
+    <div
+      className={cn(
+        "flex items-center",
+```
+
+After:
+
+```tsx
+    // translate="no" + notranslate: the options are language endonyms — ไทย,
+    // 日本語, Русский — and the whole point is that a reader recognises their
+    // own language's name. Translating them defeats the control.
+    <div
+      translate="no"
+      className={cn(
+        "notranslate flex items-center",
+```
+
+- [ ] **Step 7: Keep proper nouns out of the translator — BU switcher**
+
+In `src/components/kb/bu-switcher.tsx`, the outer wrapper `div`. Before:
+
+```tsx
+    <div
+      className={cn(
+        "flex items-center",
+```
+
+After:
+
+```tsx
+    // translate="no" + notranslate: business-unit names ("Carmen Cloud",
+    // "Blueledgers") are proper nouns; a translated product name matches
+    // nothing the reader will see in the product itself.
+    <div
+      translate="no"
+      className={cn(
+        "notranslate flex items-center",
+```
+
+- [ ] **Step 8: Verify**
+
+```bash
+bun run build && bun run lint && bun test --isolate
+```
+
+Expected: build succeeds; lint shows only the two pre-existing errors; the suite is 77 + 6 = 83 passing.
+
+Then check the crash is actually gone, which is the whole point of the task:
+
+```bash
+bun run build && bunx vite preview --port 3301 --strictPort
+```
+
+A production build is required here — the crash reproduces in both, but this task must be verified against what ships. In the browser at `http://localhost:3301/categories/ap`:
+
+1. In the console, run `document.cookie = "googtrans=/th/en; path=/"` and reload.
+2. Confirm the page is translated: `document.documentElement.className` contains `translated-ltr`, and `document.querySelectorAll("font").length` is greater than zero.
+3. Click the language dropdown. It must **open**, listing the 24 languages. No error screen, and no `NotFoundError` in the console.
+4. Pick `ไทย`. The page reloads in Thai and the cookie is gone.
+
+If step 3 still fails, stop and report BLOCKED — do not add further `notranslate` markers to make it pass, because that would be treating the symptom the shim exists to treat.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/lib/dom-translation-shim.ts src/lib/dom-translation-shim.test.ts src/main.tsx src/components/kb/language-switcher.tsx src/components/kb/bu-switcher.tsx
+git commit -m "$(cat <<'EOF'
+fix(i18n): survive a DOM-mutating translator
+
+Google's translator replaces text nodes in place; React then calls
+removeChild on a node whose parent moved and the DOM throws, taking the
+page down to an error screen (facebook/react#11538). Reproduced on a
+production build by opening the language dropdown while translated —
+the control that turns translation on could not turn it off.
+
+Guards removeChild/insertBefore against the mismatch, and marks the two
+header select controls notranslate: language endonyms and business-unit
+names are proper nouns that should never have been translated.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+## Task 7: Manual verification
 
 **Files:** none — this task changes nothing. It exists because Tasks 2-5 ship no automated tests, so a human has to look. Several checks cannot be automated at all: they depend on a third-party script rewriting the DOM.
 
@@ -1049,6 +1343,12 @@ No banner strip at the top of the viewport; the site header sits where it always
 
 Pick `ไทย`. The page reloads in Thai, `googtrans` is gone from `document.cookie`, and clicking an internal link is client-side again — the Network panel shows no new document request.
 
+- [ ] **Step 8b: The switcher still works while translated**
+
+With English active, open the language dropdown. It must open and list all 24 languages — not replace the page with an error screen. Then pick another language (`日本語`) and confirm the page reloads translated into it.
+
+This is the check that Task 6 exists to make pass. Before the shim it failed on both dev and production builds with `NotFoundError: Failed to execute 'removeChild' on 'Node'`, which meant a reader who picked a language could not pick another one or get back to Thai.
+
 - [ ] **Step 9: No crash while translated**
 
 Switch to `English` (or `日本語`), open the chat, and send a message. Watch it stream to completion. The page must not go blank and the console must show no `NotFoundError: Failed to execute 'removeChild'`.
@@ -1076,7 +1376,7 @@ Report each of Steps 2-10 as pass or fail with what was observed. Do not mark th
 | §2 in scope: headless script load | Task 2 |
 | §2 in scope: full navigation while translated | Task 4 |
 | §2 in scope: `notranslate` boundaries | Task 3 |
-| §2 in scope: graceful degradation | Task 2 Step 1 (`giveUp`), verified Task 6 Step 10 |
+| §2 in scope: graceful degradation | Task 2 Step 1 (`giveUp`), verified Task 7 Step 10 |
 | §2 non-goals: no backend change, no `en.json`, no Google UI, no auto-detect, no `frontend-next` | Global Constraints |
 | §3 decisions (engine, mechanism, languages, labels, chat chrome, chat answers, chat `lang`, SPA, backend) | Tasks 1-5; chat `lang` untouched by construction — no task edits `use-chat-stream.ts` |
 | §4 architecture (cookie as sole state) | Task 1 Step 3, Task 5 Step 3 |
