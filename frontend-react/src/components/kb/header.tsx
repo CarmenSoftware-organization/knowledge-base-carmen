@@ -11,6 +11,7 @@ import { GlobalSearch } from "@/components/search/global-search";
 import { ThemeToggle } from "./theme-toggle";
 import { useTheme } from "next-themes";
 import { BUSwitcher } from "./bu-switcher";
+import { LanguageSwitcher } from "./language-switcher";
 import { useTranslations } from "@/i18n/use-translations";
 import { cn } from "@/lib/utils";
 import { notifyKbHeaderScrollHidden } from "@/lib/kb-scroll-chrome";
@@ -250,6 +251,7 @@ export function KBHeader() {
 
           {/* ── Desktop utilities ── */}
           <div className="hidden xl:flex items-center gap-2 pl-2 border-l border-border/60 min-w-0">
+            <LanguageSwitcher toolbar />
             {!isHome && <BUSwitcher toolbar />}
             <a
               href={ZOHO_CONTACT_CENTER_URL}
@@ -265,6 +267,7 @@ export function KBHeader() {
           </div>
 
           <div className="xl:hidden ml-auto flex items-center justify-end gap-2 shrink-0">
+            <LanguageSwitcher toolbar className="hidden min-[420px]:flex" />
             <a
               href={ZOHO_CONTACT_CENTER_URL}
               target="_blank"
@@ -374,6 +377,9 @@ export function KBHeader() {
                 </div>
 
                 <div className="mt-2 pt-3 border-t border-border/60 space-y-3 px-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  <div className="min-[420px]:hidden">
+                    <LanguageSwitcher fluid />
+                  </div>
                   {!isHome && <BUSwitcher fluid />}
                   <div className="flex items-center justify-end gap-2">
                     <ThemeToggle />

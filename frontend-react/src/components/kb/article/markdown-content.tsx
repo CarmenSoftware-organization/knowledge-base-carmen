@@ -13,7 +13,7 @@ import { isValidElement, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { API_BASE, DEFAULT_BU } from "@/lib/config";
-import { extractYoutubeId } from "@/lib/utils";
+import { cn, extractYoutubeId } from "@/lib/utils";
 import { getSelectedBUClient, resolveWikiMarkdownHref } from "@/lib/wiki-api";
 import DOMPurify from "dompurify";
 import type { PluggableList } from "unified";
@@ -281,9 +281,15 @@ export function MarkdownRender({
       if (className?.includes("mermaid")) {
         return <MermaidDiagram chart={code} />;
       }
-      // translate="no": field names, paths, SQL and in-product menu labels must
-      // stay verbatim or the reader cannot follow them in the actual product.
-      return <code className={className} translate="no">{children}</code>;
+      // translate="no" + notranslate: field names, paths, SQL and in-product
+      // menu labels must stay verbatim or the reader cannot follow them in the
+      // actual product. Google's widget keys on the class; the attribute is
+      // what browsers' own translators read.
+      return (
+        <code className={cn(className, "notranslate")} translate="no">
+          {children}
+        </code>
+      );
     },
 
     h1: ({ children, ...props }) => (

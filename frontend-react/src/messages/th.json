@@ -13,6 +13,8 @@
     "buSwitcherLabel": "หน่วยงาน",
     "buSwitcherHint": "เลือกหน่วยธุรกิจเพื่อแสดงคู่มือที่ตรงกับระบบของคุณ",
     "buSwitcherPlaceholder": "เลือกหน่วยงาน",
+    "languageLabel": "ภาษา",
+    "languageHint": "แปลหน้านี้ด้วย Google แปลภาษา",
     "contactCenter": "Contact Center"
   },
   "buLanding": {

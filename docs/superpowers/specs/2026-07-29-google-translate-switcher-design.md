@@ -112,10 +112,22 @@ script. Testable without loading anything external, and the single seam to
 change if the engine is ever replaced.
 
 **Cookie details.** Name `googtrans`, value `/th/<target>`. It must be written
-at path `/` on the current host; on a production domain it must also be written
-on the dot-prefixed parent (`.example.com`), because Google's widget reads
-either. Clearing must remove every variant it may have written, otherwise a
-stale cookie on the parent domain silently overrides the cleared one.
+at path `/` on the current host; on a production domain it is also written on
+the dot-prefixed parent (`.example.com`), because Google's widget reads either.
+Clearing must remove every variant it may have written, otherwise a stale
+cookie on the parent domain silently overrides the cleared one.
+
+**Correction, added after implementation.** The parent-domain variant earns
+less than this section assumed and costs more. The derivation of a "registrable
+domain" as the last two labels is wrong for multi-label public suffixes: on the
+actual deployment target (`*.vercel.app`) it produces `vercel.app`, which is on
+the Public Suffix List and which browsers refuse — so that variant is dead code
+today. On a custom domain it would work, and would then read and clear a
+sibling subdomain's preference, which nothing here wants. This KB is served
+from a single host, so the variant buys nothing either way. The follow-up is to
+write and clear only the host-only and exact-host scopes. Until then, treat
+`clearTranslateLang()` as best-effort: code that acts on a successful clear must
+re-read the cookie rather than assume it took.
 
 ### `src/configs/translate-languages.ts`
 
@@ -278,11 +290,39 @@ neither related to this work.
    client-side routing (no full reload).
 8. With a translation active, send a chat message → no white screen, no
    `NotFoundError: Failed to execute 'removeChild'` in the console.
-9. Block `translate.google.com` in DevTools and reload → the dropdown shows ไทย.
+9. Block `translate.google.com` in DevTools and reload → the page returns to
+   Thai and the dropdown shows ไทย.
+10. With a translation active, open and close the chat and the language dropdown
+    several times → no duplicated, orphaned or missing text. This checks the
+    documented cost of the DOM guard in §12, which nothing else exercises.
 
 Check 8 is the one the previous change could never run: Chrome would not offer
 to translate a Thai page for a Thai-configured browser, so the crash path stayed
 untested. With an in-page control, it is directly reachable.
+
+## 11a. Verification status at merge
+
+Recorded here rather than in a scratch file so it survives. Checks 1-8 of §11
+were run against a **production build** and passed, including the one this
+design hinged on — with a translation active the dropdown opens, lists all 24
+languages with their endonyms untranslated, and switches cleanly between
+languages and back to Thai. Two gaps remain:
+
+- **The chat answer was never observed rendering.** The chat chrome was
+  confirmed translating (Japanese header, placeholder and suggestion chips) and
+  the crash check passed with the chat live and streaming, but the backend
+  returned no answer body during the run, so "the answer is not machine
+  translated" rests on the `notranslate` marker being present in the DOM rather
+  than on watching an answer arrive untranslated.
+- **The script-load-failure path (§9, check 9) has never been exercised live.**
+  It needs DevTools request blocking, which the automation could not drive. This
+  matters more than it did when the spec was written: the fail-safe now reloads
+  the page, so it is no longer a purely cosmetic path. Its termination was
+  traced by review — after clearing, a re-read confirms the clear took effect
+  before reloading, and the reloaded document has no cookie so neither the shim
+  nor the script loads — but tracing is not running.
+
+Anyone deploying this should run both before trusting them.
 
 ## 12. Risks and accepted trade-offs
 
@@ -291,7 +331,7 @@ untested. With an in-page control, it is directly reachable.
 | Google discontinued this widget for new sites in 2019 | Accepted. The script still works and is widely used, but has no guarantee. `google-translate.ts` is the single file to change if it stops, and §9 degrades the site to its authored language rather than breaking it. |
 | Slower navigation while translated | Accepted, and scoped: only readers who opted into translation lose client-side routing. |
 | Machine translation quality on finance/hotel terminology | Accepted. It is strictly better than the previous state, where article bodies were never translated at all. |
-| Browser translators mutating React-managed DOM | Mitigated by §7's `notranslate` boundaries, and now directly testable via check 8. React 19 is also markedly more tolerant here than the React 16 era that produced facebook/react#11538. |
+| Browser translators mutating React-managed DOM | **This assessment was wrong and implementation proved it.** The `notranslate` boundaries were not sufficient: with a translation active, opening the language dropdown threw `NotFoundError: Failed to execute 'removeChild' on 'Node'` inside Radix `Select`'s internal `<Text>`, React Router caught it, and the page was replaced by the route's error screen — reproduced on a production build, so React 19 is *not* markedly more tolerant. The crash surface is not particular components; it is anywhere React removes a text node the translator has already moved. The fix is a `Node.prototype.removeChild`/`insertBefore` guard in `src/lib/dom-translation-shim.ts`, installed from `src/main.tsx` **only when a translation is active**, plus `notranslate` on the two header select controls and their portaled `SelectContent`s. The guard has a real cost, documented in its own file header: a dropped removal leaves stale text and a dropped insert leaves content missing, which is the trade against the page dying outright. |
 | A stale `googtrans` cookie on a parent domain | Addressed in §5 — clearing removes every variant that may have been written. |
 | Third-party script with full DOM access | Accepted, and inherent to the approach. `element.js` runs with the page's privileges and must, since translating means reading and rewriting the DOM. **Subresource Integrity is not available here:** Google generates `element.js` per request and publishes no hash, so an `integrity` attribute would block the script outright. The exposure is therefore trust in Google plus TLS, the same trust the previous design placed in the browser's own Google-backed translator. The KB is public documentation with no authenticated session and no user data in the DOM, which keeps the blast radius small. If that ever changes — a login, per-user content — this decision should be revisited. |
 
