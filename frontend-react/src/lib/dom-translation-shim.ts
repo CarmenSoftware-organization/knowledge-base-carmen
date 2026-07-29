@@ -36,6 +36,30 @@
 
 let installed = false;
 
+/**
+ * Clobber-safe `parentNode` reader, captured the same way DOMPurify captures
+ * its own `getParentNode` (see `_forceRemove` in dompurify's source): as the
+ * prototype's own getter, read once here rather than through the instance.
+ * `HTMLFormElement`'s named-property getter is `[LegacyOverrideBuiltIns]`, so
+ * `<form><input name="parentNode"></form>` makes `form.parentNode` return the
+ * input, not the real parent — reading `child.parentNode` directly can be
+ * clobbered by page content (including sanitizer input). Reading through the
+ * prototype's own accessor bypasses that.
+ *
+ * `typeof Node` (not a direct reference) so importing this module in an
+ * environment with no DOM at all does not throw at import time — same
+ * defensive style as the `typeof Node !== "function"` guard below. If the
+ * descriptor is unavailable for any reason, `nativeParentNode` stays
+ * `undefined` and both guards below fall through to the *original*
+ * removeChild/insertBefore instead of taking the "parent mismatch" escape
+ * hatch — the safe direction. Relying on `undefined !== this` happening to
+ * be true would silently no-op a legitimate removal/insertion instead.
+ */
+const nativeParentNode: (() => Node | null) | undefined =
+  typeof Node === "function" && Node.prototype
+    ? Object.getOwnPropertyDescriptor(Node.prototype, "parentNode")?.get
+    : undefined;
+
 export function installDomTranslationShim(): void {
   if (installed) return;
   if (typeof Node !== "function" || !Node.prototype) return;
@@ -43,7 +67,13 @@ export function installDomTranslationShim(): void {
 
   const originalRemoveChild = Node.prototype.removeChild;
   Node.prototype.removeChild = function <T extends Node>(this: Node, child: T): T {
-    if (child instanceof Node && child.parentNode !== this) return child;
+    if (
+      nativeParentNode &&
+      child instanceof Node &&
+      nativeParentNode.call(child) !== this
+    ) {
+      return child;
+    }
     return originalRemoveChild.call(this, child) as T;
   };
 
@@ -53,7 +83,13 @@ export function installDomTranslationShim(): void {
     newNode: T,
     referenceNode: Node | null,
   ): T {
-    if (referenceNode instanceof Node && referenceNode.parentNode !== this) return newNode;
+    if (
+      nativeParentNode &&
+      referenceNode instanceof Node &&
+      nativeParentNode.call(referenceNode) !== this
+    ) {
+      return newNode;
+    }
     return originalInsertBefore.call(this, newNode, referenceNode) as T;
   };
 }

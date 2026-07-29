@@ -41,13 +41,28 @@ declare global {
  */
 export function GoogleTranslateScript() {
   useEffect(() => {
-    // If Google never arrives, drop any active cookie so the switcher reports
-    // Thai — which is what the reader is actually looking at. Blocked by a
-    // corporate firewall, offline, or Google retiring a widget it stopped
+    // Nothing to translate without an active cookie: the switcher writes the
+    // cookie and reloads before Google's widget is ever needed, so a document
+    // that loads without one will never need it either. Skipping the request
+    // here is the difference between every reader's browser hitting
+    // translate.google.com on every page load and only a reader who actually
+    // asked for translation paying that cost.
+    if (getTranslateLang() === TRANSLATE_SOURCE_LANG) return;
+
+    // If Google never arrives, drop any active cookie and reload so the
+    // switcher — which only reads the cookie during render — shows Thai
+    // instead of a stale target language it can no longer honor. Blocked by
+    // a corporate firewall, offline, or Google retiring a widget it stopped
     // supporting in 2019: all the same outcome, and all expected.
+    //
+    // The reload cannot loop: it lands on a document with no cookie, the
+    // gate above returns before this effect arms another timer or appends
+    // another script, and giveUp is never reached again.
     const giveUp = () => {
       if (window.google?.translate) return;
-      if (getTranslateLang() !== TRANSLATE_SOURCE_LANG) clearTranslateLang();
+      if (getTranslateLang() === TRANSLATE_SOURCE_LANG) return;
+      clearTranslateLang();
+      window.location.reload();
     };
 
     // Armed on every mount, independent of the script-injection guard below.

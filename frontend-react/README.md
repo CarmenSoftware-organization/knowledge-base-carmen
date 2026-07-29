@@ -23,3 +23,4 @@ VITE_API_BASE=http://localhost:8080 bun run dev
 
 ## Notes
 - SPA routing needs a host-level rewrite of all paths to `index.html` (see `vercel.json` / `nginx.conf`).
+- **DOM prototype patch for the translator**: `src/lib/dom-translation-shim.ts` patches `Node.prototype.removeChild`/`insertBefore` so React survives Google's Website Translator rewriting text nodes underneath it (otherwise React throws `NotFoundError` and the page falls back to an error screen — facebook/react#11538). It costs a little trust in two core DOM methods for the session it's active in, so it's only installed (from `src/main.tsx`) when a `googtrans` translation cookie is already set. If you're debugging "React silently failed to remove/insert a node," start here.

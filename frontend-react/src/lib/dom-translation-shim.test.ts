@@ -78,4 +78,33 @@ describe("installDomTranslationShim", () => {
 
     expect(stranger.parentNode).toBe(otherParent);
   });
+
+  // Pins the fix for the clobbered-`parentNode` read: a <form> with a child
+  // named "parentNode" can turn `form.parentNode` into that child instead of
+  // the real parent (HTMLFormElement's named-property getter is
+  // [LegacyOverrideBuiltIns]). The shim must read the real parent through the
+  // clobber-safe prototype accessor, the same way DOMPurify's `getParentNode`
+  // does, or it mistakes a legitimately-parented form for a mismatch and
+  // returns it un-removed. See the note on `nativeParentNode` in
+  // dom-translation-shim.ts for why that matters for sanitizer output.
+  //
+  // NOTE: happy-dom does not implement the named-property clobbering
+  // override for <form> (verified separately: `form.parentNode` returns the
+  // real parent even with a child named "parentNode" present). So this test
+  // cannot actually exercise the clobbered accessor path under happy-dom —
+  // it passes because `parent.removeChild(form)` was already going to work
+  // correctly for an *unclobbered* parentNode read, fixed or not. It is left
+  // in as a regression pin for the intended shape of the fix, not as proof
+  // the clobber-safe read behaves correctly under a real clobbering browser.
+  it("removes a form containing an input named parentNode", () => {
+    const parent = document.createElement("div");
+    const form = document.createElement("form");
+    const input = document.createElement("input");
+    input.setAttribute("name", "parentNode");
+    form.appendChild(input);
+    parent.appendChild(form);
+
+    expect(parent.removeChild(form)).toBe(form);
+    expect(parent.childNodes.length).toBe(0);
+  });
 });

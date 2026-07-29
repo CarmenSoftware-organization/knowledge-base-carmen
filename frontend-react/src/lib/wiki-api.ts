@@ -363,8 +363,11 @@ export function encodeWikiPathForFetch(path: string): string {
 }
 
 // GET /api/wiki/content/*
-// The site is Thai-only — readers use the browser's translation. The backend
-// still accepts ?locale= and can translate server-side, but nothing sends it.
+// Content is authored and served in Thai. Readers who want another language
+// use the header's language switcher, which translates the rendered page
+// client-side via Google's Website Translator — it never touches this
+// request. The backend still accepts ?locale= and can translate server-side,
+// but nothing sends it.
 export async function getContent(
   path: string,
   bu?: string,
