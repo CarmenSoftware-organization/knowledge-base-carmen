@@ -363,11 +363,11 @@ export function encodeWikiPathForFetch(path: string): string {
 }
 
 // GET /api/wiki/content/*
-// locale: "th" | "en" — when "en", backend translates content via Google Translate (if enabled)
+// The site is Thai-only — readers use the browser's translation. The backend
+// still accepts ?locale= and can translate server-side, but nothing sends it.
 export async function getContent(
   path: string,
   bu?: string,
-  locale?: string,
   fetchOptions?: RequestInit,
 ): Promise<{
   path: string;
@@ -383,7 +383,6 @@ export async function getContent(
 }> {
   const selectedBU = bu || getSelectedBUClient();
   const params = new URLSearchParams({ bu: selectedBU });
-  if (locale) params.set("locale", locale);
   const encodedPath = encodeWikiPathForFetch(path);
   const { data } = await apiJson<{
     path: string;

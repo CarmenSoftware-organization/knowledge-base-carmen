@@ -36,11 +36,6 @@ mock.module("@/lib/faq-cache", () => ({
   getCachedFaqNavItems: jest.fn().mockResolvedValue([]),
 }));
 
-mock.module("@/lib/locale", () => ({
-  getLocaleFromClient: jest.fn().mockReturnValue("th"),
-  setLocaleCookie: jest.fn(),
-}));
-
 const { default: Article, articleLoader } = await import("./article");
 
 describe("article route", () => {
