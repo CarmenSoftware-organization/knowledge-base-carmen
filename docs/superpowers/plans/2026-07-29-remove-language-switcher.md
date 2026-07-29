@@ -561,6 +561,7 @@ EOF
 - Modify: `src/components/chat/floating-chatbot.tsx` (lines 8, 9, 27, ~59)
 - Modify: `src/configs/locales.ts` (`LocaleKey`, whole `en` block)
 - Modify: `src/hooks/use-carmen-chat.ts` (lines 8, 36, 135, 171, 176)
+- Modify: `src/i18n/use-translations.test.tsx` — **found during execution, not in the original plan.** It forces `i18n.changeLanguage("en")` in a `beforeAll` and asserts `"Home"`, which breaks once the `en` resource bundle is gone. Delete the `beforeAll` block and its comment (it existed only to be deterministic when `lng` came from a cookie) and change both assertions to `"หน้าหลัก"`. No new cases.
 
 **Interfaces:**
 - Consumes: `getContent` in its three-argument form from Task 2 (nothing here calls it, but the build must stay green).
@@ -846,10 +847,12 @@ EOF
 - Modify: `src/routes/chat.tsx:53`
 - Modify: `src/components/admin/admin-gate.tsx:57`
 - Modify: `src/components/activity/activity-log-table.tsx:134`
+- Modify: `src/hooks/use-carmen-chat.ts` (stale comment — see Step 4)
+- Modify: `src/messages/th.json` (orphaned keys — see Step 4)
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: nothing importable. Markup-only change.
+- Produces: nothing importable. Markup and copy only.
 
 **Background:** browser translation replaces text nodes in place. React later tries to remove a node that is no longer where it left it and throws `NotFoundError: Failed to execute 'removeChild' on 'Node'`, blanking the page (facebook/react#11538). The two highest-value defences are excluding the streaming chat from translation and excluding code from translation; the third is wrapping the few bare conditional text nodes that swap after mount.
 
@@ -956,7 +959,47 @@ After:
                           <span>{isAdmin ? "แอดมิน/ระบบ" : "ผู้ใช้"}</span>
 ```
 
-- [ ] **Step 4: Verify the build**
+- [ ] **Step 4: Sweep the two leftovers Task 3's review surfaced**
+
+Neither affects behaviour; both are references to the language concept this plan removed, so they belong with the last cleanup task rather than in a separate commit.
+
+In `src/hooks/use-carmen-chat.ts`, the comment above `translator` still points at a config field that no longer exists. Before:
+
+```ts
+  // Locale-aware translator that respects config.locale
+```
+
+After:
+
+```ts
+  // Resolves against the Thai chat strings; falls back to the i18n hook for missing keys.
+```
+
+In `src/messages/th.json`, delete the two keys whose only consumer was the deleted switcher. Before:
+
+```json
+    "buSwitcherPlaceholder": "เลือกหน่วยงาน",
+    "languageLabel": "ภาษา",
+    "languageHint": "สลับภาษาไทย / อังกฤษสำหรับเนื้อหาที่รองรับ",
+    "contactCenter": "Contact Center"
+```
+
+After:
+
+```json
+    "buSwitcherPlaceholder": "เลือกหน่วยงาน",
+    "contactCenter": "Contact Center"
+```
+
+Confirm nothing else reads them:
+
+```bash
+grep -rn "languageLabel\|languageHint" src
+```
+
+Expected: prints nothing.
+
+- [ ] **Step 5: Verify the build**
 
 ```bash
 bun run build && bun run lint && bun test --isolate
@@ -964,10 +1007,10 @@ bun run build && bun run lint && bun test --isolate
 
 Expected: build succeeds, lint clean, all tests pass.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/components/chat/floating-chatbot.tsx src/components/kb/article/markdown-content.tsx src/routes/chat.tsx src/components/admin/admin-gate.tsx src/components/activity/activity-log-table.tsx
+git add src/components/chat/floating-chatbot.tsx src/components/kb/article/markdown-content.tsx src/routes/chat.tsx src/components/admin/admin-gate.tsx src/components/activity/activity-log-table.tsx src/hooks/use-carmen-chat.ts src/messages/th.json
 git commit -m "$(cat <<'EOF'
 fix(ui): keep browser translation from crashing React
 
