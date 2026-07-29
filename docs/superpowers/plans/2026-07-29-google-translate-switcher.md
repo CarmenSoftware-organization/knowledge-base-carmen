@@ -1040,6 +1040,10 @@ This task applies both halves of the fix:
 1. **A DOM shim** — the established workaround for React under a DOM-mutating translator, and the only measure that covers components nobody has thought to protect yet.
 2. **`notranslate` on the two header select controls** — worth doing on its own merits regardless of the crash: language endonyms (`日本語`, `ไทย`) and business-unit names are proper nouns, and translating them produces nonsense.
 
+**A trap the Task 5 review caught:** Radix renders `SelectContent` through a **portal into `document.body`**, so it is *not* inside the header's DOM subtree even though it appears anchored to the trigger. A `notranslate` marker on the wrapper `div` alone would cover the closed trigger and leave every option in the open list translated. Each control therefore needs the marker in **two** places — the wrapper and its own `SelectContent`. `SelectContent` spreads `...props` (`src/components/ui/select.tsx`), so `translate="no"` passes straight through.
+
+Do **not** put the marker on the shared `SelectContent` primitive itself: three other consumers (`activity-log-table.tsx`, `reset-panel.tsx`, `indexing-panel.tsx`) render ordinary translatable prose in their options.
+
 - [ ] **Step 1: Write the failing test**
 
 Create `src/lib/dom-translation-shim.test.ts`:
@@ -1210,7 +1214,7 @@ createRoot(document.getElementById("root")!).render(
 
 - [ ] **Step 6: Keep proper nouns out of the translator — language switcher**
 
-In `src/components/kb/language-switcher.tsx`, the outer wrapper `div` gains the marker. Before:
+Two edits in `src/components/kb/language-switcher.tsx`. First the outer wrapper `div`. Before:
 
 ```tsx
     <div
@@ -1230,9 +1234,22 @@ After:
         "notranslate flex items-center",
 ```
 
+Then the portaled option list, which the wrapper does not cover. Before:
+
+```tsx
+        <SelectContent className="max-h-[60vh] rounded-xl">
+```
+
+After:
+
+```tsx
+        {/* Portaled into document.body, so the wrapper's marker does not reach it. */}
+        <SelectContent translate="no" className="notranslate max-h-[60vh] rounded-xl">
+```
+
 - [ ] **Step 7: Keep proper nouns out of the translator — BU switcher**
 
-In `src/components/kb/bu-switcher.tsx`, the outer wrapper `div`. Before:
+Two edits in `src/components/kb/bu-switcher.tsx`, for the same reason. First the outer wrapper `div`. Before:
 
 ```tsx
     <div
@@ -1250,6 +1267,19 @@ After:
       translate="no"
       className={cn(
         "notranslate flex items-center",
+```
+
+Then its portaled option list. Before:
+
+```tsx
+        <SelectContent className="rounded-xl">
+```
+
+After:
+
+```tsx
+        {/* Portaled into document.body, so the wrapper's marker does not reach it. */}
+        <SelectContent translate="no" className="notranslate rounded-xl">
 ```
 
 - [ ] **Step 8: Verify**
