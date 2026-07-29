@@ -10,13 +10,28 @@
  * (facebook/react#11538, open since 2017).
  *
  * Returning instead of throwing when the parent no longer matches is the
- * established workaround. It is not a lie to React: the node it wanted
- * removed is already detached — the translator moved it — so returning it
- * reports the outcome React was asking for.
+ * established workaround. It is not a free lunch: usually Google moves the
+ * text node *into* a <font> that stays in the tree, so parentNode becomes
+ * the <font>, not null. The mismatch path therefore routinely returns a node
+ * that is still in the document — the removal genuinely did not happen.
+ * Reachable consequence: React swaps a text-node child in place while
+ * translated, the stale <font> stays, and the reader sees duplicated text.
+ * Symmetrically, a dropped insertBefore can leave content missing. That is
+ * still the trade worth making against the whole page being replaced by an
+ * error screen, but it is a trade, not a clean recovery.
+ *
+ * realm note: the `instanceof Node` checks below are realm-scoped — a node
+ * from a different document (e.g. inside an iframe) would fail `instanceof`
+ * against this realm's `Node` and take the escape-hatch return instead of
+ * the native path. Harmless here because this app never mounts a React tree
+ * inside an iframe.
  *
  * This patches a DOM prototype and deserves the suspicion that implies. It is
  * scoped as narrowly as the failure allows: two methods, one guard each, and
- * no behavioural change whatsoever when the parent matches.
+ * no behavioural change whatsoever when the parent matches. Non-Node
+ * arguments are deliberately left to fail against the original method, so a
+ * genuine caller bug (passing `{}`, a string, `undefined`) still throws
+ * loudly instead of being swallowed into a silent no-op.
  */
 
 let installed = false;
@@ -28,7 +43,7 @@ export function installDomTranslationShim(): void {
 
   const originalRemoveChild = Node.prototype.removeChild;
   Node.prototype.removeChild = function <T extends Node>(this: Node, child: T): T {
-    if (child.parentNode !== this) return child;
+    if (child instanceof Node && child.parentNode !== this) return child;
     return originalRemoveChild.call(this, child) as T;
   };
 
@@ -38,7 +53,7 @@ export function installDomTranslationShim(): void {
     newNode: T,
     referenceNode: Node | null,
   ): T {
-    if (referenceNode && referenceNode.parentNode !== this) return newNode;
+    if (referenceNode instanceof Node && referenceNode.parentNode !== this) return newNode;
     return originalInsertBefore.call(this, newNode, referenceNode) as T;
   };
 }

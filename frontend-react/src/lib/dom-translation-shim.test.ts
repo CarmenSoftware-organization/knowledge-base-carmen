@@ -61,4 +61,21 @@ describe("installDomTranslationShim", () => {
     parent.appendChild(child);
     expect(parent.removeChild(child)).toBe(child);
   });
+
+  it("still throws for a non-Node argument instead of swallowing it", () => {
+    const parent = document.createElement("div");
+
+    expect(() => parent.removeChild({} as unknown as Node)).toThrow();
+  });
+
+  it("leaves the node attached to its real parent on the mismatch path", () => {
+    const parent = document.createElement("div");
+    const otherParent = document.createElement("div");
+    const stranger = document.createElement("span");
+    otherParent.appendChild(stranger);
+
+    parent.removeChild(stranger);
+
+    expect(stranger.parentNode).toBe(otherParent);
+  });
 });
