@@ -115,6 +115,9 @@ export type MessageLang = "th" | "en";
 /** Any character in the Thai Unicode block (U+0E00–U+0E7F). */
 const THAI_CHAR = /[\u0E00-\u0E7F]/;
 
+/** Any basic Latin letter — used only to tell "English" apart from "no letters at all". */
+const LATIN_LETTER = /[A-Za-z]/;
+
 /**
  * Detect the language of a chat message.
  *
@@ -125,25 +128,28 @@ const THAI_CHAR = /[\u0E00-\u0E7F]/;
  * language of the incoming message, so a wrong result here is cheap.
  *
  * Presence rule: one Thai character is enough. This KB is Thai-first, so
- * "how to fix ใบกำกับภาษี" counts as Thai.
+ * "how to fix ใบกำกับภาษี" counts as Thai. Text with no letters at all (empty,
+ * whitespace, digits, emoji) also defaults to Thai.
  */
 export function detectMessageLang(text: string): MessageLang {
-  return THAI_CHAR.test(text) ? "th" : "en";
+  if (THAI_CHAR.test(text)) return "th";
+  return LATIN_LETTER.test(text) ? "en" : "th";
 }
 ```
 
-**Alternative accepted by the spec — the ratio rule.** If the implementer prefers that mixed messages count as English, use this body instead and change the "mixed" test above to expect `"en"`:
+The `LATIN_LETTER` branch is load-bearing. A bare `THAI_CHAR.test(text) ? "th" : "en"` returns `"en"` for `""`, `"12345"` and `"👍🎉"`, contradicting both the fourth test above and the spec's §5 table, which say text with no letters falls back to `"th"`.
+
+**Rejected alternative — the ratio rule.** The spec left the mixed-language rule open (presence vs. ratio). The project owner chose the presence rule above, so the ratio rule is not implemented. It is recorded here only so a later reader knows the choice was deliberate:
 
 ```ts
-export function detectMessageLang(text: string): MessageLang {
-  const compact = text.replace(/\s/g, "");
-  if (!compact) return "th";
-  const thaiCount = (compact.match(/[\u0E00-\u0E7F]/g) ?? []).length;
-  return thaiCount / compact.length > 0.2 ? "th" : "en";
-}
+// NOT IMPLEMENTED — kept for the record. Note it needs the same no-letters
+// guard as the presence rule: without it, "12345" scores 0 and returns "en".
+const compact = text.replace(/\s/g, "");
+const thaiCount = (compact.match(/[\u0E00-\u0E7F]/g) ?? []).length;
+return thaiCount / compact.length > 0.2 ? "th" : "en";
 ```
 
-Pick one. Do not ship both.
+Ship the presence rule. Do not add a flag to switch between the two.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
