@@ -5,8 +5,7 @@ import { API_BASE } from "@/lib/config";
 import { getOrCreateClientId } from "@/lib/carmen-client-id";
 import { getSelectedBUClient } from "@/lib/wiki-api";
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "@/i18n/use-translations";
-import type { LocaleKey } from "@/configs/locales";
+import { useTranslations } from "@/i18n/use-translations";
 
 interface Props extends Partial<CarmenChatConfig> {
   bu?: string;
@@ -24,7 +23,6 @@ export default function FloatingChatBot({
   showAttach = false,
   suggestedQuestions,
 }: Props) {
-  const locale = useLocale();
   const t = useTranslations("chat");
   const [currentBU, setCurrentBU] = useState(initialBU || getSelectedBUClient());
   const [clientId, setClientId] = useState<string | null>(null);
@@ -56,7 +54,6 @@ export default function FloatingChatBot({
     apiBase: resolvedApiBase,
     theme,
     title,
-    locale: locale as LocaleKey,
     promptExtend,
     showClear,
     showAttach,

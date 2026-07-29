@@ -1,6 +1,6 @@
 // frontend/configs/locales.ts
 
-export type LocaleKey = "th" | "en";
+export type LocaleKey = "th";
 
 export interface LocaleStrings {
   welcome: {
@@ -120,68 +120,6 @@ export const locales: Record<LocaleKey, LocaleStrings> = {
       scroll_down: "เลื่อนลงล่างสุด",
       attach: "แนบรูป",
       send: "ส่งข้อความ",
-    }
-  },
-  en: {
-    welcome: {
-      title: "Hi! Carmen is here to help.",
-      desc: "Ask anything about the corporate manual or start a new conversation below.",
-      new_chat: "New Chat",
-      default_suggestions: [
-        "The refresh button in workbook doesn't work, what should I do?",
-        "Can I record purchase tax invoices in Excel and then import them?",
-        "Can Carmen upload files to the Revenue Department's RDPrep program?",
-        "Can I create a receipt without selecting an invoice?",
-        "Can I record a JV with unbalanced debit and credit?",
-      ],
-    },
-    chat: {
-      placeholder: "Type your message here...",
-      status_thinking: "Thinking...",
-      status_analyzing: "Analyzing query...",
-      status_searching: "Searching knowledge base...",
-      status_composing: "Composing answer...",
-      status_waiting: "Waiting in queue...",
-      status_processing: "Processing...",
-      status_stopped: "[Generation stopped]",
-      error_title: "Connection error occurred",
-      error_retry: "Retry",
-      error_connection: "Connection error occurred",
-      retry: "Retry",
-      queued: "Queued",
-      new_chat_block: "Cannot create a new chat while processing. Please wait.",
-      switch_room_block: "Cannot switch rooms while processing. Please wait.",
-      delete_room_block: "Cannot delete rooms while processing. Please wait.",
-      clear_history_block: "Cannot clear chat while processing. Please wait.",
-      remaining_queue: (count) => `+ ${count} more in queue`,
-      stop_generation: "Stop generation"
-    },
-    header: {
-      history: "Chat History",
-      expand: "Expand Window",
-      collapse: "Collapse Window",
-      clear: "Clear Chat",
-      close: "Close",
-      status_online: "AI Knowledge Base Online",
-    },
-    modal: {
-      delete_title: "Delete this room?",
-      delete_desc: "The selected conversation will be permanently deleted.",
-      delete_confirm: "Delete",
-      clear_title: "Clear history?",
-      clear_desc: "All messages in this room will be removed.",
-      clear_confirm: "Clear",
-      cancel: "Cancel",
-      ok: "OK",
-    },
-    tools: {
-      copy: "Copy content",
-      copied: "Copied!",
-      helpful: "Helpful",
-      incorrect: "Incorrect",
-      scroll_down: "Scroll to bottom",
-      attach: "Attach image",
-      send: "Send message",
     }
   }
 };

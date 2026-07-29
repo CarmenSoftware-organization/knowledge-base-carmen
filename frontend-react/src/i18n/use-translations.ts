@@ -9,8 +9,3 @@ export function useTranslations(namespace?: string) {
     return t(fullKey, values ?? {}) as string;
   };
 }
-
-export function useLocale(): string {
-  const { i18n } = useTranslation();
-  return i18n.language;
-}
