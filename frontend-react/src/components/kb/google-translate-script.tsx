@@ -41,17 +41,6 @@ declare global {
  */
 export function GoogleTranslateScript() {
   useEffect(() => {
-    if (document.getElementById(SCRIPT_ID)) return;
-
-    window.googleTranslateElementInit = () => {
-      const TranslateElement = window.google?.translate?.TranslateElement;
-      if (!TranslateElement) return;
-      new TranslateElement(
-        { pageLanguage: TRANSLATE_SOURCE_LANG, autoDisplay: false },
-        MOUNT_ID,
-      );
-    };
-
     // If Google never arrives, drop any active cookie so the switcher reports
     // Thai — which is what the reader is actually looking at. Blocked by a
     // corporate firewall, offline, or Google retiring a widget it stopped
@@ -61,14 +50,35 @@ export function GoogleTranslateScript() {
       if (getTranslateLang() !== TRANSLATE_SOURCE_LANG) clearTranslateLang();
     };
 
-    const script = document.createElement("script");
-    script.id = SCRIPT_ID;
-    script.src = SCRIPT_SRC;
-    script.async = true;
-    script.onerror = giveUp;
-    document.body.appendChild(script);
-
+    // Armed on every mount, independent of the script-injection guard below.
+    // In StrictMode dev, effect #1 mounts, appends the script, and arms this
+    // timer; React then runs cleanup (clearing that timer) and remounts for
+    // real. If arming were inside the `getElementById` guard, the second,
+    // live mount would find the tag already present, skip the block
+    // entirely, and leave this page with no timeout for the rest of its
+    // life — only `script.onerror` would remain as a fail-safe. Arming here
+    // keeps the invariant: every mount has a live timer, and at most one
+    // script tag is ever appended.
     const timer = setTimeout(giveUp, LOAD_GRACE_MS);
+
+    if (!document.getElementById(SCRIPT_ID)) {
+      window.googleTranslateElementInit = () => {
+        const TranslateElement = window.google?.translate?.TranslateElement;
+        if (!TranslateElement) return;
+        new TranslateElement(
+          { pageLanguage: TRANSLATE_SOURCE_LANG, autoDisplay: false },
+          MOUNT_ID,
+        );
+      };
+
+      const script = document.createElement("script");
+      script.id = SCRIPT_ID;
+      script.src = SCRIPT_SRC;
+      script.async = true;
+      script.onerror = giveUp;
+      document.body.appendChild(script);
+    }
+
     return () => clearTimeout(timer);
   }, []);
 
