@@ -5,8 +5,7 @@ import { API_BASE } from "@/lib/config";
 import { getOrCreateClientId } from "@/lib/carmen-client-id";
 import { getSelectedBUClient } from "@/lib/wiki-api";
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "@/i18n/use-translations";
-import type { LocaleKey } from "@/configs/locales";
+import { useTranslations } from "@/i18n/use-translations";
 
 interface Props extends Partial<CarmenChatConfig> {
   bu?: string;
@@ -24,7 +23,6 @@ export default function FloatingChatBot({
   showAttach = false,
   suggestedQuestions,
 }: Props) {
-  const locale = useLocale();
   const t = useTranslations("chat");
   const [currentBU, setCurrentBU] = useState(initialBU || getSelectedBUClient());
   const [clientId, setClientId] = useState<string | null>(null);
@@ -56,7 +54,6 @@ export default function FloatingChatBot({
     apiBase: resolvedApiBase,
     theme,
     title,
-    locale: locale as LocaleKey,
     promptExtend,
     showClear,
     showAttach,
@@ -101,8 +98,16 @@ export default function FloatingChatBot({
         )}
       </AnimatePresence>
 
-      {/* Fixed anchor */}
+      {/* Fixed anchor.
+          translate="no": the chat streams text into the DOM chunk by chunk, and
+          a translator rewriting those nodes mid-stream is the app's biggest
+          React-crash surface. This is a real trade-off, not a free win: the
+          LLM answer itself is unaffected (it already answers in the language
+          of the question), but the whole widget chrome — header, input
+          placeholder, welcome copy, suggestion chips, modals — is now
+          Thai-only and explicitly opted out of browser translation too. */}
       <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-[2000000]"
+        translate="no"
         style={{
           "--carmen-theme": theme,
           "--carmen-theme-low": `${theme}dd`

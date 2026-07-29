@@ -131,7 +131,7 @@ export function ActivityLogTable({ bu }: Props) {
                               : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
                           }`}
                         >
-                          {isAdmin ? "แอดมิน/ระบบ" : "ผู้ใช้"}
+                          <span>{isAdmin ? "แอดมิน/ระบบ" : "ผู้ใช้"}</span>
                         </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm text-muted-foreground text-center">

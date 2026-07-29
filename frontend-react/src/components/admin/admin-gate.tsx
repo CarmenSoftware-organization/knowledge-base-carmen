@@ -54,7 +54,7 @@ export function AdminGate({ onUnlocked }: { onUnlocked: () => void }) {
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <Button type="submit" className="w-full" disabled={busy || !value.trim()}>
-            {busy ? "กำลังตรวจสอบ…" : "Unlock"}
+            <span>{busy ? "กำลังตรวจสอบ…" : "Unlock"}</span>
           </Button>
         </form>
       </Card>

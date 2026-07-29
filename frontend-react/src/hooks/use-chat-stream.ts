@@ -7,6 +7,7 @@
 
 import { RefObject } from "react";
 import { formatCarmenMessage, bakeImagePaths } from "@/lib/carmen-formatter";
+import { detectMessageLang } from "@/lib/detect-message-lang";
 import { CarmenApi } from "./use-carmen-api";
 import { CarmenChatConfig, DisplayMessage } from "./use-carmen-chat";
 
@@ -49,7 +50,6 @@ function sanitizeErrorMessageForUi(message: string): string {
 export interface StreamDeps {
   api: CarmenApi;
   config: CarmenChatConfig;
-  locale: string;
   t: (key: string) => string;
   isProcessingRef: RefObject<boolean>;
   abortController: RefObject<AbortController | null>;
@@ -71,7 +71,7 @@ export async function executeStream(
   userMsgId: string,
   deps: StreamDeps,
 ): Promise<void> {
-  const { api, config, locale, t, isProcessingRef, abortController, isUserStopRef, statusTimers, setMessages, setIsTyping, setTypingStatus, loadRoomList } = deps;
+  const { api, config, t, isProcessingRef, abortController, isUserStopRef, statusTimers, setMessages, setIsTyping, setTypingStatus, loadRoomList } = deps;
 
   if (isProcessingRef.current) return;
   isProcessingRef.current = true;
@@ -125,7 +125,7 @@ export async function executeStream(
         room_id: processingRoomId,
         prompt_extend: config.promptExtend,
         history: history.messages.filter((m) => m.id !== botMsgId && m.id !== userMsgId),
-        lang: locale,
+        lang: detectMessageLang(msgText),
         referrer_page: config.referrer_page ?? (typeof window !== "undefined" ? window.location.pathname : null),
       }),
       signal,

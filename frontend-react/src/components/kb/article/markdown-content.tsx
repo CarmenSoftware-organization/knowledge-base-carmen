@@ -281,7 +281,9 @@ export function MarkdownRender({
       if (className?.includes("mermaid")) {
         return <MermaidDiagram chart={code} />;
       }
-      return <code className={className}>{children}</code>;
+      // translate="no": field names, paths, SQL and in-product menu labels must
+      // stay verbatim or the reader cannot follow them in the actual product.
+      return <code className={className} translate="no">{children}</code>;
     },
 
     h1: ({ children, ...props }) => (

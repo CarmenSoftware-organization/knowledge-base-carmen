@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "@/i18n/use-translations";
+import { useTranslations } from "@/i18n/use-translations";
 
 export function TableOfContents({
   isMobile = false,
@@ -16,7 +16,6 @@ export function TableOfContents({
   const [activeId, setActiveId] = useState("");
   const navRef = useRef<HTMLElement | null>(null);
   const linkRefs = useRef(new Map<string, HTMLAnchorElement>());
-  const locale = useLocale();
   const t = useTranslations("article");
 
   // Build heading list
@@ -51,7 +50,7 @@ export function TableOfContents({
      
     setHeadings(elements);
     if (elements.length > 0) setActiveId(elements[0].id);
-  }, [locale]);
+  }, []);
 
   // Track active heading from scroll position for more precise behavior
   useEffect(() => {
@@ -99,7 +98,7 @@ export function TableOfContents({
       window.removeEventListener("scroll", updateActiveHeading);
       window.removeEventListener("resize", updateActiveHeading);
     };
-  }, [headings, locale]);
+  }, [headings]);
 
   // Auto-scroll nav so active link stays visible
   // Works for BOTH desktop sidebar (overflow on <nav>) and mobile drawer (overflow on parent div)

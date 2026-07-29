@@ -115,6 +115,9 @@ export type MessageLang = "th" | "en";
 /** Any character in the Thai Unicode block (U+0E00–U+0E7F). */
 const THAI_CHAR = /[\u0E00-\u0E7F]/;
 
+/** Any basic Latin letter — used only to tell "English" apart from "no letters at all". */
+const LATIN_LETTER = /[A-Za-z]/;
+
 /**
  * Detect the language of a chat message.
  *
@@ -125,25 +128,28 @@ const THAI_CHAR = /[\u0E00-\u0E7F]/;
  * language of the incoming message, so a wrong result here is cheap.
  *
  * Presence rule: one Thai character is enough. This KB is Thai-first, so
- * "how to fix ใบกำกับภาษี" counts as Thai.
+ * "how to fix ใบกำกับภาษี" counts as Thai. Text with no letters at all (empty,
+ * whitespace, digits, emoji) also defaults to Thai.
  */
 export function detectMessageLang(text: string): MessageLang {
-  return THAI_CHAR.test(text) ? "th" : "en";
+  if (THAI_CHAR.test(text)) return "th";
+  return LATIN_LETTER.test(text) ? "en" : "th";
 }
 ```
 
-**Alternative accepted by the spec — the ratio rule.** If the implementer prefers that mixed messages count as English, use this body instead and change the "mixed" test above to expect `"en"`:
+The `LATIN_LETTER` branch is load-bearing. A bare `THAI_CHAR.test(text) ? "th" : "en"` returns `"en"` for `""`, `"12345"` and `"👍🎉"`, contradicting both the fourth test above and the spec's §5 table, which say text with no letters falls back to `"th"`.
+
+**Rejected alternative — the ratio rule.** The spec left the mixed-language rule open (presence vs. ratio). The project owner chose the presence rule above, so the ratio rule is not implemented. It is recorded here only so a later reader knows the choice was deliberate:
 
 ```ts
-export function detectMessageLang(text: string): MessageLang {
-  const compact = text.replace(/\s/g, "");
-  if (!compact) return "th";
-  const thaiCount = (compact.match(/[\u0E00-\u0E7F]/g) ?? []).length;
-  return thaiCount / compact.length > 0.2 ? "th" : "en";
-}
+// NOT IMPLEMENTED — kept for the record. Note it needs the same no-letters
+// guard as the presence rule: without it, "12345" scores 0 and returns "en".
+const compact = text.replace(/\s/g, "");
+const thaiCount = (compact.match(/[\u0E00-\u0E7F]/g) ?? []).length;
+return thaiCount / compact.length > 0.2 ? "th" : "en";
 ```
 
-Pick one. Do not ship both.
+Ship the presence rule. Do not add a flag to switch between the two.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -555,6 +561,7 @@ EOF
 - Modify: `src/components/chat/floating-chatbot.tsx` (lines 8, 9, 27, ~59)
 - Modify: `src/configs/locales.ts` (`LocaleKey`, whole `en` block)
 - Modify: `src/hooks/use-carmen-chat.ts` (lines 8, 36, 135, 171, 176)
+- Modify: `src/i18n/use-translations.test.tsx` — **found during execution, not in the original plan.** It forces `i18n.changeLanguage("en")` in a `beforeAll` and asserts `"Home"`, which breaks once the `en` resource bundle is gone. Delete the `beforeAll` block and its comment (it existed only to be deterministic when `lng` came from a cookie) and change both assertions to `"หน้าหลัก"`. No new cases.
 
 **Interfaces:**
 - Consumes: `getContent` in its three-argument form from Task 2 (nothing here calls it, but the build must stay green).
@@ -840,10 +847,12 @@ EOF
 - Modify: `src/routes/chat.tsx:53`
 - Modify: `src/components/admin/admin-gate.tsx:57`
 - Modify: `src/components/activity/activity-log-table.tsx:134`
+- Modify: `src/hooks/use-carmen-chat.ts` (stale comment — see Step 4)
+- Modify: `src/messages/th.json` (orphaned keys — see Step 4)
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: nothing importable. Markup-only change.
+- Produces: nothing importable. Markup and copy only.
 
 **Background:** browser translation replaces text nodes in place. React later tries to remove a node that is no longer where it left it and throws `NotFoundError: Failed to execute 'removeChild' on 'Node'`, blanking the page (facebook/react#11538). The two highest-value defences are excluding the streaming chat from translation and excluding code from translation; the third is wrapping the few bare conditional text nodes that swap after mount.
 
@@ -950,7 +959,47 @@ After:
                           <span>{isAdmin ? "แอดมิน/ระบบ" : "ผู้ใช้"}</span>
 ```
 
-- [ ] **Step 4: Verify the build**
+- [ ] **Step 4: Sweep the two leftovers Task 3's review surfaced**
+
+Neither affects behaviour; both are references to the language concept this plan removed, so they belong with the last cleanup task rather than in a separate commit.
+
+In `src/hooks/use-carmen-chat.ts`, the comment above `translator` still points at a config field that no longer exists. Before:
+
+```ts
+  // Locale-aware translator that respects config.locale
+```
+
+After:
+
+```ts
+  // Resolves against the Thai chat strings; falls back to the i18n hook for missing keys.
+```
+
+In `src/messages/th.json`, delete the two keys whose only consumer was the deleted switcher. Before:
+
+```json
+    "buSwitcherPlaceholder": "เลือกหน่วยงาน",
+    "languageLabel": "ภาษา",
+    "languageHint": "สลับภาษาไทย / อังกฤษสำหรับเนื้อหาที่รองรับ",
+    "contactCenter": "Contact Center"
+```
+
+After:
+
+```json
+    "buSwitcherPlaceholder": "เลือกหน่วยงาน",
+    "contactCenter": "Contact Center"
+```
+
+Confirm nothing else reads them:
+
+```bash
+grep -rn "languageLabel\|languageHint" src
+```
+
+Expected: prints nothing.
+
+- [ ] **Step 5: Verify the build**
 
 ```bash
 bun run build && bun run lint && bun test --isolate
@@ -958,10 +1007,10 @@ bun run build && bun run lint && bun test --isolate
 
 Expected: build succeeds, lint clean, all tests pass.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/components/chat/floating-chatbot.tsx src/components/kb/article/markdown-content.tsx src/routes/chat.tsx src/components/admin/admin-gate.tsx src/components/activity/activity-log-table.tsx
+git add src/components/chat/floating-chatbot.tsx src/components/kb/article/markdown-content.tsx src/routes/chat.tsx src/components/admin/admin-gate.tsx src/components/activity/activity-log-table.tsx src/hooks/use-carmen-chat.ts src/messages/th.json
 git commit -m "$(cat <<'EOF'
 fix(ui): keep browser translation from crashing React
 

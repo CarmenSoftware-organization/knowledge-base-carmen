@@ -1,13 +1,15 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import en from "@/messages/en.json";
 import th from "@/messages/th.json";
-import { getLocaleFromClient } from "@/lib/locale";
 
+// The site is Thai-only — there is no language switcher, and readers who want
+// another language use their browser's translation. i18next is kept as the one
+// place UI strings live, so adding a language later means adding a resource
+// file rather than rewiring components.
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
-    resources: { en: { translation: en }, th: { translation: th } },
-    lng: getLocaleFromClient(),
+    resources: { th: { translation: th } },
+    lng: "th",
     fallbackLng: "th",
     interpolation: {
       prefix: "{",
@@ -17,15 +19,6 @@ if (!i18n.isInitialized) {
     keySeparator: ".",
     nsSeparator: false,
     returnNull: false,
-  });
-}
-
-// Keep i18next in sync when the locale cookie changes.
-if (typeof window !== "undefined") {
-  window.addEventListener("locale-changed", () => {
-    const next = getLocaleFromClient();
-    if (next !== i18n.language) void i18n.changeLanguage(next);
-    document.documentElement.lang = next;
   });
 }
 

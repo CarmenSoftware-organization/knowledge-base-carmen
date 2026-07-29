@@ -10,7 +10,6 @@ import { ArticleGridTransition } from "@/components/kb/article-grid-client";
 import { FaqFolderGrid } from "@/components/kb/faq-folder-grid";
 import { MarkdownRender } from "@/components/kb/article/markdown-content";
 import { getCategory, getContent, getSelectedBUClient } from "@/lib/wiki-api";
-import { getLocaleFromClient } from "@/lib/locale";
 import {
   buildFaqNav,
   faqIndexTitlesByFolderKey,
@@ -65,7 +64,6 @@ export async function faqPathLoader({
   }
 
   const bu = getSelectedBUClient();
-  const locale = getLocaleFromClient();
 
   let data: Awaited<ReturnType<typeof getCategory>>;
   let indexContent: { data: Record<string, unknown>; content: string } | null =
@@ -75,7 +73,7 @@ export async function faqPathLoader({
     data = await getCategory(FAQ_SLUG, bu, { cache: "no-store" });
     try {
       const indexRel = `${FAQ_SLUG}/${pathSegments.join("/")}/index.md`;
-      const rawIndex = await getContent(indexRel, bu, locale, {
+      const rawIndex = await getContent(indexRel, bu, {
         cache: "no-store",
       });
       if (rawIndex) {
