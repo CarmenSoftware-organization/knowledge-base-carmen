@@ -457,7 +457,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   function getStreamDeps() {
     return {
-      api, config, locale, t: translator,
+      api, config, t: translator,
       isProcessingRef, abortController, isUserStopRef, statusTimers,
       setMessages, setIsTyping, setTypingStatus,
       loadRoomList,
