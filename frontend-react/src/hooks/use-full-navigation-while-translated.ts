@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { TRANSLATE_SOURCE_LANG, getTranslateLang } from "@/lib/google-translate";
 
 /**
@@ -47,4 +48,28 @@ export function useFullNavigationWhileTranslated(): void {
     document.addEventListener("click", handleClick, true);
     return () => document.removeEventListener("click", handleClick, true);
   }, []);
+
+  // Backstop for navigations that never touch an <a>. The global search box,
+  // the BU switcher and the landing-page action cards all call navigate()
+  // straight from a button or a select, so the click listener above cannot
+  // see them. Watching the URL catches those: the route swap happens, then
+  // the reload hands Google's widget a fresh document to translate.
+  const { pathname, search } = useLocation();
+  const lastUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const url = `${pathname}${search}`;
+
+    // First run for this document: record where we started and do nothing.
+    if (lastUrlRef.current === null) {
+      lastUrlRef.current = url;
+      return;
+    }
+    // Same URL: StrictMode re-running the effect, not a navigation.
+    if (lastUrlRef.current === url) return;
+
+    lastUrlRef.current = url;
+    if (getTranslateLang() === TRANSLATE_SOURCE_LANG) return;
+    window.location.reload();
+  }, [pathname, search]);
 }
