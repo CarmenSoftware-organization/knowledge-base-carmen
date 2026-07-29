@@ -10,14 +10,16 @@ const LATIN_LETTER = /[A-Za-z]/;
  * Detect the language of a chat message.
  *
  * Pure — no I/O, no state, no user preference. The site has no language
- * switcher; this exists only so the chat backend can pick the language of its
- * status strings ("กำลังค้นหา…") and its "no information found" message. The
+ * switcher; this exists only so the chat backend can pick the language of a
+ * handful of `chunk` events — intent classification, the "no information
+ * found" apology, the prompt language, and empty/truncation notices. The
  * substantive answer is steered by the LLM prompt, which already matches the
  * language of the incoming message, so a wrong result here is cheap.
  *
  * Presence rule: one Thai character is enough. This KB is Thai-first, so
- * "how to fix ใบกำกับภาษี" counts as Thai. Text with no letters at all (empty,
- * whitespace, digits, emoji) also defaults to Thai, since this KB is Thai-first.
+ * "how to fix ใบกำกับภาษี" counts as Thai. Text with no Thai and no Latin
+ * letters (empty, whitespace, digits, emoji, or another script entirely —
+ * Chinese, Japanese, Cyrillic, Arabic) also defaults to Thai.
  */
 export function detectMessageLang(text: string): MessageLang {
   if (THAI_CHAR.test(text)) return "th";

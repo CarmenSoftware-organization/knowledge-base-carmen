@@ -179,9 +179,9 @@ const CarmenMessage = memo(function CarmenMessage({ msg, onFeedback, onRetry, on
     if (!ts) return "";
     try {
       const d = new Date(ts);
-      // Detect display locale by checking if translation output contains Thai characters
-      const timeLocale = /[\u0E00-\u0E7F]/.test(t("chat.error_title")) ? "th-TH" : "en-US";
-      return d.toLocaleTimeString(timeLocale, { hour: "2-digit", minute: "2-digit" });
+      // The site is Thai-only (t() resolves against locales.th only), so this is
+      // always Thai.
+      return d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
     } catch {
       return "";
     }

@@ -27,7 +27,6 @@ export interface LocaleStrings {
     switch_room_block: string;
     delete_room_block: string;
     clear_history_block: string;
-    remaining_queue: (count: number) => string;
     stop_generation: string;
   };
   header: {
@@ -91,7 +90,6 @@ export const locales: Record<LocaleKey, LocaleStrings> = {
       switch_room_block: "ไม่สามารถเปลี่ยนห้องได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่",
       delete_room_block: "ไม่สามารถลบห้องได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่",
       clear_history_block: "ไม่สามารถล้างแชทได้ขณะระบบกำลังประมวลผล กรุณารอสักครู่",
-      remaining_queue: (count) => `+ อีก ${count} ข้อความในคิว`,
       stop_generation: "หยุดการสร้างคำตอบ"
     },
     header: {

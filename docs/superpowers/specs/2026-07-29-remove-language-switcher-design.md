@@ -55,7 +55,7 @@ content, human for UI. This design removes both from the frontend's surface.
 |---|---|---|
 | Scope | Remove the switcher entirely; the site is Thai-only | The browser's translation covers article content better than a half-maintained EN UI, and there is no team capacity to keep `en.json` accurate. |
 | Depth | Delete the switcher **and** the EN strings **and** the locale plumbing, but keep i18next + `th.json` | Removing a concept halfway is worse than either extreme: dead cookies and unreachable EN blocks read as "someone forgot", not "someone decided". Keeping i18next means re-adding a language later is one new JSON file, not a rewrite. |
-| Chat language | Detect from the text the user typed, per message | Preserves today's behaviour for English speakers (status text and the "no information" message stay in their language) without any user-facing control. The main answer already matches the input language via `prompts.yaml` (*"Match the latest message language"*), so `lang` only steers ~10 short strings. |
+| Chat language | Detect from the text the user typed, per message | Without any user-facing control, `lang` still steers intent classification, the "no information found" apology, the prompt language, and the empty/truncation notices — all of which render as `chunk` events. The main answer already matches the input language via `prompts.yaml` (*"Match the latest message language"*), so `lang` only steers ~10 short strings. |
 | Discoverability | Nothing added | Chrome/Edge/Safari raise the translate prompt automatically from `<html lang="th">`. Adding a banner would cost UI real estate to restate something the browser already says. |
 | Backend | Untouched | Keeps this a single-deploy frontend change and leaves the door open if server-side translation is ever wanted again. |
 | Changelog | Stop force-translating it | `category.tsx:52` and `article.tsx:88` currently hardcode `locale="en"` for the changelog category, but the changelog markdown **is already English** — so every request sent English text to Google to be "translated" `th→en`, burning quota for a near no-op. Dropping the `locale` parameter removes this. |
@@ -152,10 +152,13 @@ remove a node that is no longer where it left it — blanking the page
 (facebook/react#11538). Three measures, highest value first:
 
 1. **`translate="no"` on the chat window root.** Streaming text mutating while
-   the translator rewrites it is the highest-risk surface in the app. Excluding
-   it costs nothing: users who want English type English and get a natively
-   English answer, which is better than a Thai answer machine-translated a
-   second time.
+   the translator rewrites it is the highest-risk surface in the app. This is
+   a real trade-off, not a free win: the LLM answer itself is unaffected
+   (users who want English type English and get a natively English answer),
+   but `translate="no"` sits on the widget's outer anchor, so it also covers
+   the header, input placeholder, welcome copy, suggestion chips, and modals —
+   all Thai-only chrome that browser translation could have covered before
+   this change, and now cannot. Accepted as the cost of the crash fix.
 2. **`translate="no"` on code blocks and inline code in rendered articles.**
    Prevents field names, file paths, SQL and in-product menu labels from being
    translated into something the reader cannot follow in the actual product.

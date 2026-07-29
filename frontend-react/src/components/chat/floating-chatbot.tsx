@@ -101,8 +101,11 @@ export default function FloatingChatBot({
       {/* Fixed anchor.
           translate="no": the chat streams text into the DOM chunk by chunk, and
           a translator rewriting those nodes mid-stream is the app's biggest
-          React-crash surface. Nothing is lost — the LLM already answers in the
-          language of the question, so asking in English yields native English. */}
+          React-crash surface. This is a real trade-off, not a free win: the
+          LLM answer itself is unaffected (it already answers in the language
+          of the question), but the whole widget chrome — header, input
+          placeholder, welcome copy, suggestion chips, modals — is now
+          Thai-only and explicitly opted out of browser translation too. */}
       <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-[2000000]"
         translate="no"
         style={{
