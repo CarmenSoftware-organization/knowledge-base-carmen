@@ -300,6 +300,30 @@ Check 8 is the one the previous change could never run: Chrome would not offer
 to translate a Thai page for a Thai-configured browser, so the crash path stayed
 untested. With an in-page control, it is directly reachable.
 
+## 11a. Verification status at merge
+
+Recorded here rather than in a scratch file so it survives. Checks 1-8 of §11
+were run against a **production build** and passed, including the one this
+design hinged on — with a translation active the dropdown opens, lists all 24
+languages with their endonyms untranslated, and switches cleanly between
+languages and back to Thai. Two gaps remain:
+
+- **The chat answer was never observed rendering.** The chat chrome was
+  confirmed translating (Japanese header, placeholder and suggestion chips) and
+  the crash check passed with the chat live and streaming, but the backend
+  returned no answer body during the run, so "the answer is not machine
+  translated" rests on the `notranslate` marker being present in the DOM rather
+  than on watching an answer arrive untranslated.
+- **The script-load-failure path (§9, check 9) has never been exercised live.**
+  It needs DevTools request blocking, which the automation could not drive. This
+  matters more than it did when the spec was written: the fail-safe now reloads
+  the page, so it is no longer a purely cosmetic path. Its termination was
+  traced by review — after clearing, a re-read confirms the clear took effect
+  before reloading, and the reloaded document has no cookie so neither the shim
+  nor the script loads — but tracing is not running.
+
+Anyone deploying this should run both before trusting them.
+
 ## 12. Risks and accepted trade-offs
 
 | Risk | Assessment |
