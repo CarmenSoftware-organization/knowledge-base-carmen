@@ -88,21 +88,28 @@ describe("installDomTranslationShim", () => {
   // returns it un-removed. See the note on `nativeParentNode` in
   // dom-translation-shim.ts for why that matters for sanitizer output.
   //
-  // NOTE: happy-dom does not implement the named-property clobbering
-  // override for <form> (verified separately: `form.parentNode` returns the
-  // real parent even with a child named "parentNode" present). So this test
-  // cannot actually exercise the clobbered accessor path under happy-dom —
-  // it passes because `parent.removeChild(form)` was already going to work
-  // correctly for an *unclobbered* parentNode read, fixed or not. It is left
-  // in as a regression pin for the intended shape of the fix, not as proof
-  // the clobber-safe read behaves correctly under a real clobbering browser.
-  it("removes a form containing an input named parentNode", () => {
+  // NOTE: happy-dom does not implement the named-property clobbering override
+  // for <form> itself — `form.parentNode` already returns the real parent
+  // with a child named "parentNode" present, so a plain "append a form with
+  // such a child, remove it" test would pass identically against the
+  // pre-fix `child.parentNode` code, proving nothing. The
+  // `Object.defineProperty` call below simulates the override directly (an
+  // own property shadows the prototype's getter for a plain `form.parentNode`
+  // read, but not for `nativeParentNode.call(form)`, which invokes the
+  // prototype's getter directly) — verified to produce a genuine red/green in
+  // this environment: reverting the shim to `child.parentNode` makes this
+  // test fail, because the simulated clobber wins for a plain property read.
+  it("removes a form whose parentNode getter is clobbered by a same-named child", () => {
     const parent = document.createElement("div");
     const form = document.createElement("form");
     const input = document.createElement("input");
     input.setAttribute("name", "parentNode");
     form.appendChild(input);
     parent.appendChild(form);
+
+    // Simulates what HTMLFormElement's [LegacyOverrideBuiltIns] named-property
+    // getter does in a real browser: a same-named child shadows `parentNode`.
+    Object.defineProperty(form, "parentNode", { value: input, configurable: true });
 
     expect(parent.removeChild(form)).toBe(form);
     expect(parent.childNodes.length).toBe(0);

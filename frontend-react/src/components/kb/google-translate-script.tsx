@@ -55,13 +55,23 @@ export function GoogleTranslateScript() {
     // a corporate firewall, offline, or Google retiring a widget it stopped
     // supporting in 2019: all the same outcome, and all expected.
     //
-    // The reload cannot loop: it lands on a document with no cookie, the
-    // gate above returns before this effect arms another timer or appends
-    // another script, and giveUp is never reached again.
+    // Reloads only when the clear demonstrably took effect. clearTranslateLang
+    // only reaches the cookie scopes cookieDomains() can compute ("", the
+    // exact host, the last-two-labels guess); a cookie living on some other
+    // reachable scope (an intermediate parent on a 3+ label host, a
+    // multi-label public suffix the last-two-labels heuristic misses, a
+    // path-scoped cookie) survives the clear untouched. Re-reading after
+    // clearing and bailing when it's still active is what keeps this from
+    // looping: reload only fires on a document guaranteed to come back with
+    // no cookie, so the gate above will return before this effect can arm
+    // another timer or reach giveUp again. If the clear didn't take, this
+    // does nothing instead of reloading forever against a cookie it cannot
+    // remove — a stale dropdown, not a hang.
     const giveUp = () => {
       if (window.google?.translate) return;
       if (getTranslateLang() === TRANSLATE_SOURCE_LANG) return;
       clearTranslateLang();
+      if (getTranslateLang() !== TRANSLATE_SOURCE_LANG) return; // clear did not take; do not loop
       window.location.reload();
     };
 
