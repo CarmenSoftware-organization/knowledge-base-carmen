@@ -10,6 +10,7 @@ tags:
   - gl
 editor: markdown
 dateCreated: 2026-07-02T07:38:34Z
+weight: 2
 ---
 
 # Journal Voucher by AI
