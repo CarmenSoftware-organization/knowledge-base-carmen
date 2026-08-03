@@ -1,5 +1,5 @@
 ---
-title: ขั้นตอนการบันทึก A/P Invoice (User Manual)
+title: A/P Invoice (User Manual)
 description: ขั้นตอนการบันทึก A/P Invoice (User Manual)
 published: true
 date: 2026-03-20T08:39:12.252Z

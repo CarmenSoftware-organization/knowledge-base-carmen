@@ -1,5 +1,5 @@
 ---
-title: ขั้นตอนการสร้าง A/P Invoice โดยใช้ Import Template
+title:  AP Invoice Import Template
 description: ขั้นตอนการสร้าง A/P Invoice โดยใช้ Import Template
 published: true
 tags: carmen_cloud,documentation
