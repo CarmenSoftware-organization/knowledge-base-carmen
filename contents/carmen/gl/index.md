@@ -10,7 +10,7 @@ dateCreated: 2026-03-19T08:41:31.726Z
 
 ---
 title: "General Ledger"
-weight: 6
+weight: 2
 ---
 
 

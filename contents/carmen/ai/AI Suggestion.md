@@ -1,6 +1,7 @@
 ---
 
 title: AI Suggestion
+weight: 6
 
 description: ขั้นตอนการใช้ AI แนะนำการบันทึกบัญชีโดยอัตโนมัติ
 

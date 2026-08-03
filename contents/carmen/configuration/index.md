@@ -1,5 +1,6 @@
 ---
 title: Configuration
+weight: 9
 lang: th-TH
 ---
 

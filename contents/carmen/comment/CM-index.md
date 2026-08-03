@@ -1,5 +1,6 @@
 ---
 title: Comment and Document Management & Activity Log
+weight: 7
 outline: deep
 ---
 
