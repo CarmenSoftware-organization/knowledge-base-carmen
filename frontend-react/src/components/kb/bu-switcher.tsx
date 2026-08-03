@@ -62,9 +62,13 @@ export function BUSwitcher({ className, fluid, toolbar }: BUSwitcherProps) {
   if (bus.length === 0) return null;
 
   return (
+    // translate="no" + notranslate: business-unit names ("Carmen Cloud",
+    // "Blueledgers") are proper nouns; a translated product name matches
+    // nothing the reader will see in the product itself.
     <div
+      translate="no"
       className={cn(
-        "flex items-center",
+        "notranslate flex items-center",
         toolbar
           ? "min-w-0 gap-1.5 border-0 bg-transparent p-0 shadow-none"
           : "gap-2 rounded-xl border border-primary/35 bg-primary/10 px-2 py-1 shadow-sm dark:border-primary/45 dark:bg-primary/15",
@@ -103,7 +107,8 @@ export function BUSwitcher({ className, fluid, toolbar }: BUSwitcherProps) {
         >
           <SelectValue placeholder={t("buSwitcherPlaceholder")} />
         </SelectTrigger>
-        <SelectContent className="rounded-xl">
+        {/* Portaled into document.body, so the wrapper's marker does not reach it. */}
+        <SelectContent translate="no" className="notranslate rounded-xl">
           {bus.map((bu) => (
             <SelectItem key={bu.id} value={bu.slug} className="rounded-lg font-medium">
               {bu.name}

@@ -188,3 +188,15 @@
   background: rgba(15, 23, 42, 0.6) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
+
+/* Google Website Translator: keep the engine, drop its chrome.
+   The widget injects a top banner iframe and sets `body { top: 40px }`, which
+   pushes the site header down. Both selectors are listed because the widget
+   has used each across versions. */
+.skiptranslate iframe,
+.goog-te-banner-frame {
+  display: none !important;
+}
+body {
+  top: 0 !important;
+}

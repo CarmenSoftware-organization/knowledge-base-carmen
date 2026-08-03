@@ -1,13 +1,17 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import en from "@/messages/en.json";
 import th from "@/messages/th.json";
-import { getLocaleFromClient } from "@/lib/locale";
 
+// UI strings are authored in Thai and live in th.json — i18next only ever
+// loads this one resource. A reader who wants another language picks it from
+// the header's language switcher, which translates the rendered page
+// client-side through Google's Website Translator (see
+// src/lib/google-translate.ts); it does not add i18next resources or change
+// what this module loads.
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
-    resources: { en: { translation: en }, th: { translation: th } },
-    lng: getLocaleFromClient(),
+    resources: { th: { translation: th } },
+    lng: "th",
     fallbackLng: "th",
     interpolation: {
       prefix: "{",
@@ -17,15 +21,6 @@ if (!i18n.isInitialized) {
     keySeparator: ".",
     nsSeparator: false,
     returnNull: false,
-  });
-}
-
-// Keep i18next in sync when the locale cookie changes.
-if (typeof window !== "undefined") {
-  window.addEventListener("locale-changed", () => {
-    const next = getLocaleFromClient();
-    if (next !== i18n.language) void i18n.changeLanguage(next);
-    document.documentElement.lang = next;
   });
 }
 

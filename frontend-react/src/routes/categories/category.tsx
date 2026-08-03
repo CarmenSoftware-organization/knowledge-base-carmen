@@ -11,7 +11,6 @@ import { ArticleGridTransition } from "@/components/kb/article-grid-client";
 import { ChangelogTimeline } from "@/components/kb/changelog-timeline";
 import { ChangelogSidebar } from "@/components/kb/changelog-sidebar";
 import { getCategory, getContent, getSelectedBUClient } from "@/lib/wiki-api";
-import { getLocaleFromClient } from "@/lib/locale";
 import { categoryDisplayMap } from "@/configs/sidebar-map";
 import { buildChangelogNavList } from "@/lib/changelog-utils";
 import { DEFAULT_BU } from "@/lib/config";
@@ -48,8 +47,6 @@ export async function categoryLoader({ params, request }: LoaderFunctionArgs): P
   const bu = getSelectedBUClient();
   // Changelog is global content and must not vary by selected BU.
   const contentBu = isChangelog ? DEFAULT_BU : bu;
-  const cookieLocale = getLocaleFromClient();
-  const locale = isChangelog ? "en" : cookieLocale;
 
   // Read page param from URL
   const url = new URL(request.url);
@@ -70,7 +67,7 @@ export async function categoryLoader({ params, request }: LoaderFunctionArgs): P
   let indexContent: ParsedFrontmatter | null = null;
   if (!isChangelog) {
     try {
-      const rawIndex = await getContent(`${category}/index.md`, contentBu, locale, {
+      const rawIndex = await getContent(`${category}/index.md`, contentBu, {
         cache: "no-store",
       });
       if (rawIndex) {

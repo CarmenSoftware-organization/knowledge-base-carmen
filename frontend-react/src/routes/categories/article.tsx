@@ -18,7 +18,6 @@ import {
   normalizeWikiRelPath,
   wikiDirFromContentPath,
 } from "@/lib/wiki-api";
-import { getLocaleFromClient } from "@/lib/locale";
 import { formatCategoryName } from "@/lib/wiki-utils";
 import { faqSegmentLabel } from "@/lib/faq-nav";
 import { getCachedFaqNavItems } from "@/lib/faq-cache";
@@ -53,7 +52,6 @@ type ArticleLoaderOk = {
   articleSegments: string[];
   bu: string;
   contentBu: string;
-  locale: string;
   catLower: string;
   isFaqArticle: boolean;
   isChangelogArticle: boolean;
@@ -82,10 +80,8 @@ export async function articleLoader({
   }
 
   const bu = getSelectedBUClient();
-  const cookieLocale = getLocaleFromClient();
   const isChangelogCategory = category.toLowerCase() === "changelog";
   const contentBu = isChangelogCategory ? DEFAULT_BU : bu;
-  const locale = isChangelogCategory ? "en" : cookieLocale;
 
   const relBase = normalizeWikiRelPath([category, ...articleSegments].join("/"));
   const primaryPath = `${relBase}.md`;
@@ -94,10 +90,10 @@ export async function articleLoader({
 
   let raw: Awaited<ReturnType<typeof getContent>>;
   try {
-    raw = await getContent(primaryPath, contentBu, locale, { cache: "no-store" });
+    raw = await getContent(primaryPath, contentBu, { cache: "no-store" });
   } catch {
     try {
-      raw = await getContent(folderIndexPath, contentBu, locale, {
+      raw = await getContent(folderIndexPath, contentBu, {
         cache: "no-store",
       });
     } catch {
@@ -147,9 +143,8 @@ export async function articleLoader({
   const publishedAt =
     typeof frontmatter.date === "string" ? frontmatter.date : raw.publishedAt;
 
-  const dateLocale = locale === "en" ? "en-US" : "th-TH";
   const formattedDate = publishedAt
-    ? new Date(publishedAt).toLocaleDateString(dateLocale, {
+    ? new Date(publishedAt).toLocaleDateString("th-TH", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -170,7 +165,6 @@ export async function articleLoader({
     articleSegments,
     bu,
     contentBu,
-    locale,
     catLower,
     isFaqArticle,
     isChangelogArticle,

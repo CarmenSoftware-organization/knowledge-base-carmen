@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatCarmenMessage } from "@/lib/carmen-formatter";
 import { CarmenApi, CarmenRoom, createCarmenApi } from "./use-carmen-api";
-import { locales, LocaleKey } from "@/configs/locales";
+import { locales } from "@/configs/locales";
 import { executeStream, stopGeneration } from "./use-chat-stream";
 
 export interface DisplayMessage {
@@ -33,7 +33,6 @@ export interface CarmenChatConfig {
   showClear?: boolean;
   showAttach?: boolean;
   suggestedQuestions?: string[];
-  locale?: LocaleKey;
   proactiveMessages?: { pathPattern: RegExp | string; delayMs: number; message: string; subMessage?: string; timeoutMs?: number }[];
   onTypingFrame?: () => void;
   referrer_page?: string;
@@ -131,9 +130,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const [typingStatus, setTypingStatus] = useState(t("chat.status_thinking"));
   const [inputValue, setInputValue] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
-  
-  const locale = config.locale || "th";
-  
+
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showRoomDropdown, setShowRoomDropdown] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{
@@ -168,12 +165,12 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
   const isUserStopRef = useRef(false);
   const isProcessingRef = useRef(false);
   const statusTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const suggestions = config.suggestedQuestions ?? locales[locale].welcome.default_suggestions;
+  const suggestions = config.suggestedQuestions ?? locales.th.welcome.default_suggestions;
 
-  // Locale-aware translator that respects config.locale
+  // Resolves against the Thai chat strings; falls back to the i18n hook for missing keys.
   const translator = (path: string) => {
     const parts = path.split(".");
-    let current: unknown = locales[locale];
+    let current: unknown = locales.th;
     for (const part of parts) {
       if (current && typeof current === "object" && part in current) {
         current = (current as Record<string, unknown>)[part];
@@ -457,7 +454,7 @@ export function useCarmenChat(config: CarmenChatConfig): UseCarmenChatReturn {
 
   function getStreamDeps() {
     return {
-      api, config, locale, t: translator,
+      api, config, t: translator,
       isProcessingRef, abortController, isUserStopRef, statusTimers,
       setMessages, setIsTyping, setTypingStatus,
       loadRoomList,
