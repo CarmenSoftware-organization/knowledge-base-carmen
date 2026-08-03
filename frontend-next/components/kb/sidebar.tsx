@@ -13,7 +13,12 @@ import {
   type SidebarCategory,
   type SidebarArticle,
 } from "@/lib/wiki-api";
-import { articleDisplayMap, categoryDisplayMap, cleanTitle } from "@/configs/sidebar-map";
+import {
+  articleDisplayMap,
+  categoryDisplayMap,
+  cleanTitle,
+  sidebarCategoryOrder,
+} from "@/configs/sidebar-map";
 import { displayWikiArticleTitle } from "@/lib/wiki-utils";
 
 type SidebarCategoryWithName = SidebarCategory & { name: string };
@@ -340,6 +345,10 @@ const CategoryItemRow = memo(function CategoryItemRow({
 // ─── Enrich categories with display names ────────────────────────────────────
 
 function enrichCategories(raw: SidebarCategory[]): SidebarCategoryWithName[] {
+  const order = new Map<string, number>(
+    sidebarCategoryOrder.map((slug, index) => [slug, index]),
+  );
+
   return raw
     .filter((cat) => cat.slug !== "faq")
     .map((cat) => ({
@@ -347,7 +356,15 @@ function enrichCategories(raw: SidebarCategory[]): SidebarCategoryWithName[] {
       name: capitalizeFirst(
         categoryDisplayMap[cat.slug] || cat.title || cat.slug.toUpperCase(),
       ),
-    }));
+    }))
+    .sort((a, b) => {
+      const aOrder = order.get(a.slug);
+      const bOrder = order.get(b.slug);
+      if (aOrder !== undefined || bOrder !== undefined) {
+        return (aOrder ?? Number.MAX_SAFE_INTEGER) - (bOrder ?? Number.MAX_SAFE_INTEGER);
+      }
+      return a.name.localeCompare(b.name);
+    });
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────

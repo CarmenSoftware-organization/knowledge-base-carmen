@@ -12,6 +12,20 @@ export const categoryDisplayMap: Record<string, string> = {
     changelog: "Changelog",
 };
 
+// Keep the knowledge-base navigation aligned with the original documentation
+// sidebar. Categories not listed here are placed after the known categories.
+export const sidebarCategoryOrder = [
+    "dashboard",
+    "gl",
+    "ap",
+    "ar",
+    "asset",
+    "ai",
+    "comment",
+    "workbook",
+    "configuration",
+] as const;
+
 export const articleDisplayMap: Record<string, string> = {
     // Account Payable
     "AP-invoice": "Invoice",
