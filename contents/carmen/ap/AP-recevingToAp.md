@@ -1,5 +1,5 @@
 ---
-title: ขั้นตอนการ Post ข้อมูล Receiving เข้า A/P Invoice
+title: AP-recevingToAp
 description: ขั้นตอนการ Post ข้อมูล Receiving เข้า A/P Invoice
 published: true
 date: 2026-03-20T08:39:16.614Z
