@@ -13,7 +13,7 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ## Statistical Highlight
 
-![Statistical Highlight](./01-statistical-highlight.png)
+![Statistical Highlight](./dashboard-images/01-statistical-highlight.png)
 
 ข้อมูลทางสถิติการเข้าพักของแขกและแสดงรายได้เฉลี่ยการขายห้องพักในแต่ละวัน โดยจะแสดงข้อมูลดังต่อไปนี้
 
@@ -26,10 +26,10 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ### วิธีการตั้งค่าเพื่อแสดงข้อมูล
 
-1. Click ที่ปุ่ม ![ปุ่มตั้งค่า](./settings-menu-icon.png) ด้านหลังของ Dashboard
+1. Click ที่ปุ่ม ![ปุ่มตั้งค่า](./dashboard-images/settings-menu-icon.png) ด้านหลังของ Dashboard
 2. กำหนดข้อมูลดังต่อไปนี้
 
-![การตั้งค่า Statistical Highlight](./02-statistical-highlight-settings.png)
+![การตั้งค่า Statistical Highlight](./dashboard-images/02-statistical-highlight-settings.png)
 
 1. Room Occupy — Click เลือก Account Code ที่ใช้ในการบันทึกข้อมูล **สถิติของห้องพักที่ขายได้**
 2. Room Available — Click เลือก Account Code ที่ใช้ในการบันทึกข้อมูล **สถิติของห้องพักทั้งหมดมีไว้เพื่อขาย**
@@ -39,7 +39,7 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ## Dimension Analysis
 
-![Dimension Analysis](./03-dimension-analysis.png)
+![Dimension Analysis](./dashboard-images/03-dimension-analysis.png)
 
 ข้อมูลรายได้ห้องพัก **โดยแยกตาม Market Segment** ซึ่งในระบบจะแยกการบันทึกบัญชี โดยใช้ Dimension filed เป็นตัวแยก
 
@@ -52,10 +52,10 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ### วิธีการตั้งค่าเพื่อแสดงข้อมูล
 
-1. Click ที่ปุ่ม ![ปุ่มตั้งค่า](./settings-menu-icon.png) ด้านหลังของ Dashboard
+1. Click ที่ปุ่ม ![ปุ่มตั้งค่า](./dashboard-images/settings-menu-icon.png) ด้านหลังของ Dashboard
 2. กำหนดข้อมูลดังต่อไปนี้
 
-![การตั้งค่า Dimension Analysis](./04-dimension-analysis-settings.png)
+![การตั้งค่า Dimension Analysis](./dashboard-images/04-dimension-analysis-settings.png)
 
 1. Account — Click เลือก Account Code ที่ใช้ในการบันทึก **รายได้ห้องพัก**
 2. Dimension — เลือก Dimension ที่ใช้ระบุ Market Segment
@@ -63,7 +63,7 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ## This Year VS Last Year
 
-![This Year VS Last Year](./05-this-year-vs-last-year.png)
+![This Year VS Last Year](./dashboard-images/05-this-year-vs-last-year.png)
 
 กราฟแท่งแสดงยอดรวม เปรียบเทียบข้อมูลระหว่าง **ยอด Actual ปีปัจจุบัน** กับ **ยอด Actual ของปีที่แล้ว** 12 เดือน ทั้งนี้ยังสามารถเลือกดูข้อมูลย้อนหลังของปีที่ผ่านมาแล้วได้ด้วย โดยจะแสดงข้อมูลดังต่อไปนี้
 
@@ -72,10 +72,10 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ### วิธีการตั้งค่าเพื่อแสดงข้อมูล
 
-1. Click ที่ปุ่ม ![ปุ่มตั้งค่า](./settings-menu-icon.png) ด้านหลังของ Dashboard
+1. Click ที่ปุ่ม ![ปุ่มตั้งค่า](./dashboard-images/settings-menu-icon.png) ด้านหลังของ Dashboard
 2. กำหนดข้อมูลดังต่อไปนี้
 
-![การตั้งค่า This Year VS Last Year](./06-this-year-vs-last-year-settings.png)
+![การตั้งค่า This Year VS Last Year](./dashboard-images/06-this-year-vs-last-year-settings.png)
 
 1. Account — Click เลือก Account Code ที่ต้องการให้ระบบแสดงผลรวม
 2. Department — Click เลือก Department ที่ต้องการให้ระบบแสดงผลรวม
@@ -83,7 +83,7 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ## Monthly P&L Summary
 
-![Monthly P&L Summary](./07-monthly-pl-summary.png)
+![Monthly P&L Summary](./dashboard-images/07-monthly-pl-summary.png)
 
 ผลรวมกำไรขาดทุนในแต่ละเดือน สำหรับไม่ต้องตั้งค่าระบบจะแสดงผลรวม โดยจะแสดงข้อมูลดังต่อไปนี้
 
@@ -98,7 +98,7 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ## Daily Monitor Account
 
-![Daily Monitor Account](./08-daily-monitor-account.png)
+![Daily Monitor Account](./dashboard-images/08-daily-monitor-account.png)
 
 แสดงยอดรวมของรหัสบัญชี (ตามที่เดตอัพไว้) เป็นแบบรายวัน โดยจะแสดงข้อมูลดังต่อไปนี้
 
@@ -108,10 +108,10 @@ Dashboard จะนำข้อมูลที่มีการบันทึ�
 
 ### วิธีการตั้งค่าเพื่อแสดงข้อมูล
 
-1. Click ที่ปุ่ม ![ปุ่มตั้งค่า](./settings-menu-icon.png) ด้านหลังของ Dashboard
+1. Click ที่ปุ่ม ![ปุ่มตั้งค่า](./dashboard-images/settings-menu-icon.png) ด้านหลังของ Dashboard
 2. กำหนดข้อมูลดังต่อไปนี้
 
-![การตั้งค่า Daily Monitor Account](./09-daily-monitor-account-settings.png)
+![การตั้งค่า Daily Monitor Account](./dashboard-images/09-daily-monitor-account-settings.png)
 
 1. Account — Click เลือก Account Code ที่ต้องการให้ระบบแสดงผลรวม
 2. กดปุ่ม **OK** เพื่อบันทึกข้อมูล
