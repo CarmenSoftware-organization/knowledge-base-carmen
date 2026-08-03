@@ -1,8 +1,10 @@
 ---
-title: "Dashboard"
-description: "คำอธิบายและวิธีตั้งค่าการแสดงผล Dashboard"
+title: Dashboard
+description: คำอธิบายและวิธีตั้งค่าการแสดงผล Dashboard
 published: true
-tags: carmen_cloud,documentation
+tags:
+  - carmen_cloud
+  - documentation
 editor: markdown
 weight: 1
 ---
