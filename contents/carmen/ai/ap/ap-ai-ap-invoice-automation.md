@@ -1,4 +1,5 @@
 ---
+weight: 1
 title: AP AI AP Invoice Automation
 description: ขั้นตอนการบันทึก A/P Invoice โดย AI
 published: true

@@ -6,7 +6,7 @@ tags:
   - carmen_cloud
   - documentation
 editor: markdown
-weight: 1
+weight: 2
 ---
 
 # Dashboard
