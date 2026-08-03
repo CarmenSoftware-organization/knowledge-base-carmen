@@ -1,5 +1,5 @@
 ---
-title: Dashboard
+title: Dashboard อิ๊อิ๊คริคริ
 description: คำอธิบายและวิธีตั้งค่าการแสดงผล Dashboard
 published: true
 tags:
