@@ -7,7 +7,7 @@ editor: markdown
 ---
 ---
 title: "Invoice by Template"
-weight: 12
+weight: 4
 ---
 # ขั้นตอนการสร้าง A/P Invoice โดยใช้ Import Template
 

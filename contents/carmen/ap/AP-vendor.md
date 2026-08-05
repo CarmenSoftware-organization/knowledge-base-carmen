@@ -6,6 +6,7 @@ date: 2026-03-20T08:39:18.857Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:14.964Z
+weight: 1
 ---
 
 # ขั้นตอนการสร้างข้อมูลร้านค้า หรือ ผู้ขายในระบบ (Create Vendor)

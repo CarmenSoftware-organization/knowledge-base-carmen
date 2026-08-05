@@ -6,6 +6,7 @@ date: 2026-03-20T08:39:16.614Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:11.866Z
+weight: 2
 ---
 
 ## การ Post ข้อมูล Receiving เข้า A/P Invoice

@@ -6,6 +6,7 @@ date: 2026-03-20T08:39:23.297Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:21.233Z
+weight: 12
 ---
 
 # Withholding Tax Reconciliation
@@ -127,4 +128,3 @@ Address, Tax ID, Branch No โดยวิธีการแก้ไข ดั�
 5.	ตัวอย่างรายงาน “Certificate of Creditable Tax Withheld at Source”
 ![alt text](image-190.png)
  
-

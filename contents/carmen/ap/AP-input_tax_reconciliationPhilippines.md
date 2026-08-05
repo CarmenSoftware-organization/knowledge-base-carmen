@@ -6,6 +6,7 @@ date: 2026-03-20T08:39:10.045Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:02.202Z
+weight: 10
 ---
 
 # Input Tax Reconciliation
@@ -115,4 +116,3 @@ Source บนหน้าจอใช้ในการระบุแหล่�
 
 “หลังจากทำการ Export Excel file เรียบร้อยแล้ว ให้ทำการตรวจสอบความถูกต้องทั้งในส่วนของข้อมูล และการจัดหน้ากระดาษ”
 ![alt text](image-156.png)
-

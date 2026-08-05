@@ -6,6 +6,7 @@ date: 2026-03-20T08:38:54.510Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:37:40.215Z
+weight: 13
 ---
 
 การโอนย้ายข้อมูลใบแนบ ภ.ง.ด.3 ผ่านโปรแกรม RDPrep <img src="./image-72.png" style="display: inline-block;" />

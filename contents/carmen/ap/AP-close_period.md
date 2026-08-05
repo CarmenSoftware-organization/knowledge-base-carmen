@@ -10,7 +10,7 @@ dateCreated: 2026-03-19T08:37:52.724Z
 
 ---
 title: "Close Period"
-weight: 13
+weight: 15
 ---
 
 
@@ -46,4 +46,3 @@ weight: 13
 > 
 > 3.หากต้องการเปิด Period ให้ FC, Account Manger หรือผู้มีอำนาจส่ง E-Mail ถึง Support เพื่อทำการขอเปิด Period
 {.is-warning}
-
