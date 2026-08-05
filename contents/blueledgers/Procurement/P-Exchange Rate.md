@@ -1,6 +1,7 @@
 ---
 title: Exchange Rate
 lang: th-TH
+weight: 13
 ---
 
 # Exchange Rate (อัตราแลกเปลี่ยน)

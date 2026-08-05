@@ -1,6 +1,7 @@
 ---
 title: Standard Order
 lang: th-TH
+weight: 9
 ---
 
 # Standard Order (Template รายการสินค้าสั่งซื้อ Standard Order)

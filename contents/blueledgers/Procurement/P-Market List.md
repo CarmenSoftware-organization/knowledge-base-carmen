@@ -1,6 +1,7 @@
 ---
 title: Market List
 lang: th-TH
+weight: 8
 ---
 
 # Market List(Template รายการสินค้าสั่งซื้อ Market List)

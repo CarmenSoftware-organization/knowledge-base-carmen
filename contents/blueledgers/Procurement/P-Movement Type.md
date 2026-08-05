@@ -1,6 +1,7 @@
 ---
 title: Movement Type Definition
 lang: th-TH
+weight: 11
 ---
 
 # Movement Type Definition

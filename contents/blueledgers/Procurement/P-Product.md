@@ -1,6 +1,7 @@
 ---
 title: Product
 lang: th-TH
+weight: 5
 ---
 
 # Product (รายการสินค้า)

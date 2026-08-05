@@ -1,6 +1,7 @@
 ---
 title: Category
 lang: th-TH
+weight: 16
 ---
 
 # Category (หมวดหมู่รายการสินค้า)

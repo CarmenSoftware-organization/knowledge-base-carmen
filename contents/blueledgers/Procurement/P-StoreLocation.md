@@ -1,6 +1,7 @@
 ---
 title: Store/Location
 lang: th-TH
+weight: 17
 ---
 
 # Store/Location (คลังสินค้า/สถานที่)

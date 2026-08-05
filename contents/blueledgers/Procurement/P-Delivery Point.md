@@ -1,6 +1,7 @@
 ---
 title: Delivery Point
 lang: th-TH
+weight: 14
 ---
 
 # Delivery Point (จุดรับสินค้า)

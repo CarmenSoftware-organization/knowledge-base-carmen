@@ -1,6 +1,7 @@
 ---
 title: Currency
 lang: th-TH
+weight: 12
 ---
 
 # Currency (สกุลเงิน)

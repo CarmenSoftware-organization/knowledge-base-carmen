@@ -1,6 +1,7 @@
 ---
 title: Extra Cost Type
 lang: th-TH
+weight: 7
 ---
 
 # Extra Cost Type (ค่าใช้จ่ายพิเศษ)

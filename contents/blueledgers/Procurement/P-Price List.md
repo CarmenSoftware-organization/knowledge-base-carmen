@@ -1,6 +1,7 @@
 ---
 title: Price List
 lang: th-TH
+weight: 6
 ---
 
 # Price List (ใบเสนอราคา)

@@ -1,6 +1,7 @@
 ---
 title: Unit
 lang: th-TH
+weight: 15
 ---
 
 # Unit (หน่วยรายการสินค้า)

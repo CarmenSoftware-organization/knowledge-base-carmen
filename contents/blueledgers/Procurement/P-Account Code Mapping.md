@@ -1,6 +1,7 @@
 ---
 title: Account Code Mapping
 lang: th-TH
+weight: 10
 ---
 # Account Code Mapping (การผูกบัญชี สำหรับ Post ข้อมูลไป AP และ GL) 
 Account Code Mapping คือ Function ในการผูกผังบัญชีและ department code ให้กับ transaction ใน BlueLedgers
