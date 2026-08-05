@@ -1,6 +1,7 @@
 ---
 title: Purchase Request
 lang: th-TH
+weight: 1
 ---
 
 # Purchase Request (ใบขอซื้อ)
