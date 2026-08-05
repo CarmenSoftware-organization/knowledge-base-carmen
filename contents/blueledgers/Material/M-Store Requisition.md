@@ -1,6 +1,7 @@
 ---
 title: Store Requisition
 lang: th-TH
+weight: 19
 ---
 # Store Requisition
 

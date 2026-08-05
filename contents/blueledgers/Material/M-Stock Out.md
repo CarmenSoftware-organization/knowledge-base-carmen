@@ -1,6 +1,7 @@
 ---
 title: Stock Out
 lang: th-TH
+weight: 20
 ---
 # Stock Out
 
