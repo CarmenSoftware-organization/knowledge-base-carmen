@@ -6,6 +6,7 @@ date: 2026-03-20T08:39:29.004Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:28.938Z
+weight: 6
 ---
 
 # Apply AR Contract

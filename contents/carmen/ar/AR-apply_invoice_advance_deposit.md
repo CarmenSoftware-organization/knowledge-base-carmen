@@ -6,6 +6,7 @@ date: 2026-03-20T08:39:31.194Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:32.200Z
+weight: 9
 ---
 
 # Apply Invoice for Advance Deposit

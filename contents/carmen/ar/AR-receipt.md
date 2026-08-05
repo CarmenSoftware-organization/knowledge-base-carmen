@@ -10,7 +10,7 @@ dateCreated: 2026-03-19T08:38:54.312Z
 
 ---
 title: "Receipt"
-weight: 13
+weight: 7
 ---
 
 

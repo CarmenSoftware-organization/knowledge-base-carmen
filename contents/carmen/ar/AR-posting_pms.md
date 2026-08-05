@@ -6,6 +6,7 @@ date: 2026-03-20T08:39:42.165Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:47.910Z
+weight: 2
 ---
 
 # AR Posting from PMS (PMS Interface)

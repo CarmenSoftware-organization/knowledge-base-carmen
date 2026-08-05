@@ -6,6 +6,7 @@ date: 2026-03-20T08:39:48.926Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:38:57.568Z
+weight: 8
 ---
 
 # Receipt for Advance Deposit
