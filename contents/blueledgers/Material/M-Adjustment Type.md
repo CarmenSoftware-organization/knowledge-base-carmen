@@ -1,6 +1,7 @@
 ---
 title: Adjustment Type
 lang: th-TH
+weight: 23
 ---
 # Adjustment Type
 

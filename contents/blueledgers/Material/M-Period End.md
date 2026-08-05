@@ -1,6 +1,7 @@
 ---
 title: Close Period
 lang: th-TH
+weight: 25
 ---
 # Close Period
 **Close Period** คือการปิดรอบบัญชีในระบบสินค้าคงคลัง 

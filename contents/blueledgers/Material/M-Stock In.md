@@ -1,6 +1,7 @@
 ---
 title: Stock In
 lang: th-TH
+weight: 20
 ---
 # Stock In
 

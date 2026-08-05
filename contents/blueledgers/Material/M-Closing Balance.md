@@ -1,6 +1,7 @@
 ---
 title: Closing Balance
 lang: th-TH
+weight: 24
 ---
 # Closing Balance & Close Period
 

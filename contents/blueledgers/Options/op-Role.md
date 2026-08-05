@@ -1,6 +1,7 @@
 ---
 title: Role
 lang: th-TH
+weight: 34
 ---
 # Role
 Administrator คือ ฟังก์ชันการกำหนดสิทธิ์การเข้าถึงระบบให้กับทุก User โดยจะมีส่วนประกอบดังนี้

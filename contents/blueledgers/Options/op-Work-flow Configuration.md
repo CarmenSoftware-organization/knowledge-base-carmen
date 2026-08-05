@@ -1,6 +1,7 @@
 ---
 title: Work – Flow Configurations
 lang: th-TH
+weight: 36
 ---
 # Work – Flow Configurations    
 Work – Flow Configurations คือ การกำหนดขอบเขตการมองเห็น และลำดับขั้นในการอนุมัติเอกสาร ซึ่งประกอบไปด้วย เอกสารใบขอซื้อ (Purchase Request) และเอกสารใบขอเบิก (Store Requisition)

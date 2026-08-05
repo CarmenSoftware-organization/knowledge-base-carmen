@@ -1,6 +1,7 @@
 ---
 title: Standard Requisition
 lang: th-TH
+weight: 22
 ---
 # Standard Requisition
 Standard Requisition คือ การสร้างเอกสารแม่แบบ (Template) ให้กับการทำขอเบิก (Store Requisition)

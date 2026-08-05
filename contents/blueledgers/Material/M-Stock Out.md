@@ -1,7 +1,7 @@
 ---
 title: Stock Out
 lang: th-TH
-weight: 20
+weight: 21
 ---
 # Stock Out
 
@@ -85,5 +85,4 @@ C. การ Comment หรือ แนบไฟล์ Attachment ในเอ�
 
 •	Click “Update” เพื่อ บันทึก หรือ “Cancel” เพื่อ ยกเลิก
 ![alt text](image-34.png)
-
 

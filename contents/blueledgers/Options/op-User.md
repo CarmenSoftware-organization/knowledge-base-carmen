@@ -1,6 +1,7 @@
 ---
 title: User
 lang: th-TH
+weight: 35
 ---
 # User
 User คือ การสร้าง User Name / Password ให้กับผู้ใช้ระบบ และการกำหนดสิทธิ์การมองเห็น Location ให้กับผู้ใช้ระบบ

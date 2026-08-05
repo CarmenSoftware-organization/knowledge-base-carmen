@@ -1,6 +1,7 @@
 ---
 title: Sale
 lang: th-TH
+weight: 30
 ---
 
 # Sale

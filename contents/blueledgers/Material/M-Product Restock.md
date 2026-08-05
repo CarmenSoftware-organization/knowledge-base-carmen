@@ -1,6 +1,7 @@
 ---
 title: Product Restock
 lang: th-TH
+weight: 26
 ---
 # Product Restock
 
