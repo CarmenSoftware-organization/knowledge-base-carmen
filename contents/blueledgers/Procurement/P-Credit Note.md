@@ -1,6 +1,7 @@
 ---
 title: Credit Note
 lang: th-TH
+weight: 4
 ---
 
 **Credit Note**
