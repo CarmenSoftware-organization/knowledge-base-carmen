@@ -1,6 +1,7 @@
 ---
 title: Purchase Order
 lang: th-TH
+weight: 2
 ---
 
 # Purchase Order (ใบสั่งซื้อ)
