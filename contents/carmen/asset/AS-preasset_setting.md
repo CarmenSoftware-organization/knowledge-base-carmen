@@ -6,6 +6,7 @@ date: 2026-03-20T08:40:05.201Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:39:19.948Z
+weight: 1
 ---
 
 # Pre-Register Asset Setting

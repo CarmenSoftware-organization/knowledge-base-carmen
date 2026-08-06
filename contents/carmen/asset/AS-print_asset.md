@@ -6,6 +6,7 @@ date: 2026-03-20T08:40:07.338Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:39:23.065Z
+weight: 4
 ---
 
 # Print Asset QR Code

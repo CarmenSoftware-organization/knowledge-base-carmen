@@ -10,7 +10,7 @@ dateCreated: 2026-03-19T08:39:10.644Z
 
 ---
 title: "Asset Register"
-weight: 10
+weight: 3
 ---
 
 
