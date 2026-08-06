@@ -6,6 +6,7 @@ date: 2026-03-20T08:42:17.440Z
 tags: carmen_cloud,documentation
 editor: markdown
 dateCreated: 2026-03-19T08:41:54.999Z
+weight: 3
 ---
 
 # Excel Security setting for Carmen Add-in
@@ -51,5 +52,4 @@ dateCreated: 2026-03-19T08:41:54.999Z
 5.6. กด OK เพื่อเสร็จสิ้นการตั้งค่า Trust Center
 
 6.กด OK อีกครั้งเพื่อเสร็จสิ้นการตั้งค่า Excel Options
-
 

@@ -10,7 +10,7 @@ dateCreated: 2026-03-19T08:42:04.719Z
 
 ---
 title: "Install Config"
-weight: 10
+weight: 1
 ---
 
 
