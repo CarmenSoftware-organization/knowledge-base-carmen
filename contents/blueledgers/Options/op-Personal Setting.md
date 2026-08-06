@@ -1,7 +1,7 @@
 ---
 title: Personal Setting
 lang: th-TH
-weight: 33
+weight: 31
 ---
 
 # Personal Setting
