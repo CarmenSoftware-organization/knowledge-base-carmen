@@ -1,6 +1,7 @@
 ---
 title: Permissions
 lang: th-TH
+weight: 6
 ---
 
 # Permissions

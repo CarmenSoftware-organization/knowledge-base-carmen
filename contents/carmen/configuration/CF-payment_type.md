@@ -1,6 +1,7 @@
 ---
 title: Payment Type
 lang: th-TH
+weight: 11
 ---
 
 # Payment Type

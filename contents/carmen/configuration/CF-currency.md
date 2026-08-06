@@ -1,6 +1,7 @@
 ---
 title: Currency
 lang: th-TH
+weight: 8
 ---
 
 # การสร้างสกุลเงิน (Currency)

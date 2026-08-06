@@ -1,6 +1,7 @@
 ---
 title: Product License
 lang: th-TH
+weight: 1
 ---
 
 # Product License

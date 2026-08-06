@@ -1,6 +1,7 @@
 ---
 title: System Preference
 lang: th-TH
+weight: 3
 ---
 
 # System Preference

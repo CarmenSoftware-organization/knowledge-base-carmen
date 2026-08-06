@@ -1,6 +1,7 @@
 ---
 title: Dimension
 lang: th-TH
+weight: 12
 ---
 
 # การสร้างประเภทการวิเคราะห์ข้อมูล Dimension

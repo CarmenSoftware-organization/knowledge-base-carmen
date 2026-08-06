@@ -1,6 +1,7 @@
 ---
 title: Company Profile
 lang: th-TH
+weight: 2
 ---
 
 # Company Profile

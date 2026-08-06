@@ -1,6 +1,7 @@
 ---
 title: Chart Of Accounts
 lang: th-TH
+weight: 10
 ---
 
 # การสร้างรหัสบัญชี Chart Of Accounts

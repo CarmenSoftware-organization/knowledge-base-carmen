@@ -1,6 +1,7 @@
 ---
 title: Users-How To Change User and Password
 lang: th-TH
+weight: 5
 ---
 
 # Users-How To Change User and Password

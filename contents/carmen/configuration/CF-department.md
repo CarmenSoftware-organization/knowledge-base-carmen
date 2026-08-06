@@ -1,6 +1,7 @@
 ---
 title: Department
 lang: th-TH
+weight: 9
 ---
 
 # การสร้างรหัสแผนก Department

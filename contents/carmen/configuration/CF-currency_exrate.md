@@ -1,6 +1,7 @@
 ---
 title: Currency Exchange Rate
 lang: th-TH
+weight: 7
 ---
 
 # Currency Exchange Rate
