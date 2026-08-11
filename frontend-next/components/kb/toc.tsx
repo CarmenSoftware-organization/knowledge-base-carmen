@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 
 export function TableOfContents({
   isMobile = false,
@@ -18,6 +19,7 @@ export function TableOfContents({
   const linkRefs = useRef(new Map<string, HTMLAnchorElement>());
   const locale = useLocale();
   const t = useTranslations("article");
+  const pathname = usePathname();
 
   // Build heading list
   useEffect(() => {
@@ -51,7 +53,7 @@ export function TableOfContents({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
     setHeadings(elements);
     if (elements.length > 0) setActiveId(elements[0].id);
-  }, [locale]);
+  }, [locale, pathname]);
 
   // Track active heading from scroll position for more precise behavior
   useEffect(() => {
