@@ -23,37 +23,60 @@ export function TableOfContents({
 
   // Build heading list
   useEffect(() => {
-    const sections = Array.from(
-      document.querySelectorAll("article h2")
-    ) as HTMLElement[];
+    const updateHeadings = () => {
+      const sections = Array.from(
+        document.querySelectorAll("article h2")
+      ) as HTMLElement[];
 
-    const idCount = new Map<string, number>();
-    const seenHeadingKey = new Set<string>();
-    const elements: { id: string; text: string; key: string }[] = [];
+      const idCount = new Map<string, number>();
+      const seenHeadingKey = new Set<string>();
+      const elements: { id: string; text: string; key: string }[] = [];
 
-    for (const elem of sections) {
-      const id = elem.id?.trim();
-      if (!id) continue;
-      const text = (elem.textContent || "").trim();
-      const uniqueHeadingKey = `${id}::${text}`;
+      for (const elem of sections) {
+        const id = elem.id?.trim();
+        if (!id) continue;
+        const text = (elem.textContent || "").trim();
+        const uniqueHeadingKey = `${id}::${text}`;
 
-      // Prevent duplicated TOC entries that can happen after refresh/hydration.
-      if (seenHeadingKey.has(uniqueHeadingKey)) continue;
-      seenHeadingKey.add(uniqueHeadingKey);
+        // Prevent duplicated TOC entries that can happen after refresh/hydration.
+        if (seenHeadingKey.has(uniqueHeadingKey)) continue;
+        seenHeadingKey.add(uniqueHeadingKey);
 
-      const seen = idCount.get(id) || 0;
-      idCount.set(id, seen + 1);
-      elements.push({
-        id,
-        text,
-        key: seen === 0 ? id : `${id}-${seen}`,
+        const seen = idCount.get(id) || 0;
+        idCount.set(id, seen + 1);
+        elements.push({
+          id,
+          text,
+          key: seen === 0 ? id : `${id}-${seen}`,
+        });
+      }
+
+      setHeadings((prev) => {
+        if (prev.length !== elements.length) return elements;
+        const isSame = prev.every((h, i) => h.id === elements[i].id && h.text === elements[i].text);
+        return isSame ? prev : elements;
       });
-    }
+    };
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time client-only mount read (SSR-safe)
-    setHeadings(elements);
-    if (elements.length > 0) setActiveId(elements[0].id);
+    updateHeadings();
+
+    const observer = new MutationObserver(() => {
+      updateHeadings();
+    });
+
+    const target = document.querySelector("article") || document.body;
+    observer.observe(target, { childList: true, subtree: true, characterData: true });
+
+    return () => observer.disconnect();
   }, [locale, pathname]);
+
+  // Set initial active ID when headings change
+  useEffect(() => {
+    if (headings.length > 0 && !headings.some(h => h.id === activeId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- initial active ID setup
+      setActiveId(headings[0].id);
+    }
+  }, [headings, activeId]);
 
   // Track active heading from scroll position for more precise behavior
   useEffect(() => {
