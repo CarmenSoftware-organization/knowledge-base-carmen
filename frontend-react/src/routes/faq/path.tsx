@@ -170,7 +170,7 @@ export default function FaqPath() {
       <MobileSidebar faqItems={items} />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex gap-8 lg:gap-10 items-start">
+        <div className="mx-auto w-full px-4 sm:px-6 py-6 flex gap-8 lg:gap-10 items-start">
           <FaqSidebar items={items} />
           <div className="flex-1 min-w-0 w-full">
             <Breadcrumb items={breadcrumbItems} />

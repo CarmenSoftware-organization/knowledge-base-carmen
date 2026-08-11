@@ -197,11 +197,11 @@ export default function Article() {
         <KBHeader />
         <MobileSidebar />
         <main className="flex-1">
-          <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-8 flex gap-6 sm:gap-8 lg:gap-10 items-start">
+          <div className="mx-auto w-full px-3 sm:px-6 py-8 flex gap-6 sm:gap-8 lg:gap-10 items-start">
             <div className="hidden xl:block shrink-0 self-start sticky top-24">
               <KBSidebar />
             </div>
-            <div className="min-w-0 w-full max-w-4xl flex-1">
+            <div className="min-w-0 w-full flex-1">
               <Breadcrumb
                 items={[
                   { label: "คู่มือ", href: "/categories" },
@@ -297,7 +297,7 @@ export default function Article() {
       />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-5 sm:py-8 lg:py-10 flex gap-6 sm:gap-8 lg:gap-10 items-start">
+        <div className="mx-auto w-full px-3 sm:px-6 py-5 sm:py-8 lg:py-10 flex gap-6 sm:gap-8 lg:gap-10 items-start">
           {!isFaqArticle && !isChangelogArticle && (
             <div className="hidden xl:block shrink-0 self-start sticky top-24">
               <KBSidebar />
@@ -316,7 +316,7 @@ export default function Article() {
             </div>
           )}
 
-          <div className="min-w-0 w-full max-w-4xl flex-1">
+          <div className="min-w-0 w-full flex-1">
             <Breadcrumb items={breadcrumbItems} />
 
             <ArticleHeaderInfo

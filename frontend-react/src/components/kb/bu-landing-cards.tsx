@@ -397,7 +397,7 @@ export function BULandingCards({ items }: Props) {
       </div>
 
       <div className="w-full bg-muted/35 dark:bg-muted/20">
-        <div className="mx-auto w-full max-w-[85rem] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pt-12 md:px-8 md:pt-14 lg:px-10 lg:pt-16 xl:px-12">
+        <div className="mx-auto w-full  px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pt-12 md:px-8 md:pt-14 lg:px-10 lg:pt-16 xl:px-12">
           <motion.div
             className="mx-auto max-w-5xl text-center"
             initial={reduceMotion ? false : { opacity: 0, y: 28 }}

@@ -51,7 +51,7 @@ export function KBFooter() {
         initial="hidden"
         animate="visible"
         variants={footerVariants}
-        className="mx-auto max-w-6xl lg:max-w-7xl px-6 py-8 md:py-10"
+        className="mx-auto px-6 py-8 md:py-10"
       >
         <div className="grid grid-cols-1 md:grid-cols-10 lg:grid-cols-12 gap-10 lg:gap-12 items-stretch">
 

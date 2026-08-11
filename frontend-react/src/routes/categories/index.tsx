@@ -24,7 +24,7 @@ export default function Categories() {
       <KBHeader />
       <MobileSidebar />
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 flex flex-col lg:flex-row gap-6 sm:gap-8">
+        <div className="mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 flex flex-col lg:flex-row gap-6 sm:gap-8">
           <aside className="hidden md:block w-64 shrink-0">
             <div className="sticky top-24">
               <KBSidebar />

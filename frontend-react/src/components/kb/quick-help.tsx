@@ -38,7 +38,7 @@ export function QuickHelp() {
 
   return (
     <section className="py-8 sm:py-11 md:py-14 lg:py-16 bg-background overflow-hidden">
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+      <div className="mx-auto px-3 sm:px-6 lg:px-8">
         <motion.div
           initial="hidden"
           animate="visible"

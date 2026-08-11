@@ -4,7 +4,7 @@ export default function ArticleLoading() {
       <div className="h-14 border-b border-border/60 bg-background/95" />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex gap-10 items-start">
+        <div className="mx-auto px-4 sm:px-6 py-6 sm:py-10 flex gap-10 items-start">
           <aside className="hidden xl:block w-64 shrink-0 space-y-2">
             {[90, 70, 85, 60, 75, 80, 65].map((w, i) => (
               <div key={i} className="space-y-1.5">

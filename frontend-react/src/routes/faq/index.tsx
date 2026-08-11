@@ -127,7 +127,7 @@ export default function Faq() {
         <KBHeader />
         <MobileSidebar />
         <main className="flex-1">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
             <div className="w-full min-w-0">
               <Breadcrumb
                 items={[
@@ -175,7 +175,7 @@ export default function Faq() {
       <MobileSidebar faqItems={items} />
 
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex gap-8 lg:gap-10 items-start">
+        <div className="mx-auto w-full px-4 sm:px-6 py-6 flex gap-8 lg:gap-10 items-start">
           <FaqSidebar items={items} />
           <div className="flex-1 min-w-0 w-full">
             <Breadcrumb

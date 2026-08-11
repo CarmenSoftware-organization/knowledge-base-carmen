@@ -190,7 +190,7 @@ export function KBHeader() {
       animate={headerAnimate}
       className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-md will-change-transform"
     >
-      <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+      <div className="mx-auto px-2 sm:px-6 lg:px-8">
         <div className="relative z-10 flex h-14 items-center gap-1.5 sm:gap-3 min-w-0 isolate">
 
           <Link to="/" className="relative z-[2] shrink-0 min-w-0 max-w-[42%] sm:max-w-none">
@@ -216,7 +216,7 @@ export function KBHeader() {
             </div>
           )}
 
-          {isHome && <div className="flex-1 min-w-0 xl:flex-1" />}
+          { <div className="flex-1 min-w-0 xl:flex-1" />}
 
           <nav className="hidden xl:flex items-center gap-1">
             <NavLink compact href="/">

@@ -91,7 +91,7 @@ export default async function CategoryPage({
       />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 flex gap-10 items-start relative">
+        <div className="mx-auto px-4 sm:px-6 py-6 flex gap-10 items-start relative">
           {!isChangelog && (
             <aside className="hidden lg:block sticky top-24 shrink-0">
               <KBSidebar />
