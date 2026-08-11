@@ -76,3 +76,6 @@ Thumbs.db
 
 # DB migration credentials — never commit
 scripts/supabase-migration/.env.migrate
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+graft/
