@@ -19,7 +19,7 @@ weight: 4
 
 ![Product Category - รูปที่ 2](./assets/product_category/media/image2.png)
 
-ขั้นตอนการสร้าง Category, Sub Category, Item Group
+## ขั้นตอนการสร้าง Category, Sub Category, Item Group
 
 1. สร้าง Category
 

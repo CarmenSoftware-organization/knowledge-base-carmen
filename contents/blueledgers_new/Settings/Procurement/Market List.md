@@ -1,6 +1,6 @@
 ---
 title: "Market List"
-description: "Market List (Template รายการสินค้าสั่งซื้อ Market List)"
+description: "Market List คือ Function ในการสร้าง Template สำหรับรายการสินค้าประเภท Market list ที่มีการสั่งซื้อบ่อย ๆ เพื่อช่วยลดเวลาในการเลือกสินค้าตอนสร้าง PR"
 published: true
 tags: blueledgers_new,documentation
 editor: markdown
@@ -54,8 +54,6 @@ weight: 2
 ![Market List - รูปที่ 7](./Market_List/media/image7.png)
 
 2.
-
-<!-- -->
 
 3. การ ค้นหา และ **View Market List** สามารถค้นหา **Market List** ที่ต้องการ โดย พิมพ์ค้นหา ในช่อง **Search**
 

@@ -1,6 +1,6 @@
 ---
 title: "Account Code Mapping"
-description: "Account Code Mapping (การผูกบัญชี สำหรับ Post ข้อมูลไป AP และ GL)"
+description: "Account Code Mapping คือ Function ในการผูกผังบัญชีและ Department code ให้กับ transaction ใน BlueLedgers"
 published: true
 tags: blueledgers_new,documentation
 editor: markdown

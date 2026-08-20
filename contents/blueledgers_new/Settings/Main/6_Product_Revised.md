@@ -151,8 +151,6 @@ weight: 1
 
 6. “Last Purchase” แสดงประวัติ PO และการรับสินค้า (Receiving)
 
-<!-- -->
-
 4. วิธี Inactive Product
 
 1. หลังจาก Click สัญลักษณ์ “จุด 3 จุด” ระบบจะแสดงปุ่ม “Set to inactive”

@@ -22,6 +22,7 @@ ORDER = {
     "Settings/Administration/User.md": 1,
     "Settings/Administration/Role.md": 2,
     "Settings/Administration/Department.md": 3,
+    "Settings/Administration/Workflow Management.md": 4,
     "Settings/Main/6_Product_Revised.md": 1,
     "Settings/Main/7_6_Currency_Revised.md": 2,
     "Settings/Main/7_7_Product_Unit_Revised.md": 3,
@@ -32,6 +33,8 @@ ORDER = {
     "Settings/Procurement/Account Code Mapping.md": 1,
     "Settings/Procurement/Market List.md": 2,
     "Settings/Procurement/Standard Order.md": 3,
+    "Settings/Procurement/Delivery Point.md": 4,
+    "Settings/Procurement/Extra Cost Type.md": 5,
 }
 
 TITLE_OVERRIDES = {
@@ -42,6 +45,15 @@ TITLE_OVERRIDES = {
     "7_9_Location_Revised": "Location",
     "Adjustment_Type_Revised": "Adjustment Type",
     "Standard_Requisition_Revised": "Standard Requisition",
+    "Workflow Management": "Workflow Management",
+    "Delivery Point": "Delivery Point",
+    "Extra Cost Type": "Extra Cost Type",
+}
+
+IMAGE_PREFIX = {
+    "Settings/Administration/Workflow Management.md": "Workflow_Management/",
+    "Settings/Procurement/Delivery Point.md": "Delivery_Point/",
+    "Settings/Procurement/Extra Cost Type.md": "Extra_Cost_Type/",
 }
 
 
@@ -97,13 +109,16 @@ def infer_description(title: str, body: str, blocks: list[dict[str, str]]) -> st
     return f"คู่มือการใช้งาน {title} ในระบบ BlueLedgers New"
 
 
-def normalize_images(body: str, title: str) -> str:
+def normalize_images(body: str, title: str, image_prefix: str = "") -> str:
     counter = 0
 
     def replace(match: re.Match[str]) -> str:
         nonlocal counter
         counter += 1
         src = match.group(1).strip()
+        src = src.removeprefix("./")
+        if image_prefix and not src.startswith(image_prefix):
+            src = image_prefix + src
         if not src.startswith(("./", "../", "/", "http://", "https://")):
             src = f"./{src}"
         return f"![{title} - รูปที่ {counter}]({src})"
@@ -111,8 +126,8 @@ def normalize_images(body: str, title: str) -> str:
     return re.sub(r'<img\s+[^>]*?src="([^"]+)"[^>]*?/?>', replace, body, flags=re.I | re.S)
 
 
-def normalize_body(body: str, title: str) -> str:
-    body = normalize_images(body, title)
+def normalize_body(body: str, title: str, image_prefix: str = "") -> str:
+    body = normalize_images(body, title, image_prefix)
     lines = body.replace("\r\n", "\n").splitlines()
 
     # Remove the converted Word title; a canonical H1 is inserted below.
@@ -139,6 +154,9 @@ def normalize_body(body: str, title: str) -> str:
             line = line[4:]
         stripped = line.strip()
 
+        if stripped == "<!-- -->":
+            continue
+
         heading = re.fullmatch(r"\*\*(.+?)\*\*", stripped)
         numbered_heading = re.fullmatch(r"(\d+)\.\s+\*\*(.+?)\*\*", stripped)
         if numbered_heading and not line.startswith((" ", "\t")):
@@ -147,6 +165,12 @@ def normalize_body(body: str, title: str) -> str:
             candidate = clean_inline(heading.group(1))
             if candidate and len(candidate) <= 100:
                 line = f"## {candidate}"
+        elif (
+            not line.startswith((" ", "\t", "#", "-", "!", "|"))
+            and re.match(r"^(ขั้นตอน|การสร้าง|การแก้ไข|การยกเลิก)", stripped)
+            and len(stripped) <= 100
+        ):
+            line = f"## {stripped}"
 
         line = re.sub(r"^(\s*)(\d+)\.\s{2,}", r"\1\2. ", line)
         normalized.append(line)
@@ -185,7 +209,11 @@ def normalize_file(path: Path) -> None:
             "",
         ]
     )
-    path.write_text(header + normalize_body(body, title), encoding="utf-8", newline="\n")
+    path.write_text(
+        header + normalize_body(body, title, IMAGE_PREFIX.get(rel, "")),
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def main() -> None:

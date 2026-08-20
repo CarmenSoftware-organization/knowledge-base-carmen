@@ -55,8 +55,6 @@ weight: 4
 
   1. Export/Import คือ การบันทึกข้อมูลจากการนำเข้าข้อมูลจาก Excel File (.csv)
 
-<!-- -->
-
 - Click สัญลักษณ์ “![Closing Balance - รูปที่ 7](./assets/2_5_Closing_Balance_Revised/media/image4.png)” และเลือก “Export” เพื่อส่งออก Template
 
 ![Closing Balance - รูปที่ 8](./assets/2_5_Closing_Balance_Revised/media/image11.png)
