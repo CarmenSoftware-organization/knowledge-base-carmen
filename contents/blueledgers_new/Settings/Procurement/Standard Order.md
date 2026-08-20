@@ -1,18 +1,24 @@
+---
+title: Standard Order
+weight: 3
+published: true
+---
+
 # Standard Order (Template รายการสินค้าสั่งซื้อ Standard Order)
 
 **Configuration** คือ Module ที่ใช้สำหรับตั้งค่าการใช้งานต่างๆ ที่เกี่ยวข้องกับ Module Procurement
 
 **Standard Order** คือ **Function** ในการสร้าง **Template** สำหรับรายการสินค้าประเภท General ที่มีการสั่งซื้อบ่อย ๆ เพื่อช่วยลดเวลาในการเลือกสินค้าตอนสร้าง **PR**
 
-สามารถเข้าใช้งานโดย **Click “**<img src="media/image1.png" style="width:0.20344in;height:0.155in" />**”** เพื่อเข้าสู่หน้าต่างตั้งค่า จากนั้นเลือก **“**Standard Order**”**
+สามารถเข้าใช้งานโดย **Click “**<img src="Standard_Order/media/image1.png" style="width:0.20344in;height:0.155in" />**”** เพื่อเข้าสู่หน้าต่างตั้งค่า จากนั้นเลือก **“**Standard Order**”**
 
-<img src="media/image2.png" style="width:6.76806in;height:1.41667in" />
+<img src="Standard_Order/media/image2.png" style="width:6.76806in;height:1.41667in" />
 
 1.  ขั้นตอนการสร้าง Standard Order Template
 
     1.  Click “Create” เพื่อสร้าง Template
 
-<img src="media/image3.png" style="width:6.76806in;height:1.78194in" />
+<img src="Standard_Order/media/image3.png" style="width:6.76806in;height:1.78194in" />
 
 2.  “Store Name” เพื่อเลือก Store/Location
 
@@ -24,11 +30,11 @@
 
 6.  **Click “**ลูกศร” เพื่อเลือกรายการสินค้าสำหรับสร้าง **Template** เสร็จแล้ว **Click “Select”**
 
-<img src="media/image4.png" style="width:2.83719in;height:3.09074in" />
+<img src="Standard_Order/media/image4.png" style="width:2.83719in;height:3.09074in" />
 
 7.  Click “Save” เพื่อ บันทึก หรือ “Back” เพื่อ ย้อนกลับ
 
-<img src="media/image5.png" style="width:6.76806in;height:3.48611in" />
+<img src="Standard_Order/media/image5.png" style="width:6.76806in;height:3.48611in" />
 
 2.  Function อื่น ๆ ของ Standard Order หลังจากกด **“Save”**
 
@@ -38,11 +44,11 @@
 
 - **Click** ที่เอกสารที่ต้องการแก้ไข จากนั้น **Click “Edit”**
 
-<img src="media/image6.png" style="width:6.76806in;height:0.80833in" />
+<img src="Standard_Order/media/image6.png" style="width:6.76806in;height:0.80833in" />
 
 3.  การ ค้นหา และ View Standard Order
 
-<img src="media/image7.png" style="width:6.76806in;height:1.57222in" />
+<img src="Standard_Order/media/image7.png" style="width:6.76806in;height:1.57222in" />
 
 2.  
 

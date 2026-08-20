@@ -1,4 +1,10 @@
-**Role**
+---
+title: Role
+weight: 2
+published: true
+---
+
+# Role
 
 **Role** คือ การกำหนดสิทธิ์การเข้าใช้งานระบบ โดยมี Permissions ดังนี้
 
@@ -8,10 +14,10 @@
 
 - Delete กำหนดให้สามารถสร้างเอกสาร แก้ไขเอกสาร และลบเอกสารได้
 
-สามารถเข้าใช้งานโดย Click “<img src="assets/media/image4.png"
+สามารถเข้าใช้งานโดย Click “<img src="Role/assets/media/image4.png"
 style="width:0.20344in;height:0.155in" />” เพื่อเข้าสู่หน้าต่างตั้งค่า
 
-<img src="assets/media/image3.png"
+<img src="Role/assets/media/image3.png"
 style="width:6.76806in;height:2.08403in" />
 
 1.  **ขั้นตอนการสร้าง Role**
@@ -22,13 +28,13 @@ style="width:6.76806in;height:2.08403in" />
 
     3.  Click “Create” เพื่อบันทึก Role
 
-<img src="assets/media/image2.png"
+<img src="Role/assets/media/image2.png"
 style="width:6.76806in;height:1.27986in" />
 
 4.  Click “Edit” เพื่อแก้ไขการกำหนด Role
 
 5.  Click สัญลักษณ์
-    “<img src="assets/media/image1.png" style="width:0.20005in" />”
+    “<img src="Role/assets/media/image1.png" style="width:0.20005in" />”
     เพื่อเปิดใช้งานระบบ ประกอบด้วย
 
     - Market List คือ ใบขอซื้อประเภทรายการของสด
@@ -37,7 +43,7 @@ style="width:6.76806in;height:1.27986in" />
 
     - Asset คือ ใบขอซื้อประเภทสินทรัพย์
 
-6.  ระบุสิทธิ์โดย Click “<img src="assets/media/image6.png"
+6.  ระบุสิทธิ์โดย Click “<img src="Role/assets/media/image6.png"
     style="width:0.13605in;height:0.13605in" />”
     เพื่อเพิ่มสิทธิ์การมองเห็นและการใช้งาน ซึ่งความหมายของการกำหนดสิทธิ์ ดังนี้
 
@@ -49,5 +55,5 @@ style="width:6.76806in;height:1.27986in" />
 
 7.  Click “Save” เพื่อบันทึกข้อมูล
 
-<img src="assets/media/image5.png"
+<img src="Role/assets/media/image5.png"
 style="width:6.76806in;height:3.53819in" />
