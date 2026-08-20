@@ -363,6 +363,9 @@ function enrichCategories(raw: SidebarCategory[]): SidebarCategoryWithName[] {
       if (aOrder !== undefined || bOrder !== undefined) {
         return (aOrder ?? Number.MAX_SAFE_INTEGER) - (bOrder ?? Number.MAX_SAFE_INTEGER);
       }
+      if ((a.weight ?? 9999) !== (b.weight ?? 9999)) {
+        return (a.weight ?? 9999) - (b.weight ?? 9999);
+      }
       return a.name.localeCompare(b.name);
     });
 }
