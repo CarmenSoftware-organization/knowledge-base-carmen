@@ -150,10 +150,16 @@ jobs:
 
           for bu in ${{ steps.detect.outputs.active_bus }}; do
             echo "Provisioning BU: ${bu}"
+            bu_name="${bu^^}"
+            bu_description="Auto provisioned by GitHub Actions"
+            if [[ "${bu}" == "blueledgers_new" ]]; then
+              bu_name="BlueLedgers New"
+              bu_description="Wiki / KB documents for BlueLedgers New"
+            fi
             curl -sS -f -X POST "${API_BASE}/api/business-units/provision" \
               -H "X-Admin-Key: ${ADMIN_KEY}" \
               -H "Content-Type: application/json" \
-              --data "{\"slug\":\"${bu}\",\"name\":\"${bu^^}\",\"description\":\"Auto provisioned by GitHub Actions\"}"
+              --data "{\"slug\":\"${bu}\",\"name\":\"${bu_name}\",\"description\":\"${bu_description}\"}"
             echo
           done
 
