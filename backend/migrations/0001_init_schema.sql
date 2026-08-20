@@ -30,7 +30,8 @@ CREATE INDEX IF NOT EXISTS idx_business_units_deleted_at ON public.business_unit
 
 INSERT INTO public.business_units (name, slug, description)
 VALUES ('Carmen Cloud', 'carmen', 'System for Carmen Cloud documents and Wiki'),
-       ('Blueledgers', 'blueledgers', 'Wiki / KB documents for Blueledgers')
+       ('Blueledgers', 'blueledgers', 'Wiki / KB documents for Blueledgers'),
+       ('BlueLedgers New', 'blueledgers_new', 'Wiki / KB documents for BlueLedgers New')
 ON CONFLICT (slug) DO NOTHING;
 
 -- ── Documents + chunks (shared public tables, keyed by bu_id) ────────────────
