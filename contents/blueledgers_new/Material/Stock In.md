@@ -1,10 +1,15 @@
 ---
-title: Stock In
-weight: 2
+title: "Stock In"
+description: "Stock In คือ การปรับปรุงยอดเพิ่มของจำนวนสินค้าและราคาในคลังสินค้า ซึ่งการทำ Stock In สามารถแยกเป็นหลายประเภทตาม “Adjust Type” โดย “Adjust Type” จะช่วยให้สามารถบันทึกบัญชีด้วย"
 published: true
+tags: blueledgers_new,documentation
+editor: markdown
 ---
-
-**Stock In**
+---
+title: "Stock In"
+weight: 2
+---
+# Stock In
 
 **Stock In** คือ การปรับปรุงยอดเพิ่มของจำนวนสินค้าและราคาในคลังสินค้า ซึ่งการทำ Stock In สามารถแยกเป็นหลายประเภทตาม “Adjust Type” โดย “Adjust Type” จะช่วยให้สามารถบันทึกบัญชีด้วย Account code ที่ต่างกันได้ เช่น
 
@@ -12,11 +17,11 @@ published: true
 
 - Adjust หมายถึง การปรับเพิ่ม Stock ในสินค้าคงคลัง
 
-**ขั้นตอนในการทำงานของระบบ Stock In ดังนี้**
+## ขั้นตอนในการทำงานของระบบ Stock In ดังนี้
 
-1.  Click **“**Material**”** จากนั้น Click “Stock In”
+1. Click **“**Material**”** จากนั้น Click “Stock In”
 
-<img src="assets/2_3_Stock_In_Revised/media/image1.png" style="width:6.77222in;height:2.10208in" />
+![Stock In - รูปที่ 1](./assets/2_3_Stock_In_Revised/media/image1.png)
 
 > 2\. Click ปุ่ม “New” เพื่อสร้างรายการเพิ่ม Stock
 
@@ -28,7 +33,7 @@ published: true
 
   - BFO: B/F Opening หมายถึง การบันทึกยกยอดสินค้าคลัง (ทำครั้งเดียวในขั้นตอนการยกยอดสินค้าเข้าระบบคงคลังในระบบ)
 
-<img src="assets/2_3_Stock_In_Revised/media/image2.png" style="width:6.77222in;height:2.25208in" />
+![Stock In - รูปที่ 2](./assets/2_3_Stock_In_Revised/media/image2.png)
 
 - Click “Add” เพื่อเพิ่มรายการสินค้าสำหรับการทำ Stock In
 
@@ -44,7 +49,7 @@ published: true
 
 - Comment ระบุรายละเอียดเพิ่มเติม
 
-<img src="assets/2_3_Stock_In_Revised/media/image3.png" style="width:6.77222in;height:3.48889in" />
+![Stock In - รูปที่ 3](./assets/2_3_Stock_In_Revised/media/image3.png)
 
 - On Hand จำนวนสินค้าเหลือใน Location
 
@@ -58,9 +63,9 @@ published: true
 
 - Last Vendor ร้านค้าที่ซื้อสินค้าล่าสุด (ยึดจาก Receiving Committed)
 
-3.  Click “Save” เพื่อบันทึกรายการสินค้าไปยังหน้า Stock In
+3. Click “Save” เพื่อบันทึกรายการสินค้าไปยังหน้า Stock In
 
-4.  Click “Cancel” เพื่อยกเลิกการบันทึกรายการสินค้า
+4. Click “Cancel” เพื่อยกเลิกการบันทึกรายการสินค้า
 
 > หมายเหตุ การเพิ่มรายการที่ 2 ใน Stock In สามารถ Click “Add” อีกครั้ง
 
@@ -72,7 +77,7 @@ Main Function คือ ฟังก์ชั่นการใช้งาน�
 
 - Void Click “Void” หากต้องการยกเลิกเอกสาร และในกรณี Void เอกสารระบบจะให้ยืนยันการ Void พร้อมให้ระบุเหตุผล
 
-<img src="assets/2_3_Stock_In_Revised/media/image4.png" style="width:6.77222in;height:0.60556in" />
+![Stock In - รูปที่ 4](./assets/2_3_Stock_In_Revised/media/image4.png)
 
 Other Function เพิ่มเติมอื่นๆ
 
@@ -84,4 +89,4 @@ Other Function เพิ่มเติมอื่นๆ
 
 - Comment Click “สัญลักษณ์ข้อความ” เพื่ออ่านข้อความที่มีการระบุจาก Item
 
-<img src="assets/2_3_Stock_In_Revised/media/image5.png" style="width:6.77222in;height:3.53125in" />
+![Stock In - รูปที่ 5](./assets/2_3_Stock_In_Revised/media/image5.png)

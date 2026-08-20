@@ -1,28 +1,33 @@
 ---
-title: Stock Out
-weight: 3
+title: "Stock Out"
+description: "Stock Out คือ การปรับปรุงเพื่อลดยอดจำนวนสินค้าในคลังสินค้า ซึ่งการทำ Stock Out สามารถแยกเป็นหลายประเภทตาม “Adjust Type” โดย “Adjust Type” จะช่วยให้สามารถบันทึกบัญชีด้วย Account"
 published: true
+tags: blueledgers_new,documentation
+editor: markdown
 ---
-
-**Stock Out**
+---
+title: "Stock Out"
+weight: 3
+---
+# Stock Out
 
 **Stock Out** คือ การปรับปรุงเพื่อลดยอดจำนวนสินค้าในคลังสินค้า ซึ่งการทำ Stock Out สามารถแยกเป็นหลายประเภทตาม “Adjust Type” โดย “Adjust Type” จะช่วยให้สามารถบันทึกบัญชีด้วย Account code ที่ต่างกันได้ เช่น
 
-1.  Adjust Out คือ การปรับปรุงเพื่อลดยอดในคลังสินค้า
+1. Adjust Out คือ การปรับปรุงเพื่อลดยอดในคลังสินค้า
 
-2.  Sale คือ การตัดยอดขายโดยการ Manual Key โดยตรงในระบบ Inventory
+2. Sale คือ การตัดยอดขายโดยการ Manual Key โดยตรงในระบบ Inventory
 
-3.  Lost คือ การปรับปรุงเพื่อลดยอดlbo8hkใน Stock ในกรณีมีสินค้าสูญหาย
+3. Lost คือ การปรับปรุงเพื่อลดยอดlbo8hkใน Stock ในกรณีมีสินค้าสูญหาย
 
-4.  Breakage / Damage คือ การปรับปรุงเพื่อลดยอดสินค้าใน Stock ในกรณีสินค้าแตกหักเสียหาย
+4. Breakage / Damage คือ การปรับปรุงเพื่อลดยอดสินค้าใน Stock ในกรณีสินค้าแตกหักเสียหาย
 
-5.  Spoiled / Expired คือ การปรับปรุงเพื่อลดยอดสินค้าใน Stock ในกรณีสินค้าหมดอายุ หรือทำลายสินค้า
+5. Spoiled / Expired คือ การปรับปรุงเพื่อลดยอดสินค้าใน Stock ในกรณีสินค้าหมดอายุ หรือทำลายสินค้า
 
-**A. ขั้นตอนในการทำงานของระบบ Stock Out ดังนี้**
+## A. ขั้นตอนในการทำงานของระบบ Stock Out ดังนี้
 
-1.  Click **“**Material**”** จากนั้น Click “Stock Out”
+1. Click **“**Material**”** จากนั้น Click “Stock Out”
 
-<img src="assets/2_4_Stock_Out_Revised/media/image1.png" style="width:6.77222in;height:2.24306in" />
+![Stock Out - รูปที่ 1](./assets/2_4_Stock_Out_Revised/media/image1.png)
 
 > 2\. Click ปุ่ม “New” เพื่อสร้างรายการลด Stock
 
@@ -32,7 +37,7 @@ published: true
 
 - Description ระบุรายละเอียดการปรับปรุง Stock
 
-<img src="assets/2_4_Stock_Out_Revised/media/image2.png" style="width:6.77222in;height:1.96181in" />
+![Stock Out - รูปที่ 2](./assets/2_4_Stock_Out_Revised/media/image2.png)
 
 > 3\. Click “Add” เพื่อเพิ่มรายการสินค้าสำหรับการทำ Stock Stock
 
@@ -46,7 +51,7 @@ published: true
 
 - Comment ระบุรายละเอียดเพิ่มเติม
 
-<img src="assets/2_4_Stock_Out_Revised/media/image3.png" style="width:6.77222in;height:3.48889in" />
+![Stock Out - รูปที่ 3](./assets/2_4_Stock_Out_Revised/media/image3.png)
 
 - On Hand จำนวนสินค้าเหลือใน Location
 
@@ -60,9 +65,9 @@ published: true
 
 - Last Vendor ร้านค้าที่ซื้อสินค้าล่าสุด (ยึดจาก Receiving Committed)
 
-3.  Click “Save” เพื่อบันทึกรายการสินค้าไปยังหน้า Stock In
+3. Click “Save” เพื่อบันทึกรายการสินค้าไปยังหน้า Stock In
 
-4.  Click “Cancel” เพื่อยกเลิกการบันทึกรายการสินค้า
+4. Click “Cancel” เพื่อยกเลิกการบันทึกรายการสินค้า
 
 > หมายเหตุ การเพิ่มรายการที่ 2 ใน Stock In สามารถ Click “Add” อีกครั้ง
 
@@ -74,7 +79,7 @@ Main Function คือ ฟังก์ชั่นการใช้งาน�
 
 - Void Click “Void” หากต้องการยกเลิกเอกสาร และในกรณี Void เอกสารระบบจะให้ยืนยันการ Void พร้อมให้ระบุเหตุผล
 
-<img src="assets/2_4_Stock_Out_Revised/media/image4.png" style="width:6.77222in;height:0.58542in" />
+![Stock Out - รูปที่ 4](./assets/2_4_Stock_Out_Revised/media/image4.png)
 
 Other Function เพิ่มเติมอื่นๆ
 
@@ -86,4 +91,4 @@ Other Function เพิ่มเติมอื่นๆ
 
 - Comment Click “สัญลักษณ์ข้อความ” เพื่ออ่านข้อความที่มีการระบุจาก Item
 
-<img src="assets/2_4_Stock_Out_Revised/media/image5.png" style="width:6.77222in;height:3.54028in" />
+![Stock Out - รูปที่ 5](./assets/2_4_Stock_Out_Revised/media/image5.png)

@@ -1,39 +1,50 @@
-**Standard Requisition**
+---
+title: "Standard Requisition"
+description: "Standard Requisition คือ การสร้างเอกสารแม่แบบสำหรับการสร้าง Store Request"
+published: true
+tags: blueledgers_new,documentation
+editor: markdown
+---
+---
+title: "Standard Requisition"
+weight: 2
+---
+# Standard Requisition
 
 **Standard Requisition** คือ การสร้างเอกสารแม่แบบสำหรับการสร้าง Store Request
 
-สามารถเข้าใช้งานโดย Click “<img src="assets/standard_requisition/media/image1.png" style="width:0.20344in;height:0.155in" />” เพื่อเข้าสู่หน้าต่างตั้งค่า
+สามารถเข้าใช้งานโดย Click “![Standard Requisition - รูปที่ 1](./assets/standard_requisition/media/image1.png)” เพื่อเข้าสู่หน้าต่างตั้งค่า
 
-<img src="assets/standard_requisition/media/image2.png" style="width:6.76806in;height:2.13333in" />
+![Standard Requisition - รูปที่ 2](./assets/standard_requisition/media/image2.png)
 
-1.  **ขั้นตอนการสร้างเอกสาร Standard Requisition**
+## 1. ขั้นตอนการสร้างเอกสาร Standard Requisition
 
-    1.  Click “Standard Requisition”
+1. Click “Standard Requisition”
 
-    2.  Click “New” เพื่อสร้างเอกสาร
+2. Click “New” เพื่อสร้างเอกสาร
 
-    3.  ระบุรายละเอียดข้อมูลสำหรับสร้าง Standard Requisition Template
+3. ระบุรายละเอียดข้อมูลสำหรับสร้าง Standard Requisition Template
 
-    - Location เลือก Location ของผู้ขอเบิก
+- Location เลือก Location ของผู้ขอเบิก
 
-    - Description ระบุชื่อ Template
+- Description ระบุชื่อ Template
 
-<img src="assets/standard_requisition/media/image3.png" style="width:6.76806in;height:1.41181in" />
+![Standard Requisition - รูปที่ 3](./assets/standard_requisition/media/image3.png)
 
-Note: ในกรณีหยุดใช้งาน Adjust Type แล้ว ให้ทำการ Click สัญลักษณ์ “<img src="assets/standard_requisition/media/image4.png" style="width:0.20812in;height:0.13244in" />” เพื่อ Inactive
+Note: ในกรณีหยุดใช้งาน Adjust Type แล้ว ให้ทำการ Click สัญลักษณ์ “![Standard Requisition - รูปที่ 4](./assets/standard_requisition/media/image4.png)” เพื่อ Inactive
 
-4.  Click “Assign Product” เพื่อเลือกรายการสินค้า
+4. Click “Assign Product” เพื่อเลือกรายการสินค้า
 
-5.  วิธีการเลือกสินค้าเพื่อให้แสดงใน Template
+5. วิธีการเลือกสินค้าเพื่อให้แสดงใน Template
 
-    - Click สัญลักษณ์ Drop Down List “ <img src="assets/standard_requisition/media/image5.png" style="width:0.13335in;height:0.10834in" /> ” เพื่อค้นหารายการสินค้าที่ต้องการ
+- Click สัญลักษณ์ Drop Down List “ ![Standard Requisition - รูปที่ 5](./assets/standard_requisition/media/image5.png) ” เพื่อค้นหารายการสินค้าที่ต้องการ
 
-    - Click “<img src="assets/standard_requisition/media/image6.png" style="width:0.14168in;height:0.14168in" />” รายการสินค้าที่ต้องการ
+- Click “![Standard Requisition - รูปที่ 6](./assets/standard_requisition/media/image6.png)” รายการสินค้าที่ต้องการ
 
-6.  Click “Select” เพื่อบันทึกรายการสินค้า
+6. Click “Select” เพื่อบันทึกรายการสินค้า
 
-<img src="assets/standard_requisition/media/image7.png" style="width:3.89888in;height:4.56514in" />
+![Standard Requisition - รูปที่ 7](./assets/standard_requisition/media/image7.png)
 
-7.  Click “Save” เพื่อบันทึก Template หรือ Click “Cancel” เพื่อยกเลิกการสร้างเอกสาร
+7. Click “Save” เพื่อบันทึก Template หรือ Click “Cancel” เพื่อยกเลิกการสร้างเอกสาร
 
-<img src="assets/standard_requisition/media/image8.png" style="width:2.16615in;height:0.36298in" />
+![Standard Requisition - รูปที่ 8](./assets/standard_requisition/media/image8.png)

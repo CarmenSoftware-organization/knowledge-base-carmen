@@ -1,30 +1,32 @@
 ---
-title: Department
-weight: 3
+title: "Department"
+description: "Department คือ แผนกที่ใช้ในการกำหนด Workflow เพื่อจัดการเกี่ยวกับสิทธิ์การอนุมัติ Purchase Request และ Purchase Order"
 published: true
+tags: blueledgers_new,documentation
+editor: markdown
 ---
-
+---
+title: "Department"
+weight: 3
+---
 # Department
 
 **Department** คือ แผนกที่ใช้ในการกำหนด Workflow เพื่อจัดการเกี่ยวกับสิทธิ์การอนุมัติ
 Purchase Request และ Purchase Order
 
-สามารถเข้าใช้งานโดย Click “<img src="Department/assets/media/image1.png"
-style="width:0.20344in;height:0.155in" />” เพื่อเข้าสู่หน้าต่างตั้งค่า
+สามารถเข้าใช้งานโดย Click “![Department - รูปที่ 1](./Department/assets/media/image1.png)” เพื่อเข้าสู่หน้าต่างตั้งค่า
 
-<img src="Department/assets/media/image2.png"
-style="width:6.76806in;height:2.08403in" />
+![Department - รูปที่ 2](./Department/assets/media/image2.png)
 
-1.  **ขั้นตอนการสร้าง Department**
+## 1. ขั้นตอนการสร้าง Department
 
-    1.  Click “Department” เพื่อเข้าสู่หน้าต่างการสร้าง Dept.
+1. Click “Department” เพื่อเข้าสู่หน้าต่างการสร้าง Dept.
 
-    2.  Click “New” เพื่อสร้าง Dept.
+2. Click “New” เพื่อสร้าง Dept.
 
-<img src="Department/assets/media/image3.png"
-style="width:6.76806in;height:1.99236in" />
+![Department - รูปที่ 3](./Department/assets/media/image3.png)
 
-3.  ระบุรายละเอียดข้อมูลสำหรับสร้าง Standard Requisition Template
+3. ระบุรายละเอียดข้อมูลสำหรับสร้าง Standard Requisition Template
 
 - Code ระบุรหัสแผนก
 
@@ -34,16 +36,13 @@ style="width:6.76806in;height:1.99236in" />
   (ตามลูกศร)
 
 Note: ในกรณีหยุดใช้งาน Adjust Type แล้ว ให้ทำการ Click สัญลักษณ์
-“<img src="Department/assets/media/image4.png"
-style="width:0.20812in;height:0.13244in" />” เพื่อ Inactive
+“![Department - รูปที่ 4](./Department/assets/media/image4.png)” เพื่อ Inactive
 
-4.  Click “Crate” เพื่อสร้าง Department
+4. Click “Crate” เพื่อสร้าง Department
 
-<img src="Department/assets/media/image5.png"
-style="width:2.73875in;height:2.53835in" />
+![Department - รูปที่ 5](./Department/assets/media/image5.png)
 
 หลังจาก Create แล้ว ในส่วนของ User ระดับ HOD จะแสดงในแต่ละแผนก
 เพื่อแสดงให้ทราบว่า User ดังต่อไปนี้มีสิทธิ์อนุมัติ PR และ PO ในแต่ละแผนก
 
-<img src="Department/assets/media/image6.png"
-style="width:6.76806in;height:1.99236in" />
+![Department - รูปที่ 6](./Department/assets/media/image6.png)

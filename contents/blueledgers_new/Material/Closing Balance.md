@@ -1,26 +1,31 @@
 ---
-title: Closing Balance
-weight: 4
+title: "Closing Balance"
+description: "Closing Balance (EOP) คือ การตรวจนับสินค้าคงเหลือเพื่อปิดระบบสินค้าคงคลัง (ใช้กับ Location ประเภท Enter Count Stock) โดยมีขั้นตอนในการทำงานดังต่อไปนี้"
 published: true
+tags: blueledgers_new,documentation
+editor: markdown
 ---
-
-**Closing Balance**
+---
+title: "Closing Balance"
+weight: 4
+---
+# Closing Balance
 
 **Closing Balance** (EOP) คือ การตรวจนับสินค้าคงเหลือเพื่อปิดระบบสินค้าคงคลัง (ใช้กับ Location ประเภท Enter Count Stock) โดยมีขั้นตอนในการทำงานดังต่อไปนี้
 
-1.  Click **“**Material**”** และเลือก “Closing Balance”
+1. Click **“**Material**”** และเลือก “Closing Balance”
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image2.png" style="width:6.77222in;height:2.29375in" />
+![Closing Balance - รูปที่ 1](./assets/2_5_Closing_Balance_Revised/media/image2.png)
 
-1.  Click ปุ่ม Create เพื่อสร้างเอกสารตรวจนับ (Physical count)
+1. Click ปุ่ม Create เพื่อสร้างเอกสารตรวจนับ (Physical count)
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image6.png" style="width:6.77222in;height:1.98472in" />
+![Closing Balance - รูปที่ 2](./assets/2_5_Closing_Balance_Revised/media/image6.png)
 
-2.  Click สัญลักษณ์ “<img src="assets/2_5_Closing_Balance_Revised/media/image9.png" style="width:0.17371in;height:0.16957in" />” เพื่อสร้างเอกสารตรวจนับ
+2. Click สัญลักษณ์ “![Closing Balance - รูปที่ 3](./assets/2_5_Closing_Balance_Revised/media/image9.png)” เพื่อสร้างเอกสารตรวจนับ
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image13.png" style="width:2.47002in;height:2.81424in" />
+![Closing Balance - รูปที่ 4](./assets/2_5_Closing_Balance_Revised/media/image13.png)
 
-3.  ระบุข้อมูลเอกสารตรวจนับ
+3. ระบุข้อมูลเอกสารตรวจนับ
 
 - Date วันที่ทำเอกสาร
 
@@ -28,17 +33,17 @@ published: true
 
 - Remark ระบุรายละเอียดงาน หรือระบุเงื่อนไขการจัดทำเอกสาร
 
-  1.  Click “Save & Print” เพื่อบันทึกข้อมูลและ Print เอกสารตรวจนับ
+  1. Click “Save & Print” เพื่อบันทึกข้อมูลและ Print เอกสารตรวจนับ
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image8.png" style="width:6.77222in;height:3.53819in" />
+![Closing Balance - รูปที่ 5](./assets/2_5_Closing_Balance_Revised/media/image8.png)
 
-**ระบบแสดง Print Pre-View**
+## ระบบแสดง Print Pre-View
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image1.png" style="width:6.77188in;height:2.73611in" />
+![Closing Balance - รูปที่ 6](./assets/2_5_Closing_Balance_Revised/media/image1.png)
 
-2.  ขั้นตอนการบันทึกข้อมูลการตรวจนับสินค้า โดยสามารถทำได้ 2 วิธี คือ
+2. ขั้นตอนการบันทึกข้อมูลการตรวจนับสินค้า โดยสามารถทำได้ 2 วิธี คือ
 
-    1.  Manual Fill In คือ การบันทึกข้อมูลด้วยตนเอง
+1. Manual Fill In คือ การบันทึกข้อมูลด้วยตนเอง
 
 - Click “เอกสาร” เพื่อเข้าสู่ขั้นตอนการบันทึกยอดสินค้าคงเหลือ
 
@@ -48,36 +53,36 @@ published: true
 
 - Fill In กรอกตัวเลขสินค้าคงเหลือใสรายการสินค้าที่มียอดคงเหลือ
 
-  1.  Export/Import คือ การบันทึกข้อมูลจากการนำเข้าข้อมูลจาก Excel File (.csv)
+  1. Export/Import คือ การบันทึกข้อมูลจากการนำเข้าข้อมูลจาก Excel File (.csv)
 
 <!-- -->
 
-- Click สัญลักษณ์ “<img src="assets/2_5_Closing_Balance_Revised/media/image4.png" style="height:0.22885in" />” และเลือก “Export” เพื่อส่งออก Template
+- Click สัญลักษณ์ “![Closing Balance - รูปที่ 7](./assets/2_5_Closing_Balance_Revised/media/image4.png)” และเลือก “Export” เพื่อส่งออก Template
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image11.png" style="width:6.77222in;height:1.67708in" />
+![Closing Balance - รูปที่ 8](./assets/2_5_Closing_Balance_Revised/media/image11.png)
 
 - Click “Save” เพื่อ Download เอกสารไปยัง Drive (Folder Download)
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image14.png" style="width:2.20249in;height:1.77439in" />
+![Closing Balance - รูปที่ 9](./assets/2_5_Closing_Balance_Revised/media/image14.png)
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image7.png" style="width:2.25066in;height:0.41252in" />
+![Closing Balance - รูปที่ 10](./assets/2_5_Closing_Balance_Revised/media/image7.png)
 
 - ระบุจำนวนสินค้าคงเหลือใน Template
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image12.png" style="width:6.77222in;height:1.42917in" />
+![Closing Balance - รูปที่ 11](./assets/2_5_Closing_Balance_Revised/media/image12.png)
 
 - Click “Import” เพื่อนำเข้าข้อมูลสินค้าคงเหลือจาก File Export (.csv)
 
 - Click “Choose File” เลือกเอกสารที่บันทึกสินค้าคงเหลือไว้
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image3.png" style="width:2.35253in;height:1.28265in" />
+![Closing Balance - รูปที่ 12](./assets/2_5_Closing_Balance_Revised/media/image3.png)
 
 - ระบบแสดงข้อมูลการ Import เพื่อให้ตรวจสอบความถูกต้อง จากนั้น Click “Save” เพื่อบันทึกเอกสาร
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image5.png" style="width:3.7165in;height:3.29514in" />
+![Closing Balance - รูปที่ 13](./assets/2_5_Closing_Balance_Revised/media/image5.png)
 
 - ระบบยืนยันการบันทึกเอกสาร Click “OK”
 
-<img src="assets/2_5_Closing_Balance_Revised/media/image10.png" style="width:2.30466in;height:0.73977in" />
+![Closing Balance - รูปที่ 14](./assets/2_5_Closing_Balance_Revised/media/image10.png)
 
-3.  เมื่อตรวจสอบเอกสารครบถ้วนแล้วให้ Click คำสั่ง “Commit” เพื่ออนุมัติเอกสาร
+3. เมื่อตรวจสอบเอกสารครบถ้วนแล้วให้ Click คำสั่ง “Commit” เพื่ออนุมัติเอกสาร

@@ -1,20 +1,33 @@
-**Product (รายการสินค้า)**
+---
+title: "Product"
+description: "Product (รายการสินค้า)"
+published: true
+tags: blueledgers_new,documentation
+editor: markdown
+---
+---
+title: "Product"
+weight: 1
+---
+# Product
+
+## Product (รายการสินค้า)
 
 **Product** คือ Function ในการสร้างรหัสสินค้าและชื่อสินค้าเพื่อใช้งานในระบบ Blueledgers
 
-<img src="assets/product/media/image1.png" style="width:0.26667in;height:0.24167in" />สามารถเข้าใช้งานโดย **Click “ “** เครื่องหมายตั้งค่า
+![Product - รูปที่ 1](./assets/product/media/image1.png)สามารถเข้าใช้งานโดย **Click “ “** เครื่องหมายตั้งค่า
 
-<img src="assets/product/media/image2.png" style="width:6.5in;height:2.45347in" />
+![Product - รูปที่ 2](./assets/product/media/image2.png)
 
-1.  ขั้นตอนการสร้าง Product
+1. ขั้นตอนการสร้าง Product
 
 - Click “Product” เพื่อสร้างรายการสินค้า
 
-<img src="assets/product/media/image3.png" style="width:6.5in;height:2.01736in" />
+![Product - รูปที่ 3](./assets/product/media/image3.png)
 
 - เข้าสู่หน้าหลักสำหรับสร้างรายการสินค้า จากนั้น Click “**New**”
 
-<img src="assets/product/media/image4.png" style="width:6.5in;height:0.87778in" />
+![Product - รูปที่ 4](./assets/product/media/image4.png)
 
 การกรอกข้อมูลของ Product มีดังนี้
 
@@ -50,7 +63,7 @@
 
 - “Price Deviation” กำหนด % ที่อนุญาตให้รับสินค้าด้วยราคามากกว่า PO ได้
 
-<img src="assets/product/media/image5.png" style="width:2.4771in;height:4.43247in" />
+![Product - รูปที่ 5](./assets/product/media/image5.png)
 
 - \*“Order Unit” หน่วยในการสั่งซื้อสินค้า สามารถกำหนดได้มากกว่า 1 หน่วย
 
@@ -68,7 +81,7 @@
 
   - Click “Delete” เพื่อลบ Order Unit
 
-<img src="assets/product/media/image6.png" style="width:2.87167in;height:1.20757in" />
+![Product - รูปที่ 6](./assets/product/media/image6.png)
 
 - “Recipe Item” ให้ใส่เครื่องหมายถูกหากต้องการให้สินค้านี้สามารถใช้ใน Recipe ได้
 
@@ -88,7 +101,7 @@
 
   - Click “Delete” เพื่อลบ Recipe Unit
 
-<img src="assets/product/media/image7.png" style="width:3.13904in;height:1.22342in" />
+![Product - รูปที่ 7](./assets/product/media/image7.png)
 
 - การบันทึกสินค้า
 
@@ -96,13 +109,13 @@
 
   - Click “Cancel” เพื่อยกเลิก
 
-2.  การ Assign Store/Location ให้กับ Product สามารถทำตามขั้นตอนดังนี้
+2. การ Assign Store/Location ให้กับ Product สามารถทำตามขั้นตอนดังนี้
 
-    1.  หลังจาก Save “Product” เสร็จแล้ว ระบบจะแสดงกล่อง Store/Location
+1. หลังจาก Save “Product” เสร็จแล้ว ระบบจะแสดงกล่อง Store/Location
 
-    2.  Click “Assign” เพื่อเลือก Location ที่สามารถใช้งาน Product ได้
+2. Click “Assign” เพื่อเลือก Location ที่สามารถใช้งาน Product ได้
 
-    3.  ระบบจะแสดงกล่อง “Store/Location” ให้เลือก สามารถเลือกได้มากกว่า 1 location และสามารถกำหนด “Min” “Max” แตกต่างกันไปตามความเหมาะสมการใช้งาน
+3. ระบบจะแสดงกล่อง “Store/Location” ให้เลือก สามารถเลือกได้มากกว่า 1 location และสามารถกำหนด “Min” “Max” แตกต่างกันไปตามความเหมาะสมการใช้งาน
 
 - Click เครื่องหมายถูก ที่ Store/Location ที่ต้องการ
 
@@ -110,42 +123,42 @@
 
 - “Max” กำหนดจำนวนสินค้ามากที่สุดที่สามารถ Stock สินค้าได้
 
-<img src="assets/product/media/image8.png" style="width:6.5in;height:3.74931in" />
+![Product - รูปที่ 8](./assets/product/media/image8.png)
 
-1.  การบันทึก Store/Location
+1. การบันทึก Store/Location
 
 - Click “Save” เพื่อ บันทึก
 
 - Click “Cancel” เพื่อ ยกเลิก
 
-3.  Function อื่น ๆ ของ “Product”
+3. Function อื่น ๆ ของ “Product”
 
-    1.  “Create” สร้างสินค้าใหม่
+1. “Create” สร้างสินค้าใหม่
 
-<img src="assets/product/media/image9.png" style="width:6.5in;height:0.78542in" />
+![Product - รูปที่ 9](./assets/product/media/image9.png)
 
-2.  “Edit” แก้ไขข้อมูลสินค้า
+2. “Edit” แก้ไขข้อมูลสินค้า
 
-<img src="assets/product/media/image10.png" style="width:6.5in;height:1.51458in" />
+![Product - รูปที่ 10](./assets/product/media/image10.png)
 
-3.  “Delete” ลบสินค้า (ใช้ได้ในกรณีที่สินค้ายังไม่ได้ใช้เท่านั้น)
+3. “Delete” ลบสินค้า (ใช้ได้ในกรณีที่สินค้ายังไม่ได้ใช้เท่านั้น)
 
-4.  “Print” พิมพ์หน้าจอสินค้า
+4. “Print” พิมพ์หน้าจอสินค้า
 
-5.  “Back” กลับไปหน้าจอ Product List
+5. “Back” กลับไปหน้าจอ Product List
 
-<img src="assets/product/media/image11.png" style="width:6.5in;height:1.50278in" />
+![Product - รูปที่ 11](./assets/product/media/image11.png)
 
-6.  “Last Purchase” แสดงประวัติ PO และการรับสินค้า (Receiving)
+6. “Last Purchase” แสดงประวัติ PO และการรับสินค้า (Receiving)
 
 <!-- -->
 
-4.  วิธี Inactive Product
+4. วิธี Inactive Product
 
-    1.  หลังจาก Click สัญลักษณ์ “จุด 3 จุด” ระบบจะแสดงปุ่ม “Set to inactive”
+1. หลังจาก Click สัญลักษณ์ “จุด 3 จุด” ระบบจะแสดงปุ่ม “Set to inactive”
 
-    2.  Click “Set to inactive” เพื่อเปลี่ยน status
+2. Click “Set to inactive” เพื่อเปลี่ยน status
 
-    3.  Click “Active” เพื่อคืนสถานะการใช้งาน
+3. Click “Active” เพื่อคืนสถานะการใช้งาน
 
-<img src="assets/product/media/image12.png" style="width:6.5in;height:1.48611in" />
+![Product - รูปที่ 12](./assets/product/media/image12.png)

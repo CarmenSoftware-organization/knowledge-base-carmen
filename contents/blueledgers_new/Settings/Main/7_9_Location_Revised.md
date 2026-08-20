@@ -1,14 +1,27 @@
-**Location (**คลังสินค้า/สถานที่**)**
+---
+title: "Location"
+description: "Location (คลังสินค้า/สถานที่)"
+published: true
+tags: blueledgers_new,documentation
+editor: markdown
+---
+---
+title: "Location"
+weight: 5
+---
+# Location
+
+## Location (คลังสินค้า/สถานที่)
 
 **Location** คือ Function ในการสร้าง คลังสินค้า/สถานที่ เพื่อ สั่งซื้อ**,** รับ**,** เบิก**,** โอน หรือ ตรวจนับ
 
 รายการสินค้าต่างๆ
 
-สามารถเข้าใช้งานโดย **Click “**<img src="assets/location/media/image6.png" style="width:0.20344in;height:0.155in" />**”** เพื่อเข้าสู่หน้าต่างตั้งค่า
+สามารถเข้าใช้งานโดย **Click “**![Location - รูปที่ 1](./assets/location/media/image6.png)**”** เพื่อเข้าสู่หน้าต่างตั้งค่า
 
 และ Click “Location”
 
-<img src="assets/location/media/image11.png" style="width:6.77406in;height:2.31977in" />
+![Location - รูปที่ 2](./assets/location/media/image11.png)
 
 > เมื่อเข้าสู่หน้าต่างการสร้าง Location ระบบจะแสดง Tab View อยู่ 3 Tab View คือ
 
@@ -18,11 +31,11 @@
 
 - In Active คือ แสดงสถานะเอกสารเฉพาะสถานะ In Active
 
-1.  **ขั้นตอนการสร้าง Location**
+## 1. ขั้นตอนการสร้าง Location
 
 - Click **“**Create**”** เพื่อทำการสร้าง Location
 
-<img src="assets/location/media/image8.png" style="width:6.76806in;height:1.89028in" />
+![Location - รูปที่ 3](./assets/location/media/image8.png)
 
 กรอกข้อมูล Location ดังนี้
 
@@ -44,30 +57,30 @@
 
 - Click “Create” เมื่อสร้าง Location หรือ Click “Cancel” เพื่อยกเลิก
 
-<img src="assets/location/media/image4.png" style="width:2.61757in;height:2.94319in" />
+![Location - รูปที่ 4](./assets/location/media/image4.png)
 
 - Click “Manage Products”
 
-<img src="assets/location/media/image5.png" style="width:6.77451in;height:1.40759in" />
+![Location - รูปที่ 5](./assets/location/media/image5.png)
 
 - Click เลือกหมวดสินค้าที่ต้องการจะ Assign Product และหากต้องการเลือกเป็นหมวดย่อยสามารถ Click เลือกที่ Sub category หรือ Item Group ได้
 
-- Click “<img src="assets/location/media/image2.png" style="width:0.12632in;height:0.13234in" />” เพื่อเลือกหมวดสินค้า หรือรายการสินค้าที่ต้องการ (Assign Item)
+- Click “![Location - รูปที่ 6](./assets/location/media/image2.png)” เพื่อเลือกหมวดสินค้า หรือรายการสินค้าที่ต้องการ (Assign Item)
 
 - Click “Save” เพื่อ บันทึก หรือ “Back” เพื่อ ย้อนกลับ
 
-<img src="assets/location/media/image9.png" style="width:3.49672in;height:2.04292in" />
+![Location - รูปที่ 7](./assets/location/media/image9.png)
 
-- Click “Edit” เมื่อต้องการแก้ไข Location Name หรือ Department <img src="assets/location/media/image3.png" style="width:6.76806in;height:2.75625in" />
+- Click “Edit” เมื่อต้องการแก้ไข Location Name หรือ Department ![Location - รูปที่ 8](./assets/location/media/image3.png)
 
-- Click สัญลักษณ์ “<img src="assets/location/media/image1.png" style="height:0.10717in" />” เมื่อต้องการแก้ไข Inactive, Print หรือ Delete
+- Click สัญลักษณ์ “![Location - รูปที่ 9](./assets/location/media/image1.png)” เมื่อต้องการแก้ไข Inactive, Print หรือ Delete
 
-<img src="assets/location/media/image10.png" style="width:0.82628in;height:0.75018in" />
+![Location - รูปที่ 10](./assets/location/media/image10.png)
 
-2.  การ ค้นหา และ View Location
+2. การ ค้นหา และ View Location
 
-    1.  สามารถค้นหา Location ที่ต้องการ โดย พิมพ์ค้นหา ในช่อง Search
+1. สามารถค้นหา Location ที่ต้องการ โดย พิมพ์ค้นหา ในช่อง Search
 
-    2.  การ View Location ทำได้โดยการเลือก Location ที่ต้องการ เพื่อ แสดงรายละเอียดของ Location นั้นๆ
+2. การ View Location ทำได้โดยการเลือก Location ที่ต้องการ เพื่อ แสดงรายละเอียดของ Location นั้นๆ
 
-<img src="assets/location/media/image7.png" style="width:6.76806in;height:1.7625in" />
+![Location - รูปที่ 11](./assets/location/media/image7.png)
