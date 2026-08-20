@@ -1,3 +1,9 @@
+---
+title: Stock Out
+weight: 3
+published: true
+---
+
 **Stock Out**
 
 **Stock Out** คือ การปรับปรุงเพื่อลดยอดจำนวนสินค้าในคลังสินค้า ซึ่งการทำ Stock Out สามารถแยกเป็นหลายประเภทตาม “Adjust Type” โดย “Adjust Type” จะช่วยให้สามารถบันทึกบัญชีด้วย Account code ที่ต่างกันได้ เช่น

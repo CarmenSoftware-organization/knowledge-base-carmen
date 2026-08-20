@@ -233,7 +233,9 @@ const CategoryItemRow = memo(function CategoryItemRow({
   }, [categoryItem.articles, pathname]);
 
   const renderArticleLink = (article: SidebarArticle) => {
-    if (article.slug === "index") return null;
+    if (article.slug.toLowerCase() === "index" || article.slug.toLowerCase() === "readme") {
+      return null;
+    }
 
     const displayTitle = articleDisplayMap[article.slug] ||
       displayWikiArticleTitle(

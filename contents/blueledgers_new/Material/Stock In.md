@@ -1,3 +1,9 @@
+---
+title: Stock In
+weight: 2
+published: true
+---
+
 **Stock In**
 
 **Stock In** คือ การปรับปรุงยอดเพิ่มของจำนวนสินค้าและราคาในคลังสินค้า ซึ่งการทำ Stock In สามารถแยกเป็นหลายประเภทตาม “Adjust Type” โดย “Adjust Type” จะช่วยให้สามารถบันทึกบัญชีด้วย Account code ที่ต่างกันได้ เช่น

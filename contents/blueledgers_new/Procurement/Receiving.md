@@ -1,3 +1,9 @@
+---
+title: Receiving
+weight: 3
+published: true
+---
+
 **Receiving (การรับสินค้า)**
 
 **Receiving** คือ function ในการสร้างใบรับสินค้าในระบบ โดยสามารถรับสินค้าจากเอกสารใบสั่งซื้อ (Purchase Order) หรือรับสินค้าแบบ Manually

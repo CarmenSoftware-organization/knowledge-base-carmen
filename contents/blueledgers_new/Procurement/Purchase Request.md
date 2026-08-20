@@ -1,3 +1,9 @@
+---
+title: Purchase Request
+weight: 1
+published: true
+---
+
 **Purchase Request (ใบขอซื้อ)**
 
 **Purchase Request** คือ Function ในการสร้างใบขอซื้อในระบบ โดยสามารถสร้างเอกสารได้ 2 วิธี

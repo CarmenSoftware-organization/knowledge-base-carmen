@@ -1,3 +1,9 @@
+---
+title: Closing Balance
+weight: 4
+published: true
+---
+
 **Closing Balance**
 
 **Closing Balance** (EOP) คือ การตรวจนับสินค้าคงเหลือเพื่อปิดระบบสินค้าคงคลัง (ใช้กับ Location ประเภท Enter Count Stock) โดยมีขั้นตอนในการทำงานดังต่อไปนี้

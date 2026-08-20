@@ -1,3 +1,9 @@
+---
+title: Purchase Order
+weight: 2
+published: true
+---
+
 **Purchase Order (ใบสั่งซื้อ)**
 
 **Purchase Order** คือ Function ในการสร้างใบสั่งซื้อ (PO) ในระบบ

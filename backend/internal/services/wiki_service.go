@@ -305,6 +305,9 @@ func (s *WikiService) ListByCategory(bu, slug string) (string, []CategoryItem, e
 		if strings.Contains(e.Path, "/_images/") {
 			continue
 		}
+		if strings.EqualFold(filepath.Base(e.Path), "README.md") {
+			continue
+		}
 		parts := strings.Split(e.Path, "/")
 		if len(parts) < 2 || parts[0] != slug {
 			continue

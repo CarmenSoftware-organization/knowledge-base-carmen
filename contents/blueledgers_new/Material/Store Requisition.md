@@ -1,3 +1,9 @@
+---
+title: Store Requisition
+weight: 1
+published: true
+---
+
 **Store Requisition**
 
 **Store Requisition** คือ การสร้างเอกสารขอเบิกสินค้าจาก Store จะมีอยู่ 2 ประเภท คือ
