@@ -21,7 +21,16 @@ func NewBusinessUnitHandler() *BusinessUnitHandler {
 // List returns all business unit rows from public.business_units.
 func (h *BusinessUnitHandler) List(c *fiber.Ctx) error {
 	var bus []models.BusinessUnit
-	if err := database.DB.Table("public.business_units").Find(&bus).Error; err != nil {
+	if err := database.DB.Table("public.business_units").
+		Order(`CASE slug
+			WHEN 'carmen' THEN 1
+			WHEN 'blueledgers' THEN 2
+			WHEN 'blueledgers_new' THEN 3
+			WHEN 'training_center' THEN 4
+			ELSE 100
+		END`).
+		Order("name ASC").
+		Find(&bus).Error; err != nil {
 		return response.Fail(c, fiber.StatusInternalServerError, response.CodeInternal, "failed to fetch business units: "+err.Error())
 	}
 	if bus == nil {
