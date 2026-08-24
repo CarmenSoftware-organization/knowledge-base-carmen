@@ -8,17 +8,17 @@ import { CategoryGrid } from "@/components/kb/category-grid";
 import { getCategories, getSelectedBUClient } from "@/lib/wiki-api";
 import { useTranslations } from "@/i18n/use-translations";
 
-type CategoriesData = { items: { slug: string; title: string }[] };
+type CategoriesData = { items: { slug: string; title: string }[]; bu: string };
 
 export async function categoriesLoader(): Promise<CategoriesData> {
   const bu = getSelectedBUClient();
   const data = await getCategories(bu);
-  return { items: data.items };
+  return { items: data.items, bu };
 }
 
 export default function Categories() {
   const t = useTranslations();
-  const { items } = useLoaderData() as CategoriesData;
+  const { items, bu } = useLoaderData() as CategoriesData;
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <KBHeader />
@@ -37,7 +37,7 @@ export default function Categories() {
                 {t("category.documents")}
               </h1>
             </div>
-            <CategoryGrid items={items} />
+            <CategoryGrid items={items} bu={bu} />
           </div>
         </div>
       </main>

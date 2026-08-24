@@ -27,11 +27,18 @@ const itemVariants: Variants = {
 
 type CategoryGridItem = { slug: string; title: string };
 
-export function CategoryGrid({ items }: { items: CategoryGridItem[] }) {
+export function CategoryGrid({ items, bu }: { items: CategoryGridItem[]; bu?: string }) {
   const t = useTranslations("category");
+  const preferredOrder = bu?.toLowerCase() === "blueledgers_new"
+    ? new Map(["procurement", "material", "portions", "settings"].map((slug, index) => [slug, index]))
+    : null;
   const visible = items.filter(
     (c: { slug: string }) => c.slug !== "changelog" && c.slug !== "faq"
-  );
+  ).sort((a, b) => {
+    if (!preferredOrder) return 0;
+    return (preferredOrder.get(a.slug.toLowerCase()) ?? Number.MAX_SAFE_INTEGER)
+      - (preferredOrder.get(b.slug.toLowerCase()) ?? Number.MAX_SAFE_INTEGER);
+  });
 
   if (visible.length === 0) {
     return (

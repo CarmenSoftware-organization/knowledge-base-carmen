@@ -67,7 +67,7 @@ export default async function CategoriesPage() {
             </div>
 
             {/* Client Component */}
-            <CategoryGrid items={data.items} />
+            <CategoryGrid items={data.items} bu={bu} />
           </div>
         </div>
       </main>

@@ -346,9 +346,12 @@ const CategoryItemRow = memo(function CategoryItemRow({
 
 // ─── Enrich categories with display names ────────────────────────────────────
 
-function enrichCategories(raw: SidebarCategory[]): SidebarCategoryWithName[] {
+function enrichCategories(raw: SidebarCategory[], bu: string): SidebarCategoryWithName[] {
+  const categoryOrder = bu.toLowerCase() === "blueledgers_new"
+    ? ["procurement", "material", "portions", "settings"]
+    : sidebarCategoryOrder;
   const order = new Map<string, number>(
-    sidebarCategoryOrder.map((slug, index) => [slug, index]),
+    categoryOrder.map((slug, index) => [slug, index]),
   );
 
   return raw
@@ -360,8 +363,8 @@ function enrichCategories(raw: SidebarCategory[]): SidebarCategoryWithName[] {
       ),
     }))
     .sort((a, b) => {
-      const aOrder = order.get(a.slug);
-      const bOrder = order.get(b.slug);
+      const aOrder = order.get(a.slug.toLowerCase());
+      const bOrder = order.get(b.slug.toLowerCase());
       if (aOrder !== undefined || bOrder !== undefined) {
         return (aOrder ?? Number.MAX_SAFE_INTEGER) - (bOrder ?? Number.MAX_SAFE_INTEGER);
       }
@@ -395,7 +398,7 @@ export function KBSidebar({ isMobile = false }: { isMobile?: boolean }) {
     getSidebarTree(bu)
       .then((data) => {
         if (!cancelled) {
-          setCategories(enrichCategories(data));
+          setCategories(enrichCategories(data, bu));
           setIsLoading(false);
         }
       })
