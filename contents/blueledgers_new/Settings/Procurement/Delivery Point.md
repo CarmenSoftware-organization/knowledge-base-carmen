@@ -7,7 +7,7 @@ editor: markdown
 ---
 ---
 title: "Delivery Point"
-weight: 3
+weight: 23
 ---
 # Delivery Point
 

@@ -7,7 +7,7 @@ editor: markdown
 ---
 ---
 title: "Product Category"
-weight: 4
+weight: 11
 ---
 # Product Category
 

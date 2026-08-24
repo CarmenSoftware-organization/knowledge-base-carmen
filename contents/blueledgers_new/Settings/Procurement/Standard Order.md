@@ -7,7 +7,7 @@ editor: markdown
 ---
 ---
 title: "Standard Order"
-weight: 2
+weight: 22
 ---
 # Standard Order
 

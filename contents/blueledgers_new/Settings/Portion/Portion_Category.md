@@ -7,7 +7,7 @@ editor: markdown
 ---
 ---
 title: "Category of Recipe"
-weight: 1
+weight: 41
 ---
 # Category of Recipe
 

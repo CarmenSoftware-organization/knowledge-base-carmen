@@ -7,7 +7,7 @@ editor: markdown
 ---
 ---
 title: "Adjustment Type"
-weight: 1
+weight: 31
 ---
 # Adjustment Type
 
