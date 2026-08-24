@@ -1,5 +1,5 @@
 ---
-title: "Price List (ใบเสนอราคา)"
+title: "Price List"
 description: "Configuration คือ Module ที่ใช้สำหรับตั้งค่าการใช้งานต่างๆ ที่เกี่ยวข้องกับ Module Procurement"
 published: true
 tags: blueledgers_new,documentation
