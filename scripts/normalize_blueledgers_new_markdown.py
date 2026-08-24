@@ -14,6 +14,7 @@ ORDER = {
     "Material/Stock Out.md": 3,
     "Material/Closing Balance.md": 4,
     "Material/Close Period.md": 5,
+    "Portions/Portion.md": 1,
     "Procurement/Purchase Request.md": 1,
     "Procurement/Purchase Order.md": 2,
     "Procurement/Receiving.md": 3,
@@ -28,13 +29,14 @@ ORDER = {
     "Settings/Main/7_7_Product_Unit_Revised.md": 3,
     "Settings/Main/7_8_Product_Category_Revised.md": 4,
     "Settings/Main/7_9_Location_Revised.md": 5,
-    "Settings/Material/Adjustment_Type_Revised.md": 1,
-    "Settings/Material/Standard_Requisition_Revised.md": 2,
-    "Settings/Procurement/Account Code Mapping.md": 1,
-    "Settings/Procurement/Market List.md": 2,
-    "Settings/Procurement/Standard Order.md": 3,
-    "Settings/Procurement/Delivery Point.md": 4,
-    "Settings/Procurement/Extra Cost Type.md": 5,
+    "Settings/Inventory/Adjustment_Type_Revised.md": 1,
+    "Settings/Inventory/Standard_Requisition_Revised.md": 2,
+    "Settings/Interface/Account Code Mapping.md": 1,
+    "Settings/Portion/Portion_Category.md": 1,
+    "Settings/Procurement/Market List.md": 1,
+    "Settings/Procurement/Standard Order.md": 2,
+    "Settings/Procurement/Delivery Point.md": 3,
+    "Settings/Procurement/Extra Cost Type.md": 4,
 }
 
 TITLE_OVERRIDES = {
@@ -48,6 +50,8 @@ TITLE_OVERRIDES = {
     "Workflow Management": "Workflow Management",
     "Delivery Point": "Delivery Point",
     "Extra Cost Type": "Extra Cost Type",
+    "Portion": "Portions",
+    "Portion_Category": "Category of Recipe",
 }
 
 IMAGE_PREFIX = {
@@ -123,7 +127,24 @@ def normalize_images(body: str, title: str, image_prefix: str = "") -> str:
             src = f"./{src}"
         return f"![{title} - รูปที่ {counter}]({src})"
 
-    return re.sub(r'<img\s+[^>]*?src="([^"]+)"[^>]*?/?>', replace, body, flags=re.I | re.S)
+    body = re.sub(r'<img\s+[^>]*?src="([^"]+)"[^>]*?/?>', replace, body, flags=re.I | re.S)
+
+    def clean_markdown_image(match: re.Match[str]) -> str:
+        nonlocal counter
+        counter += 1
+        alt = match.group(1).strip() or f"{title} - รูปที่ {counter}"
+        src = match.group(2).strip().removeprefix("./")
+        if image_prefix and not src.startswith(image_prefix):
+            src = image_prefix + src
+        if not src.startswith(("../", "/", "http://", "https://")):
+            src = f"./{src}"
+        return f"![{alt}]({src})"
+
+    return re.sub(
+        r"!\[([^\]]*)\]\(([^)]+)\)(?:\{[^}]*\})?",
+        clean_markdown_image,
+        body,
+    )
 
 
 def normalize_body(body: str, title: str, image_prefix: str = "") -> str:

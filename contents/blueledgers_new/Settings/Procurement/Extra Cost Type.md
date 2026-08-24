@@ -7,7 +7,7 @@ editor: markdown
 ---
 ---
 title: "Extra Cost Type"
-weight: 5
+weight: 4
 ---
 # Extra Cost Type
 

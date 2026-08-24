@@ -6,10 +6,10 @@ tags: blueledgers_new,documentation
 editor: markdown
 ---
 ---
-title: "Price List (ใบเสนอราคา)"
+title: "Price List"
 weight: 5
 ---
-# Price List (ใบเสนอราคา)
+# Price List
 
 **Configuration** คือ Module ที่ใช้สำหรับตั้งค่าการใช้งานต่างๆ ที่เกี่ยวข้องกับ Module Procurement
 

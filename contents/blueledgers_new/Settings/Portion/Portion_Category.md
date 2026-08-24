@@ -1,31 +1,42 @@
+---
+title: "Category of Recipe"
+description: "Category of Recipe คือ การจัดประเภทของ Recipe เพื่อจัดหมวดหมู่ให้แก่สูตรปรุงอาหาร หรือสูตรปรุงของเครื่องดื่มเป็นหมวดหมู่ที่ถูกต้อง"
+published: true
+tags: blueledgers_new,documentation
+editor: markdown
+---
+---
+title: "Category of Recipe"
+weight: 1
+---
 # Category of Recipe
 
 Category of Recipe คือ การจัดประเภทของ Recipe เพื่อจัดหมวดหมู่ให้แก่สูตรปรุงอาหาร หรือสูตรปรุงของเครื่องดื่มเป็นหมวดหมู่ที่ถูกต้อง
 
-สามารถเข้าใช้งานโดย Click "![](media/image1.png){width="0.20344050743657044in" height="0.15500218722659667in"}" เพื่อเข้าสู่หน้าต่างตั้งค่า
+สามารถเข้าใช้งานโดย Click "![Category of Recipe - รูปที่ 1](./media/image1.png)" เพื่อเข้าสู่หน้าต่างตั้งค่า
 
-![](media/image2.png){width="6.768055555555556in" height="2.125in"}
+![Category of Recipe - รูปที่ 2](./media/image2.png)
 
-**ขั้นตอนการสร้าง Category**
+## ขั้นตอนการสร้าง Category
 
-1.  Click "Category" เพื่อเข้าสู่หน้าต่างการสร้างหมวดจองสูตรอาหาร
+1. Click "Category" เพื่อเข้าสู่หน้าต่างการสร้างหมวดจองสูตรอาหาร
 
-2.  Click "New" เพื่อสร้าง Category
+2. Click "New" เพื่อสร้าง Category
 
-![](media/image3.png){width="6.768055555555556in" height="1.75625in"}
+![Category of Recipe - รูปที่ 3](./media/image3.png)
 
-3.  ระบุรายละเอียดข้อมูลสำหรับสร้าง Standard Requisition Template
+3. ระบุรายละเอียดข้อมูลสำหรับสร้าง Category
 
--   Code ระบุรหัสหมวดของสูตรอาหารและเครื่องดื่ม
+- **Code** ระบุรหัสหมวดของสูตรอาหารและเครื่องดื่ม
 
--   Name ระบุชื่อของหมวดสูตรอาหารและเครื่องดื่ม
+- **Name** ระบุชื่อของหมวดสูตรอาหารและเครื่องดื่ม
 
-Note: ในกรณีหยุดใช้งาน Adjust Type แล้ว ให้ทำการ Click สัญลักษณ์ "![](media/image4.png){width="0.20811679790026247in" height="0.13243766404199475in"}" เพื่อ Inactive
+> **หมายเหตุ:** ในกรณีหยุดใช้งาน Category ให้ Click สัญลักษณ์ "![Category of Recipe - รูปที่ 4](./media/image4.png)" เพื่อเปลี่ยนสถานะเป็น Inactive
 
-4.  Click "Save" เพื่อบันทึกชื่อสูตรอาหารและเครื่องดื่ม
+4. Click "Save" เพื่อบันทึกชื่อสูตรอาหารและเครื่องดื่ม
 
-![](media/image5.png){width="2.4733344269466317in" height="2.086093613298338in"}
+![Category of Recipe - รูปที่ 5](./media/image5.png)
 
-5.  หากต้องการแกไข Category สามารถ Click "ชื่อหมวดสูตรอาหารและเครื่องดื่ม" จากนั้น Click "Edit" จากนั้นสามารถแก้ไขชื่อ
+5. หากต้องการแกไข Category สามารถ Click "ชื่อหมวดสูตรอาหารและเครื่องดื่ม" จากนั้น Click "Edit" จากนั้นสามารถแก้ไขชื่อ
 
-![](media/image6.png){width="2.501246719160105in" height="1.8300262467191601in"}
+![Category of Recipe - รูปที่ 6](./media/image6.png)
