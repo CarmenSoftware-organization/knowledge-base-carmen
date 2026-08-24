@@ -1,5 +1,5 @@
 ---
-title: 1Procurement
+title: Procurement
 weight: 1
 published: true
 ---
