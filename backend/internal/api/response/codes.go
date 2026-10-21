@@ -22,6 +22,7 @@ const (
 	CodeUnauthorized             = "UNAUTHORIZED"
 	CodeForbidden                = "FORBIDDEN"
 	CodeConflict                 = "CONFLICT"
+	CodeDBUnavailable            = "DB_UNAVAILABLE"
 )
 
 // codeForStatus maps an HTTP status to a default code for errors that did not go
@@ -38,6 +39,8 @@ func codeForStatus(status int) string {
 		return CodeNotFound
 	case fiber.StatusConflict:
 		return CodeConflict
+	case fiber.StatusServiceUnavailable:
+		return CodeDBUnavailable
 	default:
 		return CodeInternal
 	}

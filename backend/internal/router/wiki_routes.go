@@ -18,9 +18,9 @@ func RegisterWiki(app *fiber.App) {
 	app.Get("/api/wiki/sidebar", h.Sidebar)
 	app.Get("/api/wiki/category/:slug", h.GetCategory)
 	app.Get("/api/wiki/content/*", h.GetContent)
-	app.Get("/api/wiki/search", h.Search)
+	app.Get("/api/wiki/search", middleware.RequireDB, h.Search)
 	app.Post("/api/wiki/sync", middleware.RequireAdminKey, h.Sync)
-	app.Get("/api/wiki/sync/audit", middleware.RequireAdminKey, h.SyncAudit)
+	app.Get("/api/wiki/sync/audit", middleware.RequireAdminKey, middleware.RequireDB, h.SyncAudit)
 	app.Get("/wiki-assets/*", func(c *fiber.Ctx) error {
 		bu := c.Query("bu")
 		if bu == "" {

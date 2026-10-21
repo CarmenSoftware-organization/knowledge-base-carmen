@@ -121,6 +121,10 @@ func (h *GitHubWebhookHandler) HandlePush(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
+		if !database.Ready() {
+			log.Printf("[webhook] database unavailable, skipping reindex")
+			return
+		}
 		var bus []models.BusinessUnit
 		if err := database.DB.Find(&bus).Error; err != nil {
 			log.Printf("[webhook] failed to fetch BUs: %v", err)

@@ -1,9 +1,13 @@
 package database
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
@@ -14,17 +18,26 @@ import (
 
 var DB *gorm.DB
 
+// ready reports whether DB is set and the last ping succeeded. DB is written
+// before ready is stored, so a reader that sees Ready() == true can use DB.
+var ready atomic.Bool
+
+// Ready reports whether the database is currently reachable. When false the
+// server runs in wiki-only mode: markdown content is served from disk while
+// DB-backed routes answer 503 (see middleware.RequireDB).
+func Ready() bool { return ready.Load() }
+
 // Connect opens the global GORM DB handle from AppConfig and applies search_path.
+// DB is only assigned on success.
 func Connect() error {
 	cfg := config.AppConfig.Database
 
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s connect_timeout=5",
 		cfg.Host, cfg.User, cfg.Password, cfg.Name, cfg.Port, cfg.SSLMode,
 	)
 
-	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 
@@ -44,12 +57,46 @@ func Connect() error {
 		if err != nil {
 			return err
 		}
-		if err := DB.Exec("SELECT set_config('search_path', ?, false)", searchPath).Error; err != nil {
+		if err := db.Exec("SELECT set_config('search_path', ?, false)", searchPath).Error; err != nil {
 			return fmt.Errorf("failed to set search_path: %w", err)
 		}
 	}
 
+	DB = db
+	ready.Store(true)
 	return nil
+}
+
+// Monitor keeps Ready() in sync with the database until ctx is done: while no
+// handle exists it retries Connect, otherwise it pings the pool (which
+// reconnects on its own once the DB is back).
+func Monitor(ctx context.Context, interval time.Duration) {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+		was := Ready()
+		if DB == nil {
+			if err := Connect(); err != nil {
+				continue
+			}
+		} else if sqlDB, err := DB.DB(); err == nil {
+			pctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			ready.Store(sqlDB.PingContext(pctx) == nil)
+			cancel()
+		}
+		if now := Ready(); now != was {
+			if now {
+				log.Println("Database: reachable again — DB-backed routes re-enabled")
+			} else {
+				log.Println("WARNING: database unreachable — serving wiki content only")
+			}
+		}
+	}
 }
 
 // normalizeSearchPath validates and trims each schema in a CSV into a search_path string.
