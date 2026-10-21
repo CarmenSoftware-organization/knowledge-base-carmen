@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
@@ -24,7 +25,7 @@ import (
 	_ "github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/docs"
 )
 
-// main is the backend entrypoint: it loads config, connects the DB, dispatches CLI subcommands (migrate/reset/reindex), and otherwise starts the Fiber HTTP server.
+// main is the backend entrypoint: it loads config, connects the DB (optional for the server: wiki-only mode when unreachable), dispatches CLI subcommands (migrate/reset/reindex), and otherwise starts the Fiber HTTP server.
 func main() {
 	if err := config.Load(); err != nil {
 		log.Fatal("Failed to load config:", err)
@@ -35,11 +36,15 @@ func main() {
 	if config.AppConfig == nil || config.AppConfig.Translation.APIKey == "" {
 		log.Println("Translation: disabled (GOOGLE_TRANSLATE_API_KEY not set or empty)")
 	}
-	if err := database.Connect(); err != nil {
-		log.Fatal("Failed to connect database:", err)
-	}
-
 	args := os.Args[1:]
+	if err := database.Connect(); err != nil {
+		// CLI subcommands need the DB; the HTTP server can still serve wiki
+		// content from disk and picks the DB up once it is reachable.
+		if len(args) > 0 {
+			log.Fatal("Failed to connect database:", err)
+		}
+		log.Printf("WARNING: database unavailable, starting in wiki-only mode: %v", err)
+	}
 	if len(args) >= 1 && args[0] == "migrate" {
 		path := "migrations/0004_chat_history.sql"
 		if len(args) >= 2 {
@@ -125,6 +130,8 @@ func main() {
 			log.Println("Startup wiki sync completed.")
 		}
 	}
+
+	go database.Monitor(context.Background(), 30*time.Second)
 
 	app := fiber.New(fiber.Config{
 		AppName:       "New Carmen Backend",

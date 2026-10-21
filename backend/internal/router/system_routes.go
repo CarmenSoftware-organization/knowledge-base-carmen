@@ -10,5 +10,5 @@ import (
 // chat history + activity logs).
 func RegisterSystem(app *fiber.App) {
 	h := api.NewSystemHandler()
-	app.Post("/api/system/reset", middleware.RequireAdminKey, h.Reset)
+	app.Post("/api/system/reset", middleware.RequireAdminKey, middleware.RequireDB, h.Reset)
 }

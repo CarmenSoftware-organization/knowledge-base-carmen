@@ -18,6 +18,9 @@ func NewActivityLogService() *ActivityLogService {
 
 // Log records a new activity in the system
 func (s *ActivityLogService) Log(buSlug string, userID string, action string, category string, details interface{}, userAgent string) error {
+	if !database.Ready() {
+		return nil // wiki-only mode: activity logging is best-effort
+	}
 	var buID *uuid.UUID
 	if buSlug != "" {
 		var bu models.BusinessUnit

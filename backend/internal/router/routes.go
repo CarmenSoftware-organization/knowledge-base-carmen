@@ -47,7 +47,7 @@ func SetupRoutes(app *fiber.App) {
 // and listing by module/sub/category).
 func RegisterFAQ(app *fiber.App) {
 	h := api.NewFAQHandler()
-	g := app.Group("/api/faq")
+	g := app.Group("/api/faq", middleware.RequireDB)
 	g.Get("/modules", h.ListModules)
 	g.Get("/entry/:id", h.GetEntry)
 	g.Get("/:module", h.GetModuleDetail)
@@ -59,14 +59,14 @@ func RegisterFAQ(app *fiber.App) {
 func RegisterBusinessUnits(app *fiber.App) {
 	h := api.NewBusinessUnitHandler()
 	app.Get("/api/business-units", h.List)
-	app.Post("/api/business-units/provision", middleware.RequireAdminKey, h.Provision)
-	app.Post("/api/business-units/deprovision", middleware.RequireAdminKey, h.Deprovision)
+	app.Post("/api/business-units/provision", middleware.RequireAdminKey, middleware.RequireDB, h.Provision)
+	app.Post("/api/business-units/deprovision", middleware.RequireAdminKey, middleware.RequireDB, h.Deprovision)
 }
 
 // RegisterActivity wires the /api/activity routes (list and summary).
 func RegisterActivity(app *fiber.App) {
 	h := api.NewActivityHandler()
-	g := app.Group("/api/activity")
+	g := app.Group("/api/activity", middleware.RequireDB)
 	g.Get("/list", h.List)
 	g.Get("/summary", h.Summary)
 }

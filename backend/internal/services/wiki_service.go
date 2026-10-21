@@ -15,12 +15,15 @@ import (
 
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/config"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/nlp"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/utils"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/github"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/pkg/openrouter"
 	"github.com/google/uuid"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -783,4 +786,52 @@ func (s *WikiService) getContentFromGitHub(relPath string) (*WikiContent, error)
 		applyMeta(out, meta, body)
 	}
 	return out, nil
+}
+
+// buOrder mirrors the ORDER BY in BusinessUnitHandler.List so the fallback list
+// sorts the same way as the DB one.
+var buOrder = map[string]int{"carmen": 1, "blueledgers": 2, "blueledgers_new": 3, "training_center": 4}
+
+// ListLocalBUs derives the BU list from the content folders on disk (each
+// valid-slug folder under contents/ is a BU). Used when the DB is unreachable;
+// ids are deterministic per slug so they stay stable across calls.
+func (s *WikiService) ListLocalBUs() ([]models.BusinessUnit, error) {
+	base := config.AppConfig.Git.RepoPath
+	if base == "" || base == "." {
+		base = config.DefaultRepoPath()
+	}
+	base = filepath.Clean(base)
+	if st, err := os.Stat(filepath.Join(base, "contents")); err == nil && st.IsDir() {
+		base = filepath.Join(base, "contents")
+	}
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return nil, err
+	}
+	bus := []models.BusinessUnit{}
+	for _, e := range entries {
+		slug := e.Name()
+		if !e.IsDir() || strings.HasPrefix(slug, ".") || !security.ValidateSchema(slug) {
+			continue
+		}
+		bus = append(bus, models.BusinessUnit{
+			ID:   uuid.NewSHA1(uuid.NameSpaceURL, []byte("bu:"+slug)),
+			Name: cases.Title(language.Und).String(slugToTitle(slug)),
+			Slug: slug,
+		})
+	}
+	sort.SliceStable(bus, func(i, j int) bool {
+		oi, oj := buOrder[bus[i].Slug], buOrder[bus[j].Slug]
+		if oi == 0 {
+			oi = 100
+		}
+		if oj == 0 {
+			oj = 100
+		}
+		if oi != oj {
+			return oi < oj
+		}
+		return bus[i].Name < bus[j].Name
+	})
+	return bus, nil
 }
