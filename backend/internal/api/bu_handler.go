@@ -8,6 +8,7 @@ import (
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/database"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/models"
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
+	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/services"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -18,8 +19,16 @@ func NewBusinessUnitHandler() *BusinessUnitHandler {
 	return &BusinessUnitHandler{}
 }
 
-// List returns all business unit rows from public.business_units.
+// List returns all business unit rows from public.business_units. While the DB
+// is unreachable it falls back to the BU folders on disk (wiki-only mode).
 func (h *BusinessUnitHandler) List(c *fiber.Ctx) error {
+	if !database.Ready() {
+		bus, err := services.NewWikiService().ListLocalBUs()
+		if err != nil {
+			return response.Fail(c, fiber.StatusServiceUnavailable, response.CodeDBUnavailable, "database unavailable and no local content: "+err.Error())
+		}
+		return response.OK(c, bus)
+	}
 	var bus []models.BusinessUnit
 	if err := database.DB.Table("public.business_units").
 		Order(`CASE slug

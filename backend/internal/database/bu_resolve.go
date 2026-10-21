@@ -9,12 +9,18 @@ import (
 	"github.com/CarmenSoftware-organization/knowledge-base-carmen/backend/internal/security"
 )
 
+// ErrUnavailable is returned by DB helpers while the database is unreachable.
+var ErrUnavailable = errors.New("database unavailable")
+
 // BUIDForSlug returns public.business_units.id (UUID) for the given slug.
 // Returns uuid.Nil when the slug does not exist; an error only on invalid slug
 // format or a database failure.
 func BUIDForSlug(slug string) (uuid.UUID, error) {
 	if !security.ValidateSchema(slug) {
 		return uuid.Nil, fmt.Errorf("invalid bu slug: %q", slug)
+	}
+	if !Ready() {
+		return uuid.Nil, ErrUnavailable
 	}
 	// Use Row().Scan so the destination's sql.Scanner (uuid.UUID) is honored;
 	// GORM's Raw().Scan into a bare [16]byte mis-handles the pgx string value.

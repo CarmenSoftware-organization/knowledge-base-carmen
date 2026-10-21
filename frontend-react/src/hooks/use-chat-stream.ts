@@ -136,7 +136,18 @@ export async function executeStream(
       const raw = await response.text();
       let msg: string;
       try {
-        const j = JSON.parse(raw) as { message?: string; error?: string; detail?: unknown };
+        const parsed = JSON.parse(raw) as {
+          message?: string;
+          error?: string | { code?: string; message?: string };
+          detail?: unknown;
+        };
+        // Go envelope: { success:false, error:{ code, message } }
+        const envErr = parsed.error && typeof parsed.error === "object" ? parsed.error : undefined;
+        const j = { ...parsed, error: envErr ? envErr.message : (parsed.error as string | undefined) };
+        if (envErr?.code === "DB_UNAVAILABLE") {
+          j.message = "ระบบแชทใช้งานไม่ได้ชั่วคราว (ฐานข้อมูลไม่พร้อม) — ยังเปิดอ่านคู่มือได้ตามปกติ";
+          j.error = undefined;
+        }
         // FastAPI validation errors return detail as an array of objects — flatten to string
         const detailStr = Array.isArray(j.detail)
           ? j.detail

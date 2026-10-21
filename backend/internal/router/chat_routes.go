@@ -40,15 +40,15 @@ func RegisterPublicChat(app *fiber.App) {
 		Expiration: time.Minute,
 	})
 
-	app.Post("/api/chat/ask", chatLimiter, chatHandler.Ask)
-	app.Post("/api/chat/record-history", middleware.RequireInternalAPIKey, chatHandler.RecordHistory)
-	app.Get("/api/chat/history/list", middleware.RequireAdminKey, chatHandler.ListHistory)
-	app.Post("/api/chat/route-test", middleware.RequireAdminKey, chatHandler.RouteOnly)
-	app.Post("/api/chat/intent-test", middleware.RequireAdminKey, chatHandler.IntentTest)
+	app.Post("/api/chat/ask", chatLimiter, middleware.RequireDB, chatHandler.Ask)
+	app.Post("/api/chat/record-history", middleware.RequireInternalAPIKey, middleware.RequireDB, chatHandler.RecordHistory)
+	app.Get("/api/chat/history/list", middleware.RequireAdminKey, middleware.RequireDB, chatHandler.ListHistory)
+	app.Post("/api/chat/route-test", middleware.RequireAdminKey, middleware.RequireDB, chatHandler.RouteOnly)
+	app.Post("/api/chat/intent-test", middleware.RequireAdminKey, middleware.RequireDB, chatHandler.IntentTest)
 
-	app.Delete("/api/chat/clear/:room_id", chatLimiter, chatHandler.ClearRoom)
-	app.Post("/api/chat/stream", chatLimiter, chatHandler.Stream)
-	app.Post("/api/chat/feedback/:message_id", chatLimiter, chatHandler.Feedback)
+	app.Delete("/api/chat/clear/:room_id", chatLimiter, middleware.RequireDB, chatHandler.ClearRoom)
+	app.Post("/api/chat/stream", chatLimiter, middleware.RequireDB, chatHandler.Stream)
+	app.Post("/api/chat/feedback/:message_id", chatLimiter, middleware.RequireDB, chatHandler.Feedback)
 
 	app.Get("/images/*", chatHandler.Image)
 }
