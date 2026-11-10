@@ -55,8 +55,6 @@ https://support.google.com/accounts/answer/1064203?hl=th
 
 2.5 ระบุรหัส 16 หลัก ที่ได้จาก App Password (มีเว้นวรรคด้วย) เช่น scwp pqdn fmyc rvhy
 
-![ภาพประกอบขั้นตอน](media/image10.png)
-
 จากนั้นใน Click ปุ่ม Save เพื่อบันทึกข้อมูล
 
 2.6 หากต้องการทดลอง Email สามารถระบุ Email Address ปลายทางเพื่อทดสอบผลการตั้งค่า
